@@ -1,14 +1,7 @@
 // frontend/admin-crm/src/contexts/ToastContext.tsx
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { 
-  Snackbar, 
-  Alert, 
-  AlertTitle, 
-  Button, 
-  IconButton,
-  Stack 
-} from '@mui/material';
+import { Snackbar, Alert, AlertTitle, Button, IconButton, Stack } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import type { Toast, ToastContextType, ShowToastOptions } from '../types/toast.types';
 
@@ -24,25 +17,28 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const hideToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
-  const showToast = useCallback((options: ShowToastOptions) => {
-    const toast: Toast = {
-      id: generateId(),
-      duration: 6000, // Default 6 seconds
-      ...options,
-    };
+  const showToast = useCallback(
+    (options: ShowToastOptions) => {
+      const toast: Toast = {
+        id: generateId(),
+        duration: 6000, // Default 6 seconds
+        ...options,
+      };
 
-    setToasts(prev => [...prev, toast]);
+      setToasts((prev) => [...prev, toast]);
 
-    // Auto-hide toast after duration
-    if (toast.duration && toast.duration > 0) {
-      setTimeout(() => {
-        hideToast(toast.id);
-      }, toast.duration);
-    }
-  }, [hideToast]);
+      // Auto-hide toast after duration
+      if (toast.duration && toast.duration > 0) {
+        setTimeout(() => {
+          hideToast(toast.id);
+        }, toast.duration);
+      }
+    },
+    [hideToast],
+  );
 
   const clearAllToasts = useCallback(() => {
     setToasts([]);
@@ -58,7 +54,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      
+
       {/* Toast Container */}
       <Stack
         spacing={1}
@@ -93,7 +89,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
                       color="inherit"
                       size="small"
                       onClick={toast.action.onClick}
-                      sx={{ 
+                      sx={{
                         color: 'inherit',
                         '&:hover': {
                           backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -119,14 +115,8 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
                 </Stack>
               }
             >
-              <AlertTitle sx={{ margin: 0, fontWeight: 600 }}>
-                {toast.title}
-              </AlertTitle>
-              {toast.message && (
-                <div style={{ marginTop: 4 }}>
-                  {toast.message}
-                </div>
-              )}
+              <AlertTitle sx={{ margin: 0, fontWeight: 600 }}>{toast.title}</AlertTitle>
+              {toast.message && <div style={{ marginTop: 4 }}>{toast.message}</div>}
             </Alert>
           </Snackbar>
         ))}
@@ -150,13 +140,13 @@ export const useToastActions = () => {
   return {
     showSuccess: (title: string, message?: string, options?: Partial<ShowToastOptions>) =>
       showToast({ type: 'success', title, message, ...options }),
-    
+
     showError: (title: string, message?: string, options?: Partial<ShowToastOptions>) =>
       showToast({ type: 'error', title, message, duration: 8000, ...options }),
-    
+
     showWarning: (title: string, message?: string, options?: Partial<ShowToastOptions>) =>
       showToast({ type: 'warning', title, message, ...options }),
-    
+
     showInfo: (title: string, message?: string, options?: Partial<ShowToastOptions>) =>
       showToast({ type: 'info', title, message, ...options }),
   };

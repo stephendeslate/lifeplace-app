@@ -11,7 +11,11 @@ import {
   getVariableLabel,
   type VariableSuggestionDropdownRef,
 } from './VariableSuggestionDropdown';
-import type { VariableForInsertion, VariableSchemas, ContextType } from '../../types/templates.types';
+import type {
+  VariableForInsertion,
+  VariableSchemas,
+  ContextType,
+} from '../../types/templates.types';
 import { getVariablesForContext } from '../../hooks/useTemplateVariables';
 
 // Store for variable schemas - will be set by the editor
@@ -67,7 +71,7 @@ const getFilteredVariables = (query: string): VariableForInsertion[] => {
       (v) =>
         v.name.toLowerCase().includes(lowerQuery) ||
         getVariableLabel(v.name).toLowerCase().includes(lowerQuery) ||
-        v.description.toLowerCase().includes(lowerQuery)
+        v.description.toLowerCase().includes(lowerQuery),
     )
     .slice(0, 10); // Limit to 10 results
 };

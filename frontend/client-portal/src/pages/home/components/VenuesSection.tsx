@@ -1,17 +1,12 @@
 // pages/home/components/VenuesSection.tsx
 
-import React from "react";
-import { Box, Typography, Stack, Skeleton } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import {
-  tokens,
-  Section,
-  Container,
-  AnimatedElement,
-} from "../../../design-system";
-import { Button } from "../../../design-system";
-import { VenueGalleryCard } from "../../../components/gallery";
-import { useVenueGallery } from "../../../hooks/useGallery";
+import React from 'react';
+import { Box, Typography, Stack, Skeleton } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { tokens, Section, Container, AnimatedElement } from '../../../design-system';
+import { Button } from '../../../design-system';
+import { VenueGalleryCard } from '../../../components/gallery';
+import { useVenueGallery } from '../../../hooks/useGallery';
 
 const MAX_VENUES = 6;
 
@@ -21,17 +16,15 @@ export const VenuesSection: React.FC = () => {
 
   const sortedVenues = React.useMemo(() => {
     if (!venues) return [];
-    return [...venues]
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .slice(0, MAX_VENUES);
+    return [...venues].sort((a, b) => a.sort_order - b.sort_order).slice(0, MAX_VENUES);
   }, [venues]);
 
   const handleBookNow = () => {
-    navigate("/booking");
+    navigate('/booking');
   };
 
   const handleViewGallery = () => {
-    navigate("/facilities");
+    navigate('/facilities');
   };
 
   return (
@@ -40,7 +33,7 @@ export const VenuesSection: React.FC = () => {
         <Stack spacing={{ xs: 4, md: 6 }}>
           {/* Section Header */}
           <AnimatedElement animation="fadeIn" delay={0}>
-            <Box sx={{ textAlign: "center", mb: { xs: 2, md: 4 } }}>
+            <Box sx={{ textAlign: 'center', mb: { xs: 2, md: 4 } }}>
               <Typography
                 sx={{
                   ...tokens.typography.styles.h2,
@@ -54,12 +47,12 @@ export const VenuesSection: React.FC = () => {
                 sx={{
                   ...tokens.typography.styles.bodyLarge,
                   color: tokens.color.base.neutral[700],
-                  maxWidth: "700px",
-                  mx: "auto",
+                  maxWidth: '700px',
+                  mx: 'auto',
                 }}
               >
-                Discover our diverse range of venues, each thoughtfully designed
-                to accommodate events of every size and style.
+                Discover our diverse range of venues, each thoughtfully designed to accommodate
+                events of every size and style.
               </Typography>
             </Box>
           </AnimatedElement>
@@ -67,11 +60,11 @@ export const VenuesSection: React.FC = () => {
           {/* Venues Grid */}
           <Box
             sx={{
-              display: "grid",
+              display: 'grid',
               gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, 1fr)",
-                md: "repeat(3, 1fr)",
+                xs: '1fr',
+                sm: 'repeat(2, 1fr)',
+                md: 'repeat(3, 1fr)',
               },
               gap: { xs: 3, md: 4 },
             }}
@@ -82,7 +75,7 @@ export const VenuesSection: React.FC = () => {
                   key={index}
                   sx={{
                     borderRadius: tokens.spacing.radius.card,
-                    overflow: "hidden",
+                    overflow: 'hidden',
                   }}
                 >
                   <Skeleton
@@ -94,7 +87,7 @@ export const VenuesSection: React.FC = () => {
                     <Skeleton
                       variant="text"
                       sx={{
-                        fontSize: "1.25rem",
+                        fontSize: '1.25rem',
                         mb: 0.5,
                         backgroundColor: tokens.color.base.sage[100],
                       }}
@@ -109,7 +102,7 @@ export const VenuesSection: React.FC = () => {
               ))}
 
             {isError && (
-              <Box sx={{ gridColumn: "1 / -1", textAlign: "center", py: 6 }}>
+              <Box sx={{ gridColumn: '1 / -1', textAlign: 'center', py: 6 }}>
                 <Typography
                   sx={{
                     ...tokens.typography.styles.body,
@@ -124,11 +117,7 @@ export const VenuesSection: React.FC = () => {
             {!isLoading &&
               !isError &&
               sortedVenues.map((venue, index) => (
-                <AnimatedElement
-                  key={venue.id}
-                  animation="slideUp"
-                  delay={100 + index * 100}
-                >
+                <AnimatedElement key={venue.id} animation="slideUp" delay={100 + index * 100}>
                   <VenueGalleryCard
                     venue={{
                       id: venue.id,
@@ -150,11 +139,11 @@ export const VenuesSection: React.FC = () => {
 
           {/* Call to Action */}
           <AnimatedElement animation="fadeIn" delay={800}>
-            <Box sx={{ textAlign: "center", mt: { xs: 2, md: 4 } }}>
+            <Box sx={{ textAlign: 'center', mt: { xs: 2, md: 4 } }}>
               <Button
                 variant="primary"
                 size="large"
-                onClick={() => navigate("/facilities")}
+                onClick={() => navigate('/facilities')}
                 sx={{
                   px: { xs: 4, md: 6 },
                 }}

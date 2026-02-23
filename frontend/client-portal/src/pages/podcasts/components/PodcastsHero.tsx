@@ -51,7 +51,11 @@ export const PodcastsHero: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             width: '100%',
-            px: { xs: tokens.spacing.space[3], sm: tokens.spacing.space[4], md: tokens.spacing.space[6] },
+            px: {
+              xs: tokens.spacing.space[3],
+              sm: tokens.spacing.space[4],
+              md: tokens.spacing.space[6],
+            },
             pt: { xs: tokens.spacing.space[20], md: tokens.spacing.space[24] },
             pb: { xs: tokens.spacing.space[9], md: tokens.spacing.space[14] },
             textAlign: 'center',
@@ -121,8 +125,8 @@ export const PodcastsHero: React.FC = () => {
                   textShadow: tokens.shadow.text.medium,
                 }}
               >
-                Join Peter and Shekinah Gramaje as they share insights on life, rest,
-                relationships, and purpose.
+                Join Peter and Shekinah Gramaje as they share insights on life, rest, relationships,
+                and purpose.
               </Typography>
             </AnimatedElement>
 
@@ -153,7 +157,8 @@ export const PodcastsHero: React.FC = () => {
                     lineHeight: tokens.typography.lineHeights.relaxed,
                   }}
                 >
-                  Conversations that inspire, encourage, and remind us of what truly matters in life.
+                  Conversations that inspire, encourage, and remind us of what truly matters in
+                  life.
                 </Typography>
               </Box>
             </AnimatedElement>

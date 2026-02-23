@@ -3,13 +3,7 @@
 import React from 'react';
 import { Box, Typography, Stack, Button } from '@mui/material';
 import { Phone, Email, LocationOn, AccessTime } from '@mui/icons-material';
-import {
-  tokens,
-  Section,
-  Container,
-  ModernCard,
-  AnimatedElement,
-} from '../../../design-system';
+import { tokens, Section, Container, ModernCard, AnimatedElement } from '../../../design-system';
 
 /**
  * ContactInfo Component
@@ -109,8 +103,8 @@ export const ContactInfo: React.FC = () => {
                   lineHeight: tokens.typography.lineHeights.relaxed,
                 }}
               >
-                Reach out to us through any of these channels. We're ready to help
-                you plan your perfect event.
+                Reach out to us through any of these channels. We're ready to help you plan your
+                perfect event.
               </Typography>
             </Stack>
           </AnimatedElement>
@@ -129,11 +123,7 @@ export const ContactInfo: React.FC = () => {
             {contactDetails.map((detail, index) => {
               const IconComponent = detail.icon;
               return (
-                <AnimatedElement
-                  key={index}
-                  animation="fadeIn"
-                  delay={200 + index * 100}
-                >
+                <AnimatedElement key={index} animation="fadeIn" delay={200 + index * 100}>
                   <ModernCard variant="elevated" size="medium" hover sx={{ height: '100%' }}>
                     <Stack spacing={tokens.spacing.space[4]}>
                       {/* Icon with circular background */}
@@ -193,7 +183,11 @@ export const ContactInfo: React.FC = () => {
                             variant="outlined"
                             href={detail.action.href}
                             target={detail.action.href.startsWith('http') ? '_blank' : undefined}
-                            rel={detail.action.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                            rel={
+                              detail.action.href.startsWith('http')
+                                ? 'noopener noreferrer'
+                                : undefined
+                            }
                             sx={{
                               color: tokens.color.base.sage[700],
                               borderColor: tokens.color.base.sage[300],

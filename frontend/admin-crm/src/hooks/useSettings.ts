@@ -5,7 +5,11 @@ import { settingsApi } from '../apis/settings.api';
 import { permissionsApi } from '../apis/permissions.api';
 import { useToastActions } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
-import type { AccountSettingsFormData, PasswordChangeFormData, CompanySettingsUpdateData } from '../types/settings.types';
+import type {
+  AccountSettingsFormData,
+  PasswordChangeFormData,
+  CompanySettingsUpdateData,
+} from '../types/settings.types';
 import type { AdminPermissions } from '../types/permissions.types';
 
 interface ApiError {

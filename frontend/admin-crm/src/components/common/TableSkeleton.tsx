@@ -49,9 +49,7 @@ export const TableSkeleton: React.FC<TableSkeletonProps> = ({
               {Array.from({ length: columns }).map((_, colIndex) => (
                 <TableCell key={`cell-${rowIndex}-${colIndex}`}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    {colIndex === 0 && (
-                      <Skeleton variant="circular" width={32} height={32} />
-                    )}
+                    {colIndex === 0 && <Skeleton variant="circular" width={32} height={32} />}
                     <Skeleton
                       variant="text"
                       width={colIndex === 0 ? '60%' : '80%'}
@@ -82,10 +80,7 @@ interface CardSkeletonProps {
   height?: number;
 }
 
-export const CardSkeleton: React.FC<CardSkeletonProps> = ({
-  count = 4,
-  height = 200,
-}) => {
+export const CardSkeleton: React.FC<CardSkeletonProps> = ({ count = 4, height = 200 }) => {
   return (
     <Box
       sx={{
@@ -120,10 +115,7 @@ interface ListSkeletonProps {
   showAvatar?: boolean;
 }
 
-export const ListSkeleton: React.FC<ListSkeletonProps> = ({
-  items = 5,
-  showAvatar = true,
-}) => {
+export const ListSkeleton: React.FC<ListSkeletonProps> = ({ items = 5, showAvatar = true }) => {
   return (
     <Box>
       {Array.from({ length: items }).map((_, index) => (
@@ -137,9 +129,7 @@ export const ListSkeleton: React.FC<ListSkeletonProps> = ({
             borderColor: 'divider',
           }}
         >
-          {showAvatar && (
-            <Skeleton variant="circular" width={40} height={40} sx={{ mr: 2 }} />
-          )}
+          {showAvatar && <Skeleton variant="circular" width={40} height={40} sx={{ mr: 2 }} />}
           <Box sx={{ flex: 1 }}>
             <Skeleton variant="text" width="70%" />
             <Skeleton variant="text" width="50%" height={16} />

@@ -34,7 +34,7 @@ export interface ColorToken {
   };
   neutral: ColorShades;
   semantic: SemanticColors;
-  
+
   // Legacy structure for backwards compatibility
   primary: LegacyColorVariant;
   secondary: LegacyColorVariant;
@@ -93,9 +93,9 @@ export interface ShadowToken {
     md: string;
     lg: string;
     xl: string;
-    low: string;    // Legacy - keep for backwards compatibility
-    medium: string; // Legacy - keep for backwards compatibility  
-    high: string;   // Legacy - keep for backwards compatibility
+    low: string; // Legacy - keep for backwards compatibility
+    medium: string; // Legacy - keep for backwards compatibility
+    high: string; // Legacy - keep for backwards compatibility
   };
   glass: {
     light: string;
@@ -194,7 +194,7 @@ export const designTokens: DesignTokens = {
         950: '#7a0d44',
       },
     },
-    
+
     // Neutral color palette
     neutral: {
       50: '#fafafa',
@@ -209,7 +209,7 @@ export const designTokens: DesignTokens = {
       900: '#212121',
       950: '#0f0f0f',
     },
-    
+
     // Semantic colors
     semantic: {
       success: {
@@ -265,7 +265,7 @@ export const designTokens: DesignTokens = {
         950: '#014d87',
       },
     },
-    
+
     // Legacy structure for backwards compatibility
     primary: {
       main: '#2196f3',

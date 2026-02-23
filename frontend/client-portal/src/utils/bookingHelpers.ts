@@ -1,11 +1,6 @@
 // frontend/client-portal/src/utils/bookingHelpers.ts
 
-import type {
-  BookingFlowStep,
-  StepData,
-  ValidationError,
-  BookingSession,
-} from "../types/booking";
+import type { BookingFlowStep, StepData, ValidationError, BookingSession } from '../types/booking';
 
 /**
  * Validation helpers for booking steps
@@ -22,10 +17,10 @@ export class BookingValidationHelpers {
 
     requiredFields.forEach((field) => {
       const value = data[field];
-      if (!value || (typeof value === "string" && value.trim() === "")) {
+      if (!value || (typeof value === 'string' && value.trim() === '')) {
         errors.push({
           field,
-          message: `${field.replace("_", " ")} is required`,
+          message: `${field.replace('_', ' ')} is required`,
         });
       }
     });
@@ -47,16 +42,13 @@ export class BookingValidationHelpers {
   static validatePhone(phone: string): boolean {
     // Basic Philippine phone number validation
     const phoneRegex = /^(\+63|0)?[9]\d{9}$/;
-    return phoneRegex.test(phone.replace(/\s|-/g, ""));
+    return phoneRegex.test(phone.replace(/\s|-/g, ''));
   }
 
   /**
    * Validate date is in the future
    */
-  static validateFutureDate(
-    dateString: string,
-    minDaysAdvance: number = 1,
-  ): boolean {
+  static validateFutureDate(dateString: string, minDaysAdvance: number = 1): boolean {
     const selectedDate = new Date(dateString);
     const minDate = new Date();
     minDate.setDate(minDate.getDate() + minDaysAdvance);
@@ -67,112 +59,105 @@ export class BookingValidationHelpers {
   /**
    * Validate step-specific data
    */
-  static validateStepData(
-    step: BookingFlowStep,
-    data: Record<string, unknown>,
-  ): ValidationError[] {
+  static validateStepData(step: BookingFlowStep, data: Record<string, unknown>): ValidationError[] {
     const errors: ValidationError[] = [];
 
     switch (step.step_type) {
-      case "introduction":
+      case 'introduction':
         if (step.is_required && !data.acknowledged) {
           errors.push({
-            field: "acknowledged",
-            message: "Please acknowledge to continue",
+            field: 'acknowledged',
+            message: 'Please acknowledge to continue',
           });
         }
         break;
 
-      case "date_time":
+      case 'date_time':
         if (!data.start_date) {
           errors.push({
-            field: "start_date",
-            message: "Event date is required",
+            field: 'start_date',
+            message: 'Event date is required',
           });
         } else if (!this.validateFutureDate(data.start_date as string)) {
           errors.push({
-            field: "start_date",
-            message: "Event date must be in the future",
+            field: 'start_date',
+            message: 'Event date must be in the future',
           });
         }
         break;
 
-      case "pricing_summary":
+      case 'pricing_summary':
         // Fixed: Pricing summary validation
         // No required fields - only optional discount code
         // The backend will validate the discount code if provided
-        if (
-          data.applied_discount_code &&
-          typeof data.applied_discount_code !== "string"
-        ) {
+        if (data.applied_discount_code && typeof data.applied_discount_code !== 'string') {
           errors.push({
-            field: "applied_discount_code",
-            message: "Invalid discount code format",
+            field: 'applied_discount_code',
+            message: 'Invalid discount code format',
           });
         }
         break;
 
-      case "contact_info":
+      case 'contact_info':
         if (!data.full_name) {
           errors.push({
-            field: "full_name",
-            message: "Full name is required",
+            field: 'full_name',
+            message: 'Full name is required',
           });
         }
 
         if (!data.email) {
           errors.push({
-            field: "email",
-            message: "Email is required",
+            field: 'email',
+            message: 'Email is required',
           });
         } else if (!this.validateEmail(data.email as string)) {
           errors.push({
-            field: "email",
-            message: "Please enter a valid email address",
+            field: 'email',
+            message: 'Please enter a valid email address',
           });
         }
 
         if (
-          (step.configuration_data as { require_phone?: boolean })
-            ?.require_phone &&
+          (step.configuration_data as { require_phone?: boolean })?.require_phone &&
           !data.phone
         ) {
           errors.push({
-            field: "phone",
-            message: "Phone number is required",
+            field: 'phone',
+            message: 'Phone number is required',
           });
         } else if (data.phone && !this.validatePhone(data.phone as string)) {
           errors.push({
-            field: "phone",
-            message: "Please enter a valid phone number",
+            field: 'phone',
+            message: 'Please enter a valid phone number',
           });
         }
         break;
 
-      case "payment_info":
+      case 'payment_info':
         if (!data.payment_method) {
           errors.push({
-            field: "payment_method",
-            message: "Payment method is required",
+            field: 'payment_method',
+            message: 'Payment method is required',
           });
         }
 
         if (!data.payment_type) {
           errors.push({
-            field: "payment_type",
-            message: "Payment type is required",
+            field: 'payment_type',
+            message: 'Payment type is required',
           });
         }
 
-        if (data.payment_method === "CREDIT_CARD" && !data.payment_method_id) {
+        if (data.payment_method === 'CREDIT_CARD' && !data.payment_method_id) {
           errors.push({
-            field: "payment_method_id",
-            message: "Payment method selection is required",
+            field: 'payment_method_id',
+            message: 'Payment method selection is required',
           });
         }
         break;
 
-      case "package_selection": {
+      case 'package_selection': {
         const packages = (data.selected_packages as unknown[]) || [];
         const config = step.configuration_data as {
           min_selection?: number;
@@ -181,43 +166,37 @@ export class BookingValidationHelpers {
 
         if (config?.min_selection && packages.length < config.min_selection) {
           errors.push({
-            field: "selected_packages",
+            field: 'selected_packages',
             message: `Please select at least ${config.min_selection} package(s)`,
           });
         }
 
         if (config?.max_selection && packages.length > config.max_selection) {
           errors.push({
-            field: "selected_packages",
+            field: 'selected_packages',
             message: `You can select maximum ${config.max_selection} package(s)`,
           });
         }
         break;
       }
 
-      case "addon_selection": {
+      case 'addon_selection': {
         const addons = (data.selected_addons as unknown[]) || [];
         const addonConfig = step.configuration_data as {
           min_selection?: number;
           max_selection?: number;
         };
 
-        if (
-          addonConfig?.min_selection &&
-          addons.length < addonConfig.min_selection
-        ) {
+        if (addonConfig?.min_selection && addons.length < addonConfig.min_selection) {
           errors.push({
-            field: "selected_addons",
+            field: 'selected_addons',
             message: `Please select at least ${addonConfig.min_selection} add-on(s)`,
           });
         }
 
-        if (
-          addonConfig?.max_selection &&
-          addons.length > addonConfig.max_selection
-        ) {
+        if (addonConfig?.max_selection && addons.length > addonConfig.max_selection) {
           errors.push({
-            field: "selected_addons",
+            field: 'selected_addons',
             message: `You can select maximum ${addonConfig.max_selection} add-on(s)`,
           });
         }
@@ -231,9 +210,7 @@ export class BookingValidationHelpers {
   /**
    * Format validation errors for display
    */
-  static formatValidationErrors(
-    errors: ValidationError[],
-  ): Record<string, string[]> {
+  static formatValidationErrors(errors: ValidationError[]): Record<string, string[]> {
     const formatted: Record<string, string[]> = {};
 
     errors.forEach((error) => {
@@ -254,10 +231,7 @@ export class BookingValidationHelpers {
     if (step.is_required && !step.is_skippable) {
       const errors = this.validateStepData(
         step,
-        ((stepData as Record<string, unknown>)[step.step_type] as Record<
-          string,
-          unknown
-        >) || {},
+        ((stepData as Record<string, unknown>)[step.step_type] as Record<string, unknown>) || {},
       );
       return errors.length === 0;
     }
@@ -268,10 +242,7 @@ export class BookingValidationHelpers {
   /**
    * Get completion percentage
    */
-  static getCompletionPercentage(
-    completedSteps: number,
-    totalSteps: number,
-  ): number {
+  static getCompletionPercentage(completedSteps: number, totalSteps: number): number {
     if (totalSteps === 0) return 0;
     return Math.round((completedSteps / totalSteps) * 100);
   }
@@ -279,14 +250,11 @@ export class BookingValidationHelpers {
   /**
    * Format currency for display
    */
-  static formatCurrency(
-    amount: string | number,
-    currency: string = "PHP",
-  ): string {
-    const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  static formatCurrency(amount: string | number, currency: string = 'PHP'): string {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
 
-    return new Intl.NumberFormat("en-PH", {
-      style: "currency",
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
       currency: currency,
       minimumFractionDigits: 2,
     }).format(num);
@@ -304,13 +272,13 @@ export class BookingValidationHelpers {
    * Format date for display
    */
   static formatDate(date: string | Date): string {
-    const dateObj = typeof date === "string" ? new Date(date) : date;
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
 
-    return new Intl.DateTimeFormat("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
+    return new Intl.DateTimeFormat('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
     }).format(dateObj);
   }
 
@@ -318,14 +286,14 @@ export class BookingValidationHelpers {
    * Format time for display
    */
   static formatTime(time: string): string {
-    const [hours, minutes] = time.split(":");
+    const [hours, minutes] = time.split(':');
     const date = new Date();
     date.setHours(parseInt(hours, 10));
     date.setMinutes(parseInt(minutes, 10));
 
-    return new Intl.DateTimeFormat("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
+    return new Intl.DateTimeFormat('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
       hour12: true,
     }).format(date);
   }
@@ -334,13 +302,13 @@ export class BookingValidationHelpers {
    * Calculate booking end time
    */
   static calculateEndTime(startTime: string, durationHours: number): string {
-    const [hours, minutes] = startTime.split(":");
+    const [hours, minutes] = startTime.split(':');
     const date = new Date();
     date.setHours(parseInt(hours, 10));
     date.setMinutes(parseInt(minutes, 10));
     date.setHours(date.getHours() + durationHours);
 
-    return `${date.getHours().toString().padStart(2, "0")}:${date.getMinutes().toString().padStart(2, "0")}`;
+    return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   }
 
   /**
@@ -360,7 +328,7 @@ export class BookingValidationHelpers {
     const now = new Date();
     const diffMs = expiresAt.getTime() - now.getTime();
 
-    if (diffMs <= 0) return "Expired";
+    if (diffMs <= 0) return 'Expired';
 
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));

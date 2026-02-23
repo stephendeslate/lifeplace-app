@@ -2,6 +2,7 @@
 
 from django.db import models
 from django.utils import timezone
+
 from core.utils.models import BaseModel
 
 
@@ -9,31 +10,31 @@ class SecurityBreach(BaseModel):
     """Track and manage security breach incidents"""
 
     SEVERITY_CHOICES = [
-        ('LOW', 'Low'),
-        ('MEDIUM', 'Medium'),
-        ('HIGH', 'High'),
-        ('CRITICAL', 'Critical'),
+        ("LOW", "Low"),
+        ("MEDIUM", "Medium"),
+        ("HIGH", "High"),
+        ("CRITICAL", "Critical"),
     ]
 
     STATUS_CHOICES = [
-        ('DETECTED', 'Detected'),
-        ('INVESTIGATING', 'Under Investigation'),
-        ('CONFIRMED', 'Confirmed Breach'),
-        ('CONTAINED', 'Contained'),
-        ('NOTIFYING', 'Notifying Affected Parties'),
-        ('RESOLVED', 'Resolved'),
-        ('FALSE_POSITIVE', 'False Positive'),
+        ("DETECTED", "Detected"),
+        ("INVESTIGATING", "Under Investigation"),
+        ("CONFIRMED", "Confirmed Breach"),
+        ("CONTAINED", "Contained"),
+        ("NOTIFYING", "Notifying Affected Parties"),
+        ("RESOLVED", "Resolved"),
+        ("FALSE_POSITIVE", "False Positive"),
     ]
 
     BREACH_TYPE_CHOICES = [
-        ('UNAUTHORIZED_ACCESS', 'Unauthorized Access'),
-        ('DATA_THEFT', 'Data Theft'),
-        ('DATA_LEAK', 'Data Leak'),
-        ('RANSOMWARE', 'Ransomware'),
-        ('PHISHING', 'Phishing'),
-        ('INSIDER_THREAT', 'Insider Threat'),
-        ('SYSTEM_COMPROMISE', 'System Compromise'),
-        ('OTHER', 'Other'),
+        ("UNAUTHORIZED_ACCESS", "Unauthorized Access"),
+        ("DATA_THEFT", "Data Theft"),
+        ("DATA_LEAK", "Data Leak"),
+        ("RANSOMWARE", "Ransomware"),
+        ("PHISHING", "Phishing"),
+        ("INSIDER_THREAT", "Insider Threat"),
+        ("SYSTEM_COMPROMISE", "System Compromise"),
+        ("OTHER", "Other"),
     ]
 
     # Identification
@@ -44,7 +45,7 @@ class SecurityBreach(BaseModel):
     # Classification
     breach_type = models.CharField(max_length=30, choices=BREACH_TYPE_CHOICES)
     severity = models.CharField(max_length=20, choices=SEVERITY_CHOICES)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='DETECTED')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="DETECTED")
 
     # Timeline
     detected_at = models.DateTimeField()
@@ -77,17 +78,13 @@ class SecurityBreach(BaseModel):
 
     # Assigned personnel
     incident_lead = models.ForeignKey(
-        'users.User',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='led_breaches'
+        "users.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="led_breaches"
     )
 
     class Meta:
-        ordering = ['-detected_at']
-        verbose_name = 'Security Breach'
-        verbose_name_plural = 'Security Breaches'
+        ordering = ["-detected_at"]
+        verbose_name = "Security Breach"
+        verbose_name_plural = "Security Breaches"
 
     def __str__(self):
         return f"{self.breach_id}: {self.title}"
@@ -95,10 +92,10 @@ class SecurityBreach(BaseModel):
     def requires_notification(self):
         """Check if NPC/user notification is required"""
         return (
-            self.involves_spi or
-            self.affected_users_count >= 100 or
-            'payment' in self.data_types_affected or
-            'government_id' in self.data_types_affected
+            self.involves_spi
+            or self.affected_users_count >= 100
+            or "payment" in self.data_types_affected
+            or "government_id" in self.data_types_affected
         )
 
     def hours_since_detection(self):
@@ -117,25 +114,25 @@ class BreachNotification(BaseModel):
     """Track notifications sent for a breach"""
 
     NOTIFICATION_TYPE_CHOICES = [
-        ('NPC_INITIAL', 'NPC Initial Notification'),
-        ('NPC_FULL_REPORT', 'NPC Full Report'),
-        ('USER_EMAIL', 'User Email Notification'),
-        ('USER_SMS', 'User SMS Notification'),
-        ('USER_IN_APP', 'User In-App Notification'),
-        ('INTERNAL', 'Internal Stakeholder'),
+        ("NPC_INITIAL", "NPC Initial Notification"),
+        ("NPC_FULL_REPORT", "NPC Full Report"),
+        ("USER_EMAIL", "User Email Notification"),
+        ("USER_SMS", "User SMS Notification"),
+        ("USER_IN_APP", "User In-App Notification"),
+        ("INTERNAL", "Internal Stakeholder"),
     ]
 
-    breach = models.ForeignKey(SecurityBreach, on_delete=models.CASCADE, related_name='notifications')
+    breach = models.ForeignKey(SecurityBreach, on_delete=models.CASCADE, related_name="notifications")
     notification_type = models.CharField(max_length=30, choices=NOTIFICATION_TYPE_CHOICES)
     recipient = models.CharField(max_length=255)  # Email, phone, or user ID
     sent_at = models.DateTimeField(auto_now_add=True)
     content = models.TextField()
-    delivery_status = models.CharField(max_length=50, default='SENT')
+    delivery_status = models.CharField(max_length=50, default="SENT")
 
     class Meta:
-        ordering = ['-sent_at']
-        verbose_name = 'Breach Notification'
-        verbose_name_plural = 'Breach Notifications'
+        ordering = ["-sent_at"]
+        verbose_name = "Breach Notification"
+        verbose_name_plural = "Breach Notifications"
 
     def __str__(self):
         return f"{self.breach.breach_id} - {self.notification_type} to {self.recipient}"
@@ -144,16 +141,16 @@ class BreachNotification(BaseModel):
 class AffectedUser(BaseModel):
     """Track users affected by a breach"""
 
-    breach = models.ForeignKey(SecurityBreach, on_delete=models.CASCADE, related_name='affected_users')
-    user = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    breach = models.ForeignKey(SecurityBreach, on_delete=models.CASCADE, related_name="affected_users")
+    user = models.ForeignKey("users.User", on_delete=models.CASCADE)
     data_exposed = models.JSONField(default=list)  # List of exposed data types
     notified = models.BooleanField(default=False)
     notified_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        unique_together = ['breach', 'user']
-        verbose_name = 'Affected User'
-        verbose_name_plural = 'Affected Users'
+        unique_together = ["breach", "user"]
+        verbose_name = "Affected User"
+        verbose_name_plural = "Affected Users"
 
     def __str__(self):
         return f"{self.breach.breach_id} - User {self.user.email}"

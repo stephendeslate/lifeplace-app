@@ -2,20 +2,8 @@
 
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
-import {
-  Flight,
-  Favorite,
-  School,
-  Church,
-  Check,
-} from '@mui/icons-material';
-import {
-  Section,
-  Container,
-  ModernCard,
-  AnimatedElement,
-  tokens,
-} from '../../../design-system';
+import { Flight, Favorite, School, Church, Check } from '@mui/icons-material';
+import { Section, Container, ModernCard, AnimatedElement, tokens } from '../../../design-system';
 import type { PartnerCategory } from '../types/partner.types';
 
 export const PartnerCategories: React.FC = () => {
@@ -23,7 +11,8 @@ export const PartnerCategories: React.FC = () => {
     {
       id: 'travel-agencies',
       name: 'Travel Agencies',
-      description: 'Partner with us to offer your clients exclusive retreat and team-building packages.',
+      description:
+        'Partner with us to offer your clients exclusive retreat and team-building packages.',
       benefits: [
         'Specialized group packages for retreats',
         'Competitive commission structures',
@@ -38,7 +27,8 @@ export const PartnerCategories: React.FC = () => {
     {
       id: 'wedding-coordinators',
       name: 'Wedding Coordinators',
-      description: 'Become a preferred wedding coordinator with exclusive venue access and discounts.',
+      description:
+        'Become a preferred wedding coordinator with exclusive venue access and discounts.',
       benefits: [
         'Preferred venue status',
         'Discounted venue rates',
@@ -53,7 +43,8 @@ export const PartnerCategories: React.FC = () => {
     {
       id: 'schools',
       name: 'Schools',
-      description: 'Access educational-focused packages perfect for student activities and leadership programs.',
+      description:
+        'Access educational-focused packages perfect for student activities and leadership programs.',
       benefits: [
         'Educational-focused packages',
         'Camps and leadership training rates',
@@ -68,7 +59,8 @@ export const PartnerCategories: React.FC = () => {
     {
       id: 'churches',
       name: 'Churches',
-      description: 'Special rates for spiritual retreats, youth camps, and church community events.',
+      description:
+        'Special rates for spiritual retreats, youth camps, and church community events.',
       benefits: [
         'Discounted rates for spiritual retreats',
         'Youth camp facilities',
@@ -88,11 +80,7 @@ export const PartnerCategories: React.FC = () => {
         <Stack spacing={{ xs: 6, md: 8 }}>
           {/* Section Header */}
           <AnimatedElement animation="fadeIn" delay={100}>
-            <Stack
-              spacing={2}
-              alignItems="center"
-              sx={{ textAlign: 'center' }}
-            >
+            <Stack spacing={2} alignItems="center" sx={{ textAlign: 'center' }}>
               <Typography
                 variant="h2"
                 sx={{
@@ -126,17 +114,8 @@ export const PartnerCategories: React.FC = () => {
             }}
           >
             {categories.map((category, index) => (
-              <AnimatedElement
-                key={category.id}
-                animation="slideUp"
-                delay={200 + index * 100}
-              >
-                <ModernCard
-                  variant={category.variant}
-                  size="large"
-                  hover
-                  sx={{ height: '100%' }}
-                >
+              <AnimatedElement key={category.id} animation="slideUp" delay={200 + index * 100}>
+                <ModernCard variant={category.variant} size="large" hover sx={{ height: '100%' }}>
                   <Stack spacing={3}>
                     {/* Icon and Title Row */}
                     <Box

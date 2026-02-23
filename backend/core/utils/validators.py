@@ -4,6 +4,7 @@ SECURITY FIX (P0-B11): Validates file content matches extension using magic numb
 """
 
 import logging
+
 from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
@@ -11,27 +12,24 @@ logger = logging.getLogger(__name__)
 # Mapping of MIME types to allowed extensions
 ALLOWED_MIME_TYPES = {
     # Images
-    'image/jpeg': ['.jpg', '.jpeg'],
-    'image/png': ['.png'],
-    'image/gif': ['.gif'],
-    'image/webp': ['.webp'],
-    'image/svg+xml': ['.svg'],
-
+    "image/jpeg": [".jpg", ".jpeg"],
+    "image/png": [".png"],
+    "image/gif": [".gif"],
+    "image/webp": [".webp"],
+    "image/svg+xml": [".svg"],
     # Documents
-    'application/pdf': ['.pdf'],
-    'application/msword': ['.doc'],
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-    'application/vnd.ms-excel': ['.xls'],
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
-    'application/vnd.ms-powerpoint': ['.ppt'],
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
-
+    "application/pdf": [".pdf"],
+    "application/msword": [".doc"],
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+    "application/vnd.ms-excel": [".xls"],
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [".xlsx"],
+    "application/vnd.ms-powerpoint": [".ppt"],
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": [".pptx"],
     # Text
-    'text/plain': ['.txt'],
-    'text/csv': ['.csv'],
-
+    "text/plain": [".txt"],
+    "text/csv": [".csv"],
     # Archives (be careful with these)
-    'application/zip': ['.zip'],
+    "application/zip": [".zip"],
 }
 
 # Reverse mapping: extension to allowed MIME types
@@ -67,23 +65,20 @@ def validate_file_content(uploaded_file, allowed_extensions=None):
     # Get the file extension
     filename = uploaded_file.name.lower()
     extension = None
-    for ext in EXTENSION_TO_MIME.keys():
+    for ext in EXTENSION_TO_MIME:
         if filename.endswith(ext):
             extension = ext
             break
 
     if not extension:
-        raise ValidationError(
-            f"File extension not allowed. Allowed extensions: {list(EXTENSION_TO_MIME.keys())}"
-        )
+        raise ValidationError(f"File extension not allowed. Allowed extensions: {list(EXTENSION_TO_MIME.keys())}")
 
     # Check against allowed_extensions if provided
     if allowed_extensions:
         allowed_extensions = [ext.lower() for ext in allowed_extensions]
         if extension not in allowed_extensions:
             raise ValidationError(
-                f"File extension '{extension}' not allowed for this upload. "
-                f"Allowed: {allowed_extensions}"
+                f"File extension '{extension}' not allowed for this upload. Allowed: {allowed_extensions}"
             )
 
     # Read file content to detect MIME type
@@ -103,13 +98,8 @@ def validate_file_content(uploaded_file, allowed_extensions=None):
 
     # Check if detected MIME type is in our allowed list
     if detected_mime not in ALLOWED_MIME_TYPES:
-        logger.warning(
-            f"File upload rejected: detected MIME type '{detected_mime}' not allowed. "
-            f"Filename: {filename}"
-        )
-        raise ValidationError(
-            f"File type '{detected_mime}' is not allowed."
-        )
+        logger.warning(f"File upload rejected: detected MIME type '{detected_mime}' not allowed. Filename: {filename}")
+        raise ValidationError(f"File type '{detected_mime}' is not allowed.")
 
     # Check if the extension matches the detected MIME type
     expected_mimes = EXTENSION_TO_MIME.get(extension, [])
@@ -140,7 +130,7 @@ def validate_image_file(uploaded_file):
     Returns:
         str: The detected MIME type
     """
-    allowed_extensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+    allowed_extensions = [".jpg", ".jpeg", ".png", ".gif", ".webp"]
     return validate_file_content(uploaded_file, allowed_extensions=allowed_extensions)
 
 
@@ -157,7 +147,7 @@ def validate_document_file(uploaded_file):
     Returns:
         str: The detected MIME type
     """
-    allowed_extensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.txt', '.csv']
+    allowed_extensions = [".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".csv"]
     return validate_file_content(uploaded_file, allowed_extensions=allowed_extensions)
 
 
@@ -177,7 +167,7 @@ def validate_image_dimensions(
     uploaded_file,
     max_width: int = MAX_IMAGE_WIDTH,
     max_height: int = MAX_IMAGE_HEIGHT,
-    max_file_size: int = MAX_IMAGE_FILE_SIZE
+    max_file_size: int = MAX_IMAGE_FILE_SIZE,
 ):
     """
     Validate image dimensions using Pillow.
@@ -200,8 +190,8 @@ def validate_image_dimensions(
     Returns:
         dict: Image info including width, height, format, and file_size
     """
+
     from PIL import Image
-    import io
 
     if not uploaded_file:
         raise ValidationError("No file provided.")
@@ -234,35 +224,23 @@ def validate_image_dimensions(
 
         # Check dimensions
         if width > max_width:
-            raise ValidationError(
-                f"Image width ({width}px) exceeds maximum allowed ({max_width}px)."
-            )
+            raise ValidationError(f"Image width ({width}px) exceeds maximum allowed ({max_width}px).")
 
         if height > max_height:
-            raise ValidationError(
-                f"Image height ({height}px) exceeds maximum allowed ({max_height}px)."
-            )
+            raise ValidationError(f"Image height ({height}px) exceeds maximum allowed ({max_height}px).")
 
-        logger.debug(
-            f"Image validated: {uploaded_file.name} "
-            f"({width}x{height}, {image_format}, {file_size} bytes)"
-        )
+        logger.debug(f"Image validated: {uploaded_file.name} ({width}x{height}, {image_format}, {file_size} bytes)")
 
         # Reset file pointer for subsequent operations
         uploaded_file.seek(0)
 
-        return {
-            'width': width,
-            'height': height,
-            'format': image_format,
-            'file_size': file_size
-        }
+        return {"width": width, "height": height, "format": image_format, "file_size": file_size}
 
     except ValidationError:
         raise
     except Exception as e:
         logger.error(f"Error validating image dimensions: {e}")
-        raise ValidationError(f"Invalid image file: {str(e)}")
+        raise ValidationError(f"Invalid image file: {e!s}")
 
 
 def validate_and_optimize_image(
@@ -270,7 +248,7 @@ def validate_and_optimize_image(
     max_width: int = MAX_IMAGE_WIDTH,
     max_height: int = MAX_IMAGE_HEIGHT,
     quality: int = 85,
-    optimize: bool = True
+    optimize: bool = True,
 ):
     """
     Validate image and optionally resize/compress if too large.
@@ -294,8 +272,9 @@ def validate_and_optimize_image(
     Raises:
         ValidationError: If file is not a valid image
     """
-    from PIL import Image
     import io
+
+    from PIL import Image
 
     if not uploaded_file:
         raise ValidationError("No file provided.")
@@ -306,7 +285,7 @@ def validate_and_optimize_image(
 
         # Get original info
         original_width, original_height = image.size
-        original_format = image.format or 'JPEG'
+        original_format = image.format or "JPEG"
 
         was_resized = False
         was_compressed = False
@@ -322,31 +301,28 @@ def validate_and_optimize_image(
             image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
             was_resized = True
 
-            logger.info(
-                f"Resized image from {original_width}x{original_height} "
-                f"to {new_width}x{new_height}"
-            )
+            logger.info(f"Resized image from {original_width}x{original_height} to {new_width}x{new_height}")
         else:
             new_width = original_width
             new_height = original_height
 
         # Convert RGBA to RGB for JPEG (JPEG doesn't support transparency)
-        if image.mode in ('RGBA', 'P') and original_format.upper() == 'JPEG':
-            image = image.convert('RGB')
+        if image.mode in ("RGBA", "P") and original_format.upper() == "JPEG":
+            image = image.convert("RGB")
 
         # Save to BytesIO
         output = io.BytesIO()
 
         # Determine save format
         save_format = original_format.upper()
-        if save_format not in ['JPEG', 'PNG', 'GIF', 'WEBP']:
-            save_format = 'JPEG'
+        if save_format not in ["JPEG", "PNG", "GIF", "WEBP"]:
+            save_format = "JPEG"
 
         # Save with optimization
-        if save_format == 'JPEG':
+        if save_format == "JPEG":
             image.save(output, format=save_format, quality=quality, optimize=optimize)
             was_compressed = True
-        elif save_format == 'PNG':
+        elif save_format == "PNG":
             image.save(output, format=save_format, optimize=optimize)
             was_compressed = optimize
         else:
@@ -355,18 +331,18 @@ def validate_and_optimize_image(
         output.seek(0)
 
         return output, {
-            'width': new_width,
-            'height': new_height,
-            'format': save_format,
-            'was_resized': was_resized,
-            'was_compressed': was_compressed,
-            'original_width': original_width,
-            'original_height': original_height
+            "width": new_width,
+            "height": new_height,
+            "format": save_format,
+            "was_resized": was_resized,
+            "was_compressed": was_compressed,
+            "original_width": original_width,
+            "original_height": original_height,
         }
 
     except Exception as e:
         logger.error(f"Error processing image: {e}")
-        raise ValidationError(f"Failed to process image: {str(e)}")
+        raise ValidationError(f"Failed to process image: {e!s}")
 
 
 def validate_avatar_image(uploaded_file, max_size: int = 512):
@@ -387,7 +363,7 @@ def validate_avatar_image(uploaded_file, max_size: int = 512):
         uploaded_file,
         max_width=max_size,
         max_height=max_size,
-        max_file_size=2 * 1024 * 1024  # 2MB for avatars
+        max_file_size=2 * 1024 * 1024,  # 2MB for avatars
     )
 
 
@@ -399,7 +375,7 @@ import phonenumbers
 from phonenumbers import NumberParseException
 
 # Default region for parsing numbers without a country code prefix
-DEFAULT_PHONE_REGION = 'PH'
+DEFAULT_PHONE_REGION = "PH"
 
 
 def validate_phone_number(phone: str, default_region: str = DEFAULT_PHONE_REGION) -> bool:
@@ -464,21 +440,18 @@ class PhoneNumberValidator:
             return  # Let required/blank validators handle empty values
         if not validate_phone_number(value, self.default_region):
             raise ValidationError(
-                'Enter a valid phone number (e.g., 09123456789 or +639123456789).',
-                code='invalid_phone',
+                "Enter a valid phone number (e.g., 09123456789 or +639123456789).",
+                code="invalid_phone",
             )
 
     def __eq__(self, other):
-        return (
-            isinstance(other, PhoneNumberValidator)
-            and self.default_region == other.default_region
-        )
+        return isinstance(other, PhoneNumberValidator) and self.default_region == other.default_region
 
     def deconstruct(self):
         return (
-            'core.utils.validators.PhoneNumberValidator',
+            "core.utils.validators.PhoneNumberValidator",
             [],
-            {'default_region': self.default_region},
+            {"default_region": self.default_region},
         )
 
 
@@ -502,15 +475,11 @@ class ImageDimensionValidator:
 
     def __eq__(self, other):
         return (
-            isinstance(other, ImageDimensionValidator) and
-            self.max_width == other.max_width and
-            self.max_height == other.max_height
+            isinstance(other, ImageDimensionValidator)
+            and self.max_width == other.max_width
+            and self.max_height == other.max_height
         )
 
     def deconstruct(self):
         """Return arguments for serialization in migrations."""
-        return (
-            'core.utils.validators.ImageDimensionValidator',
-            [self.max_width, self.max_height],
-            {}
-        )
+        return ("core.utils.validators.ImageDimensionValidator", [self.max_width, self.max_height], {})

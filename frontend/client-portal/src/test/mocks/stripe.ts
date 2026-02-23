@@ -33,26 +33,24 @@ export const mockStripe = {
   elements: vi.fn(() => mockElements),
   createToken: vi.fn(() => Promise.resolve({ token: { id: 'tok_test' } })),
   createSource: vi.fn(() => Promise.resolve({ source: { id: 'src_test' } })),
-  createPaymentMethod: vi.fn(() =>
-    Promise.resolve({ paymentMethod: { id: 'pm_test' } })
-  ),
+  createPaymentMethod: vi.fn(() => Promise.resolve({ paymentMethod: { id: 'pm_test' } })),
   confirmCardPayment: vi.fn(() =>
-    Promise.resolve({ paymentIntent: { status: 'succeeded', id: 'pi_test' } })
+    Promise.resolve({ paymentIntent: { status: 'succeeded', id: 'pi_test' } }),
   ),
   confirmPayment: vi.fn(() =>
-    Promise.resolve({ paymentIntent: { status: 'succeeded', id: 'pi_test' } })
+    Promise.resolve({ paymentIntent: { status: 'succeeded', id: 'pi_test' } }),
   ),
   confirmCardSetup: vi.fn(() =>
-    Promise.resolve({ setupIntent: { status: 'succeeded', id: 'seti_test' } })
+    Promise.resolve({ setupIntent: { status: 'succeeded', id: 'seti_test' } }),
   ),
   confirmSetup: vi.fn(() =>
-    Promise.resolve({ setupIntent: { status: 'succeeded', id: 'seti_test' } })
+    Promise.resolve({ setupIntent: { status: 'succeeded', id: 'seti_test' } }),
   ),
   retrievePaymentIntent: vi.fn(() =>
-    Promise.resolve({ paymentIntent: { status: 'succeeded', id: 'pi_test' } })
+    Promise.resolve({ paymentIntent: { status: 'succeeded', id: 'pi_test' } }),
   ),
   handleCardAction: vi.fn(() =>
-    Promise.resolve({ paymentIntent: { status: 'succeeded', id: 'pi_test' } })
+    Promise.resolve({ paymentIntent: { status: 'succeeded', id: 'pi_test' } }),
   ),
 };
 

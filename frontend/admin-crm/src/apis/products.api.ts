@@ -22,21 +22,23 @@ import type { PaginatedResponse } from '../types/common.types';
 
 export const productsApi = {
   // Categories
-  getCategories: async (filters?: CategoryFilters & { use_pagination?: boolean }): Promise<ProductCategory[]> => {
+  getCategories: async (
+    filters?: CategoryFilters & { use_pagination?: boolean },
+  ): Promise<ProductCategory[]> => {
     const params = new URLSearchParams();
     if (filters?.search) params.append('search', filters.search);
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
     if (filters?.parent_id !== undefined) {
       params.append('parent_id', filters.parent_id?.toString() || '0');
     }
-    
+
     // Use the /all endpoint for non-paginated results
-    const endpoint = filters?.use_pagination ? 
-      `/products/categories/?${params.toString()}` : 
-      `/products/categories/all/?${params.toString()}`;
-    
+    const endpoint = filters?.use_pagination
+      ? `/products/categories/?${params.toString()}`
+      : `/products/categories/all/?${params.toString()}`;
+
     const response = await api.get(endpoint);
-    
+
     // Handle both paginated and non-paginated responses
     if (filters?.use_pagination) {
       const data = response.data as PaginatedResponse<ProductCategory> | ProductCategory[];
@@ -77,21 +79,24 @@ export const productsApi = {
   },
 
   // Products
-  getProducts: async (filters?: ProductFilters & { use_pagination?: boolean }): Promise<ProductOption[]> => {
+  getProducts: async (
+    filters?: ProductFilters & { use_pagination?: boolean },
+  ): Promise<ProductOption[]> => {
     const params = new URLSearchParams();
     if (filters?.search) params.append('search', filters.search);
     if (filters?.type) params.append('type', filters.type);
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
     if (filters?.category_id) params.append('category_id', filters.category_id.toString());
-    if (filters?.is_featured !== undefined) params.append('is_featured', filters.is_featured.toString());
-    
+    if (filters?.is_featured !== undefined)
+      params.append('is_featured', filters.is_featured.toString());
+
     // Use the /all endpoint for non-paginated results
-    const endpoint = filters?.use_pagination ? 
-      `/products/products/?${params.toString()}` : 
-      `/products/products/all/?${params.toString()}`;
-    
+    const endpoint = filters?.use_pagination
+      ? `/products/products/?${params.toString()}`
+      : `/products/products/all/?${params.toString()}`;
+
     const response = await api.get(endpoint);
-    
+
     // Handle both paginated and non-paginated responses
     if (filters?.use_pagination) {
       const data = response.data as PaginatedResponse<ProductOption> | ProductOption[];
@@ -166,7 +171,11 @@ export const productsApi = {
     return response.data;
   },
 
-  updateProduct: async (id: number, data: UpdateProductData, formData?: FormData): Promise<ProductOption> => {
+  updateProduct: async (
+    id: number,
+    data: UpdateProductData,
+    formData?: FormData,
+  ): Promise<ProductOption> => {
     // Transform event_type_ids to input_event_type_ids for backend
     const transformedData = {
       ...data,
@@ -200,20 +209,22 @@ export const productsApi = {
   },
 
   // Discounts
-  getDiscounts: async (filters?: DiscountFilters & { use_pagination?: boolean }): Promise<Discount[]> => {
+  getDiscounts: async (
+    filters?: DiscountFilters & { use_pagination?: boolean },
+  ): Promise<Discount[]> => {
     const params = new URLSearchParams();
     if (filters?.search) params.append('search', filters.search);
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
     if (filters?.is_valid !== undefined) params.append('is_valid', filters.is_valid.toString());
     if (filters?.discount_type) params.append('discount_type', filters.discount_type);
-    
+
     // Use the /all endpoint for non-paginated results
-    const endpoint = filters?.use_pagination ? 
-      `/products/discounts/?${params.toString()}` : 
-      `/products/discounts/all/?${params.toString()}`;
-    
+    const endpoint = filters?.use_pagination
+      ? `/products/discounts/?${params.toString()}`
+      : `/products/discounts/all/?${params.toString()}`;
+
     const response = await api.get(endpoint);
-    
+
     // Handle both paginated and non-paginated responses
     if (filters?.use_pagination) {
       const data = response.data as PaginatedResponse<Discount> | Discount[];
@@ -259,8 +270,14 @@ export const productsApi = {
     return response.data;
   },
 
-  validateDiscountForOrder: async (id: number, data: ValidateDiscountData): Promise<DiscountValidation> => {
-    const response = await api.post<DiscountValidation>(`/products/discounts/${id}/validate_for_order/`, data);
+  validateDiscountForOrder: async (
+    id: number,
+    data: ValidateDiscountData,
+  ): Promise<DiscountValidation> => {
+    const response = await api.post<DiscountValidation>(
+      `/products/discounts/${id}/validate_for_order/`,
+      data,
+    );
     return response.data;
   },
 };

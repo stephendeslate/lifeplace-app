@@ -132,10 +132,7 @@ console.error = (...args: unknown[]) => {
 console.warn = (...args: unknown[]) => {
   const message = args[0];
   // Suppress specific warnings
-  if (
-    typeof message === 'string' &&
-    message.includes('Failed to parse JSON from localStorage')
-  ) {
+  if (typeof message === 'string' && message.includes('Failed to parse JSON from localStorage')) {
     return;
   }
   originalWarn.call(console, ...args);

@@ -31,35 +31,35 @@ export interface BookingData {
 
   // Additional hours per venue (keyed by venue ID)
   venue_additional_hours?: Record<string, number>;
-  
+
   // Contact information
   contact_info?: ContactInfoStepData;
-  
+
   // Payment information
   payment_info?: PaymentStepData;
-  
+
   // Questionnaire responses (array of responses)
   questionnaire_responses?: Array<{
     questionnaire_id: number;
     responses: Record<string, unknown>;
   }>;
-  
+
   // Pricing information (calculated by backend)
   pricing?: PricingCalculation;
   applied_discount_code?: string;
-  
+
   // Additional information
   special_requests?: string;
   internal_notes?: string;
-  
+
   // Terms and conditions
   terms_accepted?: boolean;
   marketing_consent?: boolean;
-  
+
   // Step completion tracking
   completed_steps?: number[];
   current_step_id?: number;
-  
+
   // Metadata
   source?: string;
   referrer?: string;

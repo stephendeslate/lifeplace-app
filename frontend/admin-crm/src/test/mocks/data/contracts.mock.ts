@@ -2,8 +2,8 @@ import type {
   ContractTemplate,
   EventContract,
   ContractAmendment,
-} from "../../../types/contracts.types";
-import type { PaginatedResponse } from "../../../types/common.types";
+} from '../../../types/contracts.types';
+import type { PaginatedResponse } from '../../../types/common.types';
 
 export function createMockContractTemplate(
   overrides: Partial<ContractTemplate> = {},
@@ -14,18 +14,18 @@ export function createMockContractTemplate(
     name: `Contract Template ${id}`,
     description: `Description for template ${id}`,
     event_type: null,
-    content: "<p>Contract content here</p>",
-    variables: ["client_name", "event_date"],
+    content: '<p>Contract content here</p>',
+    variables: ['client_name', 'event_date'],
     requires_signature: true,
     sections: [],
-    signature_requirements: ["CLIENT"],
+    signature_requirements: ['CLIENT'],
     requires_witness: false,
     requires_company_signature: true,
     allows_amendments: true,
     amendment_requires_signature: true,
     is_active: true,
-    created_at: "2024-06-15T10:00:00Z",
-    updated_at: "2024-06-15T10:00:00Z",
+    created_at: '2024-06-15T10:00:00Z',
+    updated_at: '2024-06-15T10:00:00Z',
     ...overrides,
   } as ContractTemplate;
 }
@@ -51,8 +51,7 @@ export function createMockContractTemplatesPaginatedResponse(
   const end = start + pageSize;
   return {
     count: items.length,
-    next:
-      end < items.length ? `/api/contracts/templates/?page=${page + 1}` : null,
+    next: end < items.length ? `/api/contracts/templates/?page=${page + 1}` : null,
     previous: page > 1 ? `/api/contracts/templates/?page=${page - 1}` : null,
     page_count: Math.ceil(items.length / pageSize),
     current_page: page,
@@ -61,31 +60,29 @@ export function createMockContractTemplatesPaginatedResponse(
   };
 }
 
-export function createMockEventContract(
-  overrides: Partial<EventContract> = {},
-): EventContract {
+export function createMockEventContract(overrides: Partial<EventContract> = {}): EventContract {
   const id = overrides.id || Math.floor(Math.random() * 10000);
   return {
     id,
     event: 1,
     event_details: {
       id: 1,
-      name: "Test Event",
-      client_name: "John Doe",
-      start_date: "2024-07-01",
-      status: "CONFIRMED",
+      name: 'Test Event',
+      client_name: 'John Doe',
+      start_date: '2024-07-01',
+      status: 'CONFIRMED',
     },
     template: 1,
-    template_name: "Standard Contract",
-    status: "DRAFT",
-    status_display: "Draft",
-    content: "<p>Contract content</p>",
+    template_name: 'Standard Contract',
+    status: 'DRAFT',
+    status_display: 'Draft',
+    content: '<p>Contract content</p>',
     sent_at: null,
     fully_signed_at: null,
     valid_until: null,
-    contract_value: "50000.00",
-    payment_schedule_reference: "",
-    currency: "PHP",
+    contract_value: '50000.00',
+    payment_schedule_reference: '',
+    currency: 'PHP',
     is_amendment: false,
     original_contract: null,
     amendment_number: 0,
@@ -96,22 +93,22 @@ export function createMockEventContract(
     days_until_expiry: null,
     expiry_urgency: null,
     sign_disabled_reason: null,
-    contract_type: "STANDARD",
-    missing_signatures: ["CLIENT"],
+    contract_type: 'STANDARD',
+    missing_signatures: ['CLIENT'],
     signature_progress: {
       total_required: 2,
       signed_count: 0,
       percentage: 0,
-      required_roles: ["CLIENT", "COMPANY_REP"],
+      required_roles: ['CLIENT', 'COMPANY_REP'],
       signed_roles: [],
-      missing_roles: ["CLIENT", "COMPANY_REP"],
+      missing_roles: ['CLIENT', 'COMPANY_REP'],
     },
     signatures: [],
     amendment_requests: [],
     documents: [],
     notes: [],
-    created_at: "2024-06-15T10:00:00Z",
-    updated_at: "2024-06-15T10:00:00Z",
+    created_at: '2024-06-15T10:00:00Z',
+    updated_at: '2024-06-15T10:00:00Z',
     ...overrides,
   } as EventContract;
 }
@@ -120,7 +117,7 @@ export function createMockEventContracts(count: number): EventContract[] {
   return Array.from({ length: count }, (_, i) =>
     createMockEventContract({
       id: i + 1,
-      status: i % 2 === 0 ? "DRAFT" : "SENT",
+      status: i % 2 === 0 ? 'DRAFT' : 'SENT',
     }),
   );
 }
@@ -135,23 +132,23 @@ export function createMockContractAmendment(
     id,
     original_contract: 1,
     amendment_contract: null,
-    amendment_reason: "Date change requested",
-    changes_description: "Changed event date from July 1 to July 15",
+    amendment_reason: 'Date change requested',
+    changes_description: 'Changed event date from July 1 to July 15',
     section_changes: {},
-    status: "REQUESTED",
-    status_display: "Requested",
-    original_value: "50000.00",
-    new_value: "55000.00",
-    value_change: "5000.00",
+    status: 'REQUESTED',
+    status_display: 'Requested',
+    original_value: '50000.00',
+    new_value: '55000.00',
+    value_change: '5000.00',
     requested_by: 1,
-    requested_at: "2024-06-20T10:00:00Z",
+    requested_at: '2024-06-20T10:00:00Z',
     reviewed_by: null,
     reviewed_at: null,
-    review_notes: "",
+    review_notes: '',
     requires_new_signatures: true,
     signature_deadline: null,
-    created_at: "2024-06-20T10:00:00Z",
-    updated_at: "2024-06-20T10:00:00Z",
+    created_at: '2024-06-20T10:00:00Z',
+    updated_at: '2024-06-20T10:00:00Z',
     ...overrides,
   } as ContractAmendment;
 }

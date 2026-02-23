@@ -1,10 +1,11 @@
 # backend/core/domains/payments/public_views.py
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
-from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
-from django.core.cache import cache
 import logging
+
+from django.core.cache import cache
+from rest_framework import status, viewsets
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 
 from .models import PaymentGateway, PaymentSettings
 from .serializers import PublicPaymentGatewaySerializer, PublicPaymentSettingsSerializer
@@ -14,7 +15,8 @@ logger = logging.getLogger(__name__)
 
 class PublicPaymentGatewayThrottle(AnonRateThrottle):
     """Custom throttle for public payment gateway endpoint"""
-    rate = '100/hour'
+
+    rate = "100/hour"
 
 
 class PublicPaymentGatewayViewSet(viewsets.ReadOnlyModelViewSet):
@@ -35,19 +37,20 @@ class PublicPaymentGatewayViewSet(viewsets.ReadOnlyModelViewSet):
     - Rate limiting applied
     - Cached responses for performance
     """
+
     serializer_class = PublicPaymentGatewaySerializer
     permission_classes = [AllowAny]
     throttle_classes = [PublicPaymentGatewayThrottle]
 
     def get_queryset(self):
         """Return only active payment gateways"""
-        return PaymentGateway.objects.filter(is_active=True).order_by('name')
+        return PaymentGateway.objects.filter(is_active=True).order_by("name")
 
     def list(self, request, *args, **kwargs):
         """
         List all active payment gateways with caching
         """
-        cache_key = 'public_payment_gateways'
+        cache_key = "public_payment_gateways"
         cache_timeout = 300  # 5 minutes
 
         # Try to get cached response
@@ -70,8 +73,8 @@ class PublicPaymentGatewayViewSet(viewsets.ReadOnlyModelViewSet):
         """
         Retrieve a specific active payment gateway by ID
         """
-        gateway_id = kwargs.get('pk')
-        cache_key = f'public_payment_gateway_{gateway_id}'
+        gateway_id = kwargs.get("pk")
+        cache_key = f"public_payment_gateway_{gateway_id}"
         cache_timeout = 300  # 5 minutes
 
         # Try to get cached response
@@ -84,10 +87,7 @@ class PublicPaymentGatewayViewSet(viewsets.ReadOnlyModelViewSet):
         try:
             gateway = self.get_queryset().get(pk=gateway_id)
         except PaymentGateway.DoesNotExist:
-            return Response(
-                {"detail": "Payment gateway not found or not active."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"detail": "Payment gateway not found or not active."}, status=status.HTTP_404_NOT_FOUND)
 
         # Serialize and cache
         serializer = self.get_serializer(gateway)
@@ -99,7 +99,8 @@ class PublicPaymentGatewayViewSet(viewsets.ReadOnlyModelViewSet):
 
 class PublicPaymentSettingsThrottle(AnonRateThrottle):
     """Custom throttle for public payment settings endpoint"""
-    rate = '100/hour'
+
+    rate = "100/hour"
 
 
 class PublicPaymentSettingsViewSet(viewsets.ReadOnlyModelViewSet):
@@ -121,6 +122,7 @@ class PublicPaymentSettingsViewSet(viewsets.ReadOnlyModelViewSet):
     - Rate limiting applied
     - Cached responses for performance
     """
+
     serializer_class = PublicPaymentSettingsSerializer
     permission_classes = [AllowAny]
     throttle_classes = [PublicPaymentSettingsThrottle]
@@ -141,7 +143,7 @@ class PublicPaymentSettingsViewSet(viewsets.ReadOnlyModelViewSet):
         Retrieve the payment settings with caching.
         Always returns the singleton settings instance regardless of ID provided.
         """
-        cache_key = 'public_payment_settings'
+        cache_key = "public_payment_settings"
         cache_timeout = 300  # 5 minutes
 
         # Try to get cached response

@@ -1,17 +1,17 @@
 // frontend/admin-crm/src/hooks/useLayouts.test.ts
 
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
-import { useLayouts } from "./useLayouts";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { useLayouts } from './useLayouts';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
-describe("useLayouts", () => {
-  describe("useAllLayouts", () => {
-    it("fetches all layouts successfully", async () => {
+describe('useLayouts', () => {
+  describe('useAllLayouts', () => {
+    it('fetches all layouts successfully', async () => {
       const { result } = renderHook(
         () => {
           const layouts = useLayouts();
@@ -34,10 +34,10 @@ describe("useLayouts", () => {
       expect(result.current.allLayouts.totalCount).toBeGreaterThan(0);
     });
 
-    it("handles API error gracefully", async () => {
+    it('handles API error gracefully', async () => {
       server.use(
         http.get(`${BASE_URL}/communications/layouts/`, () => {
-          return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+          return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
         }),
       );
 
@@ -59,8 +59,8 @@ describe("useLayouts", () => {
     });
   });
 
-  describe("useLayout (single)", () => {
-    it("fetches single layout by ID", async () => {
+  describe('useLayout (single)', () => {
+    it('fetches single layout by ID', async () => {
       const { result } = renderHook(
         () => {
           const layouts = useLayouts();
@@ -82,8 +82,8 @@ describe("useLayouts", () => {
     });
   });
 
-  describe("useCreateLayout", () => {
-    it("creates a layout successfully", async () => {
+  describe('useCreateLayout', () => {
+    it('creates a layout successfully', async () => {
       const { result } = renderHook(
         () => {
           const layouts = useLayouts();
@@ -95,10 +95,10 @@ describe("useLayouts", () => {
 
       await act(async () => {
         result.current.createLayout.mutate({
-          name: "Test Layout",
-          header_template: "<div>Header</div>",
-          footer_template: "<div>Footer</div>",
-          wrapper_template: "<div>{{header}}{{content}}{{footer}}</div>",
+          name: 'Test Layout',
+          header_template: '<div>Header</div>',
+          footer_template: '<div>Footer</div>',
+          wrapper_template: '<div>{{header}}{{content}}{{footer}}</div>',
         });
       });
 
@@ -110,12 +110,12 @@ describe("useLayouts", () => {
       );
 
       expect(result.current.createLayout.data).toBeDefined();
-      expect(result.current.createLayout.data?.name).toBe("Test Layout");
+      expect(result.current.createLayout.data?.name).toBe('Test Layout');
     });
   });
 
-  describe("useDeleteLayout", () => {
-    it("deletes a layout successfully", async () => {
+  describe('useDeleteLayout', () => {
+    it('deletes a layout successfully', async () => {
       const { result } = renderHook(
         () => {
           const layouts = useLayouts();
@@ -138,8 +138,8 @@ describe("useLayouts", () => {
     });
   });
 
-  describe("useLayoutHistory", () => {
-    it("fetches layout history", async () => {
+  describe('useLayoutHistory', () => {
+    it('fetches layout history', async () => {
       const { result } = renderHook(
         () => {
           const layouts = useLayouts();
@@ -161,8 +161,8 @@ describe("useLayouts", () => {
     });
   });
 
-  describe("useDuplicateLayout", () => {
-    it("duplicates a layout", async () => {
+  describe('useDuplicateLayout', () => {
+    it('duplicates a layout', async () => {
       const { result } = renderHook(
         () => {
           const layouts = useLayouts();
@@ -175,7 +175,7 @@ describe("useLayouts", () => {
       await act(async () => {
         result.current.duplicateLayout.mutate({
           id: 1,
-          newName: "Duplicated Layout",
+          newName: 'Duplicated Layout',
         });
       });
 

@@ -1,17 +1,17 @@
 // frontend/client-portal/src/root.tsx
 
-import React, { Suspense, useEffect } from "react";
-import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
-import { AppProviders } from "./providers/AppProviders";
-import { ErrorBoundary as AppErrorBoundary } from "./components/common/ErrorBoundary";
-import { TestModeBanner } from "./components/common/TestModeBanner";
-import { MessengerButton } from "./components/common/MessengerButton";
-import { initGA4 } from "./utils/ga4";
-import { usePageTracking } from "./hooks/usePageTracking";
-import { hasAnalyticsConsent } from "./components/common/CookieConsent";
+import React, { Suspense, useEffect } from 'react';
+import { Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
+import { AppProviders } from './providers/AppProviders';
+import { ErrorBoundary as AppErrorBoundary } from './components/common/ErrorBoundary';
+import { TestModeBanner } from './components/common/TestModeBanner';
+import { MessengerButton } from './components/common/MessengerButton';
+import { initGA4 } from './utils/ga4';
+import { usePageTracking } from './hooks/usePageTracking';
+import { hasAnalyticsConsent } from './components/common/CookieConsent';
 
 const CookieConsent = React.lazy(() =>
-  import("./components/common/CookieConsent").then((m) => ({
+  import('./components/common/CookieConsent').then((m) => ({
     default: m.CookieConsent,
   })),
 );
@@ -32,23 +32,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Favicons */}
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="32x32"
-          href="/favicon-32x32.png"
-        />
-        <link
-          rel="icon"
-          type="image/png"
-          sizes="16x16"
-          href="/favicon-16x16.png"
-        />
-        <link
-          rel="apple-touch-icon"
-          sizes="180x180"
-          href="/apple-touch-icon.png"
-        />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 
         {/* Default Open Graph / Facebook (overridden by route meta()) */}
         <meta property="og:type" content="website" />
@@ -92,9 +78,8 @@ export default function Root() {
       initGA4();
     }
     const handleConsent = () => initGA4();
-    window.addEventListener("cookie-consent-analytics", handleConsent);
-    return () =>
-      window.removeEventListener("cookie-consent-analytics", handleConsent);
+    window.addEventListener('cookie-consent-analytics', handleConsent);
+    return () => window.removeEventListener('cookie-consent-analytics', handleConsent);
   }, []);
 
   return (
@@ -117,27 +102,25 @@ export function HydrateFallback() {
   return (
     <div
       style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        flexDirection: "column",
-        gap: "8px",
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+        gap: '8px',
       }}
     >
       <div
         style={{
-          width: "40px",
-          height: "40px",
-          border: "3px solid #e0e0e0",
-          borderTopColor: "#2d5016",
-          borderRadius: "50%",
-          animation: "spin 1s linear infinite",
+          width: '40px',
+          height: '40px',
+          border: '3px solid #e0e0e0',
+          borderTopColor: '#2d5016',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
         }}
       />
-      <p style={{ color: "#666", fontSize: "14px" }}>
-        Loading LifePlace Client Portal...
-      </p>
+      <p style={{ color: '#666', fontSize: '14px' }}>Loading LifePlace Client Portal...</p>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );

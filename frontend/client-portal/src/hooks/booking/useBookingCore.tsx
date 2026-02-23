@@ -22,10 +22,10 @@ export const useEventTypes = () => {
   const fetchEventTypes = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const types = await BookingCoreApi.getEventTypes();
-      setEventTypes(types.filter(type => type.is_active));
+      setEventTypes(types.filter((type) => type.is_active));
     } catch (err) {
       const errorMessage = ErrorHandler.extractMessage(err);
       setError(errorMessage);
@@ -56,7 +56,7 @@ export const useBookingFlows = (eventTypeId?: number) => {
   const fetchFlows = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const flowData = await BookingCoreApi.getAvailableFlows(eventTypeId);
       setFlows(flowData);
@@ -91,10 +91,10 @@ export const useBookingFlow = (flowId?: number) => {
 
   const fetchFlow = useCallback(async () => {
     if (!flowId) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const flowData = await BookingCoreApi.getFlowById(flowId);
       setFlow(flowData);
@@ -130,19 +130,19 @@ export const useBookingSession = (sessionId?: string) => {
 
   const fetchSession = useCallback(async () => {
     if (!sessionId) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const sessionData = await BookingCoreApi.getSession(sessionId);
-      
+
       // Check if session is expired
       if (BookingCoreApi.isSessionExpired(sessionData.expires_at)) {
         setError('Session has expired. Please start a new booking.');
         return;
       }
-      
+
       setSession(sessionData);
     } catch (err) {
       const errorMessage = ErrorHandler.extractMessage(err);
@@ -152,138 +152,149 @@ export const useBookingSession = (sessionId?: string) => {
     }
   }, [sessionId]);
 
-  const startSession = useCallback(async (
-    flowId: number, 
-    sessionData?: { ip_address?: string; user_agent?: string; referrer_url?: string }
-  ): Promise<BookingSessionStartResponse | null> => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await BookingCoreApi.startSession(flowId, sessionData);
-      
-      // Save to local storage for recovery
-      BookingCoreApi.saveSessionToLocal(response.session_id, {
-        session_id: response.session_id,
-        booking_flow: flowId,
-        current_step: response.current_step,
-        expires_at: response.expires_at,
-        progress_percentage: response.progress_percentage,
-      });
-      
-      return response;
-    } catch (err) {
-      const errorMessage = ErrorHandler.extractMessage(err);
-      setError(errorMessage);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const startSession = useCallback(
+    async (
+      flowId: number,
+      sessionData?: { ip_address?: string; user_agent?: string; referrer_url?: string },
+    ): Promise<BookingSessionStartResponse | null> => {
+      setLoading(true);
+      setError(null);
 
-  const updateSessionData = useCallback(async (
-    stepId: number,
-    stepData: Record<string, unknown>,
-    markCompleted: boolean = false
-  ): Promise<BookingSessionUpdateResponse | null> => {
-    if (!sessionId) {
-      setError('No active session');
-      return null;
-    }
-    
-    setLoading(true);
-    setError(null);
-    setValidationErrors({});
-    
-    try {
-      // The core API now handles the transformation internally
-      // We just pass the data and it will be wrapped properly
-      const response = await BookingCoreApi.updateSessionData(
-        sessionId,
-        stepId,
-        stepData,
-        markCompleted  // This is now properly named as mark_completed in the API
-      );
-      
-      // Update local session state
-      if (session) {
-        setSession({
-          ...session,
+      try {
+        const response = await BookingCoreApi.startSession(flowId, sessionData);
+
+        // Save to local storage for recovery
+        BookingCoreApi.saveSessionToLocal(response.session_id, {
+          session_id: response.session_id,
+          booking_flow: flowId,
           current_step: response.current_step,
+          expires_at: response.expires_at,
           progress_percentage: response.progress_percentage,
-          total_price: response.total_price,
         });
-      }
-      
-      // Handle validation errors
-      if (response.validation_errors && Object.keys(response.validation_errors).length > 0) {
-        setValidationErrors(response.validation_errors as Record<string, string[]>);
-      }
-      
-      return response;
-    } catch (err) {
-      const errorMessage = ErrorHandler.extractMessage(err);
-      const validationErrs = ErrorHandler.extractValidationErrorsAsRecord(err);
 
-      setError(errorMessage);
-      setValidationErrors(validationErrs);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, [sessionId, session]);
-
-  const validateStep = useCallback(async (
-    stepId: number,
-    stepData: Record<string, unknown>
-  ): Promise<StepValidationResult | null> => {
-    if (!sessionId) {
-      setError('No active session');
-      return null;
-    }
-    
-    try {
-      const result = await BookingCoreApi.validateStepData(sessionId, stepId, stepData);
-      
-      if (!result.isValid) {
-        const errors: Record<string, string[]> = {};
-        result.errors.forEach(error => {
-          errors[error.field] = [error.message];
-        });
-        setValidationErrors(errors);
-      } else {
-        setValidationErrors({});
+        return response;
+      } catch (err) {
+        const errorMessage = ErrorHandler.extractMessage(err);
+        setError(errorMessage);
+        return null;
+      } finally {
+        setLoading(false);
       }
-      
-      return result;
-    } catch (err) {
-      const errorMessage = ErrorHandler.extractMessage(err);
-      setError(errorMessage);
-      return null;
-    }
-  }, [sessionId]);
+    },
+    [],
+  );
 
-
-  const abandonSession = useCallback(async (reason?: string): Promise<void> => {
-    if (!sessionId) return;
-    
-    try {
-      await BookingCoreApi.abandonSession(sessionId, reason);
-      
-      // Clear session from local storage
-      BookingCoreApi.clearSessionFromLocal(sessionId);
-      
-      // Update session state
-      if (session) {
-        setSession({
-          ...session,
-          is_abandoned: true,
-        });
+  const updateSessionData = useCallback(
+    async (
+      stepId: number,
+      stepData: Record<string, unknown>,
+      markCompleted: boolean = false,
+    ): Promise<BookingSessionUpdateResponse | null> => {
+      if (!sessionId) {
+        setError('No active session');
+        return null;
       }
-    } catch (err) {
-      if (import.meta.env.DEV) console.warn('Failed to abandon session:', err);
-    }
-  }, [sessionId, session]);
+
+      setLoading(true);
+      setError(null);
+      setValidationErrors({});
+
+      try {
+        // The core API now handles the transformation internally
+        // We just pass the data and it will be wrapped properly
+        const response = await BookingCoreApi.updateSessionData(
+          sessionId,
+          stepId,
+          stepData,
+          markCompleted, // This is now properly named as mark_completed in the API
+        );
+
+        // Update local session state
+        if (session) {
+          setSession({
+            ...session,
+            current_step: response.current_step,
+            progress_percentage: response.progress_percentage,
+            total_price: response.total_price,
+          });
+        }
+
+        // Handle validation errors
+        if (response.validation_errors && Object.keys(response.validation_errors).length > 0) {
+          setValidationErrors(response.validation_errors as Record<string, string[]>);
+        }
+
+        return response;
+      } catch (err) {
+        const errorMessage = ErrorHandler.extractMessage(err);
+        const validationErrs = ErrorHandler.extractValidationErrorsAsRecord(err);
+
+        setError(errorMessage);
+        setValidationErrors(validationErrs);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [sessionId, session],
+  );
+
+  const validateStep = useCallback(
+    async (
+      stepId: number,
+      stepData: Record<string, unknown>,
+    ): Promise<StepValidationResult | null> => {
+      if (!sessionId) {
+        setError('No active session');
+        return null;
+      }
+
+      try {
+        const result = await BookingCoreApi.validateStepData(sessionId, stepId, stepData);
+
+        if (!result.isValid) {
+          const errors: Record<string, string[]> = {};
+          result.errors.forEach((error) => {
+            errors[error.field] = [error.message];
+          });
+          setValidationErrors(errors);
+        } else {
+          setValidationErrors({});
+        }
+
+        return result;
+      } catch (err) {
+        const errorMessage = ErrorHandler.extractMessage(err);
+        setError(errorMessage);
+        return null;
+      }
+    },
+    [sessionId],
+  );
+
+  const abandonSession = useCallback(
+    async (reason?: string): Promise<void> => {
+      if (!sessionId) return;
+
+      try {
+        await BookingCoreApi.abandonSession(sessionId, reason);
+
+        // Clear session from local storage
+        BookingCoreApi.clearSessionFromLocal(sessionId);
+
+        // Update session state
+        if (session) {
+          setSession({
+            ...session,
+            is_abandoned: true,
+          });
+        }
+      } catch (err) {
+        if (import.meta.env.DEV) console.warn('Failed to abandon session:', err);
+      }
+    },
+    [sessionId, session],
+  );
 
   // Only fetch session when sessionId changes
   useEffect(() => {
@@ -317,10 +328,10 @@ export const useFlowPaymentGateways = (flowId?: number) => {
 
   const fetchPaymentGateways = useCallback(async () => {
     if (!flowId) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const gateways = await BookingCoreApi.getFlowPaymentGateways(flowId);
       setPaymentGateways(gateways);
@@ -363,7 +374,7 @@ export const useSessionTimer = (expiresAt?: string) => {
     const updateTimeRemaining = () => {
       const remaining = BookingCoreApi.getSessionTimeRemaining(expiresAt);
       setTimeRemaining(remaining);
-      
+
       // Consider "expiring soon" if less than 15 minutes remain
       setIsExpiringSoon(!remaining.expired && remaining.hours === 0 && remaining.minutes <= 15);
     };
@@ -399,12 +410,12 @@ export const useSessionRecovery = () => {
 
   const attemptSessionRecovery = useCallback((sessionId: string) => {
     const sessionData = BookingCoreApi.loadSessionFromLocal(sessionId);
-    
+
     if (sessionData) {
       setRecoveredSession(sessionData);
       return sessionData;
     }
-    
+
     return null;
   }, []);
 

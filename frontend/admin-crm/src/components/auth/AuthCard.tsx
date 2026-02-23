@@ -32,15 +32,11 @@ export const AuthCard: React.FC<AuthCardProps> = ({
   return (
     <Box
       sx={{
-        backgroundColor: isDarkMode
-          ? tokens.color.neutral[900]
-          : 'white',
+        backgroundColor: isDarkMode ? tokens.color.neutral[900] : 'white',
         borderRadius: tokens.spacing.radius.xxl,
         p: { xs: 4, sm: 5 },
         border: `1px solid ${isDarkMode ? tokens.color.neutral[800] : tokens.color.neutral[200]}`,
-        boxShadow: isDarkMode
-          ? '0 4px 24px rgba(0, 0, 0, 0.4)'
-          : '0 4px 24px rgba(0, 0, 0, 0.08)',
+        boxShadow: isDarkMode ? '0 4px 24px rgba(0, 0, 0, 0.4)' : '0 4px 24px rgba(0, 0, 0, 0.08)',
       }}
     >
       {/* Header Section */}
@@ -57,9 +53,10 @@ export const AuthCard: React.FC<AuthCardProps> = ({
               <Box
                 sx={{
                   p: 2.5,
-                  borderRadius: iconVariant === 'circular'
-                    ? tokens.spacing.radius.full
-                    : tokens.spacing.radius.lg,
+                  borderRadius:
+                    iconVariant === 'circular'
+                      ? tokens.spacing.radius.full
+                      : tokens.spacing.radius.lg,
                   background: tokens.color.primary[50],
                   border: `1px solid ${tokens.color.primary[200]}`,
                   color: tokens.color.primary[600],

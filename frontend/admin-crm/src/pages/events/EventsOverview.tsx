@@ -1,6 +1,6 @@
 // Events Overview - Flat design matching Analytics page style
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -26,7 +26,7 @@ import {
   Typography,
   LinearProgress,
   CircularProgress,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Add as AddIcon,
   MoreVert as MoreVertIcon,
@@ -38,27 +38,22 @@ import {
   Timeline as TimelineIcon,
   Refresh as RefreshIcon,
   FileDownload as ExportIcon,
-} from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
-import { useLayout } from "../../contexts/LayoutContext";
-import { useEvents, useEventTypes } from "../../hooks/useEvents";
-import { useCurrencySettings } from "../../hooks/useCurrency";
-import { formatCurrency } from "../../utils/currency";
-import { EventForm } from "../../components/events/EventForm";
-import { eventsApi } from "../../apis/events.api";
-import type {
-  Event,
-  EventFilters,
-  CreateEventData,
-  EventStatus,
-} from "../../types/events.types";
-import { EVENT_STATUSES } from "../../types/events.types";
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { useLayout } from '../../contexts/LayoutContext';
+import { useEvents, useEventTypes } from '../../hooks/useEvents';
+import { useCurrencySettings } from '../../hooks/useCurrency';
+import { formatCurrency } from '../../utils/currency';
+import { EventForm } from '../../components/events/EventForm';
+import { eventsApi } from '../../apis/events.api';
+import type { Event, EventFilters, CreateEventData, EventStatus } from '../../types/events.types';
+import { EVENT_STATUSES } from '../../types/events.types';
 import {
   ModernPageLayout,
   ModernPageHeader,
   ModernEmptyState,
   DateTimeDisplay,
-} from "../../components/common";
+} from '../../components/common';
 
 export const EventsOverview: React.FC = () => {
   const navigate = useNavigate();
@@ -70,7 +65,7 @@ export const EventsOverview: React.FC = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [searchValue, setSearchValue] = useState("");
+  const [searchValue, setSearchValue] = useState('');
 
   const { useActiveEventTypes } = useEventTypes();
   const { data: eventTypes = [] } = useActiveEventTypes();
@@ -96,22 +91,19 @@ export const EventsOverview: React.FC = () => {
 
     // Events might have different currencies, but for now assume default currency
     // In the future, this should check event.currency field if it exists
-    const currency = currencySettings?.defaultCurrency || "PHP";
+    const currency = currencySettings?.defaultCurrency || 'PHP';
 
     return formatCurrency(event.total_price, currency, {
-      showSymbol: currencySettings?.displayFormat !== "code",
+      showSymbol: currencySettings?.displayFormat !== 'code',
       showCode:
-        currencySettings?.displayFormat === "code" ||
-        currencySettings?.displayFormat === "both",
-      minimumFractionDigits:
-        currencySettings?.decimalPlaces ?? (currency === "PHP" ? 0 : 2),
-      maximumFractionDigits:
-        currencySettings?.decimalPlaces ?? (currency === "PHP" ? 0 : 2),
+        currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
     });
   };
 
   useEffect(() => {
-    setBreadcrumbs([{ label: "Events" }]);
+    setBreadcrumbs([{ label: 'Events' }]);
   }, [setBreadcrumbs]);
 
   useEffect(() => {
@@ -131,9 +123,7 @@ export const EventsOverview: React.FC = () => {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
@@ -142,10 +132,7 @@ export const EventsOverview: React.FC = () => {
     navigate(`/events/${event.id}`);
   };
 
-  const handleMenuOpen = (
-    event: React.MouseEvent<HTMLElement>,
-    eventItem: Event,
-  ) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, eventItem: Event) => {
     event.stopPropagation();
     setMenuAnchor(event.currentTarget);
     setSelectedEvent(eventItem);
@@ -160,15 +147,15 @@ export const EventsOverview: React.FC = () => {
     try {
       const blob = await eventsApi.exportEvents(filters);
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
+      const a = document.createElement('a');
       a.href = url;
-      a.download = `events-${new Date().toISOString().split("T")[0]}.csv`;
+      a.download = `events-${new Date().toISOString().split('T')[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
     } catch (error) {
-      console.error("Export failed:", error);
+      console.error('Export failed:', error);
     }
   };
 
@@ -176,11 +163,11 @@ export const EventsOverview: React.FC = () => {
     setFilters((prev) => ({
       ...prev,
       [key]:
-        value === "all"
+        value === 'all'
           ? undefined
-          : value === "true"
+          : value === 'true'
             ? true
-            : value === "false"
+            : value === 'false'
               ? false
               : parseInt(value) || value,
     }));
@@ -189,33 +176,26 @@ export const EventsOverview: React.FC = () => {
 
   const getStatusColor = (status: EventStatus) => {
     switch (status) {
-      case "LEAD":
-        return "info";
-      case "CONFIRMED":
-        return "success";
-      case "COMPLETED":
-        return "default";
-      case "CANCELLED":
-        return "error";
+      case 'LEAD':
+        return 'info';
+      case 'CONFIRMED':
+        return 'success';
+      case 'COMPLETED':
+        return 'default';
+      case 'CANCELLED':
+        return 'error';
       default:
-        return "default";
+        return 'default';
     }
   };
 
-  const hasActiveFilters = Object.values(filters).some(
-    (value) => value !== undefined,
-  );
+  const hasActiveFilters = Object.values(filters).some((value) => value !== undefined);
   const filteredCount = totalEvents || 0;
 
   if (isLoadingEvents) {
     return (
       <ModernPageLayout backgroundPattern="default">
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          minHeight={400}
-        >
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
           <CircularProgress />
         </Box>
       </ModernPageLayout>
@@ -227,28 +207,28 @@ export const EventsOverview: React.FC = () => {
       {/* Page Header - flat style */}
       <ModernPageHeader
         title="Events"
-        subtitle={`${filteredCount} event${filteredCount !== 1 ? "s" : ""} found`}
+        subtitle={`${filteredCount} event${filteredCount !== 1 ? 's' : ''} found`}
         icon={<CalendarToday />}
         size="medium"
         primaryAction={{
-          label: "Add Event",
+          label: 'Add Event',
           icon: <AddIcon />,
           onClick: () => setCreateDialogOpen(true),
-          variant: "contained",
-          color: "primary",
+          variant: 'contained',
+          color: 'primary',
         }}
         secondaryActions={[
           {
-            label: "Export",
+            label: 'Export',
             icon: <ExportIcon />,
             onClick: handleExport,
-            variant: "outlined",
+            variant: 'outlined',
           },
           {
-            label: "Refresh",
+            label: 'Refresh',
             icon: <RefreshIcon />,
             onClick: () => window.location.reload(),
-            variant: "outlined",
+            variant: 'outlined',
           },
         ]}
       />
@@ -259,31 +239,27 @@ export const EventsOverview: React.FC = () => {
           title="No Events Yet"
           description="Transform your business with powerful event management. Create, track, and optimize your event workflows from lead to completion."
           primaryAction={{
-            label: "Create First Event",
+            label: 'Create First Event',
             onClick: () => setCreateDialogOpen(true),
             icon: <AddIcon />,
-            color: "primary",
+            color: 'primary',
           }}
           secondaryAction={{
-            label: "Learn About Workflows",
+            label: 'Learn About Workflows',
             onClick: () => {},
             icon: <TimelineIcon />,
           }}
           tip={{
-            text: "Link events to automated workflows to streamline your entire process from booking to completion",
-            type: "pro",
+            text: 'Link events to automated workflows to streamline your entire process from booking to completion',
+            type: 'pro',
           }}
           size="medium"
         />
       ) : (
         <>
           {/* Filters - flat style */}
-          <Box sx={{ mb: 3, p: 2, borderRadius: 1, bgcolor: "action.hover" }}>
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              spacing={2}
-              alignItems="center"
-            >
+          <Box sx={{ mb: 3, p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
               <TextField
                 size="small"
                 placeholder="Search events..."
@@ -298,9 +274,9 @@ export const EventsOverview: React.FC = () => {
               <FormControl size="small" sx={{ minWidth: 140 }}>
                 <InputLabel>Status</InputLabel>
                 <Select
-                  value={filters.status || "all"}
+                  value={filters.status || 'all'}
                   label="Status"
-                  onChange={(e) => handleFilterChange("status", e.target.value)}
+                  onChange={(e) => handleFilterChange('status', e.target.value)}
                 >
                   <MenuItem value="all">All Status</MenuItem>
                   {EVENT_STATUSES.map((status) => (
@@ -314,11 +290,9 @@ export const EventsOverview: React.FC = () => {
               <FormControl size="small" sx={{ minWidth: 140 }}>
                 <InputLabel>Event Type</InputLabel>
                 <Select
-                  value={filters.event_type || "all"}
+                  value={filters.event_type || 'all'}
                   label="Event Type"
-                  onChange={(e) =>
-                    handleFilterChange("event_type", String(e.target.value))
-                  }
+                  onChange={(e) => handleFilterChange('event_type', String(e.target.value))}
                 >
                   <MenuItem value="all">All Types</MenuItem>
                   {eventTypes.map((type) => (
@@ -336,7 +310,7 @@ export const EventsOverview: React.FC = () => {
                   color="warning"
                   onClick={() => {
                     setFilters({});
-                    setSearchValue("");
+                    setSearchValue('');
                   }}
                 >
                   Clear Filters
@@ -349,38 +323,24 @@ export const EventsOverview: React.FC = () => {
           <Box
             sx={{
               borderRadius: 1,
-              bgcolor: "background.paper",
-              overflow: "hidden",
+              bgcolor: 'background.paper',
+              overflow: 'hidden',
             }}
           >
-            <TableContainer sx={{ overflowX: "auto" }}>
+            <TableContainer sx={{ overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
-                    <TableCell
-                      sx={{ display: { xs: "none", md: "table-cell" } }}
-                    >
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                       Date & Time
                     </TableCell>
                     <TableCell>Event</TableCell>
-                    <TableCell
-                      sx={{ display: { xs: "none", md: "table-cell" } }}
-                    >
-                      Client
-                    </TableCell>
-                    <TableCell
-                      sx={{ display: { xs: "none", md: "table-cell" } }}
-                    >
-                      Type
-                    </TableCell>
-                    <TableCell
-                      sx={{ display: { xs: "none", lg: "table-cell" } }}
-                    >
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Client</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Type</TableCell>
+                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                       Workflow Progress
                     </TableCell>
-                    <TableCell
-                      sx={{ display: { xs: "none", lg: "table-cell" } }}
-                    >
+                    <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                       Current Task
                     </TableCell>
                     <TableCell>Status</TableCell>
@@ -396,9 +356,7 @@ export const EventsOverview: React.FC = () => {
                         className="table-row"
                         onClick={() => handleRowClick(event)}
                       >
-                        <TableCell
-                          sx={{ display: { xs: "none", md: "table-cell" } }}
-                        >
+                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                           <Box>
                             <DateTimeDisplay
                               date={event.start_date}
@@ -407,19 +365,9 @@ export const EventsOverview: React.FC = () => {
                               fontWeight="medium"
                             />
                             {event.lead_source && (
-                              <Box
-                                display="flex"
-                                alignItems="center"
-                                gap={0.5}
-                                mt={0.5}
-                              >
-                                <TrendingUpIcon
-                                  sx={{ fontSize: 14, color: "text.secondary" }}
-                                />
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
+                              <Box display="flex" alignItems="center" gap={0.5} mt={0.5}>
+                                <TrendingUpIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
+                                <Typography variant="caption" color="text.secondary">
                                   {event.lead_source}
                                 </Typography>
                               </Box>
@@ -430,36 +378,25 @@ export const EventsOverview: React.FC = () => {
                         <TableCell>
                           <Box>
                             <Typography variant="body2" fontWeight="medium">
-                              {event.name || "Untitled Event"}
+                              {event.name || 'Untitled Event'}
                             </Typography>
                             {event.total_price && (
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
+                              <Typography variant="caption" color="text.secondary">
                                 {formatEventPrice(event)}
                               </Typography>
                             )}
                           </Box>
                         </TableCell>
 
-                        <TableCell
-                          sx={{ display: { xs: "none", md: "table-cell" } }}
-                        >
+                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                           <Typography variant="body2">
-                            {event.client_name || "Unknown Client"}
+                            {event.client_name || 'Unknown Client'}
                           </Typography>
                         </TableCell>
 
-                        <TableCell
-                          sx={{ display: { xs: "none", md: "table-cell" } }}
-                        >
+                        <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                           {event.event_type_name ? (
-                            <Chip
-                              label={event.event_type_name}
-                              size="small"
-                              variant="outlined"
-                            />
+                            <Chip label={event.event_type_name} size="small" variant="outlined" />
                           ) : (
                             <Typography variant="body2" color="text.secondary">
                               -
@@ -467,23 +404,13 @@ export const EventsOverview: React.FC = () => {
                           )}
                         </TableCell>
 
-                        <TableCell
-                          sx={{ display: { xs: "none", lg: "table-cell" } }}
-                        >
-                          {typeof event.workflow_progress === "number" &&
+                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                          {typeof event.workflow_progress === 'number' &&
                           event.workflow_progress > 0 ? (
                             <Box sx={{ minWidth: 140 }}>
-                              <Box
-                                display="flex"
-                                alignItems="center"
-                                gap={1}
-                                mb={1}
-                              >
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {event.current_stage_name || "In Progress"}
+                              <Box display="flex" alignItems="center" gap={1} mb={1}>
+                                <Typography variant="caption" color="text.secondary">
+                                  {event.current_stage_name || 'In Progress'}
                                 </Typography>
                               </Box>
                               <LinearProgress
@@ -492,8 +419,8 @@ export const EventsOverview: React.FC = () => {
                                 sx={{
                                   height: 4,
                                   borderRadius: 2,
-                                  backgroundColor: "grey.200",
-                                  "& .MuiLinearProgress-bar": {
+                                  backgroundColor: 'grey.200',
+                                  '& .MuiLinearProgress-bar': {
                                     borderRadius: 2,
                                   },
                                 }}
@@ -501,23 +428,17 @@ export const EventsOverview: React.FC = () => {
                               <Typography
                                 variant="caption"
                                 color="text.secondary"
-                                sx={{ mt: 0.5, display: "block" }}
+                                sx={{ mt: 0.5, display: 'block' }}
                               >
                                 {Math.round(event.workflow_progress)}% complete
                               </Typography>
                             </Box>
                           ) : event.workflow_template_name ? (
                             <Box>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
+                              <Typography variant="body2" color="text.secondary">
                                 {event.workflow_template_name}
                               </Typography>
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                              >
+                              <Typography variant="caption" color="text.secondary">
                                 Not started
                               </Typography>
                             </Box>
@@ -528,9 +449,7 @@ export const EventsOverview: React.FC = () => {
                           )}
                         </TableCell>
 
-                        <TableCell
-                          sx={{ display: { xs: "none", lg: "table-cell" } }}
-                        >
+                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                           <Typography variant="body2" color="text.secondary">
                             -
                           </Typography>
@@ -539,9 +458,8 @@ export const EventsOverview: React.FC = () => {
                         <TableCell>
                           <Chip
                             label={
-                              EVENT_STATUSES.find(
-                                (s) => s.value === event.status,
-                              )?.label || event.status
+                              EVENT_STATUSES.find((s) => s.value === event.status)?.label ||
+                              event.status
                             }
                             color={getStatusColor(event.status)}
                             size="small"
@@ -550,10 +468,7 @@ export const EventsOverview: React.FC = () => {
                         </TableCell>
 
                         <TableCell>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleMenuOpen(e, event)}
-                          >
+                          <IconButton size="small" onClick={(e) => handleMenuOpen(e, event)}>
                             <MoreVertIcon />
                           </IconButton>
                         </TableCell>
@@ -577,11 +492,7 @@ export const EventsOverview: React.FC = () => {
       )}
 
       {/* Action Menu */}
-      <Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={handleMenuClose}
-      >
+      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleMenuClose}>
         <MenuItem
           onClick={() => {
             if (selectedEvent) navigate(`/events/${selectedEvent.id}`);

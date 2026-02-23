@@ -29,7 +29,7 @@ export const useSimplePricing = (
   selectedPackages: SelectedPackage[] = [],
   selectedAddons: SelectedAddon[] = [],
   discountCode?: string,
-  venueAdditionalHours?: Record<string, number>
+  venueAdditionalHours?: Record<string, number>,
 ) => {
   const { state, actions } = useBooking();
   const [pricing, setPricing] = useState<SimplePricingBreakdown>({
@@ -54,8 +54,9 @@ export const useSimplePricing = (
 
   // Simple check if we have items
   const hasItems = selectedPackages.length > 0 || selectedAddons.length > 0;
-  const totalItemCount = selectedPackages.reduce((sum, pkg) => sum + pkg.quantity, 0) +
-                        selectedAddons.reduce((sum, addon) => sum + addon.quantity, 0);
+  const totalItemCount =
+    selectedPackages.reduce((sum, pkg) => sum + pkg.quantity, 0) +
+    selectedAddons.reduce((sum, addon) => sum + addon.quantity, 0);
 
   // Serialize venue hours for dependency comparison
   const venueHoursKey = JSON.stringify(venueAdditionalHours || {});
@@ -85,7 +86,7 @@ export const useSimplePricing = (
       const result = await BookingCoreApi.calculatePricing(
         state.currentSession.session_id,
         discountCode,
-        venueAdditionalHours
+        venueAdditionalHours,
       );
 
       const subtotal = parseFloat(result.subtotal);
@@ -123,8 +124,9 @@ export const useSimplePricing = (
       if (import.meta.env.DEV) console.error('Pricing calculation error:', err);
 
       // Fallback calculation if server fails - use ref tax rate, no hardcoded default
-      const subtotal = selectedPackages.reduce((sum, pkg) => sum + parseFloat(pkg.price) * pkg.quantity, 0) +
-                     selectedAddons.reduce((sum, addon) => sum + parseFloat(addon.price) * addon.quantity, 0);
+      const subtotal =
+        selectedPackages.reduce((sum, pkg) => sum + parseFloat(pkg.price) * pkg.quantity, 0) +
+        selectedAddons.reduce((sum, addon) => sum + parseFloat(addon.price) * addon.quantity, 0);
       const tax = subtotal * (taxRateRef.current || 0);
       const total = subtotal + tax;
 
@@ -142,12 +144,20 @@ export const useSimplePricing = (
     } finally {
       setLoading(false);
     }
-  // Note: actions is intentionally omitted from deps - it's not memoized in BookingContext
-  // and would cause infinite loops. The individual action functions (setTaxRate) are stable.
-  // taxRateRef is used instead of state.taxRate to avoid circular dependency:
-  // setTaxRate -> state change -> callback recreate -> useEffect trigger -> API call -> repeat
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state.currentSession, hasItems, discountCode, selectedPackages, selectedAddons, venueAdditionalHours, venueHoursKey]);
+    // Note: actions is intentionally omitted from deps - it's not memoized in BookingContext
+    // and would cause infinite loops. The individual action functions (setTaxRate) are stable.
+    // taxRateRef is used instead of state.taxRate to avoid circular dependency:
+    // setTaxRate -> state change -> callback recreate -> useEffect trigger -> API call -> repeat
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    state.currentSession,
+    hasItems,
+    discountCode,
+    selectedPackages,
+    selectedAddons,
+    venueAdditionalHours,
+    venueHoursKey,
+  ]);
 
   // Recalculate when dependencies change
   useEffect(() => {

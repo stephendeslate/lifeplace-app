@@ -6,6 +6,7 @@ Ensures all template variables use correct, verified frontend routes.
 This module provides a single source of truth for all client-facing URLs
 used in email templates, contracts, and other communications.
 """
+
 from django.conf import settings
 
 
@@ -33,7 +34,7 @@ class ClientPortalURLBuilder:
     @classmethod
     def get_base_url(cls) -> str:
         """Get the base URL for the client portal."""
-        return getattr(settings, 'CLIENT_FRONTEND_URL', 'https://lifeplace.dev')
+        return getattr(settings, "CLIENT_FRONTEND_URL", "https://lifeplace.dev")
 
     # ==================== Navigation URLs ====================
 

@@ -34,7 +34,11 @@ export const ContractEdit: React.FC = () => {
   const [contractValue, setContractValue] = useState('');
   const [validUntil, setValidUntil] = useState('');
 
-  const { data: contract, isLoading, error } = useEventContract(contractId ? parseInt(contractId) : 0);
+  const {
+    data: contract,
+    isLoading,
+    error,
+  } = useEventContract(contractId ? parseInt(contractId) : 0);
   const { mutate: updateContract, isPending: isUpdating } = useUpdateEventContract();
 
   // Set breadcrumbs via layout context
@@ -44,7 +48,10 @@ export const ContractEdit: React.FC = () => {
 
       setBreadcrumbs([
         { label: 'Events', path: '/events' },
-        { label: eventName, path: contract.event_details?.id ? `/events/${contract.event_details.id}` : '/events' },
+        {
+          label: eventName,
+          path: contract.event_details?.id ? `/events/${contract.event_details.id}` : '/events',
+        },
         { label: `Contract #${contract.id}`, path: `/contracts/${contract.id}` },
         { label: 'Edit' },
       ]);
@@ -95,7 +102,7 @@ export const ContractEdit: React.FC = () => {
             message: 'Failed to update the contract. Please try again.',
           });
         },
-      }
+      },
     );
   };
 
@@ -117,9 +124,7 @@ export const ContractEdit: React.FC = () => {
   if (error || !contract) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="error">
-          Failed to load contract. Please try again.
-        </Alert>
+        <Alert severity="error">Failed to load contract. Please try again.</Alert>
       </Box>
     );
   }
@@ -127,10 +132,14 @@ export const ContractEdit: React.FC = () => {
   // Get status color
   const getStatusColor = (): 'secondary' | 'info' | 'success' | 'warning' => {
     switch (contract.status) {
-      case 'DRAFT': return 'secondary';
-      case 'SENT': return 'info';
-      case 'SIGNED': return 'success';
-      default: return 'warning';
+      case 'DRAFT':
+        return 'secondary';
+      case 'SENT':
+        return 'info';
+      case 'SIGNED':
+        return 'success';
+      default:
+        return 'warning';
     }
   };
 
@@ -173,11 +182,7 @@ export const ContractEdit: React.FC = () => {
             </Box>
           </Box>
           <Stack direction="row" spacing={2}>
-            <Button
-              variant="outlined"
-              startIcon={<ArrowBackIcon />}
-              onClick={handleBackToContract}
-            >
+            <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleBackToContract}>
               Cancel
             </Button>
             <Button

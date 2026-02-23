@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/actions/ContractActionCard.tsx
 
-import React from "react";
+import React from 'react';
 import {
   Stack,
   Button,
@@ -10,16 +10,16 @@ import {
   LinearProgress,
   useTheme,
   Alert,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Edit as SignIcon,
   Visibility as ViewIcon,
   Warning as ExpiringIcon,
   Email as ContactIcon,
-} from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
-import { ActionCard } from "./ActionCard";
-import type { ContractActionItem } from "../../types/action-center.types";
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { ActionCard } from './ActionCard';
+import type { ContractActionItem } from '../../types/action-center.types';
 
 interface ContractActionCardProps {
   action: ContractActionItem;
@@ -60,11 +60,10 @@ export const ContractActionCard: React.FC<ContractActionCardProps> = ({
     action.daysUntilExpiry <= 3 &&
     action.daysUntilExpiry > 0;
   const isExpired =
-    action.isExpired ||
-    (action.daysUntilExpiry !== null && action.daysUntilExpiry <= 0);
+    action.isExpired || (action.daysUntilExpiry !== null && action.daysUntilExpiry <= 0);
 
   const handleContactSupport = () => {
-    navigate("/action-center?subject=Contract Extension Request");
+    navigate('/action-center?subject=Contract Extension Request');
   };
 
   return (
@@ -74,9 +73,9 @@ export const ContractActionCard: React.FC<ContractActionCardProps> = ({
         <Box>
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               mb: 0.5,
             }}
           >
@@ -84,8 +83,7 @@ export const ContractActionCard: React.FC<ContractActionCardProps> = ({
               Signature Progress
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              {signatureProgress.signed_count}/
-              {signatureProgress.total_required} signatures
+              {signatureProgress.signed_count}/{signatureProgress.total_required} signatures
             </Typography>
           </Box>
 
@@ -96,7 +94,7 @@ export const ContractActionCard: React.FC<ContractActionCardProps> = ({
               height: 6,
               borderRadius: 3,
               backgroundColor: theme.palette.grey[200],
-              "& .MuiLinearProgress-bar": {
+              '& .MuiLinearProgress-bar': {
                 borderRadius: 3,
                 backgroundColor:
                   progressPercentage === 100
@@ -119,42 +117,42 @@ export const ContractActionCard: React.FC<ContractActionCardProps> = ({
           <Chip
             label={
               isExpired
-                ? "Expired"
-                : action.contractStatus === "PARTIALLY_SIGNED"
-                  ? "Partially Signed"
-                  : "Awaiting Signature"
+                ? 'Expired'
+                : action.contractStatus === 'PARTIALLY_SIGNED'
+                  ? 'Partially Signed'
+                  : 'Awaiting Signature'
             }
             size="small"
             color={
               isExpired
-                ? "error"
-                : action.contractStatus === "PARTIALLY_SIGNED"
-                  ? "warning"
-                  : "info"
+                ? 'error'
+                : action.contractStatus === 'PARTIALLY_SIGNED'
+                  ? 'warning'
+                  : 'info'
             }
-            variant={isExpired ? "filled" : "outlined"}
-            sx={{ fontSize: "0.7rem" }}
+            variant={isExpired ? 'filled' : 'outlined'}
+            sx={{ fontSize: '0.7rem' }}
           />
 
           {isExpired && (
             <Chip
-              icon={<ExpiringIcon sx={{ fontSize: "0.875rem !important" }} />}
+              icon={<ExpiringIcon sx={{ fontSize: '0.875rem !important' }} />}
               label="Expired"
               color="error"
               size="small"
               variant="filled"
-              sx={{ fontSize: "0.7rem" }}
+              sx={{ fontSize: '0.7rem' }}
             />
           )}
 
           {!isExpired && isExpiringSoon && (
             <Chip
-              icon={<ExpiringIcon sx={{ fontSize: "0.875rem !important" }} />}
-              label={`Expires in ${action.daysUntilExpiry} day${action.daysUntilExpiry !== 1 ? "s" : ""}`}
+              icon={<ExpiringIcon sx={{ fontSize: '0.875rem !important' }} />}
+              label={`Expires in ${action.daysUntilExpiry} day${action.daysUntilExpiry !== 1 ? 's' : ''}`}
               color="warning"
               size="small"
               variant="filled"
-              sx={{ fontSize: "0.7rem" }}
+              sx={{ fontSize: '0.7rem' }}
             />
           )}
 
@@ -170,13 +168,8 @@ export const ContractActionCard: React.FC<ContractActionCardProps> = ({
 
         {/* Expired Contract Message */}
         {isExpired && action.signDisabledReason && (
-          <Alert
-            severity="error"
-            sx={{ py: 0.5, "& .MuiAlert-message": { py: 0 } }}
-          >
-            <Typography variant="caption">
-              {action.signDisabledReason}
-            </Typography>
+          <Alert severity="error" sx={{ py: 0.5, '& .MuiAlert-message': { py: 0 } }}>
+            <Typography variant="caption">{action.signDisabledReason}</Typography>
           </Alert>
         )}
 
@@ -190,7 +183,7 @@ export const ContractActionCard: React.FC<ContractActionCardProps> = ({
               e.stopPropagation();
               handleView();
             }}
-            sx={{ fontSize: "0.75rem" }}
+            sx={{ fontSize: '0.75rem' }}
           >
             View Contract
           </Button>
@@ -205,7 +198,7 @@ export const ContractActionCard: React.FC<ContractActionCardProps> = ({
                 handleSign();
               }}
               color="primary"
-              sx={{ fontSize: "0.75rem" }}
+              sx={{ fontSize: '0.75rem' }}
             >
               Sign Now
             </Button>
@@ -221,7 +214,7 @@ export const ContractActionCard: React.FC<ContractActionCardProps> = ({
                 handleContactSupport();
               }}
               color="primary"
-              sx={{ fontSize: "0.75rem" }}
+              sx={{ fontSize: '0.75rem' }}
             >
               Request Extension
             </Button>

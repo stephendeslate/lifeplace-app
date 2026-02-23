@@ -1,0 +1,23 @@
+{
+  "name": "lifeplace-app",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "npm@11.3.0",
+  "workspaces": [
+    "frontend/admin-crm",
+    "frontend/client-portal",
+    "frontend/shared"
+  ],
+  "devDependencies": {
+    "prettier": "^3.4.0",
+    "turbo": "^2.3.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "format": "turbo run format",
+    "format:check": "turbo run format:check"
+  }
+}

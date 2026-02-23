@@ -5,12 +5,33 @@
 // import AccessibleButton, { PrimaryButton, SecondaryButton, GlassButton, RoundedButton, LoadingButton } from './components/AccessibleButton';
 // import GlassCard, { GlassCardSubtle, GlassCardMedium, GlassCardStrong, InteractiveGlassCard, ColoredGlassCard } from './components/GlassCard';
 import Button from './components/Button';
-import AnimatedElement, { FadeIn, SlideUp, SlideDown, ZoomIn, BounceIn, Reveal, BlurIn } from './components/AnimatedElement';
+import AnimatedElement, {
+  FadeIn,
+  SlideUp,
+  SlideDown,
+  ZoomIn,
+  BounceIn,
+  Reveal,
+  BlurIn,
+} from './components/AnimatedElement';
 import IconButton from './components/IconButton';
 import { createAdminTheme, adminLightTheme, adminDarkTheme } from './themes/admin';
 import { createClientTheme, clientLightTheme, clientDarkTheme } from './themes/client';
 import { designTokens } from './tokens/base';
-import { breakpoints, mediaQuery, createResponsiveValue, createContainer, createGrid, flex, createResponsiveTypography, spacing, visibility, createThemeResponsive, useResponsiveValue, containerWidths } from './utils/responsive';
+import {
+  breakpoints,
+  mediaQuery,
+  createResponsiveValue,
+  createContainer,
+  createGrid,
+  flex,
+  createResponsiveTypography,
+  spacing,
+  visibility,
+  createThemeResponsive,
+  useResponsiveValue,
+  containerWidths,
+} from './utils/responsive';
 
 // Export design tokens
 export { designTokens, type DesignTokens } from './tokens/base';
@@ -28,17 +49,9 @@ export type {
 } from './tokens/base';
 
 // Export theme configurations
-export {
-  createAdminTheme,
-  adminLightTheme,
-  adminDarkTheme,
-} from './themes/admin';
+export { createAdminTheme, adminLightTheme, adminDarkTheme } from './themes/admin';
 
-export {
-  createClientTheme,
-  clientLightTheme,
-  clientDarkTheme,
-} from './themes/client';
+export { createClientTheme, clientLightTheme, clientDarkTheme } from './themes/client';
 
 // Export shared components
 // Legacy components - commented out to prevent compilation issues in CI/CD
@@ -108,10 +121,7 @@ export {
   containerWidths,
 } from './utils/responsive';
 
-export type {
-  Breakpoint,
-  ResponsiveValue,
-} from './utils/responsive';
+export type { Breakpoint, ResponsiveValue } from './utils/responsive';
 
 // Design system version and metadata
 export const DESIGN_SYSTEM_VERSION = '2.0.0';
@@ -128,58 +138,58 @@ export const getTheme = (app: 'admin' | 'client', mode: 'light' | 'dark' = 'ligh
 // CSS Variables injection utility
 export const injectDesignTokens = () => {
   if (typeof document === 'undefined') return;
-  
+
   const root = document.documentElement;
-  
+
   // Color tokens
   Object.entries(designTokens.colors.brand.primary).forEach(([shade, color]) => {
     root.style.setProperty(`--color-primary-${shade}`, color);
   });
-  
+
   Object.entries(designTokens.colors.brand.secondary).forEach(([shade, color]) => {
     root.style.setProperty(`--color-secondary-${shade}`, color);
   });
-  
+
   Object.entries(designTokens.colors.neutral).forEach(([shade, color]) => {
     root.style.setProperty(`--color-neutral-${shade}`, color);
   });
-  
+
   // Semantic colors
   Object.entries(designTokens.colors.semantic).forEach(([semantic, shades]) => {
     Object.entries(shades).forEach(([shade, color]) => {
       root.style.setProperty(`--color-${semantic}-${shade}`, color as string);
     });
   });
-  
+
   // Spacing tokens
   Object.entries(designTokens.spacing.space).forEach(([key, value]) => {
     root.style.setProperty(`--space-${key}`, `${value}px`);
   });
-  
+
   Object.entries(designTokens.spacing.radius).forEach(([key, value]) => {
     root.style.setProperty(`--radius-${key}`, value);
   });
-  
+
   // Typography tokens
   Object.entries(designTokens.typography.fontSize).forEach(([key, value]) => {
     root.style.setProperty(`--font-size-${key}`, `${value}px`);
   });
-  
+
   // Shadow tokens
   Object.entries(designTokens.shadows.elevation).forEach(([key, value]) => {
     root.style.setProperty(`--shadow-${key}`, value);
   });
-  
+
   // Animation tokens
   Object.entries(designTokens.animations.transitions).forEach(([key, value]) => {
     root.style.setProperty(`--transition-${key}`, value);
   });
-  
+
   // Animation duration tokens
   Object.entries(designTokens.animations.duration).forEach(([key, value]) => {
     root.style.setProperty(`--duration-${key}`, value);
   });
-  
+
   // Glass effect tokens
   Object.entries(designTokens.glass.light).forEach(([intensity, effect]) => {
     if (typeof effect === 'object' && effect !== null && 'background' in effect) {
@@ -188,7 +198,7 @@ export const injectDesignTokens = () => {
       root.style.setProperty(`--glass-light-${intensity}-blur`, effect.blur);
     }
   });
-  
+
   Object.entries(designTokens.glass.dark).forEach(([intensity, effect]) => {
     if (typeof effect === 'object' && effect !== null && 'background' in effect) {
       root.style.setProperty(`--glass-dark-${intensity}-bg`, effect.background);
@@ -206,13 +216,13 @@ export const a11y = {
     // This is a placeholder implementation
     return 4.5; // WCAG AA compliance minimum
   },
-  
+
   // Focus ring utility
   focusRing: {
     outline: `2px solid ${designTokens.colors.brand.primary[500]}`,
     outlineOffset: '2px',
   },
-  
+
   // Screen reader utilities
   screenReaderOnly: {
     position: 'absolute' as const,
@@ -225,13 +235,13 @@ export const a11y = {
     whiteSpace: 'nowrap' as const,
     border: '0',
   },
-  
+
   // Motion preferences
   respectsReducedMotion: () => {
     if (typeof window === 'undefined') return false;
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   },
-  
+
   // High contrast mode detection
   respectsHighContrast: () => {
     if (typeof window === 'undefined') return false;
@@ -246,13 +256,13 @@ export const performance = {
     // This would typically use React.lazy in the consuming application
     return importFn;
   },
-  
+
   // Critical CSS extraction helper
   extractCriticalCSS: () => {
     // Placeholder for critical CSS extraction logic
     return '';
   },
-  
+
   // Bundle size analyzer
   analyzeBundleSize: () => {
     // Placeholder for bundle analysis

@@ -12,18 +12,14 @@ import {
   IconButton,
   Tooltip,
 } from '@mui/material';
-import {
-  Close as CloseIcon,
-  Add as AddIcon,
-  Quiz as QuestionnaireIcon,
-} from '@mui/icons-material';
+import { Close as CloseIcon, Add as AddIcon, Quiz as QuestionnaireIcon } from '@mui/icons-material';
 import { QuestionnaireFieldsTable } from './QuestionnaireFieldsTable';
 import { FieldFormDialog } from './FieldFormDialog';
 import { useQuestionnaireFields } from '../../hooks/useQuestionnaires';
 import type {
   QuestionnaireField,
   CreateQuestionnaireFieldData,
-  UpdateQuestionnaireFieldData
+  UpdateQuestionnaireFieldData,
 } from '../../types/questionnaires.types';
 
 export interface ManageQuestionsDialogProps {
@@ -53,10 +49,7 @@ export const ManageQuestionsDialog: React.FC<ManageQuestionsDialogProps> = ({
     isDeletingField,
   } = useQuestionnaireFields();
 
-  const {
-    data: fields = [],
-    isLoading: isLoadingFields
-  } = useFields(questionnaire?.id || 0);
+  const { data: fields = [], isLoading: isLoadingFields } = useFields(questionnaire?.id || 0);
 
   const handleAddField = () => {
     setEditingField(null);
@@ -83,7 +76,7 @@ export const ManageQuestionsDialog: React.FC<ManageQuestionsDialogProps> = ({
             setFieldDialogOpen(false);
             setEditingField(null);
           },
-        }
+        },
       );
     } else {
       createField(data as CreateQuestionnaireFieldData, {

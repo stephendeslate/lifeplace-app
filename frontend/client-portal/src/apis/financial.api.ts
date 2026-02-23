@@ -1,6 +1,6 @@
 // frontend/client-portal/src/apis/financial.api.ts
 
-import api from "../utils/api";
+import api from '../utils/api';
 import type {
   Payment,
   Invoice,
@@ -23,7 +23,7 @@ import type {
   SetupIntentResponse,
   PaymentPlanRequest,
   InvoicePaymentResponse,
-} from "../types/financial.types";
+} from '../types/financial.types';
 
 /**
  * Financial API service for client portal
@@ -43,15 +43,15 @@ export class FinancialApi {
     const params = new URLSearchParams();
 
     if (filters) {
-      if (filters.status) params.append("status", filters.status);
-      if (filters.event) params.append("event", filters.event.toString());
-      if (filters.start_date) params.append("start_date", filters.start_date);
-      if (filters.end_date) params.append("end_date", filters.end_date);
-      if (filters.search) params.append("search", filters.search);
+      if (filters.status) params.append('status', filters.status);
+      if (filters.event) params.append('event', filters.event.toString());
+      if (filters.start_date) params.append('start_date', filters.start_date);
+      if (filters.end_date) params.append('end_date', filters.end_date);
+      if (filters.search) params.append('search', filters.search);
     }
 
-    if (page) params.append("page", page.toString());
-    if (pageSize) params.append("page_size", pageSize.toString());
+    if (page) params.append('page', page.toString());
+    if (pageSize) params.append('page_size', pageSize.toString());
 
     const response = await api.get<PaginatedResponse<Payment>>(
       `/payments/client/payments/?${params.toString()}`,
@@ -63,9 +63,7 @@ export class FinancialApi {
    * Get single payment details
    */
   static async getPayment(paymentId: number): Promise<Payment> {
-    const response = await api.get<Payment>(
-      `/payments/client/payments/${paymentId}/`,
-    );
+    const response = await api.get<Payment>(`/payments/client/payments/${paymentId}/`);
     return response.data;
   }
 
@@ -73,9 +71,7 @@ export class FinancialApi {
    * Get payment summary statistics
    */
   static async getPaymentSummary(): Promise<PaymentSummary> {
-    const response = await api.get<PaymentSummary>(
-      "/payments/client/payments/summary/",
-    );
+    const response = await api.get<PaymentSummary>('/payments/client/payments/summary/');
     return response.data;
   }
 
@@ -83,7 +79,7 @@ export class FinancialApi {
    * Get payment settings including default currency
    */
   static async getPaymentSettings(): Promise<PaymentSettings> {
-    const response = await api.get<PaymentSettings>("/payments/settings/");
+    const response = await api.get<PaymentSettings>('/payments/settings/');
     return response.data;
   }
 
@@ -93,9 +89,7 @@ export class FinancialApi {
    * Uses public endpoint (no authentication required) for booking flows
    */
   static async getPaymentPlanSettings(): Promise<PaymentPlanSettings> {
-    const response = await api.get<PaymentPlanSettings>(
-      "/payments/public/settings/1/",
-    );
+    const response = await api.get<PaymentPlanSettings>('/payments/public/settings/1/');
     // Public endpoint returns single object (singleton settings)
     return response.data;
   }
@@ -104,9 +98,7 @@ export class FinancialApi {
    * Get active payment gateways with multiple fallback strategies
    * Priority: 1) Booking flow endpoint (if flowId), 2) Public endpoint, 3) Client endpoint
    */
-  static async getActivePaymentGateways(
-    flowId?: number,
-  ): Promise<PaymentGateway[]> {
+  static async getActivePaymentGateways(flowId?: number): Promise<PaymentGateway[]> {
     try {
       if (flowId) {
         // Priority 1: Use public booking flow endpoint for client access
@@ -119,21 +111,17 @@ export class FinancialApi {
       } else {
         // Priority 2: Use new public payment gateways endpoint when no flowId provided
         try {
-          const response = await api.get<PaymentGateway[]>(
-            "/payments/public/gateways/",
-          );
+          const response = await api.get<PaymentGateway[]>('/payments/public/gateways/');
           return response.data || [];
         } catch (_publicError) {
           // Priority 3: Fall back to client endpoint if public endpoint fails
           try {
-            const response = await api.get<PaymentGateway[]>(
-              "/payments/client/gateways/",
-            );
+            const response = await api.get<PaymentGateway[]>('/payments/client/gateways/');
             return response.data || [];
           } catch (_clientError) {
             // Priority 4: Final fallback to admin endpoint (might require auth)
             const response = await api.get<PaginatedResponse<PaymentGateway>>(
-              "/payments/gateways/?is_active=true",
+              '/payments/gateways/?is_active=true',
             );
             return response.data.results || [];
           }
@@ -143,23 +131,16 @@ export class FinancialApi {
       // If all endpoints fail, try the remaining fallback endpoints
       try {
         // Try public endpoint as final fallback
-        const response = await api.get<PaymentGateway[]>(
-          "/payments/public/gateways/",
-        );
+        const response = await api.get<PaymentGateway[]>('/payments/public/gateways/');
         return response.data || [];
       } catch (_publicFallbackError) {
         try {
           // Try client endpoint as final fallback
-          const response = await api.get<PaymentGateway[]>(
-            "/payments/client/gateways/",
-          );
+          const response = await api.get<PaymentGateway[]>('/payments/client/gateways/');
           return response.data || [];
         } catch (_clientFallbackError) {
           if (import.meta.env.DEV)
-            console.error(
-              "Failed to fetch payment gateways from all endpoints:",
-              error,
-            );
+            console.error('Failed to fetch payment gateways from all endpoints:', error);
           throw error; // Throw original error
         }
       }
@@ -172,16 +153,12 @@ export class FinancialApi {
    */
   static async getClientPaymentGateways(): Promise<PaymentGateway[]> {
     try {
-      const response = await api.get<PaymentGateway[]>(
-        "/payments/client/gateways/",
-      );
+      const response = await api.get<PaymentGateway[]>('/payments/client/gateways/');
       return response.data || [];
     } catch (error) {
       if (import.meta.env.DEV)
-        console.error("Client payment gateways endpoint not available:", error);
-      throw new Error(
-        "Unable to access payment gateways. Please try again or contact support.",
-      );
+        console.error('Client payment gateways endpoint not available:', error);
+      throw new Error('Unable to access payment gateways. Please try again or contact support.');
     }
   }
 
@@ -190,34 +167,27 @@ export class FinancialApi {
    */
   static async downloadPaymentReceipt(paymentId: number): Promise<Blob> {
     try {
-      const response = await api.get(
-        `/payments/client/payments/${paymentId}/download_receipt/`,
-        {
-          responseType: "blob",
-        },
-      );
+      const response = await api.get(`/payments/client/payments/${paymentId}/download_receipt/`, {
+        responseType: 'blob',
+      });
 
       // Check if the response is actually an error (JSON) instead of a PDF
       const dataBlob = response.data as Blob;
-      if (dataBlob.type === "application/json") {
+      if (dataBlob.type === 'application/json') {
         // Parse the error from blob
         const text = await dataBlob.text();
         const errorData = JSON.parse(text);
-        throw new Error(errorData.detail || "Failed to download receipt");
+        throw new Error(errorData.detail || 'Failed to download receipt');
       }
 
       return response.data as Blob;
     } catch (error: unknown) {
       // If it's an axios error with a blob response, try to parse it
-      if (
-        (error as { response?: { data?: Blob } }).response?.data instanceof Blob
-      ) {
+      if ((error as { response?: { data?: Blob } }).response?.data instanceof Blob) {
         try {
-          const text = await (
-            error as { response: { data: Blob } }
-          ).response.data.text();
+          const text = await (error as { response: { data: Blob } }).response.data.text();
           const errorData = JSON.parse(text);
-          throw new Error(errorData.detail || "Failed to download receipt");
+          throw new Error(errorData.detail || 'Failed to download receipt');
         } catch (_parseError) {
           // If we can't parse it, throw the original error
           throw error;
@@ -240,13 +210,13 @@ export class FinancialApi {
     const params = new URLSearchParams();
 
     if (filters) {
-      if (filters.status) params.append("status", filters.status);
-      if (filters.event) params.append("event", filters.event.toString());
-      if (filters.search) params.append("search", filters.search);
+      if (filters.status) params.append('status', filters.status);
+      if (filters.event) params.append('event', filters.event.toString());
+      if (filters.search) params.append('search', filters.search);
     }
 
-    if (page) params.append("page", page.toString());
-    if (pageSize) params.append("page_size", pageSize.toString());
+    if (page) params.append('page', page.toString());
+    if (pageSize) params.append('page_size', pageSize.toString());
 
     const response = await api.get<PaginatedResponse<Invoice>>(
       `/payments/client/invoices/?${params.toString()}`,
@@ -258,9 +228,7 @@ export class FinancialApi {
    * Get single invoice details
    */
   static async getInvoice(invoiceId: number): Promise<Invoice> {
-    const response = await api.get<Invoice>(
-      `/payments/client/invoices/${invoiceId}/`,
-    );
+    const response = await api.get<Invoice>(`/payments/client/invoices/${invoiceId}/`);
     return response.data;
   }
 
@@ -269,34 +237,27 @@ export class FinancialApi {
    */
   static async downloadInvoicePdf(invoiceId: number): Promise<Blob> {
     try {
-      const response = await api.get(
-        `/payments/client/invoices/${invoiceId}/download_pdf/`,
-        {
-          responseType: "blob",
-        },
-      );
+      const response = await api.get(`/payments/client/invoices/${invoiceId}/download_pdf/`, {
+        responseType: 'blob',
+      });
 
       // Check if the response is actually an error (JSON) instead of a PDF
       const dataBlob = response.data as Blob;
-      if (dataBlob.type === "application/json") {
+      if (dataBlob.type === 'application/json') {
         // Parse the error from blob
         const text = await dataBlob.text();
         const errorData = JSON.parse(text);
-        throw new Error(errorData.detail || "Failed to download invoice");
+        throw new Error(errorData.detail || 'Failed to download invoice');
       }
 
       return response.data as Blob;
     } catch (error: unknown) {
       // If it's an axios error with a blob response, try to parse it
-      if (
-        (error as { response?: { data?: Blob } }).response?.data instanceof Blob
-      ) {
+      if ((error as { response?: { data?: Blob } }).response?.data instanceof Blob) {
         try {
-          const text = await (
-            error as { response: { data: Blob } }
-          ).response.data.text();
+          const text = await (error as { response: { data: Blob } }).response.data.text();
           const errorData = JSON.parse(text);
-          throw new Error(errorData.detail || "Failed to download invoice");
+          throw new Error(errorData.detail || 'Failed to download invoice');
         } catch (_parseError) {
           // If we can't parse it, throw the original error
           throw error;
@@ -330,7 +291,7 @@ export class FinancialApi {
   static async createInvoicePaymentIntent(
     invoiceId: number,
     gatewayCode: string,
-    paymentType: "FULL" | "DEPOSIT" = "FULL",
+    paymentType: 'FULL' | 'DEPOSIT' = 'FULL',
   ): Promise<PaymentIntentResponse> {
     try {
       const response = await api.post<PaymentIntentResponse>(
@@ -353,7 +314,7 @@ export class FinancialApi {
     try {
       const response = await api.post<SetupIntentResponse>(
         `/payments/client/payment-methods/setup_intent/`,
-        { gateway_code: "stripe" },
+        { gateway_code: 'stripe' },
       );
       return response.data;
     } catch (error: unknown) {
@@ -369,8 +330,7 @@ export class FinancialApi {
     invoiceId: number,
     planData: PaymentPlanRequest,
   ): Promise<PaymentPlan> {
-    if (import.meta.env.DEV)
-      console.warn("⚠️ WIP: Payment plan setup is currently disabled");
+    if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plan setup is currently disabled');
     try {
       const response = await api.post<PaymentPlan>(
         `/payments/client/invoices/${invoiceId}/setup_payment_plan/`,
@@ -390,10 +350,9 @@ export class FinancialApi {
    * ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
    */
   static async getPaymentPlans(): Promise<PaginatedResponse<PaymentPlan>> {
-    if (import.meta.env.DEV)
-      console.warn("⚠️ WIP: Payment plans API is currently disabled");
+    if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plans API is currently disabled');
     const response = await api.get<PaginatedResponse<PaymentPlan>>(
-      "/payments/client/payment-plans/",
+      '/payments/client/payment-plans/',
     );
     return response.data;
   }
@@ -403,11 +362,8 @@ export class FinancialApi {
    * ⚠️ WORK IN PROGRESS - Payment Plan feature is being redesigned
    */
   static async getPaymentPlan(planId: number): Promise<PaymentPlan> {
-    if (import.meta.env.DEV)
-      console.warn("⚠️ WIP: Payment plan details API is currently disabled");
-    const response = await api.get<PaymentPlan>(
-      `/payments/client/payment-plans/${planId}/`,
-    );
+    if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plan details API is currently disabled');
+    const response = await api.get<PaymentPlan>(`/payments/client/payment-plans/${planId}/`);
     return response.data;
   }
 
@@ -419,8 +375,7 @@ export class FinancialApi {
     planId: number,
     paymentData: InstallmentPaymentData,
   ): Promise<Payment> {
-    if (import.meta.env.DEV)
-      console.warn("⚠️ WIP: Payment installment API is currently disabled");
+    if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment installment API is currently disabled');
     const response = await api.post<Payment>(
       `/payments/client/payment-plans/${planId}/pay_installment/`,
       paymentData,
@@ -435,7 +390,7 @@ export class FinancialApi {
    */
   static async getPaymentMethods(): Promise<PaymentMethod[]> {
     const response = await api.get<PaginatedResponse<PaymentMethod>>(
-      "/payments/client/payment-methods/",
+      '/payments/client/payment-methods/',
     );
     return response.data.results || [];
   }
@@ -444,22 +399,15 @@ export class FinancialApi {
    * Get single payment method
    */
   static async getPaymentMethod(methodId: number): Promise<PaymentMethod> {
-    const response = await api.get<PaymentMethod>(
-      `/payments/client/payment-methods/${methodId}/`,
-    );
+    const response = await api.get<PaymentMethod>(`/payments/client/payment-methods/${methodId}/`);
     return response.data;
   }
 
   /**
    * Create new payment method
    */
-  static async createPaymentMethod(
-    methodData: PaymentMethodFormData,
-  ): Promise<PaymentMethod> {
-    const response = await api.post<PaymentMethod>(
-      "/payments/client/payment-methods/",
-      methodData,
-    );
+  static async createPaymentMethod(methodData: PaymentMethodFormData): Promise<PaymentMethod> {
+    const response = await api.post<PaymentMethod>('/payments/client/payment-methods/', methodData);
     return response.data;
   }
 
@@ -489,14 +437,11 @@ export class FinancialApi {
   /**
    * Get client's refunds with pagination support
    */
-  static async getRefunds(
-    page?: number,
-    pageSize?: number,
-  ): Promise<PaginatedResponse<Refund>> {
+  static async getRefunds(page?: number, pageSize?: number): Promise<PaginatedResponse<Refund>> {
     const params = new URLSearchParams();
 
-    if (page) params.append("page", page.toString());
-    if (pageSize) params.append("page_size", pageSize.toString());
+    if (page) params.append('page', page.toString());
+    if (pageSize) params.append('page_size', pageSize.toString());
 
     const response = await api.get<PaginatedResponse<Refund>>(
       `/payments/client/refunds/?${params.toString()}`,
@@ -508,9 +453,7 @@ export class FinancialApi {
    * Get single refund details
    */
   static async getRefund(refundId: number): Promise<Refund> {
-    const response = await api.get<Refund>(
-      `/payments/client/refunds/${refundId}/`,
-    );
+    const response = await api.get<Refund>(`/payments/client/refunds/${refundId}/`);
     return response.data;
   }
 
@@ -521,29 +464,29 @@ export class FinancialApi {
    * Use getPaymentSettings() to get the default currency if needed
    */
   static formatAmount(amount: string | number, currency?: string): string {
-    const num = typeof amount === "string" ? parseFloat(amount) : amount;
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
 
     // If no currency provided, we need to get it from payment settings
     if (!currency) {
       if (import.meta.env.DEV)
         console.warn(
-          "Currency not provided to formatAmount. Consider fetching from payment settings.",
+          'Currency not provided to formatAmount. Consider fetching from payment settings.',
         );
       return num.toString(); // Fallback to plain number
     }
 
     // Determine locale based on currency
-    let locale = "en-US";
+    let locale = 'en-US';
     const options: Intl.NumberFormatOptions = {
-      style: "currency",
+      style: 'currency',
       currency: currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     };
 
     // Special handling for specific currencies
-    if (currency === "PHP") {
-      locale = "en-PH";
+    if (currency === 'PHP') {
+      locale = 'en-PH';
       options.minimumFractionDigits = 0;
     }
 
@@ -556,8 +499,8 @@ export class FinancialApi {
   static getCurrencySymbol(currency: string): string {
     try {
       // Use Intl.NumberFormat to get the currency symbol dynamically
-      const formatter = new Intl.NumberFormat("en-US", {
-        style: "currency",
+      const formatter = new Intl.NumberFormat('en-US', {
+        style: 'currency',
         currency: currency,
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
@@ -565,7 +508,7 @@ export class FinancialApi {
 
       // Format 0 and extract just the symbol
       const formatted = formatter.format(0);
-      const symbol = formatted.replace(/[\d\s,]/g, "");
+      const symbol = formatted.replace(/[\d\s,]/g, '');
       return symbol || currency;
     } catch (_error) {
       // Fallback to currency code if formatting fails
@@ -618,13 +561,13 @@ export class FinancialApi {
         const amount = parseFloat(installment.amount);
 
         switch (installment.status) {
-          case "PAID":
+          case 'PAID':
             totalPaid += amount;
             break;
-          case "OVERDUE":
+          case 'OVERDUE':
             totalOverdue += amount;
             break;
-          case "PENDING":
+          case 'PENDING':
             totalPending += amount;
             break;
         }
@@ -645,7 +588,7 @@ export class FinancialApi {
    * Check if installment is overdue
    */
   static isInstallmentOverdue(installment: PaymentInstallment): boolean {
-    if (installment.status === "PAID") return false;
+    if (installment.status === 'PAID') return false;
 
     const dueDate = new Date(installment.due_date);
     const today = new Date();
@@ -670,23 +613,21 @@ export class FinancialApi {
   /**
    * Get status color for UI components
    */
-  static getStatusColor(
-    status: string,
-  ): "success" | "warning" | "error" | "info" | "default" {
+  static getStatusColor(status: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
     switch (status.toLowerCase()) {
-      case "paid":
-      case "completed":
-        return "success";
-      case "pending":
-        return "warning";
-      case "overdue":
-      case "failed":
-      case "rejected":
-        return "error";
-      case "processing":
-        return "info";
+      case 'paid':
+      case 'completed':
+        return 'success';
+      case 'pending':
+        return 'warning';
+      case 'overdue':
+      case 'failed':
+      case 'rejected':
+        return 'error';
+      case 'processing':
+        return 'info';
       default:
-        return "default";
+        return 'default';
     }
   }
 
@@ -721,18 +662,18 @@ export class FinancialApi {
     }
 
     if (errorObj.response?.status === 403) {
-      return "You do not have permission to access this financial information.";
+      return 'You do not have permission to access this financial information.';
     }
 
     if (errorObj.response?.status === 404) {
-      return "The requested financial record was not found.";
+      return 'The requested financial record was not found.';
     }
 
     if (errorObj.response?.status && errorObj.response.status >= 500) {
-      return "A server error occurred. Please try again later.";
+      return 'A server error occurred. Please try again later.';
     }
 
-    return "An unexpected error occurred while processing your financial request.";
+    return 'An unexpected error occurred while processing your financial request.';
   }
 
   /**
@@ -740,7 +681,7 @@ export class FinancialApi {
    */
   static async downloadFile(blob: Blob, filename: string): Promise<void> {
     const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.href = url;
     link.download = filename;
     document.body.appendChild(link);
@@ -766,7 +707,7 @@ export class FinancialApi {
       // Ensure installments array exists
       if (Array.isArray(plan.installments)) {
         plan.installments.forEach((installment) => {
-          if (installment.status === "PENDING") {
+          if (installment.status === 'PENDING') {
             const dueDate = new Date(installment.due_date);
             if (dueDate <= thirtyDaysFromNow) {
               upcoming.push(installment);
@@ -777,9 +718,7 @@ export class FinancialApi {
     });
 
     // Sort by due date
-    return upcoming.sort(
-      (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
-    );
+    return upcoming.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
   }
 
   /**
@@ -789,39 +728,35 @@ export class FinancialApi {
    * FALLBACK: Client-side calculation with epsilon tolerance for float precision
    */
   static calculateInvoicePaymentStatus(invoice: Invoice): {
-    status: "UNPAID" | "PARTIALLY_PAID" | "FULLY_PAID" | "OVERPAID";
+    status: 'UNPAID' | 'PARTIALLY_PAID' | 'FULLY_PAID' | 'OVERPAID';
     amountPaid: number;
     amountRemaining: number;
     paymentProgress: number;
   } {
     // PRIORITY: Use backend-calculated values when available (single source of truth)
-    if (
-      invoice.paid_amount !== undefined &&
-      invoice.remaining_amount !== undefined
-    ) {
+    if (invoice.paid_amount !== undefined && invoice.remaining_amount !== undefined) {
       const paidAmount = parseFloat(invoice.paid_amount);
       const totalAmount = parseFloat(invoice.total_amount);
       const remainingAmount = parseFloat(invoice.remaining_amount);
 
       // Use backend boolean flags for accurate status
-      let status: "UNPAID" | "PARTIALLY_PAID" | "FULLY_PAID" | "OVERPAID";
+      let status: 'UNPAID' | 'PARTIALLY_PAID' | 'FULLY_PAID' | 'OVERPAID';
       if (invoice.is_fully_paid) {
-        status = "FULLY_PAID";
+        status = 'FULLY_PAID';
       } else if (invoice.is_partially_paid) {
-        status = "PARTIALLY_PAID";
+        status = 'PARTIALLY_PAID';
       } else if (paidAmount === 0) {
-        status = "UNPAID";
+        status = 'UNPAID';
       } else {
         // Edge case: paid > 0 but not marked as partial or full (shouldn't happen)
-        status = "PARTIALLY_PAID";
+        status = 'PARTIALLY_PAID';
       }
 
       return {
         status,
         amountPaid: paidAmount,
         amountRemaining: remainingAmount,
-        paymentProgress:
-          totalAmount > 0 ? Math.min(100, (paidAmount / totalAmount) * 100) : 0,
+        paymentProgress: totalAmount > 0 ? Math.min(100, (paidAmount / totalAmount) * 100) : 0,
       };
     }
 
@@ -834,25 +769,24 @@ export class FinancialApi {
     // Calculate total amount paid from related payments
     if (Array.isArray(invoice.related_payments)) {
       amountPaid = invoice.related_payments
-        .filter((payment) => payment.status === "COMPLETED")
+        .filter((payment) => payment.status === 'COMPLETED')
         .reduce((sum, payment) => sum + parseFloat(payment.amount), 0);
     }
 
     const amountRemaining = Math.max(0, totalAmount - amountPaid);
-    const paymentProgress =
-      totalAmount > 0 ? (amountPaid / totalAmount) * 100 : 0;
+    const paymentProgress = totalAmount > 0 ? (amountPaid / totalAmount) * 100 : 0;
 
-    let status: "UNPAID" | "PARTIALLY_PAID" | "FULLY_PAID" | "OVERPAID";
+    let status: 'UNPAID' | 'PARTIALLY_PAID' | 'FULLY_PAID' | 'OVERPAID';
 
     if (amountPaid < EPSILON) {
       // Less than 1 cent paid = unpaid
-      status = "UNPAID";
+      status = 'UNPAID';
     } else if (amountPaid >= totalAmount - EPSILON) {
       // Within 1 cent of total = fully paid (fixes float precision bug)
       // Only mark as OVERPAID if truly exceeds by more than epsilon
-      status = amountPaid > totalAmount + EPSILON ? "OVERPAID" : "FULLY_PAID";
+      status = amountPaid > totalAmount + EPSILON ? 'OVERPAID' : 'FULLY_PAID';
     } else {
-      status = "PARTIALLY_PAID";
+      status = 'PARTIALLY_PAID';
     }
 
     return {
@@ -868,32 +802,31 @@ export class FinancialApi {
    */
   static getInvoiceDisplayStatus(invoice: Invoice): {
     label: string;
-    color: "success" | "warning" | "error" | "info" | "default";
+    color: 'success' | 'warning' | 'error' | 'info' | 'default';
     description: string;
   } {
     const paymentStatus = this.calculateInvoicePaymentStatus(invoice);
 
     switch (paymentStatus.status) {
-      case "FULLY_PAID":
+      case 'FULLY_PAID':
         return {
-          label: "Paid",
-          color: "success",
-          description: "Invoice has been paid in full",
+          label: 'Paid',
+          color: 'success',
+          description: 'Invoice has been paid in full',
         };
-      case "PARTIALLY_PAID":
+      case 'PARTIALLY_PAID':
         return {
-          label: "Partially Paid",
-          color: "warning",
+          label: 'Partially Paid',
+          color: 'warning',
           description: `${this.formatAmount(paymentStatus.amountPaid)} of ${this.formatAmount(invoice.total_amount)} paid`,
         };
-      case "OVERPAID":
+      case 'OVERPAID':
         return {
-          label: "Overpaid",
-          color: "info",
-          description:
-            "Payment exceeds invoice amount (rare - please contact support)",
+          label: 'Overpaid',
+          color: 'info',
+          description: 'Payment exceeds invoice amount (rare - please contact support)',
         };
-      case "UNPAID": {
+      case 'UNPAID': {
         // Check if overdue
         const dueDate = new Date(invoice.due_date);
         const today = new Date();
@@ -901,23 +834,23 @@ export class FinancialApi {
 
         if (dueDate < today) {
           return {
-            label: "Overdue",
-            color: "error",
+            label: 'Overdue',
+            color: 'error',
             description: `Due ${dueDate.toLocaleDateString()}`,
           };
         } else {
           return {
-            label: "Unpaid",
-            color: "default",
+            label: 'Unpaid',
+            color: 'default',
             description: `Due ${dueDate.toLocaleDateString()}`,
           };
         }
       }
       default:
         return {
-          label: "Unknown",
-          color: "default",
-          description: "Status unknown",
+          label: 'Unknown',
+          color: 'default',
+          description: 'Status unknown',
         };
     }
   }
@@ -939,10 +872,7 @@ export class FinancialApi {
       // Ensure installments array exists
       if (Array.isArray(plan.installments)) {
         plan.installments.forEach((installment) => {
-          if (
-            installment.status === "PENDING" ||
-            installment.status === "OVERDUE"
-          ) {
+          if (installment.status === 'PENDING' || installment.status === 'OVERDUE') {
             const dueDate = new Date(installment.due_date);
             if (dueDate < today) {
               overdue.push(installment);
@@ -953,9 +883,7 @@ export class FinancialApi {
     });
 
     // Sort by due date (oldest first)
-    return overdue.sort(
-      (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
-    );
+    return overdue.sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
   }
 
   // ==================== CURRENCY UTILITIES WITH BACKEND SETTINGS ====================
@@ -963,15 +891,13 @@ export class FinancialApi {
   /**
    * Format amount using payment settings currency
    */
-  static async formatAmountWithSettings(
-    amount: string | number,
-  ): Promise<string> {
+  static async formatAmountWithSettings(amount: string | number): Promise<string> {
     try {
       const settings = await this.getPaymentSettings();
       return this.formatAmount(amount, settings.default_currency);
     } catch (error) {
       if (import.meta.env.DEV)
-        console.error("Failed to get payment settings for formatting:", error);
+        console.error('Failed to get payment settings for formatting:', error);
       return this.formatAmount(amount); // Fallback without currency
     }
   }
@@ -985,11 +911,8 @@ export class FinancialApi {
       return this.getCurrencySymbol(settings.default_currency);
     } catch (error) {
       if (import.meta.env.DEV)
-        console.error(
-          "Failed to get payment settings for currency symbol:",
-          error,
-        );
-      return "$"; // Default fallback
+        console.error('Failed to get payment settings for currency symbol:', error);
+      return '$'; // Default fallback
     }
   }
 
@@ -1001,9 +924,8 @@ export class FinancialApi {
       const settings = await this.getPaymentSettings();
       return settings.available_currencies || [settings.default_currency];
     } catch (error) {
-      if (import.meta.env.DEV)
-        console.error("Failed to get available currencies:", error);
-      return ["USD"]; // Default fallback
+      if (import.meta.env.DEV) console.error('Failed to get available currencies:', error);
+      return ['USD']; // Default fallback
     }
   }
 
@@ -1015,9 +937,8 @@ export class FinancialApi {
       const settings = await this.getPaymentSettings();
       return settings.default_currency;
     } catch (error) {
-      if (import.meta.env.DEV)
-        console.error("Failed to get default currency:", error);
-      return "USD"; // Default fallback
+      if (import.meta.env.DEV) console.error('Failed to get default currency:', error);
+      return 'USD'; // Default fallback
     }
   }
 
@@ -1032,7 +953,7 @@ export class FinancialApi {
     message?: string;
   }> {
     try {
-      const response = await api.get("/payments/client/gateways/available/");
+      const response = await api.get('/payments/client/gateways/available/');
       return {
         success: true,
         data: response.data,
@@ -1058,10 +979,7 @@ export class FinancialApi {
     savePaymentMethod?: boolean;
   }): Promise<{ success: boolean; data?: unknown; message?: string }> {
     try {
-      const response = await api.post(
-        "/payments/client/create-payment-intent/",
-        intentData,
-      );
+      const response = await api.post('/payments/client/create-payment-intent/', intentData);
       return {
         success: true,
         data: response.data,
@@ -1111,7 +1029,7 @@ export class FinancialApi {
     message?: string;
   }> {
     try {
-      const response = await api.get("/payments/client/gateways/health/");
+      const response = await api.get('/payments/client/gateways/health/');
       return {
         success: true,
         data: response.data,

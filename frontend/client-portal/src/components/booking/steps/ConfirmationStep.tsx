@@ -15,14 +15,7 @@ import {
   ListItemIcon,
   ListItemText,
 } from '@mui/material';
-import {
-  CheckCircle,
-  Info,
-  NavigateNext,
-  Home,
-  Dashboard,
-  Person,
-} from '@mui/icons-material';
+import { CheckCircle, Info, NavigateNext, Home, Dashboard, Person } from '@mui/icons-material';
 import { useBooking } from '../../../contexts/BookingContext';
 import { useConfirmation } from '../../../hooks/booking/useConfirmation';
 import { useSimplePricing } from '../../../hooks/booking/useSimplePricing';
@@ -77,17 +70,23 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   // Get selected packages and addons from booking state
   // Check package_selection first, then venue_selection (for custom packages), then booking_data
   // Wrapped in useMemo to prevent changing on every render
-  const selectedPackages: SelectedPackage[] = useMemo(() =>
-    state.stepData.package_selection?.selected_packages ||
-    (state.stepData.venue_selection as { selected_packages?: SelectedPackage[] })?.selected_packages ||
-    (state.currentSession?.booking_data?.selected_packages as SelectedPackage[] | undefined) ||
-    [],
-    [state.stepData.package_selection?.selected_packages, state.stepData.venue_selection, state.currentSession?.booking_data?.selected_packages]
+  const selectedPackages: SelectedPackage[] = useMemo(
+    () =>
+      state.stepData.package_selection?.selected_packages ||
+      (state.stepData.venue_selection as { selected_packages?: SelectedPackage[] })
+        ?.selected_packages ||
+      (state.currentSession?.booking_data?.selected_packages as SelectedPackage[] | undefined) ||
+      [],
+    [
+      state.stepData.package_selection?.selected_packages,
+      state.stepData.venue_selection,
+      state.currentSession?.booking_data?.selected_packages,
+    ],
   );
 
-  const selectedAddons = useMemo(() =>
-    state.stepData.addon_selection?.selected_addons || [],
-    [state.stepData.addon_selection?.selected_addons]
+  const selectedAddons = useMemo(
+    () => state.stepData.addon_selection?.selected_addons || [],
+    [state.stepData.addon_selection?.selected_addons],
   );
 
   // Get payment info from booking state
@@ -101,19 +100,22 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   const { pricing } = useSimplePricing(
     selectedPackages,
     selectedAddons,
-    state.stepData.pricing_summary?.applied_discount_code
+    state.stepData.pricing_summary?.applied_discount_code,
   );
 
   // Use ref to track if completion has been processed
   const completionProcessedRef = useRef(false);
 
   // Use stepData as single source of truth
-  const confirmationData = useMemo(() => ({
-    booking_reference: stepData.booking_reference || '',
-    completion_status: stepData.completion_status || 'pending',
-    completed_at: stepData.completed_at,
-    booking_completion_result: stepData.booking_completion_result,
-  }), [stepData]);
+  const confirmationData = useMemo(
+    () => ({
+      booking_reference: stepData.booking_reference || '',
+      completion_status: stepData.completion_status || 'pending',
+      completed_at: stepData.completed_at,
+      booking_completion_result: stepData.booking_completion_result,
+    }),
+    [stepData],
+  );
 
   // Use the confirmation hook for enhanced functionality
   const {
@@ -131,10 +133,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     dateUnavailable,
     unavailableDateError,
     clearDateUnavailableError,
-  } = useConfirmation(
-    currentSession?.session_id,
-    config
-  );
+  } = useConfirmation(currentSession?.session_id, config);
 
   // Get the selected date from session data for the unavailable modal
   const selectedDate = useMemo(() => {
@@ -150,7 +149,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
     // Navigate back to the date/time step
     // Find the date_time step ID from the current flow
     const dateTimeStep = state.currentFlow?.enabled_steps?.find(
-      (step: { step_type: string }) => step.step_type === 'date_time'
+      (step: { step_type: string }) => step.step_type === 'date_time',
     );
     if (dateTimeStep) {
       // This would need to integrate with the navigation system
@@ -160,14 +159,14 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   }, [clearDateUnavailableError, state.currentFlow?.enabled_steps]);
 
   // Computed values
-  const isCompleted = useMemo(() =>
-    confirmationData.completion_status === 'completed' || !!completionResult,
-    [confirmationData.completion_status, completionResult]
+  const isCompleted = useMemo(
+    () => confirmationData.completion_status === 'completed' || !!completionResult,
+    [confirmationData.completion_status, completionResult],
   );
 
-  const isProcessing = useMemo(() =>
-    confirmationData.completion_status === 'processing' || completing,
-    [confirmationData.completion_status, completing]
+  const isProcessing = useMemo(
+    () => confirmationData.completion_status === 'processing' || completing,
+    [confirmationData.completion_status, completing],
   );
 
   // Use config properties with proper fallbacks
@@ -215,10 +214,11 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
   // Update step data when completion result is available (STABLE VERSION)
   React.useEffect(() => {
-    if (completionResult &&
-        stepData.completion_status === 'completed' &&
-        !completionProcessedRef.current) {
-
+    if (
+      completionResult &&
+      stepData.completion_status === 'completed' &&
+      !completionProcessedRef.current
+    ) {
       completionProcessedRef.current = true;
 
       onDataChange({
@@ -250,8 +250,8 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
   // Prepare package line items
   const packageLineItems: PackageLineItem[] = useMemo(() => {
-    return selectedPackages.map(pkg => {
-      const lineItem = pricing.lineItems?.find(item => item.product_id === pkg.product_id);
+    return selectedPackages.map((pkg) => {
+      const lineItem = pricing.lineItems?.find((item) => item.product_id === pkg.product_id);
       return {
         product_id: pkg.product_id,
         name: pkg.name,
@@ -270,8 +270,8 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
   // Prepare addon line items
   const addonLineItems: AddonLineItem[] = useMemo(() => {
-    return selectedAddons.map(addon => {
-      const lineItem = pricing.lineItems?.find(item => item.product_id === addon.product_id);
+    return selectedAddons.map((addon) => {
+      const lineItem = pricing.lineItems?.find((item) => item.product_id === addon.product_id);
       return {
         product_id: addon.product_id,
         name: addon.name,
@@ -283,17 +283,20 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   }, [selectedAddons, pricing.lineItems]);
 
   // Prepare pricing breakdown
-  const pricingBreakdown: PricingBreakdown = useMemo(() => ({
-    subtotal: pricing.subtotal.toString(),
-    tax: pricing.tax.toString(),
-    discount: pricing.discount.toString(),
-    total: pricing.total.toString(),
-    discountDetails: pricing.discountDetails,
-    formattedSubtotal: pricing.formattedSubtotal,
-    formattedTax: pricing.formattedTax,
-    formattedDiscount: pricing.formattedDiscount,
-    formattedTotal: pricing.formattedTotal,
-  }), [pricing]);
+  const pricingBreakdown: PricingBreakdown = useMemo(
+    () => ({
+      subtotal: pricing.subtotal.toString(),
+      tax: pricing.tax.toString(),
+      discount: pricing.discount.toString(),
+      total: pricing.total.toString(),
+      discountDetails: pricing.discountDetails,
+      formattedSubtotal: pricing.formattedSubtotal,
+      formattedTax: pricing.formattedTax,
+      formattedDiscount: pricing.formattedDiscount,
+      formattedTotal: pricing.formattedTotal,
+    }),
+    [pricing],
+  );
 
   // Prepare payment summary
   // PRIORITY: Use stored deposit values from PaymentStep (calculated from effective_payment_terms)
@@ -377,15 +380,16 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
             <ListItem key={index}>
               <ListItemIcon>
                 {step.icon ? (
-                  typeof step.icon === 'string' ? <NavigateNext color="primary" /> : step.icon
+                  typeof step.icon === 'string' ? (
+                    <NavigateNext color="primary" />
+                  ) : (
+                    step.icon
+                  )
                 ) : (
                   <NavigateNext color="primary" />
                 )}
               </ListItemIcon>
-              <ListItemText
-                primary={step.title}
-                secondary={step.description}
-              />
+              <ListItemText primary={step.title} secondary={step.description} />
             </ListItem>
           ))}
         </List>
@@ -399,34 +403,59 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
 
     return (
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Typography
+          variant="h6"
+          gutterBottom
+          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+        >
           <Person />
           Contact Information
         </Typography>
         <Divider sx={{ mb: 2 }} />
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Box>
-            <Typography variant="body2" color="text.secondary">Name:</Typography>
-            <Typography variant="body1" sx={{ fontWeight: 500 }}>{contactSummary.fullName}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Name:
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              {contactSummary.fullName}
+            </Typography>
           </Box>
           <Box>
-            <Typography variant="body2" color="text.secondary">Email:</Typography>
-            <Typography variant="body1" sx={{ fontWeight: 500 }}>{contactSummary.email}</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Email:
+            </Typography>
+            <Typography variant="body1" sx={{ fontWeight: 500 }}>
+              {contactSummary.email}
+            </Typography>
           </Box>
           {contactSummary.phone && (
             <Box>
-              <Typography variant="body2" color="text.secondary">Phone:</Typography>
-              <Typography variant="body1" sx={{ fontWeight: 500 }}>{contactSummary.phone}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Phone:
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                {contactSummary.phone}
+              </Typography>
             </Box>
           )}
           {contactSummary.company && (
             <Box>
-              <Typography variant="body2" color="text.secondary">Company:</Typography>
-              <Typography variant="body1" sx={{ fontWeight: 500 }}>{contactSummary.company}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                Company:
+              </Typography>
+              <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                {contactSummary.company}
+              </Typography>
             </Box>
           )}
           {contactSummary.accountCreated && (
-            <Chip label="Account Created" color="primary" size="small" sx={{ alignSelf: 'flex-start', mt: 1 }} />
+            <Chip
+              label="Account Created"
+              color="primary"
+              size="small"
+              sx={{ alignSelf: 'flex-start', mt: 1 }}
+            />
           )}
         </Box>
       </Paper>
@@ -469,14 +498,14 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
           <>
             <CheckCircle sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
             <Typography variant="h4" gutterBottom color="success.main">
-              {confirmationContent?.title || (completionType === 'quote' ? 'Quote Request Submitted!' : 'Booking Confirmed!')}
+              {confirmationContent?.title ||
+                (completionType === 'quote' ? 'Quote Request Submitted!' : 'Booking Confirmed!')}
             </Typography>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-              {confirmationContent?.message || (
-                completionType === 'quote'
-                  ? 'Thank you for your request. We\'ll send you a custom quote within 24 hours!'
-                  : 'Thank you for your booking. We\'ll be in touch soon!'
-              )}
+              {confirmationContent?.message ||
+                (completionType === 'quote'
+                  ? "Thank you for your request. We'll send you a custom quote within 24 hours!"
+                  : "Thank you for your booking. We'll be in touch soon!")}
             </Typography>
 
             {/* Booking Reference */}
@@ -497,7 +526,9 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
         ) : confirmationData.completion_status === 'failed' ? (
           <>
             <Alert severity="error" sx={{ mb: 3 }}>
-              There was an issue completing your {completionType === 'quote' ? 'quote request' : 'booking'}. Please try again or contact support.
+              There was an issue completing your{' '}
+              {completionType === 'quote' ? 'quote request' : 'booking'}. Please try again or
+              contact support.
             </Alert>
             <Button
               variant="contained"
@@ -525,7 +556,9 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
               disabled={isProcessing}
               startIcon={isProcessing ? <CircularProgress size={16} /> : <CheckCircle />}
             >
-              {isProcessing ? 'Processing...' : `Confirm ${completionType === 'quote' ? 'Quote Request' : 'Booking'}`}
+              {isProcessing
+                ? 'Processing...'
+                : `Confirm ${completionType === 'quote' ? 'Quote Request' : 'Booking'}`}
             </Button>
           </>
         )}
@@ -564,20 +597,14 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
       )}
 
       {/* Payment Summary */}
-      <PaymentSummaryCard
-        payment={paymentSummary}
-        refundPolicy={refundPolicy}
-      />
+      <PaymentSummaryCard payment={paymentSummary} refundPolicy={refundPolicy} />
 
       {/* Contact Information */}
       {renderContactInfo()}
 
       {/* Questionnaire Responses */}
       {questionnaireResponses.length > 0 && (
-        <QuestionnaireSummaryCard
-          questionnaires={questionnaireResponses}
-          defaultExpanded={false}
-        />
+        <QuestionnaireSummaryCard questionnaires={questionnaireResponses} defaultExpanded={false} />
       )}
 
       {/* Special Requests */}
@@ -600,19 +627,11 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
       {/* Action Buttons */}
       <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
         {completionResult?.event && (
-          <Button
-            variant="contained"
-            onClick={navigateToDashboard}
-            startIcon={<Dashboard />}
-          >
+          <Button variant="contained" onClick={navigateToDashboard} startIcon={<Dashboard />}>
             View in Dashboard
           </Button>
         )}
-        <Button
-          variant="outlined"
-          onClick={navigateToHome}
-          startIcon={<Home />}
-        >
+        <Button variant="outlined" onClick={navigateToHome} startIcon={<Home />}>
           Return Home
         </Button>
       </Box>

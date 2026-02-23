@@ -1,19 +1,21 @@
 # backend/core/domains/clients/models.py
 import uuid
 
-from core.utils.models import BaseModel
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
+
+from core.utils.models import BaseModel
 
 User = get_user_model()
 
 
 class ClientInvitation(BaseModel):
     """Invitations for clients to create accounts"""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='invitations')
-    invited_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='sent_client_invitations')
+    client = models.ForeignKey(User, on_delete=models.CASCADE, related_name="invitations")
+    invited_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name="sent_client_invitations")
     is_accepted = models.BooleanField(default=False)
     expires_at = models.DateTimeField()
 

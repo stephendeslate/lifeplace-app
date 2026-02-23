@@ -17,10 +17,7 @@ export const NewPayment: React.FC = () => {
   const { createPayment, isCreatingPayment } = usePayments();
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Payments', path: '/payments' },
-      { label: 'New Payment' },
-    ]);
+    setBreadcrumbs([{ label: 'Payments', path: '/payments' }, { label: 'New Payment' }]);
   }, [setBreadcrumbs]);
 
   const handleSubmit = (data: CreatePaymentData | UpdatePaymentData) => {

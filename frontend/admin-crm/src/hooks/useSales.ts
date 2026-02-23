@@ -355,8 +355,7 @@ export const useAcceptQuote = () => {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, notes }: { id: number; notes?: string }) =>
-      salesApi.acceptQuote(id, notes),
+    mutationFn: ({ id, notes }: { id: number; notes?: string }) => salesApi.acceptQuote(id, notes),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['eventQuotes'] });
       queryClient.invalidateQueries({ queryKey: ['eventQuote', id] });
@@ -382,8 +381,7 @@ export const useRejectQuote = () => {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, notes }: { id: number; notes?: string }) =>
-      salesApi.rejectQuote(id, notes),
+    mutationFn: ({ id, notes }: { id: number; notes?: string }) => salesApi.rejectQuote(id, notes),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['eventQuotes'] });
       queryClient.invalidateQueries({ queryKey: ['eventQuote', id] });
@@ -573,8 +571,13 @@ export const useCreateQuoteReminder = () => {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: ({ quoteId, data }: { quoteId: number; data: { scheduled_date: string; message?: string } }) =>
-      salesApi.createQuoteReminder(quoteId, data),
+    mutationFn: ({
+      quoteId,
+      data,
+    }: {
+      quoteId: number;
+      data: { scheduled_date: string; message?: string };
+    }) => salesApi.createQuoteReminder(quoteId, data),
     onSuccess: (_, { quoteId }) => {
       queryClient.invalidateQueries({ queryKey: ['quoteReminders', quoteId] });
       showToast({
@@ -618,6 +621,6 @@ export const useSignQuote = () => {
         title: 'Signing Failed',
         message,
       });
-    }
-    });
+    },
+  });
 };

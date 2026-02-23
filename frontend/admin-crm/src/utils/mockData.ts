@@ -4,7 +4,7 @@ import type { WorkflowProgress } from '../types/events.types';
 
 export const createMockWorkflowProgress = (
   currentStage: number = 2,
-  totalStages: number = 5
+  totalStages: number = 5,
 ): WorkflowProgress => {
   const stageNames = [
     'Initial Consultation',
@@ -25,7 +25,8 @@ export const createMockWorkflowProgress = (
     5: 'Execute event and follow up',
   };
 
-  const currentTaskName = tasksByStage[currentStage as keyof typeof tasksByStage] || 'No active task';
+  const currentTaskName =
+    tasksByStage[currentStage as keyof typeof tasksByStage] || 'No active task';
 
   return {
     current_stage: currentStage,

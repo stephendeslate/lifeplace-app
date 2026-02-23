@@ -84,10 +84,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: listResult } = renderHook(
-        () => result.current.useNotificationsList(),
-        { wrapper: createWrapper() }
-      );
+      const { result: listResult } = renderHook(() => result.current.useNotificationsList(), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(listResult.current.isSuccess).toBe(true);
@@ -124,10 +123,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: notificationResult } = renderHook(
-        () => result.current.useNotification(1),
-        { wrapper: createWrapper() }
-      );
+      const { result: notificationResult } = renderHook(() => result.current.useNotification(1), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(notificationResult.current.isSuccess).toBe(true);
@@ -142,10 +140,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: notificationResult } = renderHook(
-        () => result.current.useNotification(0),
-        { wrapper: createWrapper() }
-      );
+      const { result: notificationResult } = renderHook(() => result.current.useNotification(0), {
+        wrapper: createWrapper(),
+      });
 
       expect(notificationResult.current.isFetching).toBe(false);
       expect(notificationsApi.getNotification).not.toHaveBeenCalled();
@@ -160,10 +157,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: unreadResult } = renderHook(
-        () => result.current.useUnreadNotifications(),
-        { wrapper: createWrapper() }
-      );
+      const { result: unreadResult } = renderHook(() => result.current.useUnreadNotifications(), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(unreadResult.current.isSuccess).toBe(true);
@@ -197,10 +193,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: recentResult } = renderHook(
-        () => result.current.useRecentNotifications(),
-        { wrapper: createWrapper() }
-      );
+      const { result: recentResult } = renderHook(() => result.current.useRecentNotifications(), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(recentResult.current.isSuccess).toBe(true);
@@ -224,10 +219,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: countsResult } = renderHook(
-        () => result.current.useNotificationCounts(),
-        { wrapper: createWrapper() }
-      );
+      const { result: countsResult } = renderHook(() => result.current.useNotificationCounts(), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(countsResult.current.isSuccess).toBe(true);
@@ -247,10 +241,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: markAsReadResult } = renderHook(
-        () => result.current.useMarkAsRead(),
-        { wrapper: createWrapper() }
-      );
+      const { result: markAsReadResult } = renderHook(() => result.current.useMarkAsRead(), {
+        wrapper: createWrapper(),
+      });
 
       await act(async () => {
         await markAsReadResult.current.mutateAsync(1);
@@ -267,10 +260,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: markAsReadResult } = renderHook(
-        () => result.current.useMarkAsRead(),
-        { wrapper: createWrapper() }
-      );
+      const { result: markAsReadResult } = renderHook(() => result.current.useMarkAsRead(), {
+        wrapper: createWrapper(),
+      });
 
       await act(async () => {
         try {
@@ -283,7 +275,7 @@ describe('useNotifications', () => {
       await waitFor(() => {
         expect(mockToastActions.showError).toHaveBeenCalledWith(
           'Action Failed',
-          'Failed to mark as read'
+          'Failed to mark as read',
         );
       });
     });
@@ -298,10 +290,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: markAsUnreadResult } = renderHook(
-        () => result.current.useMarkAsUnread(),
-        { wrapper: createWrapper() }
-      );
+      const { result: markAsUnreadResult } = renderHook(() => result.current.useMarkAsUnread(), {
+        wrapper: createWrapper(),
+      });
 
       await act(async () => {
         await markAsUnreadResult.current.mutateAsync(1);
@@ -319,10 +310,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: markAllResult } = renderHook(
-        () => result.current.useMarkAllAsRead(),
-        { wrapper: createWrapper() }
-      );
+      const { result: markAllResult } = renderHook(() => result.current.useMarkAllAsRead(), {
+        wrapper: createWrapper(),
+      });
 
       await act(async () => {
         await markAllResult.current.mutateAsync();
@@ -338,10 +328,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: markAllResult } = renderHook(
-        () => result.current.useMarkAllAsRead(),
-        { wrapper: createWrapper() }
-      );
+      const { result: markAllResult } = renderHook(() => result.current.useMarkAllAsRead(), {
+        wrapper: createWrapper(),
+      });
 
       await act(async () => {
         await markAllResult.current.mutateAsync();
@@ -349,7 +338,7 @@ describe('useNotifications', () => {
 
       expect(mockToastActions.showSuccess).toHaveBeenCalledWith(
         'All Read',
-        'Marked 5 notifications as read.'
+        'Marked 5 notifications as read.',
       );
     });
 
@@ -360,10 +349,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: markAllResult } = renderHook(
-        () => result.current.useMarkAllAsRead(),
-        { wrapper: createWrapper() }
-      );
+      const { result: markAllResult } = renderHook(() => result.current.useMarkAllAsRead(), {
+        wrapper: createWrapper(),
+      });
 
       await act(async () => {
         await markAllResult.current.mutateAsync();
@@ -371,7 +359,7 @@ describe('useNotifications', () => {
 
       expect(mockToastActions.showSuccess).toHaveBeenCalledWith(
         'All Read',
-        'Marked 1 notification as read.'
+        'Marked 1 notification as read.',
       );
     });
 
@@ -382,10 +370,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: markAllResult } = renderHook(
-        () => result.current.useMarkAllAsRead(),
-        { wrapper: createWrapper() }
-      );
+      const { result: markAllResult } = renderHook(() => result.current.useMarkAllAsRead(), {
+        wrapper: createWrapper(),
+      });
 
       await act(async () => {
         await markAllResult.current.mutateAsync();
@@ -403,10 +390,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: deleteResult } = renderHook(
-        () => result.current.useDeleteNotification(),
-        { wrapper: createWrapper() }
-      );
+      const { result: deleteResult } = renderHook(() => result.current.useDeleteNotification(), {
+        wrapper: createWrapper(),
+      });
 
       await act(async () => {
         await deleteResult.current.mutateAsync(1);
@@ -423,10 +409,9 @@ describe('useNotifications', () => {
         wrapper: createWrapper(),
       });
 
-      const { result: deleteResult } = renderHook(
-        () => result.current.useDeleteNotification(),
-        { wrapper: createWrapper() }
-      );
+      const { result: deleteResult } = renderHook(() => result.current.useDeleteNotification(), {
+        wrapper: createWrapper(),
+      });
 
       await act(async () => {
         try {
@@ -439,7 +424,7 @@ describe('useNotifications', () => {
       await waitFor(() => {
         expect(mockToastActions.showError).toHaveBeenCalledWith(
           'Action Failed',
-          'Cannot delete notification'
+          'Cannot delete notification',
         );
       });
     });

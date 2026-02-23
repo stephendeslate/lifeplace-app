@@ -1,11 +1,10 @@
 # backend/core/domains/users/services.py
 import logging
-import uuid
 from datetime import timedelta
 
-from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
+
 from rest_framework_simplejwt.tokens import RefreshToken
 
 logger = logging.getLogger(__name__)
@@ -13,8 +12,8 @@ logger = logging.getLogger(__name__)
 from .exceptions import (
     EmailAlreadyExists,
     InvitationExpired,
-    UserNotFound,
     UserAlreadyAdmin,
+    UserNotFound,
 )
 from .models import AdminInvitation, User, UserProfile
 
@@ -24,16 +23,16 @@ class UserService:
     def get_users(search_query=None):
         """Get all users with optional search filter"""
         queryset = User.objects.all()
-        
+
         if search_query:
             queryset = queryset.filter(
-                Q(email__icontains=search_query) |
-                Q(first_name__icontains=search_query) |
-                Q(last_name__icontains=search_query)
+                Q(email__icontains=search_query)
+                | Q(first_name__icontains=search_query)
+                | Q(last_name__icontains=search_query)
             )
-            
+
         return queryset
-    
+
     @staticmethod
     def get_user_by_id(user_id):
         """Get a user by ID"""
@@ -41,7 +40,7 @@ class UserService:
             return User.objects.get(id=user_id)
         except User.DoesNotExist:
             raise UserNotFound()
-    
+
     @staticmethod
     def get_user_by_email(email):
         """Get a user by email"""
@@ -49,43 +48,42 @@ class UserService:
             return User.objects.get(email=email)
         except User.DoesNotExist:
             raise UserNotFound()
-    
-    
+
     @staticmethod
     def create_user(user_data):
         """Create a new user"""
-        if User.objects.filter(email=user_data.get('email')).exists():
+        if User.objects.filter(email=user_data.get("email")).exists():
             raise EmailAlreadyExists()
-            
-        profile_data = user_data.pop('profile', {})
+
+        profile_data = user_data.pop("profile", {})
         user = User.objects.create_user(**user_data)
-        
+
         # Update the profile created by signal instead of creating new one
-        if profile_data and hasattr(user, 'profile'):
+        if profile_data and hasattr(user, "profile"):
             for key, value in profile_data.items():
                 setattr(user.profile, key, value)
             user.profile.save()
-        
+
         return user
-    
+
     @staticmethod
     def update_user(user, user_data):
         """Update a user"""
-        profile_data = user_data.pop('profile', None)
-        
+        profile_data = user_data.pop("profile", None)
+
         # Update user fields
         for key, value in user_data.items():
-            if key != 'password':
+            if key != "password":
                 setattr(user, key, value)
-            
-        if 'password' in user_data:
-            user.set_password(user_data['password'])
-            
+
+        if "password" in user_data:
+            user.set_password(user_data["password"])
+
         user.save()
-        
+
         # Update or create profile if data provided
         if profile_data:
-            if hasattr(user, 'profile') and user.profile is not None:
+            if hasattr(user, "profile") and user.profile is not None:
                 # Update existing profile
                 for key, value in profile_data.items():
                     setattr(user.profile, key, value)
@@ -93,9 +91,9 @@ class UserService:
             else:
                 # Create new profile if it doesn't exist (shouldn't happen due to signal)
                 UserProfile.objects.create(user=user, **profile_data)
-            
+
         return user
-    
+
     @staticmethod
     def delete_user(user):
         """Delete a user"""
@@ -107,14 +105,14 @@ class UserService:
     def get_tokens_for_user(user, remember_me=False):
         """Get JWT tokens for a user"""
         refresh = RefreshToken.for_user(user)
-        
+
         # If remember_me is True, extend the token lifetime
         if remember_me:
             refresh.set_exp(lifetime=timedelta(days=7))
-        
+
         return {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
+            "refresh": str(refresh),
+            "access": str(refresh.access_token),
         }
 
 
@@ -148,10 +146,10 @@ class AdminInvitationService:
         # Determine invitation type
         is_upgrade = False
         if existing_user:
-            if existing_user.role == 'ADMIN':
+            if existing_user.role == "ADMIN":
                 logger.warning(f"Attempted to invite existing admin user: {email}")
                 raise UserAlreadyAdmin()
-            elif existing_user.role == 'CLIENT':
+            elif existing_user.role == "CLIENT":
                 is_upgrade = True
                 logger.info(f"Creating upgrade invitation for CLIENT user: {email}")
 
@@ -173,7 +171,7 @@ class AdminInvitationService:
             user=existing_user if is_upgrade else None,
             is_upgrade=is_upgrade,
             permissions=validated_permissions,
-            expires_at=timezone.now() + timedelta(days=7)
+            expires_at=timezone.now() + timedelta(days=7),
         )
 
         logger.info(f"Created {'upgrade' if is_upgrade else 'new'} invitation for {email}")
@@ -184,10 +182,10 @@ class AdminInvitationService:
             logger.info(f"{'Upgrade' if is_upgrade else 'New'} invitation created and email sent")
         except Exception as e:
             # Log the error but don't prevent invitation creation
-            logger.error(f"Invitation created but email sending failed: {str(e)}")
+            logger.error(f"Invitation created but email sending failed: {e!s}")
 
         return invitation
-    
+
     @staticmethod
     def accept_invitation(invitation_id, password):
         """
@@ -198,6 +196,7 @@ class AdminInvitationService:
         2. Upgrade invitation → upgrade existing CLIENT to ADMIN and set password
         """
         from core.utils.security_logging import SecurityLogger
+
         security_logger = SecurityLogger()
 
         try:
@@ -217,7 +216,7 @@ class AdminInvitationService:
             old_role = user.role
 
             # Upgrade role and grant staff access
-            user.role = 'ADMIN'
+            user.role = "ADMIN"
             user.is_staff = True
             user.set_password(password)
 
@@ -231,29 +230,27 @@ class AdminInvitationService:
             # Log the role upgrade for security audit
             try:
                 security_logger.log_event(
-                    event_type='ROLE_UPGRADE',
+                    event_type="ROLE_UPGRADE",
                     description=f"User {user.email} upgraded from {old_role} to ADMIN",
                     user=user,
-                    severity='MEDIUM',
+                    severity="MEDIUM",
                     details={
-                        'old_role': old_role,
-                        'new_role': 'ADMIN',
-                        'invited_by': invitation.invited_by.email,
-                        'invitation_id': str(invitation.id)
-                    }
+                        "old_role": old_role,
+                        "new_role": "ADMIN",
+                        "invited_by": invitation.invited_by.email,
+                        "invitation_id": str(invitation.id),
+                    },
                 )
             except Exception as log_error:
-                logger.error(f"Failed to log role upgrade event: {str(log_error)}")
+                logger.error(f"Failed to log role upgrade event: {log_error!s}")
 
             # Invalidate user caches after role change
             try:
                 from .cache_service import users_cache_service
-                users_cache_service.invalidate_user_caches(
-                    user_id=user.id,
-                    email=user.email
-                )
+
+                users_cache_service.invalidate_user_caches(user_id=user.id, email=user.email)
             except Exception as cache_error:
-                logger.warning(f"Failed to invalidate user caches: {str(cache_error)}")
+                logger.warning(f"Failed to invalidate user caches: {cache_error!s}")
 
             logger.info(f"Successfully upgraded user {user.email} to ADMIN")
 
@@ -266,8 +263,8 @@ class AdminInvitationService:
                 password=password,
                 first_name=invitation.first_name,
                 last_name=invitation.last_name,
-                role='ADMIN',
-                is_staff=True  # Admin users should have staff access
+                role="ADMIN",
+                is_staff=True,  # Admin users should have staff access
             )
 
             # Apply permissions from invitation if specified
@@ -283,7 +280,7 @@ class AdminInvitationService:
         invitation.save()
 
         return user
-    
+
     @staticmethod
     def get_invitation_by_id(invitation_id):
         """Get an invitation by ID"""
@@ -291,7 +288,7 @@ class AdminInvitationService:
             return AdminInvitation.objects.get(id=invitation_id)
         except AdminInvitation.DoesNotExist:
             raise UserNotFound("Invitation not found.")
-    
+
     @staticmethod
     def _send_invitation_email(invitation):
         """
@@ -303,10 +300,8 @@ class AdminInvitationService:
         """
         try:
             # Import here to avoid circular imports
+            from core.domains.communications.context_service import CommunicationContextService, ContextType
             from core.domains.communications.services import CommunicationService
-            from core.domains.communications.context_service import (
-                CommunicationContextService, ContextType
-            )
 
             communication_service = CommunicationService()
 
@@ -319,10 +314,10 @@ class AdminInvitationService:
 
             # Choose template based on invitation type
             if invitation.is_upgrade:
-                template_name = 'Admin Role Upgrade'
+                template_name = "Admin Role Upgrade"
                 logger.info(f"Sending role upgrade email to {invitation.email}")
             else:
-                template_name = 'Admin Invitation'
+                template_name = "Admin Invitation"
                 logger.info(f"Sending new admin invitation email to {invitation.email}")
 
             # Send using communication service
@@ -348,5 +343,5 @@ class AdminInvitationService:
             raise Exception("Communications service not available")
         except Exception as e:
             # Re-raise the exception so the caller can handle it
-            logger.error(f"Failed to send invitation via communication service: {str(e)}")
+            logger.error(f"Failed to send invitation via communication service: {e!s}")
             raise e

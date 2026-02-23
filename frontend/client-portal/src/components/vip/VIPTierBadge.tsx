@@ -11,11 +11,14 @@ import {
 import type { VIPTier } from '../../types/vip.types';
 
 // Tier configuration with colors and relational display names
-const TIER_CONFIG: Record<string, {
-  color: string;
-  displayName: string;
-  Icon: React.ComponentType<{ fontSize?: 'small' | 'medium' | 'large' | 'inherit' }>;
-}> = {
+const TIER_CONFIG: Record<
+  string,
+  {
+    color: string;
+    displayName: string;
+    Icon: React.ComponentType<{ fontSize?: 'small' | 'medium' | 'large' | 'inherit' }>;
+  }
+> = {
   Guest: {
     color: '#6B7280',
     displayName: 'Guest',

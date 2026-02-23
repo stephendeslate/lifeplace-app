@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/components/questionnaires/QuestionnairesTable.tsx
 
-import React from "react";
-import { Box, Typography, Chip } from "@mui/material";
+import React from 'react';
+import { Box, Typography, Chip } from '@mui/material';
 import {
   Psychology as QuestionnaireIcon,
   EventNote as EventIcon,
@@ -10,10 +10,10 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   FileCopy as DuplicateIcon,
-} from "@mui/icons-material";
-import type { Questionnaire } from "../../types/questionnaires.types";
-import { ModernTable, ModernLoadingStates, ModernEmptyState } from "../common";
-import type { ModernTableColumn, ModernTableAction } from "../common";
+} from '@mui/icons-material';
+import type { Questionnaire } from '../../types/questionnaires.types';
+import { ModernTable, ModernLoadingStates, ModernEmptyState } from '../common';
+import type { ModernTableColumn, ModernTableAction } from '../common';
 
 interface QuestionnaireTableProps {
   questionnaires: Questionnaire[];
@@ -36,23 +36,16 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
 }) => {
   const getStatusChip = (isActive: boolean) => (
     <Chip
-      label={isActive ? "Active" : "Inactive"}
+      label={isActive ? 'Active' : 'Inactive'}
       size="small"
-      color={isActive ? "success" : "default"}
-      variant={isActive ? "filled" : "outlined"}
+      color={isActive ? 'success' : 'default'}
+      variant={isActive ? 'filled' : 'outlined'}
     />
   );
 
   const getEventTypeChip = (eventTypeName?: string) => {
     if (!eventTypeName) {
-      return (
-        <Chip
-          label="Any Event Type"
-          size="small"
-          variant="outlined"
-          color="default"
-        />
-      );
+      return <Chip label="Any Event Type" size="small" variant="outlined" color="default" />;
     }
 
     return (
@@ -68,8 +61,8 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
 
   const columns: ModernTableColumn[] = [
     {
-      key: "name",
-      label: "Name",
+      key: 'name',
+      label: 'Name',
       sortable: true,
       render: (_, row) => {
         const questionnaire = row as unknown as Questionnaire;
@@ -89,28 +82,23 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
       },
     },
     {
-      key: "event_type",
-      label: "Event Type",
-      hideBelow: "md",
+      key: 'event_type',
+      label: 'Event Type',
+      hideBelow: 'md',
       render: (_, row) => {
         const questionnaire = row as unknown as Questionnaire;
         return getEventTypeChip(questionnaire.event_type_name);
       },
     },
     {
-      key: "fields",
-      label: "Fields",
-      align: "center",
-      hideBelow: "md",
+      key: 'fields',
+      label: 'Fields',
+      align: 'center',
+      hideBelow: 'md',
       render: (_, row) => {
         const questionnaire = row as unknown as Questionnaire;
         return (
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            gap={0.5}
-          >
+          <Box display="flex" alignItems="center" justifyContent="center" gap={0.5}>
             <FieldsIcon fontSize="small" color="action" />
             <Typography variant="body2" fontWeight="medium">
               {questionnaire.fields_count || 0}
@@ -120,10 +108,10 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
       },
     },
     {
-      key: "sort_order",
-      label: "Order",
-      align: "center",
-      hideBelow: "lg",
+      key: 'sort_order',
+      label: 'Order',
+      align: 'center',
+      hideBelow: 'lg',
       render: (_, row) => {
         const questionnaire = row as unknown as Questionnaire;
         return (
@@ -134,17 +122,17 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
       },
     },
     {
-      key: "is_active",
-      label: "Status",
+      key: 'is_active',
+      label: 'Status',
       render: (_, row) => {
         const questionnaire = row as unknown as Questionnaire;
         return getStatusChip(questionnaire.is_active);
       },
     },
     {
-      key: "updated_at",
-      label: "Last Updated",
-      hideBelow: "lg",
+      key: 'updated_at',
+      label: 'Last Updated',
+      hideBelow: 'lg',
       render: (_, row) => {
         const questionnaire = row as unknown as Questionnaire;
         return (
@@ -166,7 +154,7 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
     ...(onPreview
       ? [
           {
-            label: "Preview",
+            label: 'Preview',
             icon: <ViewIcon fontSize="small" />,
             onClick: (row: Record<string, unknown>) =>
               onPreview && onPreview(row as unknown as Questionnaire),
@@ -174,15 +162,14 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
         ]
       : []),
     {
-      label: "Edit",
+      label: 'Edit',
       icon: <EditIcon fontSize="small" />,
-      onClick: (row: Record<string, unknown>) =>
-        onEdit(row as unknown as Questionnaire),
+      onClick: (row: Record<string, unknown>) => onEdit(row as unknown as Questionnaire),
     },
     ...(onDuplicate
       ? [
           {
-            label: "Duplicate",
+            label: 'Duplicate',
             icon: <DuplicateIcon fontSize="small" />,
             onClick: (row: Record<string, unknown>) =>
               onDuplicate && onDuplicate(row as unknown as Questionnaire),
@@ -190,17 +177,15 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
         ]
       : []),
     {
-      label: "Delete",
+      label: 'Delete',
       icon: <DeleteIcon fontSize="small" />,
       onClick: (row) => onDelete((row as { id: number }).id),
-      color: "error" as const,
+      color: 'error' as const,
     },
   ];
 
   if (isLoading) {
-    return (
-      <ModernLoadingStates.ModernTableSkeleton rows={5} columns={6} hasHeader />
-    );
+    return <ModernLoadingStates.ModernTableSkeleton rows={5} columns={6} hasHeader />;
   }
 
   if (questionnaires.length === 0) {
@@ -211,8 +196,8 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
         description="Create your first questionnaire template to gather client information"
         size="medium"
         tip={{
-          text: "Questionnaires help collect structured information from clients during booking",
-          type: "info",
+          text: 'Questionnaires help collect structured information from clients during booking',
+          type: 'info',
         }}
       />
     );
@@ -220,13 +205,9 @@ export const QuestionnairesTable: React.FC<QuestionnaireTableProps> = ({
 
   return (
     <ModernTable
-      columns={
-        columns as unknown as ModernTableColumn<Record<string, unknown>>[]
-      }
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
       data={questionnaires as unknown as Record<string, unknown>[]}
-      actions={
-        actions as unknown as ModernTableAction<Record<string, unknown>>[]
-      }
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
       onRowClick={(row) => onEdit(row as unknown as Questionnaire)}
       sortBy="sort_order"
       sortOrder="asc"

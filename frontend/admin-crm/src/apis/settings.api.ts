@@ -95,11 +95,11 @@ export const settingsApi = {
 
   acceptInvitation: async (
     invitationId: string,
-    data: AcceptInvitationFormData
+    data: AcceptInvitationFormData,
   ): Promise<AcceptInvitationResponse> => {
     const response = await api.post<AcceptInvitationResponse>(
       `/users/invitations/${invitationId}/accept/`,
-      data
+      data,
     );
     return response.data;
   },
@@ -113,17 +113,19 @@ export const settingsApi = {
   },
 
   getLegalDocument: async (documentType: string): Promise<LegalDocument> => {
-    const response = await api.get<{ success: boolean; data: LegalDocument }>(`/settings/legal/${documentType}/`);
+    const response = await api.get<{ success: boolean; data: LegalDocument }>(
+      `/settings/legal/${documentType}/`,
+    );
     return response.data.data;
   },
 
   updateLegalDocument: async (
     documentType: string,
-    data: LegalDocumentUpdateData
+    data: LegalDocumentUpdateData,
   ): Promise<LegalDocument> => {
     const response = await api.put<{ success: boolean; data: LegalDocument }>(
       `/settings/legal/${documentType}/`,
-      data
+      data,
     );
     return response.data.data;
   },
@@ -132,7 +134,9 @@ export const settingsApi = {
    * Company Settings Management
    */
   getCompanySettings: async (): Promise<CompanySettings> => {
-    const response = await api.get<{ success: boolean; data: CompanySettings }>('/settings/company/');
+    const response = await api.get<{ success: boolean; data: CompanySettings }>(
+      '/settings/company/',
+    );
     return response.data.data;
   },
 
@@ -154,15 +158,22 @@ export const settingsApi = {
         }
       });
 
-      const response = await api.put<{ success: boolean; data: CompanySettings }>('/settings/company/', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
+      const response = await api.put<{ success: boolean; data: CompanySettings }>(
+        '/settings/company/',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
         },
-      });
+      );
       return response.data.data;
     } else {
       // Use JSON for non-file updates
-      const response = await api.put<{ success: boolean; data: CompanySettings }>('/settings/company/', data);
+      const response = await api.put<{ success: boolean; data: CompanySettings }>(
+        '/settings/company/',
+        data,
+      );
       return response.data.data;
     }
   },

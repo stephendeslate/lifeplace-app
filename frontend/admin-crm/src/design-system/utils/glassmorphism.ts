@@ -19,7 +19,7 @@ export const createGlassEffect = ({
   saturation = 1.2,
   brightness = 1,
   borderOpacity = 0.2,
-  shadowIntensity = 'medium'
+  shadowIntensity = 'medium',
 }: GlassStyleOptions = {}) => ({
   background: `rgba(255, 255, 255, ${opacity})`,
   backdropFilter: `blur(${blur}px) saturate(${saturation}) brightness(${brightness})`,
@@ -34,7 +34,7 @@ export const glassPresets = {
     opacity: 0.15,
     blur: 10,
     borderOpacity: 0.1,
-    shadowIntensity: 'light'
+    shadowIntensity: 'light',
   }),
 
   // Medium glass for cards and panels
@@ -42,7 +42,7 @@ export const glassPresets = {
     opacity: 0.25,
     blur: 20,
     borderOpacity: 0.2,
-    shadowIntensity: 'medium'
+    shadowIntensity: 'medium',
   }),
 
   // Strong glass for modals and overlays
@@ -50,7 +50,7 @@ export const glassPresets = {
     opacity: 0.35,
     blur: 30,
     borderOpacity: 0.3,
-    shadowIntensity: 'strong'
+    shadowIntensity: 'strong',
   }),
 
   // Colored glass variants
@@ -58,7 +58,7 @@ export const glassPresets = {
     opacity: 0.15,
     blur: 20,
     borderOpacity: 0.3,
-    shadowIntensity: 'medium'
+    shadowIntensity: 'medium',
   }),
 
   success: {
@@ -84,7 +84,10 @@ export const glassPresets = {
 } as const;
 
 // Glass hover effects
-export const glassHoverEffect = (baseGlass: Record<string, unknown>, intensity: 'subtle' | 'medium' | 'strong' = 'medium') => {
+export const glassHoverEffect = (
+  baseGlass: Record<string, unknown>,
+  intensity: 'subtle' | 'medium' | 'strong' = 'medium',
+) => {
   const intensityMap = {
     subtle: { opacityIncrease: 0.05, blurIncrease: 5, transform: 'translateY(-1px)' },
     medium: { opacityIncrease: 0.1, blurIncrease: 10, transform: 'translateY(-2px)' },
@@ -98,16 +101,16 @@ export const glassHoverEffect = (baseGlass: Record<string, unknown>, intensity: 
     '&:hover': {
       background: String(baseGlass.background).replace(
         /rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/,
-        (_: string, r: string, g: string, b: string, a: string) => 
-          `rgba(${r}, ${g}, ${b}, ${parseFloat(a) + config.opacityIncrease})`
+        (_: string, r: string, g: string, b: string, a: string) =>
+          `rgba(${r}, ${g}, ${b}, ${parseFloat(a) + config.opacityIncrease})`,
       ),
       backdropFilter: String(baseGlass.backdropFilter).replace(
         /blur\((\d+)px\)/,
-        (_: string, blur: string) => `blur(${parseInt(blur) + config.blurIncrease}px)`
+        (_: string, blur: string) => `blur(${parseInt(blur) + config.blurIncrease}px)`,
       ),
       transform: config.transform,
       boxShadow: tokens.shadow.glass.floating,
-    }
+    },
   };
 };
 
@@ -115,7 +118,7 @@ export const glassHoverEffect = (baseGlass: Record<string, unknown>, intensity: 
 export const createGlassCard = (
   glassType: keyof typeof glassPresets = 'medium',
   hoverIntensity: 'subtle' | 'medium' | 'strong' = 'medium',
-  borderRadius: string = tokens.spacing.radius.xxl
+  borderRadius: string = tokens.spacing.radius.xxl,
 ) => {
   const baseGlass = glassPresets[glassType];
   const hoverEffect = glassHoverEffect(baseGlass, hoverIntensity);
@@ -130,9 +133,7 @@ export const createGlassCard = (
 };
 
 // Create glass navigation styles
-export const createGlassNavigation = (
-  position: 'header' | 'sidebar' = 'header'
-) => {
+export const createGlassNavigation = (position: 'header' | 'sidebar' = 'header') => {
   const styles = {
     header: {
       background: 'rgba(255, 255, 255, 0.85)',

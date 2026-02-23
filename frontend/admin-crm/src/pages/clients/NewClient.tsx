@@ -17,10 +17,7 @@ export const NewClient: React.FC = () => {
   const { createClient, isCreatingClient } = useClients();
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Clients', path: '/clients' },
-      { label: 'New Client' },
-    ]);
+    setBreadcrumbs([{ label: 'Clients', path: '/clients' }, { label: 'New Client' }]);
   }, [setBreadcrumbs]);
 
   const handleSubmit = (data: CreateClientData | UpdateClientData) => {

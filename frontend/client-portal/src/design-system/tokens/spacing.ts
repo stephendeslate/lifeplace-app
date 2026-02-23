@@ -24,7 +24,7 @@ export const spacing = {
   24: '192px',
   28: '224px',
   32: '256px',
-  
+
   // Semantic spacing
   xs: '4px',
   sm: '8px',
@@ -33,7 +33,7 @@ export const spacing = {
   xl: '32px',
   xxl: '48px',
   xxxl: '64px',
-  
+
   // Component-specific spacing
   buttonPadding: {
     sm: '8px 16px',
@@ -90,7 +90,7 @@ export const layout = {
     narrow: '800px',
     wide: '1400px',
   },
-  
+
   // Breakpoints
   breakpoints: {
     xs: '0px',
@@ -100,7 +100,7 @@ export const layout = {
     xl: '1280px',
     xxl: '1536px',
   },
-  
+
   // Grid system
   grid: {
     columns: 12,
@@ -110,7 +110,7 @@ export const layout = {
       lg: '32px',
     },
   },
-  
+
   // Common aspect ratios
   aspectRatio: {
     square: '1 / 1',
@@ -141,15 +141,15 @@ export const borderRadius = {
   },
 
   // Component specific - refined values
-  button: '8px',         // More subtle, modern
-  buttonPill: '24px',    // For pill-style buttons
-  card: '16px',          // Softer than before
-  cardLarge: '20px',     // For hero cards
-  input: '8px',          // Subtle, clean
-  chip: '16px',          // Pill-shaped
+  button: '8px', // More subtle, modern
+  buttonPill: '24px', // For pill-style buttons
+  card: '16px', // Softer than before
+  cardLarge: '20px', // For hero cards
+  input: '8px', // Subtle, clean
+  chip: '16px', // Pill-shaped
   avatar: '50%',
   dialog: '20px',
-  image: '12px',         // For image containers
+  image: '12px', // For image containers
 };
 
 export const zIndex = {
@@ -165,7 +165,7 @@ export const zIndex = {
   toast: 80,
   loading: 90,
   max: 100,
-  
+
   // MUI overrides
   appBar: 1100,
   drawer: 1200,

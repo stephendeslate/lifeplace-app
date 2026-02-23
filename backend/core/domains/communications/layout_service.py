@@ -5,15 +5,15 @@ Handles the rendering and assembly of layout components around template content.
 """
 
 import logging
-from typing import Dict, Any, Optional, List, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 from django.conf import settings
 from django.utils import timezone
 
-from .template_sandbox import sandboxed_template_engine, validate_template_for_save, TemplateSandboxError
+from .template_sandbox import sandboxed_template_engine, validate_template_for_save
 
 if TYPE_CHECKING:
-    from .models import EmailLayout, CommunicationTemplate
+    from .models import CommunicationTemplate, EmailLayout
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class LayoutCompositionService:
     """
 
     # Base outer wrapper for all emails - provides email client compatibility
-    OUTER_WRAPPER = '''<!DOCTYPE html>
+    OUTER_WRAPPER = """<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -63,14 +63,12 @@ class LayoutCompositionService:
         </tr>
     </table>
 </body>
-</html>'''
+</html>"""
 
     @classmethod
     def get_layout_context(
-        cls,
-        layout: 'EmailLayout',
-        additional_context: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+        cls, layout: "EmailLayout", additional_context: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Build context dictionary for layout rendering.
 
@@ -85,19 +83,17 @@ class LayoutCompositionService:
 
         context = {
             # Layout colors
-            'primary_color': layout.primary_color,
-            'secondary_color': layout.secondary_color,
-            'logo_url': layout.logo_url,
-
+            "primary_color": layout.primary_color,
+            "secondary_color": layout.secondary_color,
+            "logo_url": layout.logo_url,
             # Site information
-            'site_name': getattr(settings, 'SITE_NAME', 'LifePlace'),
-            'current_year': now.year,
-            'current_date': now.strftime('%B %d, %Y'),
-            'support_email': getattr(settings, 'SUPPORT_EMAIL', 'support@lifeplace.com'),
-
+            "site_name": getattr(settings, "SITE_NAME", "LifePlace"),
+            "current_year": now.year,
+            "current_date": now.strftime("%B %d, %Y"),
+            "support_email": getattr(settings, "SUPPORT_EMAIL", "support@lifeplace.com"),
             # Default header values (can be overridden)
-            'header_title': '',
-            'header_subtitle': '',
+            "header_title": "",
+            "header_subtitle": "",
         }
 
         # Merge additional context (allows templates to override header_title, etc.)
@@ -109,10 +105,10 @@ class LayoutCompositionService:
     @classmethod
     def compose_email(
         cls,
-        template: 'CommunicationTemplate',
-        content_context: Dict[str, Any],
-        layout: Optional['EmailLayout'] = None,
-        subject: Optional[str] = None,
+        template: "CommunicationTemplate",
+        content_context: dict[str, Any],
+        layout: Optional["EmailLayout"] = None,
+        subject: str | None = None,
     ) -> str:
         """
         Compose a complete email by combining layout with template content.
@@ -135,11 +131,7 @@ class LayoutCompositionService:
         # If no layout, render template as-is (backward compatible)
         if not effective_layout:
             logger.debug(f"No layout for template '{template.name}', rendering content directly")
-            return sandboxed_template_engine.render(
-                template.body_template,
-                content_context,
-                validate_first=True
-            )
+            return sandboxed_template_engine.render(template.body_template, content_context, validate_first=True)
 
         logger.info(f"Composing template '{template.name}' with layout '{effective_layout.name}'")
 
@@ -147,32 +139,22 @@ class LayoutCompositionService:
         layout_context = cls.get_layout_context(effective_layout, content_context)
 
         # 1. Render content (body_template)
-        rendered_content = sandboxed_template_engine.render(
-            template.body_template,
-            layout_context,
-            validate_first=True
-        )
+        rendered_content = sandboxed_template_engine.render(template.body_template, layout_context, validate_first=True)
 
         # 2. Render header
         rendered_header = sandboxed_template_engine.render(
-            effective_layout.header_template,
-            layout_context,
-            validate_first=True
+            effective_layout.header_template, layout_context, validate_first=True
         )
 
         # 3. Render footer
         rendered_footer = sandboxed_template_engine.render(
-            effective_layout.footer_template,
-            layout_context,
-            validate_first=True
+            effective_layout.footer_template, layout_context, validate_first=True
         )
 
         # 4. Wrap content using wrapper_template
-        wrapper_context = {**layout_context, 'content': rendered_content}
+        wrapper_context = {**layout_context, "content": rendered_content}
         wrapped_content = sandboxed_template_engine.render(
-            effective_layout.wrapper_template,
-            wrapper_context,
-            validate_first=True
+            effective_layout.wrapper_template, wrapper_context, validate_first=True
         )
 
         # 5. Assemble email body (header + wrapped content + footer)
@@ -180,15 +162,15 @@ class LayoutCompositionService:
 
         # 6. Wrap in outer HTML structure
         outer_context = {
-            'email_title': subject or template.name,
-            'custom_styles': effective_layout.base_styles or '',
-            'email_content': email_body,
+            "email_title": subject or template.name,
+            "custom_styles": effective_layout.base_styles or "",
+            "email_content": email_body,
         }
 
         final_html = sandboxed_template_engine.render(
             cls.OUTER_WRAPPER,
             outer_context,
-            validate_first=False  # Our own wrapper, already safe
+            validate_first=False,  # Our own wrapper, already safe
         )
 
         return final_html
@@ -196,9 +178,9 @@ class LayoutCompositionService:
     @classmethod
     def preview_layout(
         cls,
-        layout: 'EmailLayout',
+        layout: "EmailLayout",
         sample_content: str = '<p style="color: #333;">This is sample content to preview the layout.</p>',
-        context: Optional[Dict[str, Any]] = None
+        context: dict[str, Any] | None = None,
     ) -> str:
         """
         Preview a layout with sample content.
@@ -212,48 +194,34 @@ class LayoutCompositionService:
             Rendered HTML preview
         """
         preview_context = cls.get_layout_context(layout, context or {})
-        preview_context['header_title'] = preview_context.get('header_title') or 'Layout Preview'
-        preview_context['header_subtitle'] = preview_context.get('header_subtitle') or 'Sample email layout'
+        preview_context["header_title"] = preview_context.get("header_title") or "Layout Preview"
+        preview_context["header_subtitle"] = preview_context.get("header_subtitle") or "Sample email layout"
 
         # Render header
-        rendered_header = sandboxed_template_engine.render(
-            layout.header_template,
-            preview_context,
-            validate_first=True
-        )
+        rendered_header = sandboxed_template_engine.render(layout.header_template, preview_context, validate_first=True)
 
         # Render footer
-        rendered_footer = sandboxed_template_engine.render(
-            layout.footer_template,
-            preview_context,
-            validate_first=True
-        )
+        rendered_footer = sandboxed_template_engine.render(layout.footer_template, preview_context, validate_first=True)
 
         # Wrap sample content
-        wrapper_context = {**preview_context, 'content': sample_content}
+        wrapper_context = {**preview_context, "content": sample_content}
         wrapped_content = sandboxed_template_engine.render(
-            layout.wrapper_template,
-            wrapper_context,
-            validate_first=True
+            layout.wrapper_template, wrapper_context, validate_first=True
         )
 
         # Assemble
         email_body = rendered_header + wrapped_content + rendered_footer
 
         outer_context = {
-            'email_title': 'Layout Preview',
-            'custom_styles': layout.base_styles or '',
-            'email_content': email_body,
+            "email_title": "Layout Preview",
+            "custom_styles": layout.base_styles or "",
+            "email_content": email_body,
         }
 
-        return sandboxed_template_engine.render(
-            cls.OUTER_WRAPPER,
-            outer_context,
-            validate_first=False
-        )
+        return sandboxed_template_engine.render(cls.OUTER_WRAPPER, outer_context, validate_first=False)
 
     @classmethod
-    def validate_layout_templates(cls, layout: 'EmailLayout') -> tuple[bool, List[str]]:
+    def validate_layout_templates(cls, layout: "EmailLayout") -> tuple[bool, list[str]]:
         """
         Validate all layout template components for syntax and security.
 
@@ -283,7 +251,7 @@ class LayoutCompositionService:
         # Validate base styles (if any - just check for dangerous patterns)
         if layout.base_styles:
             # Check for script injection in CSS
-            dangerous_css_patterns = ['javascript:', 'expression(', 'behavior:', 'binding:']
+            dangerous_css_patterns = ["javascript:", "expression(", "behavior:", "binding:"]
             for pattern in dangerous_css_patterns:
                 if pattern.lower() in layout.base_styles.lower():
                     errors.append(f"Base styles: Contains potentially dangerous CSS pattern: {pattern}")
@@ -294,9 +262,9 @@ class LayoutCompositionService:
     def compose_email_with_content(
         cls,
         body_template: str,
-        layout: 'EmailLayout',
-        content_context: Dict[str, Any],
-        subject: Optional[str] = None,
+        layout: "EmailLayout",
+        content_context: dict[str, Any],
+        subject: str | None = None,
     ) -> str:
         """
         Compose a complete email by combining layout with body template content.
@@ -320,32 +288,18 @@ class LayoutCompositionService:
         layout_context = cls.get_layout_context(layout, content_context)
 
         # 1. Render content (body_template)
-        rendered_content = sandboxed_template_engine.render(
-            body_template,
-            layout_context,
-            validate_first=True
-        )
+        rendered_content = sandboxed_template_engine.render(body_template, layout_context, validate_first=True)
 
         # 2. Render header
-        rendered_header = sandboxed_template_engine.render(
-            layout.header_template,
-            layout_context,
-            validate_first=True
-        )
+        rendered_header = sandboxed_template_engine.render(layout.header_template, layout_context, validate_first=True)
 
         # 3. Render footer
-        rendered_footer = sandboxed_template_engine.render(
-            layout.footer_template,
-            layout_context,
-            validate_first=True
-        )
+        rendered_footer = sandboxed_template_engine.render(layout.footer_template, layout_context, validate_first=True)
 
         # 4. Wrap content using wrapper_template
-        wrapper_context = {**layout_context, 'content': rendered_content}
+        wrapper_context = {**layout_context, "content": rendered_content}
         wrapped_content = sandboxed_template_engine.render(
-            layout.wrapper_template,
-            wrapper_context,
-            validate_first=True
+            layout.wrapper_template, wrapper_context, validate_first=True
         )
 
         # 5. Assemble email body (header + wrapped content + footer)
@@ -353,15 +307,15 @@ class LayoutCompositionService:
 
         # 6. Wrap in outer HTML structure
         outer_context = {
-            'email_title': subject or 'Email Preview',
-            'custom_styles': layout.base_styles or '',
-            'email_content': email_body,
+            "email_title": subject or "Email Preview",
+            "custom_styles": layout.base_styles or "",
+            "email_content": email_body,
         }
 
         final_html = sandboxed_template_engine.render(
             cls.OUTER_WRAPPER,
             outer_context,
-            validate_first=False  # Our own wrapper, already safe
+            validate_first=False,  # Our own wrapper, already safe
         )
 
         return final_html
@@ -370,9 +324,9 @@ class LayoutCompositionService:
     def compose_content_only(
         cls,
         content: str,
-        layout: 'EmailLayout',
-        context: Optional[Dict[str, Any]] = None,
-        subject: Optional[str] = None,
+        layout: "EmailLayout",
+        context: dict[str, Any] | None = None,
+        subject: str | None = None,
     ) -> str:
         """
         Compose a layout around raw content (for manual messages without template).
@@ -389,38 +343,24 @@ class LayoutCompositionService:
         layout_context = cls.get_layout_context(layout, context or {})
 
         # Render header
-        rendered_header = sandboxed_template_engine.render(
-            layout.header_template,
-            layout_context,
-            validate_first=True
-        )
+        rendered_header = sandboxed_template_engine.render(layout.header_template, layout_context, validate_first=True)
 
         # Render footer
-        rendered_footer = sandboxed_template_engine.render(
-            layout.footer_template,
-            layout_context,
-            validate_first=True
-        )
+        rendered_footer = sandboxed_template_engine.render(layout.footer_template, layout_context, validate_first=True)
 
         # Wrap content
-        wrapper_context = {**layout_context, 'content': content}
+        wrapper_context = {**layout_context, "content": content}
         wrapped_content = sandboxed_template_engine.render(
-            layout.wrapper_template,
-            wrapper_context,
-            validate_first=True
+            layout.wrapper_template, wrapper_context, validate_first=True
         )
 
         # Assemble
         email_body = rendered_header + wrapped_content + rendered_footer
 
         outer_context = {
-            'email_title': subject or 'Email',
-            'custom_styles': layout.base_styles or '',
-            'email_content': email_body,
+            "email_title": subject or "Email",
+            "custom_styles": layout.base_styles or "",
+            "email_content": email_body,
         }
 
-        return sandboxed_template_engine.render(
-            cls.OUTER_WRAPPER,
-            outer_context,
-            validate_first=False
-        )
+        return sandboxed_template_engine.render(cls.OUTER_WRAPPER, outer_context, validate_first=False)

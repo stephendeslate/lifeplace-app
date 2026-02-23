@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/hooks/useBookingFlows.test.ts
 
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import {
   useBookingFlows,
   useBookingFlowSteps,
@@ -9,16 +9,16 @@ import {
   useBookingSessions,
   useBookingFlowAnalytics,
   useBookingFlowPaymentGateways,
-} from "./useBookingFlows";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+} from './useBookingFlows';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
-describe("useBookingFlows", () => {
-  describe("Query Operations", () => {
-    it("fetches booking flows successfully", async () => {
+describe('useBookingFlows', () => {
+  describe('Query Operations', () => {
+    it('fetches booking flows successfully', async () => {
       const { result } = renderHook(() => useBookingFlows(), {
         wrapper: createTestWrapper(),
       });
@@ -34,14 +34,14 @@ describe("useBookingFlows", () => {
 
       expect(result.current.bookingFlows.length).toBeGreaterThan(0);
       expect(result.current.totalCount).toBeGreaterThan(0);
-      expect(result.current.bookingFlows[0]).toHaveProperty("name");
-      expect(result.current.bookingFlows[0]).toHaveProperty("is_active");
+      expect(result.current.bookingFlows[0]).toHaveProperty('name');
+      expect(result.current.bookingFlows[0]).toHaveProperty('is_active');
     });
 
-    it("handles API error gracefully", async () => {
+    it('handles API error gracefully', async () => {
       server.use(
         http.get(`${BASE_URL}/bookingflow/flows/`, () => {
-          return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+          return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
         }),
       );
 
@@ -59,7 +59,7 @@ describe("useBookingFlows", () => {
       expect(result.current.isLoadingFlows).toBe(false);
     });
 
-    it("returns pagination metadata", async () => {
+    it('returns pagination metadata', async () => {
       const { result } = renderHook(() => useBookingFlows(), {
         wrapper: createTestWrapper(),
       });
@@ -71,14 +71,14 @@ describe("useBookingFlows", () => {
         { timeout: 5000 },
       );
 
-      expect(typeof result.current.totalCount).toBe("number");
-      expect(typeof result.current.pageCount).toBe("number");
+      expect(typeof result.current.totalCount).toBe('number');
+      expect(typeof result.current.pageCount).toBe('number');
       expect(result.current.pageCount).toBeGreaterThanOrEqual(1);
     });
   });
 
-  describe("Mutation Operations", () => {
-    it("creates a booking flow", async () => {
+  describe('Mutation Operations', () => {
+    it('creates a booking flow', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useBookingFlows(), { wrapper });
 
@@ -91,8 +91,8 @@ describe("useBookingFlows", () => {
 
       act(() => {
         result.current.createFlow({
-          name: "New Test Flow",
-          description: "Test description",
+          name: 'New Test Flow',
+          description: 'Test description',
           event_type: 1,
           is_active: true,
         });
@@ -108,13 +108,10 @@ describe("useBookingFlows", () => {
       expect(result.current.createError).toBeFalsy();
     });
 
-    it("handles create flow error", async () => {
+    it('handles create flow error', async () => {
       server.use(
         http.post(`${BASE_URL}/bookingflow/flows/`, () => {
-          return HttpResponse.json(
-            { detail: "Validation error" },
-            { status: 400 },
-          );
+          return HttpResponse.json({ detail: 'Validation error' }, { status: 400 });
         }),
       );
 
@@ -131,7 +128,7 @@ describe("useBookingFlows", () => {
 
       act(() => {
         result.current.createFlow({
-          name: "",
+          name: '',
           event_type: 1,
         });
       });
@@ -144,7 +141,7 @@ describe("useBookingFlows", () => {
       );
     });
 
-    it("updates a booking flow", async () => {
+    it('updates a booking flow', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useBookingFlows(), { wrapper });
 
@@ -161,7 +158,7 @@ describe("useBookingFlows", () => {
       act(() => {
         result.current.updateFlow({
           id: flow.id,
-          data: { name: "Updated Flow" },
+          data: { name: 'Updated Flow' },
         });
       });
 
@@ -175,7 +172,7 @@ describe("useBookingFlows", () => {
       expect(result.current.updateError).toBeFalsy();
     });
 
-    it("deletes a booking flow", async () => {
+    it('deletes a booking flow', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useBookingFlows(), { wrapper });
 
@@ -203,7 +200,7 @@ describe("useBookingFlows", () => {
       expect(result.current.deleteError).toBeFalsy();
     });
 
-    it("duplicates a booking flow", async () => {
+    it('duplicates a booking flow', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useBookingFlows(), { wrapper });
 
@@ -220,7 +217,7 @@ describe("useBookingFlows", () => {
       act(() => {
         result.current.duplicateFlow({
           id: flow.id,
-          data: { name: "Duplicated Flow" },
+          data: { name: 'Duplicated Flow' },
         });
       });
 
@@ -236,8 +233,8 @@ describe("useBookingFlows", () => {
   });
 });
 
-describe("useBookingFlowSteps", () => {
-  it("fetches booking flow steps successfully", async () => {
+describe('useBookingFlowSteps', () => {
+  it('fetches booking flow steps successfully', async () => {
     const { result } = renderHook(() => useBookingFlowSteps(), {
       wrapper: createTestWrapper(),
     });
@@ -252,14 +249,14 @@ describe("useBookingFlowSteps", () => {
     );
 
     expect(result.current.steps.length).toBeGreaterThan(0);
-    expect(result.current.steps[0]).toHaveProperty("step_type");
-    expect(result.current.steps[0]).toHaveProperty("order");
+    expect(result.current.steps[0]).toHaveProperty('step_type');
+    expect(result.current.steps[0]).toHaveProperty('order');
   });
 
-  it("handles steps API error", async () => {
+  it('handles steps API error', async () => {
     server.use(
       http.get(`${BASE_URL}/bookingflow/steps/`, () => {
-        return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+        return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
       }),
     );
 
@@ -275,7 +272,7 @@ describe("useBookingFlowSteps", () => {
     );
   });
 
-  it("creates a step", async () => {
+  it('creates a step', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useBookingFlowSteps(), { wrapper });
 
@@ -289,7 +286,7 @@ describe("useBookingFlowSteps", () => {
     act(() => {
       result.current.createStep({
         booking_flow: 1,
-        step_type: "introduction",
+        step_type: 'introduction',
         order: 1,
         is_enabled: true,
         is_required: true,
@@ -306,7 +303,7 @@ describe("useBookingFlowSteps", () => {
     expect(result.current.createStepError).toBeFalsy();
   });
 
-  it("updates a step", async () => {
+  it('updates a step', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useBookingFlowSteps(), { wrapper });
 
@@ -334,7 +331,7 @@ describe("useBookingFlowSteps", () => {
     expect(result.current.updateStepError).toBeFalsy();
   });
 
-  it("deletes a step", async () => {
+  it('deletes a step', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useBookingFlowSteps(), { wrapper });
 
@@ -360,7 +357,7 @@ describe("useBookingFlowSteps", () => {
     expect(result.current.deleteStepError).toBeFalsy();
   });
 
-  it("reorders steps", async () => {
+  it('reorders steps', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useBookingFlowSteps(), { wrapper });
 
@@ -389,8 +386,8 @@ describe("useBookingFlowSteps", () => {
   });
 });
 
-describe("useBookingFlowStepConfiguration", () => {
-  it("returns configuration hooks and mutation actions", async () => {
+describe('useBookingFlowStepConfiguration', () => {
+  it('returns configuration hooks and mutation actions', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useBookingFlowStepConfiguration(), {
       wrapper,
@@ -408,7 +405,7 @@ describe("useBookingFlowStepConfiguration", () => {
     expect(result.current.isAssigningQuestionnaires).toBe(false);
   });
 
-  it("updates step configuration", async () => {
+  it('updates step configuration', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useBookingFlowStepConfiguration(), {
       wrapper,
@@ -417,7 +414,7 @@ describe("useBookingFlowStepConfiguration", () => {
     act(() => {
       result.current.updateConfiguration({
         stepId: 1,
-        data: { some_config: "value" },
+        data: { some_config: 'value' },
       });
     });
 
@@ -432,8 +429,8 @@ describe("useBookingFlowStepConfiguration", () => {
   });
 });
 
-describe("useBookingSessions", () => {
-  it("fetches booking sessions", async () => {
+describe('useBookingSessions', () => {
+  it('fetches booking sessions', async () => {
     const { result } = renderHook(() => useBookingSessions(), {
       wrapper: createTestWrapper(),
     });
@@ -450,7 +447,7 @@ describe("useBookingSessions", () => {
     expect(Array.isArray(result.current.sessions)).toBe(true);
   });
 
-  it("creates a session", async () => {
+  it('creates a session', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useBookingSessions(), { wrapper });
 
@@ -475,7 +472,7 @@ describe("useBookingSessions", () => {
     expect(result.current.createSessionError).toBeFalsy();
   });
 
-  it("completes a booking", async () => {
+  it('completes a booking', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useBookingSessions(), { wrapper });
 
@@ -504,8 +501,8 @@ describe("useBookingSessions", () => {
   });
 });
 
-describe("useBookingFlowAnalytics", () => {
-  it("fetches analytics data", async () => {
+describe('useBookingFlowAnalytics', () => {
+  it('fetches analytics data', async () => {
     const { result } = renderHook(() => useBookingFlowAnalytics(), {
       wrapper: createTestWrapper(),
     });
@@ -523,7 +520,7 @@ describe("useBookingFlowAnalytics", () => {
     expect(result.current.analyticsError).toBeFalsy();
   });
 
-  it("updates daily analytics", async () => {
+  it('updates daily analytics', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useBookingFlowAnalytics(), { wrapper });
 
@@ -549,8 +546,8 @@ describe("useBookingFlowAnalytics", () => {
   });
 });
 
-describe("useBookingFlowPaymentGateways", () => {
-  it("returns sub-hooks for payment gateways", () => {
+describe('useBookingFlowPaymentGateways', () => {
+  it('returns sub-hooks for payment gateways', () => {
     const { result } = renderHook(() => useBookingFlowPaymentGateways(), {
       wrapper: createTestWrapper(),
     });
@@ -559,17 +556,13 @@ describe("useBookingFlowPaymentGateways", () => {
     expect(result.current.usePublicPaymentGateways).toBeDefined();
   });
 
-  it("fetches flow payment gateways via sub-hook", async () => {
+  it('fetches flow payment gateways via sub-hook', async () => {
     const wrapper = createTestWrapper();
-    const { result: parentResult } = renderHook(
-      () => useBookingFlowPaymentGateways(),
-      { wrapper },
-    );
+    const { result: parentResult } = renderHook(() => useBookingFlowPaymentGateways(), { wrapper });
 
-    const { result } = renderHook(
-      () => parentResult.current.useFlowPaymentGateways(1),
-      { wrapper },
-    );
+    const { result } = renderHook(() => parentResult.current.useFlowPaymentGateways(1), {
+      wrapper,
+    });
 
     await waitFor(
       () => {
@@ -579,6 +572,6 @@ describe("useBookingFlowPaymentGateways", () => {
     );
 
     expect(result.current.data).toBeDefined();
-    expect(result.current.data).toHaveProperty("available_gateways");
+    expect(result.current.data).toHaveProperty('available_gateways');
   });
 });

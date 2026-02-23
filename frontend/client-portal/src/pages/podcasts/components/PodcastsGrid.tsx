@@ -122,7 +122,8 @@ export const PodcastsGrid: React.FC = () => {
               lineHeight: tokens.typography.lineHeights.relaxed,
             }}
           >
-            More episodes coming soon. Subscribe to stay updated on new conversations about life, rest, and purpose.
+            More episodes coming soon. Subscribe to stay updated on new conversations about life,
+            rest, and purpose.
           </Typography>
         </AnimatedElement>
       </Container>

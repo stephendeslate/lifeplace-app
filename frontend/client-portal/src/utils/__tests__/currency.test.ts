@@ -143,13 +143,19 @@ describe('Currency Utilities', () => {
 
       it('overrides decimal places with minimumFractionDigits', () => {
         // Need to set both min and max when overriding
-        const result = formatCurrency(1000, 'PHP', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const result = formatCurrency(1000, 'PHP', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
         expect(result).toBe('₱1,000.00');
       });
 
       it('overrides decimal places with maximumFractionDigits', () => {
         // Need to set both min and max when changing decimals
-        const result = formatCurrency(1234.5678, 'USD', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        const result = formatCurrency(1234.5678, 'USD', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        });
         expect(result).toBe('$1,235');
       });
     });
@@ -209,7 +215,7 @@ describe('Currency Utilities', () => {
 
     it('includes PHP option', () => {
       const options = getCurrencyOptions();
-      const phpOption = options.find(opt => opt.code === 'PHP');
+      const phpOption = options.find((opt) => opt.code === 'PHP');
       expect(phpOption).toBeDefined();
       expect(phpOption?.symbol).toBe('₱');
       expect(phpOption?.name).toBe('Philippine Peso');
@@ -217,14 +223,14 @@ describe('Currency Utilities', () => {
 
     it('includes USD option', () => {
       const options = getCurrencyOptions();
-      const usdOption = options.find(opt => opt.code === 'USD');
+      const usdOption = options.find((opt) => opt.code === 'USD');
       expect(usdOption).toBeDefined();
       expect(usdOption?.symbol).toBe('$');
     });
 
     it('each option has required properties', () => {
       const options = getCurrencyOptions();
-      options.forEach(option => {
+      options.forEach((option) => {
         expect(option).toHaveProperty('value');
         expect(option).toHaveProperty('label');
         expect(option).toHaveProperty('code');
@@ -235,7 +241,7 @@ describe('Currency Utilities', () => {
 
     it('option value matches code', () => {
       const options = getCurrencyOptions();
-      options.forEach(option => {
+      options.forEach((option) => {
         expect(option.value).toBe(option.code);
       });
     });
@@ -263,7 +269,7 @@ describe('Currency Utilities', () => {
     });
 
     it('each currency has required config fields', () => {
-      Object.values(SUPPORTED_CURRENCIES).forEach(config => {
+      Object.values(SUPPORTED_CURRENCIES).forEach((config) => {
         expect(config).toHaveProperty('code');
         expect(config).toHaveProperty('symbol');
         expect(config).toHaveProperty('name');

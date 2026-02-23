@@ -25,7 +25,8 @@ export const vendorsApi = {
     const params = new URLSearchParams();
     if (filters?.search) params.append('search', filters.search);
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    if (filters?.is_bookable !== undefined) params.append('is_bookable', filters.is_bookable.toString());
+    if (filters?.is_bookable !== undefined)
+      params.append('is_bookable', filters.is_bookable.toString());
     if (filters?.service_category) params.append('service_category', filters.service_category);
 
     const response = await api.get(`/vendors/vendors/?${params.toString()}`);
@@ -65,19 +66,31 @@ export const vendorsApi = {
   // === Operating Rules ===
 
   getOperatingRules: async (vendorId: number): Promise<VendorOperatingRules> => {
-    const response = await api.get<VendorOperatingRules>(`/vendors/vendors/${vendorId}/operating_rules/`);
+    const response = await api.get<VendorOperatingRules>(
+      `/vendors/vendors/${vendorId}/operating_rules/`,
+    );
     return response.data;
   },
 
-  updateOperatingRules: async (vendorId: number, data: CreateOperatingRulesData): Promise<VendorOperatingRules> => {
-    const response = await api.patch<VendorOperatingRules>(`/vendors/vendors/${vendorId}/operating_rules/`, data);
+  updateOperatingRules: async (
+    vendorId: number,
+    data: CreateOperatingRulesData,
+  ): Promise<VendorOperatingRules> => {
+    const response = await api.patch<VendorOperatingRules>(
+      `/vendors/vendors/${vendorId}/operating_rules/`,
+      data,
+    );
     return response.data;
   },
 
   // === Service Categories ===
 
-  getServiceCategories: async (): Promise<Array<{ value: VendorServiceCategory; label: string }>> => {
-    const response = await api.get<Array<{ value: VendorServiceCategory; label: string }>>('/vendors/vendors/categories/');
+  getServiceCategories: async (): Promise<
+    Array<{ value: VendorServiceCategory; label: string }>
+  > => {
+    const response = await api.get<Array<{ value: VendorServiceCategory; label: string }>>(
+      '/vendors/vendors/categories/',
+    );
     return response.data;
   },
 
@@ -94,7 +107,9 @@ export const vendorsApi = {
   },
 
   getVendorsForPackage: async (packageId: number): Promise<PackageVendorInline[]> => {
-    const response = await api.get<PackageVendorInline[]>(`/vendors/package-vendors/by_package/?package_id=${packageId}`);
+    const response = await api.get<PackageVendorInline[]>(
+      `/vendors/package-vendors/by_package/?package_id=${packageId}`,
+    );
     return response.data;
   },
 
@@ -108,7 +123,10 @@ export const vendorsApi = {
     return response.data;
   },
 
-  updatePackageVendor: async (id: number, data: Partial<CreatePackageVendorData>): Promise<PackageVendor> => {
+  updatePackageVendor: async (
+    id: number,
+    data: Partial<CreatePackageVendorData>,
+  ): Promise<PackageVendor> => {
     const response = await api.patch<PackageVendor>(`/vendors/package-vendors/${id}/`, data);
     return response.data;
   },

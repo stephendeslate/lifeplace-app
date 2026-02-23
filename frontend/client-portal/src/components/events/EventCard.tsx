@@ -1,21 +1,9 @@
 // frontend/client-portal/src/components/events/EventCard.tsx
 
 import React from 'react';
-import {
-  Typography,
-  Box,
-  Chip,
-  Stack,
-  Button,
-  Skeleton,
-  useTheme,
-  alpha,
-} from '@mui/material';
+import { Typography, Box, Chip, Stack, Button, Skeleton, useTheme, alpha } from '@mui/material';
 import { GlassCard } from '../../design-system/components/GlassCard';
-import {
-  CalendarToday as CalendarIcon,
-  ArrowForward as ArrowIcon,
-} from '@mui/icons-material';
+import { CalendarToday as CalendarIcon, ArrowForward as ArrowIcon } from '@mui/icons-material';
 import { formatPhilippinesTime } from '../../utils/timezone';
 import type { Event } from '../../types/events.types';
 import EventStatusBadge from './EventStatusBadge';
@@ -55,23 +43,25 @@ const EventCard: React.FC<EventCardProps> = ({ event, onClick, loading = false }
   }
 
   return (
-    <GlassCard 
+    <GlassCard
       variant="light"
       intensity="medium"
       hover={Boolean(onClick)}
-      sx={{ 
-        height: '100%', 
-        display: 'flex', 
+      sx={{
+        height: '100%',
+        display: 'flex',
         flexDirection: 'column',
         cursor: onClick ? 'pointer' : 'default',
         border: `1px solid ${alpha('#fff', 0.1)}`,
         transition: 'all 0.3s ease',
-        '&:hover': onClick ? {
-          transform: 'translateY(-4px)',
-          boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
-          backgroundColor: alpha('#fff', 0.08),
-          border: `1px solid ${alpha('#fff', 0.2)}`,
-        } : {},
+        '&:hover': onClick
+          ? {
+              transform: 'translateY(-4px)',
+              boxShadow: '0 12px 40px rgba(0,0,0,0.15)',
+              backgroundColor: alpha('#fff', 0.08),
+              border: `1px solid ${alpha('#fff', 0.2)}`,
+            }
+          : {},
       }}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
@@ -107,10 +97,13 @@ const EventCard: React.FC<EventCardProps> = ({ event, onClick, loading = false }
                 label={event.payment_status.replace('_', ' ')}
                 size="small"
                 color={
-                  event.payment_status === 'PAID' ? 'success' :
-                  event.payment_status === 'OVERDUE' ? 'error' :
-                  event.payment_status === 'PARTIAL' ? 'warning' :
-                  'default'
+                  event.payment_status === 'PAID'
+                    ? 'success'
+                    : event.payment_status === 'OVERDUE'
+                      ? 'error'
+                      : event.payment_status === 'PARTIAL'
+                        ? 'warning'
+                        : 'default'
                 }
                 variant="outlined"
                 sx={{
@@ -136,13 +129,14 @@ const EventCard: React.FC<EventCardProps> = ({ event, onClick, loading = false }
                 <CalendarIcon fontSize="small" color="action" />
                 <Typography variant="body2" color="text.secondary">
                   {formatPhilippinesTime(event.start_date, false, 'MMM dd, yyyy')}
-                  {event.end_date && formatPhilippinesTime(event.start_date, false, 'yyyy-MM-dd') !== formatPhilippinesTime(event.end_date, false, 'yyyy-MM-dd') &&
-                    ` - ${formatPhilippinesTime(event.end_date, false, 'MMM dd, yyyy')}`
-                  }
+                  {event.end_date &&
+                    formatPhilippinesTime(event.start_date, false, 'yyyy-MM-dd') !==
+                      formatPhilippinesTime(event.end_date, false, 'yyyy-MM-dd') &&
+                    ` - ${formatPhilippinesTime(event.end_date, false, 'MMM dd, yyyy')}`}
                 </Typography>
               </Stack>
             )}
-            
+
             {event.current_stage_name && (
               <Typography variant="body2" color="text.secondary">
                 Stage: {event.current_stage_name}
@@ -154,8 +148,8 @@ const EventCard: React.FC<EventCardProps> = ({ event, onClick, loading = false }
 
       {onClick && (
         <Box sx={{ px: 3, pb: 3 }}>
-          <Button 
-            size="small" 
+          <Button
+            size="small"
             variant="outlined"
             endIcon={<ArrowIcon />}
             aria-label={`View details for ${event.name}`}

@@ -167,9 +167,11 @@ export const gradients = {
   radialSage: 'radial-gradient(circle at 70% 70%, rgba(125, 133, 112, 0.1) 0%, transparent 60%)',
 
   // Overlay gradients (subtle, used sparingly)
-  overlayLight: 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.2) 100%)',
+  overlayLight:
+    'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.2) 100%)',
   overlayDark: 'linear-gradient(135deg, rgba(46, 42, 40, 0.7) 0%, rgba(46, 42, 40, 0.5) 100%)',
-  overlayWarm: 'linear-gradient(135deg, rgba(200, 115, 86, 0.15) 0%, rgba(212, 165, 116, 0.1) 100%)',
+  overlayWarm:
+    'linear-gradient(135deg, rgba(200, 115, 86, 0.15) 0%, rgba(212, 165, 116, 0.1) 100%)',
 
   // Hero/Background gradients - full page
   heroWarm: 'linear-gradient(135deg, #FAF7F2 0%, #f7f8f6 50%, #fdf6f4 100%)',
@@ -252,5 +254,6 @@ export const overlays = {
 
   // Gradient overlays for hero sections
   gradientDark: 'linear-gradient(to bottom, rgba(46, 42, 40, 0.3) 0%, rgba(46, 42, 40, 0.7) 100%)',
-  gradientLight: 'linear-gradient(to bottom, rgba(250, 247, 242, 0.5) 0%, rgba(250, 247, 242, 0.9) 100%)',
+  gradientLight:
+    'linear-gradient(to bottom, rgba(250, 247, 242, 0.5) 0%, rgba(250, 247, 242, 0.9) 100%)',
 };

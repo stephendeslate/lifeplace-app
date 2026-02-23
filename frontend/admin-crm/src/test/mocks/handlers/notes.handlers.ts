@@ -1,12 +1,8 @@
-import { http, HttpResponse, delay } from "msw";
-import {
-  mockNotes,
-  createMockNote,
-  createMockNotesPaginatedResponse,
-} from "../data/notes.mock";
-import type { Note } from "../../../types/notes.types";
+import { http, HttpResponse, delay } from 'msw';
+import { mockNotes, createMockNote, createMockNotesPaginatedResponse } from '../data/notes.mock';
+import type { Note } from '../../../types/notes.types';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
 let notesStore: Note[] = [...mockNotes];
 
@@ -19,17 +15,15 @@ export const notesHandlers = [
   http.get(`${BASE_URL}/notes/`, async ({ request }) => {
     await delay(50);
     const url = new URL(request.url);
-    const search = url.searchParams.get("search")?.toLowerCase();
-    const contentType = url.searchParams.get("content_type");
-    const objectId = url.searchParams.get("object_id");
+    const search = url.searchParams.get('search')?.toLowerCase();
+    const contentType = url.searchParams.get('content_type');
+    const objectId = url.searchParams.get('object_id');
 
     let filtered = [...notesStore];
 
     if (search) {
       filtered = filtered.filter(
-        (n) =>
-          n.title.toLowerCase().includes(search) ||
-          n.content.toLowerCase().includes(search),
+        (n) => n.title.toLowerCase().includes(search) || n.content.toLowerCase().includes(search),
       );
     }
     if (contentType) {
@@ -39,12 +33,10 @@ export const notesHandlers = [
       filtered = filtered.filter((n) => n.object_id === Number(objectId));
     }
 
-    const page = Number(url.searchParams.get("page") || 1);
-    const pageSize = Number(url.searchParams.get("page_size") || 25);
+    const page = Number(url.searchParams.get('page') || 1);
+    const pageSize = Number(url.searchParams.get('page_size') || 25);
 
-    return HttpResponse.json(
-      createMockNotesPaginatedResponse(filtered, page, pageSize),
-    );
+    return HttpResponse.json(createMockNotesPaginatedResponse(filtered, page, pageSize));
   }),
 
   // GET /api/notes/for_object/ - Notes for a specific object
@@ -52,8 +44,8 @@ export const notesHandlers = [
   http.get(`${BASE_URL}/notes/for_object/`, async ({ request }) => {
     await delay(30);
     const url = new URL(request.url);
-    const contentType = url.searchParams.get("content_type");
-    const objectId = Number(url.searchParams.get("object_id"));
+    const contentType = url.searchParams.get('content_type');
+    const objectId = Number(url.searchParams.get('object_id'));
 
     const filtered = notesStore.filter(
       (n) => n.content_type_name === contentType && n.object_id === objectId,
@@ -67,7 +59,7 @@ export const notesHandlers = [
     const id = Number(params.id);
     const note = notesStore.find((n) => n.id === id);
     if (!note) {
-      return HttpResponse.json({ detail: "Not found." }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found.' }, { status: 404 });
     }
     return HttpResponse.json(note);
   }),
@@ -78,7 +70,7 @@ export const notesHandlers = [
     const body = (await request.json()) as Record<string, unknown>;
     const newNote = createMockNote({
       id: notesStore.length + 100,
-      title: (body.title as string) || "",
+      title: (body.title as string) || '',
       content: body.content as string,
       object_id: body.object_id as number,
       content_type_name: body.content_type_model as string,
@@ -94,7 +86,7 @@ export const notesHandlers = [
     const body = (await request.json()) as Record<string, unknown>;
     const idx = notesStore.findIndex((n) => n.id === id);
     if (idx === -1) {
-      return HttpResponse.json({ detail: "Not found." }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found.' }, { status: 404 });
     }
     notesStore[idx] = {
       ...notesStore[idx],
@@ -110,7 +102,7 @@ export const notesHandlers = [
     const id = Number(params.id);
     const idx = notesStore.findIndex((n) => n.id === id);
     if (idx === -1) {
-      return HttpResponse.json({ detail: "Not found." }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found.' }, { status: 404 });
     }
     notesStore.splice(idx, 1);
     return new HttpResponse(null, { status: 204 });

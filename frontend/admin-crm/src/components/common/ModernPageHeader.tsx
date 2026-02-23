@@ -84,28 +84,40 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
 
   const getPadding = () => {
     switch (size) {
-      case 'small': return { xs: 2, md: 3 };
-      case 'medium': return { xs: 3, md: 4 };
-      case 'large': return { xs: 4, md: 5 };
-      default: return { xs: 3, md: 4 };
+      case 'small':
+        return { xs: 2, md: 3 };
+      case 'medium':
+        return { xs: 3, md: 4 };
+      case 'large':
+        return { xs: 4, md: 5 };
+      default:
+        return { xs: 3, md: 4 };
     }
   };
 
   const getTitleVariant = () => {
     switch (size) {
-      case 'small': return 'h5' as const;
-      case 'medium': return 'h4' as const;
-      case 'large': return 'h3' as const;
-      default: return 'h4' as const;
+      case 'small':
+        return 'h5' as const;
+      case 'medium':
+        return 'h4' as const;
+      case 'large':
+        return 'h3' as const;
+      default:
+        return 'h4' as const;
     }
   };
 
   const getIconSize = () => {
     switch (size) {
-      case 'small': return 24;
-      case 'medium': return 28;
-      case 'large': return 32;
-      default: return 28;
+      case 'small':
+        return 24;
+      case 'medium':
+        return 28;
+      case 'large':
+        return 32;
+      default:
+        return 28;
     }
   };
 
@@ -116,68 +128,71 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
       sx: {
         borderRadius: tokens.spacing.radius.md,
         fontWeight: 600,
-      }
+      },
     };
 
-    const content = action.variant === 'icon' ? (
-      <IconButton
-        {...baseButtonProps}
-        sx={{
-          ...baseButtonProps.sx,
-          width: size === 'large' ? 48 : 40,
-          height: size === 'large' ? 48 : 40,
-          color: action.color ? tokens.color[action.color][600] : themeColors.text.secondary,
-          '&:hover': {
-            bgcolor: themeColors.surface.level2,
-          }
-        }}
-      >
-        {action.badge ? (
-          <Badge badgeContent={action.badge} color={action.color || 'primary'}>
-            {action.icon}
-          </Badge>
-        ) : (
-          action.icon
-        )}
-      </IconButton>
-    ) : (
-      <Button
-        {...baseButtonProps}
-        variant={action.variant || (isSecondary ? 'outlined' : 'contained')}
-        startIcon={action.icon}
-        sx={{
-          ...baseButtonProps.sx,
-          ...(action.variant === 'contained' && {
-            bgcolor: tokens.color[action.color || 'primary'][500],
-            '&:hover': {
-              bgcolor: tokens.color[action.color || 'primary'][600],
-            }
-          }),
-          ...(action.variant === 'outlined' && {
-            borderColor: themeColors.border.default,
-            color: themeColors.text.primary,
+    const content =
+      action.variant === 'icon' ? (
+        <IconButton
+          {...baseButtonProps}
+          sx={{
+            ...baseButtonProps.sx,
+            width: size === 'large' ? 48 : 40,
+            height: size === 'large' ? 48 : 40,
+            color: action.color ? tokens.color[action.color][600] : themeColors.text.secondary,
             '&:hover': {
               bgcolor: themeColors.surface.level2,
-              borderColor: themeColors.border.prominent,
-            }
-          }),
-        }}
-      >
-        {action.badge ? (
-          <Badge badgeContent={action.badge} color={action.color || 'primary'}>
-            {action.label}
-          </Badge>
-        ) : (
-          action.label
-        )}
-      </Button>
-    );
+            },
+          }}
+        >
+          {action.badge ? (
+            <Badge badgeContent={action.badge} color={action.color || 'primary'}>
+              {action.icon}
+            </Badge>
+          ) : (
+            action.icon
+          )}
+        </IconButton>
+      ) : (
+        <Button
+          {...baseButtonProps}
+          variant={action.variant || (isSecondary ? 'outlined' : 'contained')}
+          startIcon={action.icon}
+          sx={{
+            ...baseButtonProps.sx,
+            ...(action.variant === 'contained' && {
+              bgcolor: tokens.color[action.color || 'primary'][500],
+              '&:hover': {
+                bgcolor: tokens.color[action.color || 'primary'][600],
+              },
+            }),
+            ...(action.variant === 'outlined' && {
+              borderColor: themeColors.border.default,
+              color: themeColors.text.primary,
+              '&:hover': {
+                bgcolor: themeColors.surface.level2,
+                borderColor: themeColors.border.prominent,
+              },
+            }),
+          }}
+        >
+          {action.badge ? (
+            <Badge badgeContent={action.badge} color={action.color || 'primary'}>
+              {action.label}
+            </Badge>
+          ) : (
+            action.label
+          )}
+        </Button>
+      );
 
     return action.tooltip ? (
       <Tooltip key={action.label} title={action.tooltip} placement="bottom">
         {content}
       </Tooltip>
-    ) : content;
+    ) : (
+      content
+    );
   };
 
   return (
@@ -205,10 +220,7 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
           <Box sx={{ flex: 1, minWidth: 0 }}>
             {/* Breadcrumbs */}
             {breadcrumbs && breadcrumbs.length > 0 && (
-              <Breadcrumbs
-                separator={<NavigateNextIcon fontSize="small" />}
-                sx={{ mb: 2 }}
-              >
+              <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} sx={{ mb: 2 }}>
                 <Link
                   href="/"
                   sx={{
@@ -221,7 +233,7 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
                     fontWeight: 500,
                     '&:hover': {
                       color: tokens.color.primary[600],
-                    }
+                    },
                   }}
                 >
                   <HomeIcon fontSize="small" />
@@ -235,18 +247,16 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
                     href={crumb.href}
                     onClick={crumb.onClick}
                     sx={{
-                      color: crumb.current
-                        ? themeColors.text.primary
-                        : themeColors.text.secondary,
+                      color: crumb.current ? themeColors.text.primary : themeColors.text.secondary,
                       textDecoration: 'none',
                       fontSize: '0.875rem',
                       fontWeight: crumb.current ? 600 : 500,
-                      cursor: (crumb.href || crumb.onClick) ? 'pointer' : 'default',
+                      cursor: crumb.href || crumb.onClick ? 'pointer' : 'default',
                       ...((crumb.href || crumb.onClick) && {
                         '&:hover': {
                           color: tokens.color.primary[600],
-                        }
-                      })
+                        },
+                      }),
                     }}
                   >
                     {crumb.label}
@@ -271,11 +281,10 @@ export const ModernPageHeader: React.FC<ModernPageHeaderProps> = ({
                     ? React.cloneElement(icon as React.ReactElement<{ sx?: object }>, {
                         sx: {
                           fontSize: getIconSize(),
-                          color: themeColors.semantic.primary.text
-                        }
+                          color: themeColors.semantic.primary.text,
+                        },
                       })
-                    : icon
-                  }
+                    : icon}
                 </Box>
               )}
 
@@ -427,7 +436,11 @@ export const createSettingsAction = (onSettings: () => void): HeaderAction => ({
   tooltip: 'Open settings',
 });
 
-export const createAddAction = (label: string, onAdd: () => void, color: HeaderAction['color'] = 'primary'): HeaderAction => ({
+export const createAddAction = (
+  label: string,
+  onAdd: () => void,
+  color: HeaderAction['color'] = 'primary',
+): HeaderAction => ({
   icon: <AddIcon />,
   label,
   variant: 'contained',

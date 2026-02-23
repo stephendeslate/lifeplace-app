@@ -52,13 +52,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           px: {
             xs: tokens.spacing.space.containerPadding.mobile,
             sm: tokens.spacing.space.containerPadding.tablet,
-            md: tokens.spacing.space.containerPadding.desktop
+            md: tokens.spacing.space.containerPadding.desktop,
           },
           textAlign: 'center',
         }}
       >
-        <Stack spacing={{ xs: tokens.spacing.space[5], md: tokens.spacing.space[9] }} alignItems="center" sx={{ width: '100%' }}>
-
+        <Stack
+          spacing={{ xs: tokens.spacing.space[5], md: tokens.spacing.space[9] }}
+          alignItems="center"
+          sx={{ width: '100%' }}
+        >
           {/* Main Heading - Display Typography */}
           <AnimatedElement animation="fadeIn" delay={0}>
             <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
@@ -68,12 +71,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   fontSize: {
                     xs: tokens.typography.responsive.display2.mobile.fontSize,
                     sm: tokens.typography.responsive.display2.tablet.fontSize,
-                    md: tokens.typography.styles.display2.fontSize
+                    md: tokens.typography.styles.display2.fontSize,
                   },
                   lineHeight: {
                     xs: tokens.typography.responsive.display2.mobile.lineHeight,
                     sm: tokens.typography.responsive.display2.tablet.lineHeight,
-                    md: tokens.typography.styles.display2.lineHeight
+                    md: tokens.typography.styles.display2.lineHeight,
                   },
                   color: 'white',
                   maxWidth: 900,
@@ -102,8 +105,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   textAlign: 'center',
                 }}
               >
-                Experience the cozy ambience and peaceful environment at LifePlace Alfonso.
-                Our breathtaking venue offers the perfect blend of beauty and luxury for your special occasions.
+                Experience the cozy ambience and peaceful environment at LifePlace Alfonso. Our
+                breathtaking venue offers the perfect blend of beauty and luxury for your special
+                occasions.
               </Typography>
             </Box>
           </AnimatedElement>
@@ -274,7 +278,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   <Button
                     variant="outlined"
                     size="large"
-                    onClick={() => window.location.href = '/dashboard'}
+                    onClick={() => (window.location.href = '/dashboard')}
                     sx={{
                       borderColor: 'rgba(255, 255, 255, 0.8)',
                       color: 'white',

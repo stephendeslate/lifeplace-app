@@ -1,0 +1,44 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "build/**"],
+      "env": [
+        "VITE_API_URL",
+        "VITE_APP_ENV",
+        "VITE_SENTRY_RELEASE",
+        "VITE_SENTRY_DSN",
+        "VITE_STRIPE_PUBLIC_KEY",
+        "VITE_GA_MEASUREMENT_ID",
+        "SENTRY_AUTH_TOKEN",
+        "SENTRY_ORG"
+      ]
+    },
+    "test": {
+      "dependsOn": [],
+      "outputs": ["coverage/**"],
+      "cache": false
+    },
+    "lint": {
+      "dependsOn": [],
+      "outputs": [],
+      "cache": true
+    },
+    "type-check": {
+      "dependsOn": [],
+      "outputs": [],
+      "cache": true
+    },
+    "format": {
+      "dependsOn": [],
+      "outputs": [],
+      "cache": false
+    },
+    "format:check": {
+      "dependsOn": [],
+      "outputs": [],
+      "cache": true
+    }
+  }
+}

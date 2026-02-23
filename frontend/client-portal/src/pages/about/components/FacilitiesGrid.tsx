@@ -2,14 +2,7 @@
 
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
-import {
-  Church,
-  Home as HomeIcon,
-  Nature,
-  Hotel,
-  Landscape,
-  Groups,
-} from '@mui/icons-material';
+import { Church, Home as HomeIcon, Nature, Hotel, Landscape, Groups } from '@mui/icons-material';
 import { Section, Container, ModernCard, AnimatedElement, tokens } from '../../../design-system';
 import type { FacilityInfo } from '../types/about.types';
 
@@ -107,11 +100,7 @@ export const FacilitiesGrid: React.FC = () => {
             }}
           >
             {facilities.map((facility, index) => (
-              <AnimatedElement
-                key={facility.id}
-                animation="slideUp"
-                delay={200 + index * 100}
-              >
+              <AnimatedElement key={facility.id} animation="slideUp" delay={200 + index * 100}>
                 <ModernCard
                   variant="elevated"
                   size="large"

@@ -25,7 +25,7 @@ import { ConfigSection } from '../../common';
 import { tokens } from '../../../design-system';
 import type {
   BookingFlowStep,
-  IntroductionStepConfiguration
+  IntroductionStepConfiguration,
 } from '../../../types/bookingflows.types';
 
 interface IntroductionStepConfigProps {
@@ -60,11 +60,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
   const [hasChanges, setHasChanges] = useState(false);
 
   // Use centralized form handlers
-  const { handleInputChange, handleSwitchChange } = useFormHandlers(
-    setFormData,
-    errors,
-    setErrors
-  );
+  const { handleInputChange, handleSwitchChange } = useFormHandlers(setFormData, errors, setErrors);
 
   // Use the evolved hooks from useBookingFlows
   const {
@@ -87,7 +83,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
     if (config && config.id) {
       // Type guard to ensure we have IntroductionStepConfiguration
       const introConfig = config as IntroductionStepConfiguration;
-      
+
       setFormData({
         title: introConfig.title || `Welcome to ${step.step_type_display}`,
         content: introConfig.content || '',
@@ -102,7 +98,8 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
       setFormData({
         ...defaultFormData,
         title: `Welcome to ${step.step_type_display}`,
-        content: 'We\'re excited to help you plan your perfect event! This booking process will guide you through all the details we need.',
+        content:
+          "We're excited to help you plan your perfect event! This booking process will guide you through all the details we need.",
       });
       setHasChanges(false);
     }
@@ -112,14 +109,14 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
   useEffect(() => {
     if (config) {
       const introConfig = config as IntroductionStepConfiguration;
-      const hasFormChanges = 
+      const hasFormChanges =
         formData.title !== (introConfig.title || '') ||
         formData.content !== (introConfig.content || '') ||
         formData.show_event_details !== (introConfig.show_event_details ?? true) ||
         formData.show_pricing_overview !== (introConfig.show_pricing_overview ?? false) ||
         formData.custom_css !== (introConfig.custom_css || '') ||
         formData.background_image !== (introConfig.background_image || '');
-      
+
       setHasChanges(hasFormChanges);
     }
   }, [formData, config]);
@@ -159,7 +156,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
           setHasChanges(false);
           onConfigurationChange?.();
         },
-      }
+      },
     );
   };
 
@@ -178,7 +175,8 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
       setFormData({
         ...defaultFormData,
         title: `Welcome to ${step.step_type_display}`,
-        content: 'We\'re excited to help you plan your perfect event! This booking process will guide you through all the details we need.',
+        content:
+          "We're excited to help you plan your perfect event! This booking process will guide you through all the details we need.",
       });
     }
     setErrors({});
@@ -190,7 +188,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
     if (file) {
       // In a real implementation, this would upload to a file storage service
       // For now, we'll just store the filename
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         background_image: file.name,
       }));
@@ -224,15 +222,16 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
         <Typography variant="h6" gutterBottom>
           Introduction Step Configuration
         </Typography>
-        <Alert 
-          severity="error" 
+        <Alert
+          severity="error"
           action={
             <Button color="inherit" size="small" onClick={handleRefresh}>
               Retry
             </Button>
           }
         >
-          Failed to load step configuration: {configError instanceof Error ? configError.message : 'Unknown error'}
+          Failed to load step configuration:{' '}
+          {configError instanceof Error ? configError.message : 'Unknown error'}
         </Alert>
       </Box>
     );
@@ -241,9 +240,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
   return (
     <Box>
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-        <Typography variant="h6">
-          Introduction Step Configuration
-        </Typography>
+        <Typography variant="h6">Introduction Step Configuration</Typography>
         <Button
           size="small"
           startIcon={<RefreshIcon />}
@@ -253,7 +250,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
           Refresh
         </Button>
       </Box>
-      
+
       <Alert severity="info" sx={{ mb: 3 }}>
         The introduction step welcomes clients and sets expectations for the booking process.
       </Alert>
@@ -261,7 +258,10 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
       {/* Show update errors */}
       {updateConfigurationError ? (
         <Alert severity="error" sx={{ mb: 3 }}>
-          Failed to update configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : 'Unknown error'}
+          Failed to update configuration:{' '}
+          {updateConfigurationError instanceof Error
+            ? updateConfigurationError.message
+            : 'Unknown error'}
         </Alert>
       ) : null}
 
@@ -350,12 +350,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
                   disabled={isUpdatingConfiguration}
                 >
                   Upload Image
-                  <input
-                    type="file"
-                    hidden
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                  />
+                  <input type="file" hidden accept="image/*" onChange={handleImageUpload} />
                 </Button>
 
                 {formData.background_image && (
@@ -399,7 +394,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
                 backgroundImage: `url(${formData.background_image})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
-              })
+              }),
             }}
           >
             <Typography variant="h5" gutterBottom>
@@ -411,7 +406,14 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
             </Typography>
 
             {formData.show_event_details && (
-              <Box sx={{ mt: 2, p: 2, backgroundColor: 'background.paper', borderRadius: tokens.spacing.radius.md }}>
+              <Box
+                sx={{
+                  mt: 2,
+                  p: 2,
+                  backgroundColor: 'background.paper',
+                  borderRadius: tokens.spacing.radius.md,
+                }}
+              >
                 <Typography variant="subtitle2" gutterBottom>
                   Event Details
                 </Typography>
@@ -422,7 +424,14 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
             )}
 
             {formData.show_pricing_overview && (
-              <Box sx={{ mt: 2, p: 2, backgroundColor: 'background.paper', borderRadius: tokens.spacing.radius.md }}>
+              <Box
+                sx={{
+                  mt: 2,
+                  p: 2,
+                  backgroundColor: 'background.paper',
+                  borderRadius: tokens.spacing.radius.md,
+                }}
+              >
                 <Typography variant="subtitle2" gutterBottom>
                   Pricing Overview
                 </Typography>
@@ -466,7 +475,7 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
           >
             Reset Changes
           </Button>
-          
+
           <Button
             variant="contained"
             startIcon={<SaveIcon />}
@@ -479,7 +488,9 @@ export const IntroductionStepConfig: React.FC<IntroductionStepConfigProps> = ({
 
         {/* Configuration Debug Info (Development only) */}
         {process.env.NODE_ENV === 'development' && config && (
-          <Box sx={{ borderRadius: tokens.spacing.radius.md, bgcolor: tokens.color.neutral[50], p: 3 }}>
+          <Box
+            sx={{ borderRadius: tokens.spacing.radius.md, bgcolor: tokens.color.neutral[50], p: 3 }}
+          >
             <Typography variant="caption" gutterBottom>
               Debug: Current Configuration
             </Typography>

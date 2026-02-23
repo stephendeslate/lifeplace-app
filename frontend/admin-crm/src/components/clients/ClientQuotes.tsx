@@ -75,7 +75,9 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
 
   // Data hooks
   const { data: quotes = [], isLoading, refetch: refetchQuotes } = useQuotesForClient(client.id);
-  const { events: clientEvents = [], isLoadingEvents: eventsLoading } = useEvents({ client: client.id });
+  const { events: clientEvents = [], isLoadingEvents: eventsLoading } = useEvents({
+    client: client.id,
+  });
 
   // Mutation hooks
   const duplicateQuoteMutation = useDuplicateQuote();
@@ -111,7 +113,11 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
     handleMenuClose();
     try {
       await duplicateQuoteMutation.mutateAsync(quote.id);
-      showToast({ type: 'success', title: 'Quote Duplicated', message: 'Quote duplicated successfully' });
+      showToast({
+        type: 'success',
+        title: 'Quote Duplicated',
+        message: 'Quote duplicated successfully',
+      });
       refetchQuotes();
     } catch {
       showToast({ type: 'error', title: 'Error', message: 'Failed to duplicate quote' });
@@ -155,13 +161,16 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
     const currency = quoteCurrency || currencySettings?.defaultCurrency || 'PHP';
     return formatCurrency(amount, currency, {
       showSymbol: currencySettings?.displayFormat !== 'code',
-      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      showCode:
+        currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
       minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
       maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
     });
   };
 
-  const getStatusColor = (status: string): "default" | "primary" | "success" | "warning" | "error" => {
+  const getStatusColor = (
+    status: string,
+  ): 'default' | 'primary' | 'success' | 'warning' | 'error' => {
     switch (status) {
       case 'DRAFT':
         return 'default';
@@ -277,17 +286,11 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
                 <TableCell>
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
                     <Tooltip title="View">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleViewQuote(quote)}
-                      >
+                      <IconButton size="small" onClick={() => handleViewQuote(quote)}>
                         <ViewIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleMenuOpen(e, quote)}
-                    >
+                    <IconButton size="small" onClick={(e) => handleMenuOpen(e, quote)}>
                       <MoreVertIcon fontSize="small" />
                     </IconButton>
                   </Stack>
@@ -298,11 +301,7 @@ export const ClientQuotes: React.FC<ClientQuotesProps> = ({ client }) => {
         </Table>
       </TableContainer>
 
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         {selectedQuote?.status === 'DRAFT' && (
           <MenuItem onClick={() => selectedQuote && handleEditQuote(selectedQuote)}>
             <ListItemIcon>

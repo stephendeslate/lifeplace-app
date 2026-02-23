@@ -154,7 +154,7 @@ export const isPaymentAction = (action: AnyActionItem): action is PaymentActionI
 // Helper function to calculate urgency level from days
 export const calculateUrgencyFromDays = (
   days: number | null,
-  isOverdue: boolean = false
+  isOverdue: boolean = false,
 ): UrgencyLevel => {
   if (isOverdue || (days !== null && days <= 0)) return 'CRITICAL';
   if (days === null) return 'LOW';

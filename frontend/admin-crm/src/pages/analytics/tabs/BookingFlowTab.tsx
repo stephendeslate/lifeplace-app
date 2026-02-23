@@ -1,5 +1,5 @@
 // frontend/admin-crm/src/pages/analytics/tabs/BookingFlowTab.tsx
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -16,8 +16,8 @@ import {
   MenuItem,
   Chip,
   LinearProgress,
-} from "@mui/material";
-import { ModernCard } from "../../../components/common/ModernCard";
+} from '@mui/material';
+import { ModernCard } from '../../../components/common/ModernCard';
 import {
   BarChart,
   Bar,
@@ -29,55 +29,47 @@ import {
   LineChart,
   Line,
   Legend,
-} from "recharts";
+} from 'recharts';
 
-import { KPICard, KPIGrid } from "../../../components/analytics";
+import { KPICard, KPIGrid } from '../../../components/analytics';
 import {
   useBookingFlowFunnel,
   useBookingFlowPerformance,
   useBookingFlowAbandonment,
   useBookingFlowTrends,
-} from "../../../hooks/useAnalytics";
-import type { DateRange } from "../../../types/analytics.types";
-import { tokens } from "../../../design-system";
-import { formatCurrency } from "../../../utils/currency";
-import { formatPercent } from "../../../utils/formatters";
+} from '../../../hooks/useAnalytics';
+import type { DateRange } from '../../../types/analytics.types';
+import { tokens } from '../../../design-system';
+import { formatCurrency } from '../../../utils/currency';
+import { formatPercent } from '../../../utils/formatters';
 
 interface BookingFlowTabProps {
   dateRange: DateRange;
 }
 
-export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
-  dateRange,
-}) => {
-  const [selectedFlowId, setSelectedFlowId] = useState<string | undefined>(
-    undefined,
-  );
+export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({ dateRange }) => {
+  const [selectedFlowId, setSelectedFlowId] = useState<string | undefined>(undefined);
 
-  const { data: performance, isLoading: performanceLoading } =
-    useBookingFlowPerformance(dateRange);
+  const { data: performance, isLoading: performanceLoading } = useBookingFlowPerformance(dateRange);
   const { data: funnel, isLoading: funnelLoading } = useBookingFlowFunnel(
     dateRange,
     selectedFlowId,
   );
-  const { data: abandonment, isLoading: abandonmentLoading } =
-    useBookingFlowAbandonment(dateRange, selectedFlowId);
+  const { data: abandonment, isLoading: abandonmentLoading } = useBookingFlowAbandonment(
+    dateRange,
+    selectedFlowId,
+  );
   const { data: trends, isLoading: trendsLoading } = useBookingFlowTrends(
     dateRange,
     selectedFlowId,
   );
 
   // Calculate overall metrics
-  const totalSessions =
-    performance?.reduce((sum, f) => sum + f.total_sessions, 0) ?? 0;
-  const totalCompleted =
-    performance?.reduce((sum, f) => sum + f.completed_sessions, 0) ?? 0;
-  const totalAbandoned =
-    performance?.reduce((sum, f) => sum + f.abandoned_sessions, 0) ?? 0;
-  const totalRevenue =
-    performance?.reduce((sum, f) => sum + f.total_revenue, 0) ?? 0;
-  const overallConversionRate =
-    totalSessions > 0 ? (totalCompleted / totalSessions) * 100 : 0;
+  const totalSessions = performance?.reduce((sum, f) => sum + f.total_sessions, 0) ?? 0;
+  const totalCompleted = performance?.reduce((sum, f) => sum + f.completed_sessions, 0) ?? 0;
+  const totalAbandoned = performance?.reduce((sum, f) => sum + f.abandoned_sessions, 0) ?? 0;
+  const totalRevenue = performance?.reduce((sum, f) => sum + f.total_revenue, 0) ?? 0;
+  const overallConversionRate = totalSessions > 0 ? (totalCompleted / totalSessions) * 100 : 0;
 
   return (
     <Box>
@@ -126,7 +118,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
           <FormControl size="small" sx={{ minWidth: 250 }}>
             <InputLabel>Filter by Booking Flow</InputLabel>
             <Select
-              value={selectedFlowId ?? ""}
+              value={selectedFlowId ?? ''}
               onChange={(e) => setSelectedFlowId(e.target.value || undefined)}
               label="Filter by Booking Flow"
             >
@@ -150,7 +142,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
           <Skeleton variant="rectangular" height={300} />
         ) : funnel && funnel.length > 0 ? (
           <ModernCard variant="flat" size="medium">
-            <Box sx={{ width: "100%", height: 350 }}>
+            <Box sx={{ width: '100%', height: 350 }}>
               <ResponsiveContainer>
                 <BarChart
                   data={funnel}
@@ -159,20 +151,11 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
-                  <YAxis
-                    type="category"
-                    dataKey="step_name"
-                    tick={{ fontSize: 12 }}
-                    width={110}
-                  />
+                  <YAxis type="category" dataKey="step_name" tick={{ fontSize: 12 }} width={110} />
                   <Tooltip
                     formatter={(value: number, name: string) => [
-                      name === "sessions_reached"
-                        ? value
-                        : formatPercent(value),
-                      name === "sessions_reached"
-                        ? "Sessions"
-                        : "Completion Rate",
+                      name === 'sessions_reached' ? value : formatPercent(value),
+                      name === 'sessions_reached' ? 'Sessions' : 'Completion Rate',
                     ]}
                   />
                   <Legend />
@@ -190,23 +173,17 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
               </ResponsiveContainer>
             </Box>
             {/* Step-by-step breakdown table */}
-            <TableContainer sx={{ mt: 2, overflowX: "auto" }}>
+            <TableContainer sx={{ mt: 2, overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
                     <TableCell>Step</TableCell>
                     <TableCell align="center">Sessions Reached</TableCell>
                     <TableCell align="center">Completed</TableCell>
-                    <TableCell
-                      align="center"
-                      sx={{ display: { xs: "none", lg: "table-cell" } }}
-                    >
+                    <TableCell align="center" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                       Completion Rate
                     </TableCell>
-                    <TableCell
-                      align="center"
-                      sx={{ display: { xs: "none", lg: "table-cell" } }}
-                    >
+                    <TableCell align="center" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                       Drop-off Rate
                     </TableCell>
                   </TableRow>
@@ -219,21 +196,14 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
                           <Chip
                             label={step.order + 1}
                             size="small"
-                            sx={{ width: 28, height: 24, fontSize: "0.75rem" }}
+                            sx={{ width: 28, height: 24, fontSize: '0.75rem' }}
                           />
                           {step.step_name}
                         </Box>
                       </TableCell>
-                      <TableCell align="center">
-                        {step.sessions_reached}
-                      </TableCell>
-                      <TableCell align="center">
-                        {step.sessions_completed}
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{ display: { xs: "none", lg: "table-cell" } }}
-                      >
+                      <TableCell align="center">{step.sessions_reached}</TableCell>
+                      <TableCell align="center">{step.sessions_completed}</TableCell>
+                      <TableCell align="center" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                         <Box display="flex" alignItems="center" gap={1}>
                           <LinearProgress
                             variant="determinate"
@@ -241,28 +211,25 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
                             sx={{ width: 60, height: 6, borderRadius: 3 }}
                             color={
                               step.completion_rate >= 70
-                                ? "success"
+                                ? 'success'
                                 : step.completion_rate >= 50
-                                  ? "warning"
-                                  : "error"
+                                  ? 'warning'
+                                  : 'error'
                             }
                           />
                           {formatPercent(step.completion_rate)}
                         </Box>
                       </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{ display: { xs: "none", lg: "table-cell" } }}
-                      >
+                      <TableCell align="center" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                         <Chip
                           label={formatPercent(step.drop_off_rate)}
                           size="small"
                           color={
                             step.drop_off_rate <= 10
-                              ? "success"
+                              ? 'success'
                               : step.drop_off_rate <= 30
-                                ? "warning"
-                                : "error"
+                                ? 'warning'
+                                : 'error'
                           }
                           variant="outlined"
                         />
@@ -274,7 +241,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
             </TableContainer>
           </ModernCard>
         ) : (
-          <ModernCard variant="flat" size="small" sx={{ textAlign: "center" }}>
+          <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No funnel data available for the selected period
             </Typography>
@@ -293,11 +260,10 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
           <ModernCard variant="flat" size="medium">
             <Box display="flex" alignItems="center" gap={2} mb={2}>
               <Typography variant="body1">
-                Total Abandoned Sessions:{" "}
-                <strong>{abandonment.total_abandoned}</strong>
+                Total Abandoned Sessions: <strong>{abandonment.total_abandoned}</strong>
               </Typography>
             </Box>
-            <TableContainer sx={{ overflowX: "auto" }}>
+            <TableContainer sx={{ overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -312,12 +278,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
                       <TableCell>{step.step_name}</TableCell>
                       <TableCell align="right">{step.count}</TableCell>
                       <TableCell align="right">
-                        <Box
-                          display="flex"
-                          alignItems="center"
-                          justifyContent="flex-end"
-                          gap={1}
-                        >
+                        <Box display="flex" alignItems="center" justifyContent="flex-end" gap={1}>
                           <LinearProgress
                             variant="determinate"
                             value={step.percentage}
@@ -334,7 +295,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
             </TableContainer>
           </ModernCard>
         ) : (
-          <ModernCard variant="flat" size="small" sx={{ textAlign: "center" }}>
+          <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No abandonment data available for the selected period
             </Typography>
@@ -351,33 +312,27 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
           <Skeleton variant="rectangular" height={300} />
         ) : trends && trends.length > 0 ? (
           <ModernCard variant="flat" size="medium">
-            <Box sx={{ width: "100%", height: 300 }}>
+            <Box sx={{ width: '100%', height: 300 }}>
               <ResponsiveContainer>
-                <LineChart
-                  data={trends}
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke={tokens.color.charts.grid}
-                  />
+                <LineChart data={trends} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={tokens.color.charts.grid} />
                   <XAxis
                     dataKey="date"
                     tick={{ fontSize: 12 }}
                     tickFormatter={(value) =>
-                      new Date(value).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
+                      new Date(value).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
                       })
                     }
                   />
                   <YAxis tick={{ fontSize: 12 }} />
                   <Tooltip
                     labelFormatter={(value) =>
-                      new Date(value).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
+                      new Date(value).toLocaleDateString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
                       })
                     }
                   />
@@ -411,7 +366,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
             </Box>
           </ModernCard>
         ) : (
-          <ModernCard variant="flat" size="small" sx={{ textAlign: "center" }}>
+          <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No trend data available for the selected period
             </Typography>
@@ -428,7 +383,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
           <Skeleton variant="rectangular" height={300} />
         ) : performance && performance.length > 0 ? (
           <ModernCard variant="flat" size="medium">
-            <TableContainer sx={{ overflowX: "auto" }}>
+            <TableContainer sx={{ overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
@@ -437,17 +392,11 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
                     <TableCell align="right">Sessions</TableCell>
                     <TableCell align="right">Completed</TableCell>
                     <TableCell align="right">Conversion</TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{ display: { xs: "none", lg: "table-cell" } }}
-                    >
+                    <TableCell align="right" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                       Abandonment
                     </TableCell>
                     <TableCell align="right">Revenue</TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{ display: { xs: "none", lg: "table-cell" } }}
-                    >
+                    <TableCell align="right" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                       Avg. Revenue
                     </TableCell>
                   </TableRow>
@@ -457,53 +406,39 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
                     <TableRow key={flow.flow_id}>
                       <TableCell>{flow.flow_name}</TableCell>
                       <TableCell>
-                        <Chip
-                          label={flow.event_type}
-                          size="small"
-                          variant="outlined"
-                        />
+                        <Chip label={flow.event_type} size="small" variant="outlined" />
                       </TableCell>
                       <TableCell align="right">{flow.total_sessions}</TableCell>
-                      <TableCell align="right">
-                        {flow.completed_sessions}
-                      </TableCell>
+                      <TableCell align="right">{flow.completed_sessions}</TableCell>
                       <TableCell align="right">
                         <Chip
                           label={formatPercent(flow.conversion_rate)}
                           size="small"
                           color={
                             flow.conversion_rate >= 50
-                              ? "success"
+                              ? 'success'
                               : flow.conversion_rate >= 25
-                                ? "warning"
-                                : "error"
+                                ? 'warning'
+                                : 'error'
                           }
                         />
                       </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{ display: { xs: "none", lg: "table-cell" } }}
-                      >
+                      <TableCell align="right" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                         <Chip
                           label={formatPercent(flow.abandonment_rate)}
                           size="small"
                           color={
                             flow.abandonment_rate <= 25
-                              ? "success"
+                              ? 'success'
                               : flow.abandonment_rate <= 50
-                                ? "warning"
-                                : "error"
+                                ? 'warning'
+                                : 'error'
                           }
                           variant="outlined"
                         />
                       </TableCell>
-                      <TableCell align="right">
-                        {formatCurrency(flow.total_revenue)}
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{ display: { xs: "none", lg: "table-cell" } }}
-                      >
+                      <TableCell align="right">{formatCurrency(flow.total_revenue)}</TableCell>
+                      <TableCell align="right" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                         {formatCurrency(flow.avg_revenue)}
                       </TableCell>
                     </TableRow>
@@ -513,7 +448,7 @@ export const BookingFlowTab: React.FC<BookingFlowTabProps> = ({
             </TableContainer>
           </ModernCard>
         ) : (
-          <ModernCard variant="flat" size="small" sx={{ textAlign: "center" }}>
+          <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No booking flow performance data available
             </Typography>

@@ -47,13 +47,25 @@ interface WebhookDeliveryLogProps {
 const getStatusConfig = (status: WebhookDeliveryStatus) => {
   switch (status) {
     case 'SUCCESS':
-      return { icon: <SuccessIcon fontSize="small" />, color: 'success' as const, label: 'Success' };
+      return {
+        icon: <SuccessIcon fontSize="small" />,
+        color: 'success' as const,
+        label: 'Success',
+      };
     case 'FAILED':
       return { icon: <ErrorIcon fontSize="small" />, color: 'error' as const, label: 'Failed' };
     case 'PENDING':
-      return { icon: <PendingIcon fontSize="small" />, color: 'default' as const, label: 'Pending' };
+      return {
+        icon: <PendingIcon fontSize="small" />,
+        color: 'default' as const,
+        label: 'Pending',
+      };
     case 'RETRYING':
-      return { icon: <RetryingIcon fontSize="small" />, color: 'warning' as const, label: 'Retrying' };
+      return {
+        icon: <RetryingIcon fontSize="small" />,
+        color: 'warning' as const,
+        label: 'Retrying',
+      };
     default:
       return { icon: null, color: 'default' as const, label: status };
   }
@@ -85,23 +97,13 @@ const DeliveryRow: React.FC<DeliveryRowProps> = ({ delivery }) => {
           />
         </TableCell>
         <TableCell>
-          <Chip
-            label={delivery.event_type.replace(/_/g, ' ')}
-            size="small"
-            variant="outlined"
-          />
+          <Chip label={delivery.event_type.replace(/_/g, ' ')} size="small" variant="outlined" />
         </TableCell>
-        <TableCell>
-          {delivery.response_status_code || '-'}
-        </TableCell>
-        <TableCell>
-          {delivery.attempt_count}
-        </TableCell>
+        <TableCell>{delivery.response_status_code || '-'}</TableCell>
+        <TableCell>{delivery.attempt_count}</TableCell>
         <TableCell>
           <Tooltip title={format(new Date(delivery.created_at), 'PPpp')}>
-            <span>
-              {formatDistanceToNow(new Date(delivery.created_at), { addSuffix: true })}
-            </span>
+            <span>{formatDistanceToNow(new Date(delivery.created_at), { addSuffix: true })}</span>
           </Tooltip>
         </TableCell>
       </TableRow>

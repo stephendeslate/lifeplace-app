@@ -47,7 +47,7 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
   const daysUntilExpiry = contractUtils.getDaysUntilExpiry(contract.valid_until);
 
   const getSignatureStatusIcon = (role: string) => {
-    const signature = contract.signatures.find(s => s.role === role);
+    const signature = contract.signatures.find((s) => s.role === role);
     if (signature) {
       return <SignedIcon color="success" fontSize="small" />;
     } else {
@@ -73,20 +73,15 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
           >
             <DocumentIcon />
           </Avatar>
-          
+
           <Box sx={{ flex: 1 }}>
             <Typography variant={compact ? 'h6' : 'h5'} sx={{ fontWeight: 600, mb: 1 }}>
               Contract for {contract.event.title}
             </Typography>
-            
+
             <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 1 }}>
-              <Chip
-                label={statusDisplay}
-                color={statusColor}
-                size="small"
-                variant="filled"
-              />
-              
+              <Chip label={statusDisplay} color={statusColor} size="small" variant="filled" />
+
               {contract.is_amendment && (
                 <Chip
                   label={`Amendment #${contract.amendment_number}`}
@@ -95,7 +90,7 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
                   variant="outlined"
                 />
               )}
-              
+
               {isExpired && (
                 <Chip
                   icon={<ExpiredIcon />}
@@ -138,15 +133,18 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
 
           {/* Progress overview */}
           <Box sx={{ mb: 3 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}
+            >
               <Typography variant="body2" color="text.secondary">
                 Progress
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {contract.signature_progress.signed_count} of {contract.signature_progress.total_required} signatures
+                {contract.signature_progress.signed_count} of{' '}
+                {contract.signature_progress.total_required} signatures
               </Typography>
             </Box>
-            
+
             <Box
               sx={{
                 width: '100%',
@@ -160,9 +158,10 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
                 sx={{
                   width: `${contract.signature_progress.percentage}%`,
                   height: '100%',
-                  backgroundColor: contract.signature_progress.percentage === 100 
-                    ? theme.palette.success.main 
-                    : theme.palette.primary.main,
+                  backgroundColor:
+                    contract.signature_progress.percentage === 100
+                      ? theme.palette.success.main
+                      : theme.palette.primary.main,
                   transition: 'width 0.3s ease',
                 }}
               />
@@ -172,7 +171,7 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
           {/* Individual signatures */}
           <Stack spacing={2}>
             {(contract.signature_progress?.required_roles || []).map((role) => {
-              const signature = contract.signatures.find(s => s.role === role);
+              const signature = contract.signatures.find((s) => s.role === role);
               const isSigned = !!signature;
 
               return (
@@ -187,16 +186,21 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
                     backgroundColor: theme.palette.grey[50],
                     cursor: signature && onSignatureClick ? 'pointer' : 'default',
                   }}
-                  onClick={signature && onSignatureClick ? () => onSignatureClick(signature.id) : undefined}
+                  onClick={
+                    signature && onSignatureClick ? () => onSignatureClick(signature.id) : undefined
+                  }
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     {getSignatureStatusIcon(role)}
                     <Box>
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {role === 'CLIENT' ? 'Client Signature' : 
-                         role === 'COMPANY_REP' ? 'LifePlace Representative' :
-                         role === 'WITNESS' ? 'Witness Signature' :
-                         role.replace('_', ' ')}
+                        {role === 'CLIENT'
+                          ? 'Client Signature'
+                          : role === 'COMPANY_REP'
+                            ? 'LifePlace Representative'
+                            : role === 'WITNESS'
+                              ? 'Witness Signature'
+                              : role.replace('_', ' ')}
                       </Typography>
                       {signature && (
                         <Typography variant="caption" color="text.secondary">
@@ -225,17 +229,17 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
             Contract Content
           </Typography>
-          
+
           <Divider sx={{ mb: 2 }} />
-          
+
           <Box
             sx={{
               '& p': { mb: 2 },
-              '& h1, & h2, & h3, & h4, & h5, & h6': { 
-                fontWeight: 600, 
-                mb: 1, 
+              '& h1, & h2, & h3, & h4, & h5, & h6': {
+                fontWeight: 600,
+                mb: 1,
                 mt: 2,
-                '&:first-of-type': { mt: 0 }
+                '&:first-of-type': { mt: 0 },
               },
               '& ul, & ol': { pl: 3, mb: 2 },
               '& li': { mb: 0.5 },
@@ -284,33 +288,27 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
           <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
             Contract Details
           </Typography>
-          
+
           <Stack spacing={2}>
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 1 }}>
               <Typography variant="body2" color="text.secondary">
                 Event:
               </Typography>
-              <Typography variant="body2">
-                {contract.event.title}
-              </Typography>
+              <Typography variant="body2">{contract.event.title}</Typography>
             </Box>
 
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 1 }}>
               <Typography variant="body2" color="text.secondary">
                 Template:
               </Typography>
-              <Typography variant="body2">
-                {contract.template.name}
-              </Typography>
+              <Typography variant="body2">{contract.template.name}</Typography>
             </Box>
 
             <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 1 }}>
               <Typography variant="body2" color="text.secondary">
                 Created:
               </Typography>
-              <Typography variant="body2">
-                {formatDate(contract.created_at)}
-              </Typography>
+              <Typography variant="body2">{formatDate(contract.created_at)}</Typography>
             </Box>
 
             {contract.sent_at && (
@@ -318,9 +316,7 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
                 <Typography variant="body2" color="text.secondary">
                   Sent:
                 </Typography>
-                <Typography variant="body2">
-                  {formatDate(contract.sent_at)}
-                </Typography>
+                <Typography variant="body2">{formatDate(contract.sent_at)}</Typography>
               </Box>
             )}
 
@@ -329,9 +325,7 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
                 <Typography variant="body2" color="text.secondary">
                   Fully Signed:
                 </Typography>
-                <Typography variant="body2">
-                  {formatDate(contract.fully_signed_at)}
-                </Typography>
+                <Typography variant="body2">{formatDate(contract.fully_signed_at)}</Typography>
               </Box>
             )}
 
@@ -340,9 +334,7 @@ export const ContractViewer: React.FC<ContractViewerProps> = ({
                 <Typography variant="body2" color="text.secondary">
                   Valid Until:
                 </Typography>
-                <Typography variant="body2">
-                  {formatDate(contract.valid_until)}
-                </Typography>
+                <Typography variant="body2">{formatDate(contract.valid_until)}</Typography>
               </Box>
             )}
 

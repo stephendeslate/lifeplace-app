@@ -14,7 +14,7 @@ describe('AboutHero', () => {
     it('renders the biblical quote', () => {
       render(<AboutHero />);
       expect(
-        screen.getByText('"I have come that they may have life, and have it to the full."')
+        screen.getByText('"I have come that they may have life, and have it to the full."'),
       ).toBeInTheDocument();
     });
 
@@ -26,7 +26,7 @@ describe('AboutHero', () => {
     it('renders the location description', () => {
       render(<AboutHero />);
       expect(
-        screen.getByText(/Located in the peaceful hills of Alfonso, Cavite/)
+        screen.getByText(/Located in the peaceful hills of Alfonso, Cavite/),
       ).toBeInTheDocument();
     });
 
@@ -56,7 +56,9 @@ describe('AboutHero', () => {
 
     it('uses GlassCard for biblical quote', () => {
       render(<AboutHero />);
-      const quote = screen.getByText('"I have come that they may have life, and have it to the full."');
+      const quote = screen.getByText(
+        '"I have come that they may have life, and have it to the full."',
+      );
 
       // Quote should be within a card container
       expect(quote.closest('[class*="MuiBox-root"]')).toBeInTheDocument();
@@ -74,7 +76,9 @@ describe('AboutHero', () => {
 
     it('wraps quote card in AnimatedElement', () => {
       render(<AboutHero />);
-      const quote = screen.getByText('"I have come that they may have life, and have it to the full."');
+      const quote = screen.getByText(
+        '"I have come that they may have life, and have it to the full."',
+      );
 
       // AnimatedElement should wrap the quote
       expect(quote).toBeInTheDocument();
@@ -223,7 +227,7 @@ describe('AboutHero', () => {
       render(<AboutHero />);
 
       const quote = screen.getByText(
-        '"I have come that they may have life, and have it to the full."'
+        '"I have come that they may have life, and have it to the full."',
       );
       expect(quote).toBeInTheDocument();
     });
@@ -245,7 +249,9 @@ describe('AboutHero', () => {
     it('communicates the venue purpose', () => {
       render(<AboutHero />);
 
-      expect(screen.getByText(/sanctuary for life's most meaningful celebrations/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/sanctuary for life's most meaningful celebrations/),
+      ).toBeInTheDocument();
     });
   });
 

@@ -1,17 +1,8 @@
 // frontend/client-portal/src/components/actions/ActionCardList.tsx
 
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Skeleton,
-  Stack,
-  Button,
-} from '@mui/material';
-import {
-  CheckCircleOutline as AllDoneIcon,
-} from '@mui/icons-material';
+import { Box, Typography, Paper, Skeleton, Stack, Button } from '@mui/material';
+import { CheckCircleOutline as AllDoneIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { TaskActionCard } from './TaskActionCard';
 import { QuoteActionCard } from './QuoteActionCard';
@@ -81,16 +72,10 @@ const EmptyState: React.FC = () => {
         You have no pending actions at the moment. Great job staying on top of things!
       </Typography>
       <Stack direction="row" spacing={2} justifyContent="center">
-        <Button
-          variant="outlined"
-          onClick={() => navigate('/dashboard')}
-        >
+        <Button variant="outlined" onClick={() => navigate('/dashboard')}>
           Go to Dashboard
         </Button>
-        <Button
-          variant="contained"
-          onClick={() => navigate('/events')}
-        >
+        <Button variant="contained" onClick={() => navigate('/events')}>
           View My Events
         </Button>
       </Stack>

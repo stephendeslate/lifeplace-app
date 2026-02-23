@@ -11,20 +11,20 @@ This module tests the following models:
 - DevicePushToken: Push token management
 """
 
-import pytest
 from datetime import timedelta
-from unittest.mock import patch, MagicMock
 
 from django.contrib.auth import get_user_model
-from django.utils import timezone
 from django.db import IntegrityError
+from django.utils import timezone
+
+import pytest
 
 from core.domains.notifications.models import (
-    NotificationType,
-    NotificationPreference,
+    DevicePushToken,
     Notification,
     NotificationDigest,
-    DevicePushToken,
+    NotificationPreference,
+    NotificationType,
 )
 
 User = get_user_model()
@@ -38,100 +38,107 @@ class TestNotificationType:
     def notification_type(self):
         """Create a basic notification type"""
         return NotificationType.objects.create(
-            code='TEST_NOTIFICATION',
-            name='Test Notification',
-            description='A test notification type',
-            category='SYSTEM',
-            priority='NORMAL',
-            default_title_template='{{ title }}',
-            default_content_template='{{ content }}',
+            code="TEST_NOTIFICATION",
+            name="Test Notification",
+            description="A test notification type",
+            category="SYSTEM",
+            priority="NORMAL",
+            default_title_template="{{ title }}",
+            default_content_template="{{ content }}",
             is_active=True,
         )
 
     def test_notification_type_creation(self, notification_type):
         """Test notification type can be created with required fields"""
         assert notification_type.id is not None
-        assert notification_type.code == 'TEST_NOTIFICATION'
-        assert notification_type.name == 'Test Notification'
-        assert notification_type.category == 'SYSTEM'
-        assert notification_type.priority == 'NORMAL'
+        assert notification_type.code == "TEST_NOTIFICATION"
+        assert notification_type.name == "Test Notification"
+        assert notification_type.category == "SYSTEM"
+        assert notification_type.priority == "NORMAL"
         assert notification_type.is_active is True
 
     def test_notification_type_str_representation(self, notification_type):
         """Test string representation returns the name"""
-        assert str(notification_type) == 'Test Notification'
+        assert str(notification_type) == "Test Notification"
 
     def test_notification_type_unique_code(self, notification_type):
         """Test that code must be unique"""
         with pytest.raises(IntegrityError):
             NotificationType.objects.create(
-                code='TEST_NOTIFICATION',  # Duplicate code
-                name='Another Notification',
-                category='SYSTEM',
-                priority='NORMAL',
-                default_title_template='Title',
-                default_content_template='Content',
+                code="TEST_NOTIFICATION",  # Duplicate code
+                name="Another Notification",
+                category="SYSTEM",
+                priority="NORMAL",
+                default_title_template="Title",
+                default_content_template="Content",
             )
 
     def test_notification_type_all_categories(self):
         """Test that all category choices are valid"""
         valid_categories = [
-            'SYSTEM', 'EVENT', 'TASK', 'PAYMENT', 'CLIENT',
-            'CONTRACT', 'WORKFLOW', 'COMMUNICATION', 'MARKETING'
+            "SYSTEM",
+            "EVENT",
+            "TASK",
+            "PAYMENT",
+            "CLIENT",
+            "CONTRACT",
+            "WORKFLOW",
+            "COMMUNICATION",
+            "MARKETING",
         ]
 
         for i, category in enumerate(valid_categories):
             nt = NotificationType.objects.create(
-                code=f'TEST_{category}_{i}',
-                name=f'Test {category}',
+                code=f"TEST_{category}_{i}",
+                name=f"Test {category}",
                 category=category,
-                priority='NORMAL',
-                default_title_template='Title',
-                default_content_template='Content',
+                priority="NORMAL",
+                default_title_template="Title",
+                default_content_template="Content",
             )
             assert nt.category == category
 
     def test_notification_type_all_priorities(self):
         """Test that all priority choices are valid"""
-        valid_priorities = ['LOW', 'NORMAL', 'HIGH', 'URGENT']
+        valid_priorities = ["LOW", "NORMAL", "HIGH", "URGENT"]
 
         for i, priority in enumerate(valid_priorities):
             nt = NotificationType.objects.create(
-                code=f'PRIORITY_TEST_{i}',
-                name=f'Test {priority}',
-                category='SYSTEM',
+                code=f"PRIORITY_TEST_{i}",
+                name=f"Test {priority}",
+                category="SYSTEM",
                 priority=priority,
-                default_title_template='Title',
-                default_content_template='Content',
+                default_title_template="Title",
+                default_content_template="Content",
             )
             assert nt.priority == priority
 
     def test_notification_type_with_email_template(self):
         """Test notification type with email template"""
         nt = NotificationType.objects.create(
-            code='EMAIL_TYPE',
-            name='Email Notification',
-            category='SYSTEM',
-            priority='NORMAL',
-            default_title_template='Title',
-            default_content_template='Content',
-            default_email_template='<html><body>{{ content }}</body></html>',
+            code="EMAIL_TYPE",
+            name="Email Notification",
+            category="SYSTEM",
+            priority="NORMAL",
+            default_title_template="Title",
+            default_content_template="Content",
+            default_email_template="<html><body>{{ content }}</body></html>",
             supports_email=True,
         )
 
-        assert nt.default_email_template == '<html><body>{{ content }}</body></html>'
+        assert nt.default_email_template == "<html><body>{{ content }}</body></html>"
         assert nt.supports_email is True
 
     def test_notification_type_with_sms_template(self):
         """Test notification type with SMS template (max 160 chars)"""
         nt = NotificationType.objects.create(
-            code='SMS_TYPE',
-            name='SMS Notification',
-            category='PAYMENT',
-            priority='HIGH',
-            default_title_template='Title',
-            default_content_template='Content',
-            default_sms_template='Payment received: {{ amount }}',
+            code="SMS_TYPE",
+            name="SMS Notification",
+            category="PAYMENT",
+            priority="HIGH",
+            default_title_template="Title",
+            default_content_template="Content",
+            default_sms_template="Payment received: {{ amount }}",
             supports_sms=True,
         )
 
@@ -141,12 +148,12 @@ class TestNotificationType:
     def test_notification_type_system_flag(self):
         """Test is_system flag for system notifications"""
         nt = NotificationType.objects.create(
-            code='SYSTEM_CRITICAL',
-            name='System Critical',
-            category='SYSTEM',
-            priority='URGENT',
-            default_title_template='Critical: {{ message }}',
-            default_content_template='{{ details }}',
+            code="SYSTEM_CRITICAL",
+            name="System Critical",
+            category="SYSTEM",
+            priority="URGENT",
+            default_title_template="Critical: {{ message }}",
+            default_content_template="{{ details }}",
             is_system=True,
         )
 
@@ -156,20 +163,20 @@ class TestNotificationType:
         """Test notification types are ordered by category and name"""
         # Create types in non-alphabetical order
         NotificationType.objects.create(
-            code='B_TYPE',
-            name='Zebra',
-            category='PAYMENT',
-            priority='NORMAL',
-            default_title_template='T',
-            default_content_template='C',
+            code="B_TYPE",
+            name="Zebra",
+            category="PAYMENT",
+            priority="NORMAL",
+            default_title_template="T",
+            default_content_template="C",
         )
         NotificationType.objects.create(
-            code='A_TYPE',
-            name='Alpha',
-            category='EVENT',
-            priority='NORMAL',
-            default_title_template='T',
-            default_content_template='C',
+            code="A_TYPE",
+            name="Alpha",
+            category="EVENT",
+            priority="NORMAL",
+            default_title_template="T",
+            default_content_template="C",
         )
 
         types = list(NotificationType.objects.all())
@@ -185,23 +192,19 @@ class TestNotificationPreference:
     def user(self):
         """Create a test user"""
         return User.objects.create_user(
-            email='testuser@example.com',
-            password='testpass123',
-            first_name='Test',
-            last_name='User',
-            role='CLIENT'
+            email="testuser@example.com", password="testpass123", first_name="Test", last_name="User", role="CLIENT"
         )
 
     @pytest.fixture
     def notification_type(self):
         """Create a test notification type"""
         return NotificationType.objects.create(
-            code='PREF_TEST',
-            name='Preference Test',
-            category='EVENT',
-            priority='NORMAL',
-            default_title_template='Title',
-            default_content_template='Content',
+            code="PREF_TEST",
+            name="Preference Test",
+            category="EVENT",
+            priority="NORMAL",
+            default_title_template="Title",
+            default_content_template="Content",
             supports_email=True,
             supports_sms=True,
             supports_push=True,
@@ -224,7 +227,7 @@ class TestNotificationPreference:
 
     def test_preference_str_representation(self, preferences, user):
         """Test string representation"""
-        assert str(preferences) == f'Preferences for {user.email}'
+        assert str(preferences) == f"Preferences for {user.email}"
 
     def test_preference_one_to_one_constraint(self, user):
         """Test that user can only have one preference record"""
@@ -240,7 +243,7 @@ class TestNotificationPreference:
         preferences.save()
 
         # Even if category email is enabled, global takes precedence
-        assert preferences.is_delivery_method_enabled('event', 'email') is False
+        assert preferences.is_delivery_method_enabled("event", "email") is False
 
     def test_is_delivery_method_enabled_category_disabled(self, preferences):
         """Test delivery method check when category is disabled"""
@@ -248,37 +251,37 @@ class TestNotificationPreference:
         preferences.save()
 
         # Global is enabled but category is disabled
-        assert preferences.is_delivery_method_enabled('event', 'email') is False
+        assert preferences.is_delivery_method_enabled("event", "email") is False
 
     def test_is_delivery_method_enabled_both_enabled(self, preferences):
         """Test delivery method check when both are enabled"""
-        assert preferences.is_delivery_method_enabled('event', 'email') is True
+        assert preferences.is_delivery_method_enabled("event", "email") is True
 
     def test_is_notification_enabled_type_disabled(self, preferences, notification_type):
         """Test notification enabled check when type is specifically disabled"""
         preferences.disabled_types.add(notification_type)
 
-        assert preferences.is_notification_enabled(notification_type, 'email') is False
+        assert preferences.is_notification_enabled(notification_type, "email") is False
 
     def test_is_notification_enabled_method_not_supported(self, preferences):
         """Test notification enabled check when method is not supported"""
         nt = NotificationType.objects.create(
-            code='NO_SMS',
-            name='No SMS',
-            category='SYSTEM',
-            priority='NORMAL',
-            default_title_template='T',
-            default_content_template='C',
+            code="NO_SMS",
+            name="No SMS",
+            category="SYSTEM",
+            priority="NORMAL",
+            default_title_template="T",
+            default_content_template="C",
             supports_email=True,
             supports_sms=False,  # SMS not supported
         )
 
         # SMS is not supported by this notification type
-        assert preferences.is_notification_enabled(nt, 'sms') is False
+        assert preferences.is_notification_enabled(nt, "sms") is False
 
     def test_is_notification_enabled_fully_enabled(self, preferences, notification_type):
         """Test notification enabled when all conditions are met"""
-        assert preferences.is_notification_enabled(notification_type, 'email') is True
+        assert preferences.is_notification_enabled(notification_type, "email") is True
 
     def test_category_specific_preferences(self, preferences):
         """Test category-specific preference fields"""
@@ -313,7 +316,7 @@ class TestNotificationPreference:
 
     def test_digest_frequency_choices(self, preferences):
         """Test digest frequency choices"""
-        valid_frequencies = ['IMMEDIATE', 'HOURLY', 'DAILY', 'WEEKLY']
+        valid_frequencies = ["IMMEDIATE", "HOURLY", "DAILY", "WEEKLY"]
 
         for freq in valid_frequencies:
             preferences.digest_frequency = freq
@@ -330,23 +333,23 @@ class TestNotification:
     def user(self):
         """Create a test user"""
         return User.objects.create_user(
-            email='recipient@example.com',
-            password='testpass123',
-            first_name='Recipient',
-            last_name='User',
-            role='CLIENT'
+            email="recipient@example.com",
+            password="testpass123",
+            first_name="Recipient",
+            last_name="User",
+            role="CLIENT",
         )
 
     @pytest.fixture
     def notification_type(self):
         """Create a test notification type"""
         return NotificationType.objects.create(
-            code='TEST_NOTIF',
-            name='Test Notification',
-            category='SYSTEM',
-            priority='NORMAL',
-            default_title_template='{{ title }}',
-            default_content_template='{{ content }}',
+            code="TEST_NOTIF",
+            name="Test Notification",
+            category="SYSTEM",
+            priority="NORMAL",
+            default_title_template="{{ title }}",
+            default_content_template="{{ content }}",
         )
 
     @pytest.fixture
@@ -355,8 +358,8 @@ class TestNotification:
         return Notification.objects.create(
             recipient=user,
             notification_type=notification_type,
-            title='Test Title',
-            content='Test content',
+            title="Test Title",
+            content="Test content",
         )
 
     def test_notification_creation(self, notification, user, notification_type):
@@ -364,8 +367,8 @@ class TestNotification:
         assert notification.id is not None
         assert notification.recipient == user
         assert notification.notification_type == notification_type
-        assert notification.title == 'Test Title'
-        assert notification.content == 'Test content'
+        assert notification.title == "Test Title"
+        assert notification.content == "Test content"
         assert notification.is_read is False
         assert notification.read_at is None
 
@@ -399,60 +402,56 @@ class TestNotification:
         """Test delivery method tracking"""
         assert notification.delivered_via == []
 
-        notification.add_delivery_method('in_app', success=True)
-        assert 'in_app' in notification.delivered_via
-        assert notification.is_delivery_successful('in_app') is True
+        notification.add_delivery_method("in_app", success=True)
+        assert "in_app" in notification.delivered_via
+        assert notification.is_delivery_successful("in_app") is True
 
     def test_notification_delivery_failure_tracking(self, notification):
         """Test delivery failure tracking"""
-        notification.add_delivery_method('email', success=False, error='SMTP error')
+        notification.add_delivery_method("email", success=False, error="SMTP error")
 
-        assert 'email' not in notification.delivered_via
-        assert 'email' in notification.delivery_attempts
-        assert notification.delivery_attempts['email'][0]['success'] is False
-        assert notification.delivery_attempts['email'][0]['error'] == 'SMTP error'
+        assert "email" not in notification.delivered_via
+        assert "email" in notification.delivery_attempts
+        assert notification.delivery_attempts["email"][0]["success"] is False
+        assert notification.delivery_attempts["email"][0]["error"] == "SMTP error"
 
     def test_notification_multiple_delivery_methods(self, notification):
         """Test multiple delivery methods"""
-        notification.add_delivery_method('in_app', success=True)
-        notification.add_delivery_method('email', success=True)
-        notification.add_delivery_method('push', success=False, error='Token expired')
+        notification.add_delivery_method("in_app", success=True)
+        notification.add_delivery_method("email", success=True)
+        notification.add_delivery_method("push", success=False, error="Token expired")
 
         assert len(notification.delivered_via) == 2
-        assert 'in_app' in notification.delivered_via
-        assert 'email' in notification.delivered_via
-        assert 'push' not in notification.delivered_via
+        assert "in_app" in notification.delivered_via
+        assert "email" in notification.delivered_via
+        assert "push" not in notification.delivered_via
 
     def test_notification_with_action_url(self, user, notification_type):
         """Test notification with action URL"""
         notification = Notification.objects.create(
             recipient=user,
             notification_type=notification_type,
-            title='Action Required',
-            content='Please review this event',
-            action_url='/events/123/review',
+            title="Action Required",
+            content="Please review this event",
+            action_url="/events/123/review",
         )
 
-        assert notification.action_url == '/events/123/review'
+        assert notification.action_url == "/events/123/review"
 
     def test_notification_with_context_data(self, user, notification_type):
         """Test notification with context data"""
-        context = {
-            'event_name': 'Birthday Party',
-            'date': '2024-12-25',
-            'location': 'Manila'
-        }
+        context = {"event_name": "Birthday Party", "date": "2024-12-25", "location": "Manila"}
 
         notification = Notification.objects.create(
             recipient=user,
             notification_type=notification_type,
-            title='Event Update',
-            content='Your event has been updated',
+            title="Event Update",
+            content="Your event has been updated",
             context_data=context,
         )
 
         assert notification.context_data == context
-        assert notification.context_data['event_name'] == 'Birthday Party'
+        assert notification.context_data["event_name"] == "Birthday Party"
 
     def test_notification_with_expiration(self, user, notification_type):
         """Test notification with expiration date"""
@@ -461,8 +460,8 @@ class TestNotification:
         notification = Notification.objects.create(
             recipient=user,
             notification_type=notification_type,
-            title='Limited Time Offer',
-            content='This offer expires soon',
+            title="Limited Time Offer",
+            content="This offer expires soon",
             expires_at=expires,
         )
 
@@ -471,31 +470,31 @@ class TestNotification:
 
     def test_notification_ordering(self, user, notification_type):
         """Test notifications are ordered by creation date (newest first)"""
-        n1 = Notification.objects.create(
+        Notification.objects.create(
             recipient=user,
             notification_type=notification_type,
-            title='First',
-            content='Created first',
+            title="First",
+            content="Created first",
         )
-        n2 = Notification.objects.create(
+        Notification.objects.create(
             recipient=user,
             notification_type=notification_type,
-            title='Second',
-            content='Created second',
+            title="Second",
+            content="Created second",
         )
 
         notifications = list(Notification.objects.filter(recipient=user))
-        assert notifications[0].title == 'Second'
-        assert notifications[1].title == 'First'
+        assert notifications[0].title == "Second"
+        assert notifications[1].title == "First"
 
     def test_notification_indexes_exist(self):
         """Test that expected indexes are defined"""
         indexes = Notification._meta.indexes
         index_fields = [tuple(idx.fields) for idx in indexes]
 
-        assert ('recipient', '-created_at') in index_fields
-        assert ('recipient', 'is_read') in index_fields
-        assert ('notification_type', '-created_at') in index_fields
+        assert ("recipient", "-created_at") in index_fields
+        assert ("recipient", "is_read") in index_fields
+        assert ("notification_type", "-created_at") in index_fields
 
 
 @pytest.mark.django_db
@@ -505,22 +504,18 @@ class TestNotificationDigest:
     @pytest.fixture
     def user(self):
         """Create a test user"""
-        return User.objects.create_user(
-            email='digestuser@example.com',
-            password='testpass123',
-            role='CLIENT'
-        )
+        return User.objects.create_user(email="digestuser@example.com", password="testpass123", role="CLIENT")
 
     @pytest.fixture
     def notification_type(self):
         """Create a test notification type"""
         return NotificationType.objects.create(
-            code='DIGEST_TEST',
-            name='Digest Test',
-            category='SYSTEM',
-            priority='NORMAL',
-            default_title_template='T',
-            default_content_template='C',
+            code="DIGEST_TEST",
+            name="Digest Test",
+            category="SYSTEM",
+            priority="NORMAL",
+            default_title_template="T",
+            default_content_template="C",
         )
 
     def test_digest_creation(self, user):
@@ -528,14 +523,14 @@ class TestNotificationDigest:
         now = timezone.now()
         digest = NotificationDigest.objects.create(
             user=user,
-            frequency='DAILY',
+            frequency="DAILY",
             period_start=now - timedelta(days=1),
             period_end=now,
         )
 
         assert digest.id is not None
         assert digest.user == user
-        assert digest.frequency == 'DAILY'
+        assert digest.frequency == "DAILY"
         assert digest.is_sent is False
         assert digest.notification_count == 0
 
@@ -544,7 +539,7 @@ class TestNotificationDigest:
         now = timezone.now()
         digest = NotificationDigest.objects.create(
             user=user,
-            frequency='WEEKLY',
+            frequency="WEEKLY",
             period_start=now - timedelta(days=7),
             period_end=now,
             notification_count=5,
@@ -561,20 +556,20 @@ class TestNotificationDigest:
         n1 = Notification.objects.create(
             recipient=user,
             notification_type=notification_type,
-            title='Notification 1',
-            content='Content 1',
+            title="Notification 1",
+            content="Content 1",
         )
         n2 = Notification.objects.create(
             recipient=user,
             notification_type=notification_type,
-            title='Notification 2',
-            content='Content 2',
+            title="Notification 2",
+            content="Content 2",
         )
 
         # Create digest and add notifications
         digest = NotificationDigest.objects.create(
             user=user,
-            frequency='HOURLY',
+            frequency="HOURLY",
             period_start=now - timedelta(hours=1),
             period_end=now,
             notification_count=2,
@@ -590,7 +585,7 @@ class TestNotificationDigest:
 
         NotificationDigest.objects.create(
             user=user,
-            frequency='DAILY',
+            frequency="DAILY",
             period_start=period_start,
             period_end=now,
         )
@@ -598,7 +593,7 @@ class TestNotificationDigest:
         with pytest.raises(IntegrityError):
             NotificationDigest.objects.create(
                 user=user,
-                frequency='DAILY',
+                frequency="DAILY",
                 period_start=period_start,  # Same period_start
                 period_end=now,
             )
@@ -608,7 +603,7 @@ class TestNotificationDigest:
         now = timezone.now()
         digest = NotificationDigest.objects.create(
             user=user,
-            frequency='DAILY',
+            frequency="DAILY",
             period_start=now - timedelta(days=1),
             period_end=now,
         )
@@ -618,13 +613,13 @@ class TestNotificationDigest:
 
         digest.is_sent = True
         digest.sent_at = timezone.now()
-        digest.delivery_methods = ['email']
+        digest.delivery_methods = ["email"]
         digest.save()
 
         digest.refresh_from_db()
         assert digest.is_sent is True
         assert digest.sent_at is not None
-        assert 'email' in digest.delivery_methods
+        assert "email" in digest.delivery_methods
 
 
 @pytest.mark.django_db
@@ -634,20 +629,16 @@ class TestDevicePushToken:
     @pytest.fixture
     def user(self):
         """Create a test user"""
-        return User.objects.create_user(
-            email='pushuser@example.com',
-            password='testpass123',
-            role='CLIENT'
-        )
+        return User.objects.create_user(email="pushuser@example.com", password="testpass123", role="CLIENT")
 
     @pytest.fixture
     def push_token(self, user):
         """Create a push token"""
         return DevicePushToken.objects.create(
             user=user,
-            token='ExponentPushToken[abcdef123456]',
-            device_type='ios',
-            device_id='device-123',
+            token="ExponentPushToken[abcdef123456]",
+            device_type="ios",
+            device_id="device-123",
             device_name="John's iPhone",
         )
 
@@ -655,8 +646,8 @@ class TestDevicePushToken:
         """Test push token creation"""
         assert push_token.id is not None
         assert push_token.user == user
-        assert push_token.token == 'ExponentPushToken[abcdef123456]'
-        assert push_token.device_type == 'ios'
+        assert push_token.token == "ExponentPushToken[abcdef123456]"
+        assert push_token.device_type == "ios"
         assert push_token.is_active is True
         assert push_token.failure_count == 0
 
@@ -694,7 +685,7 @@ class TestDevicePushToken:
 
     def test_push_token_auto_deactivate_on_failures(self, push_token):
         """Test auto-deactivation after 5 consecutive failures"""
-        for i in range(5):
+        for _i in range(5):
             push_token.record_failure(permanent=False)
 
         assert push_token.is_active is False
@@ -707,29 +698,29 @@ class TestDevicePushToken:
 
     def test_push_token_unique_together(self, user):
         """Test unique together constraint on user and token"""
-        token_value = 'ExponentPushToken[unique123]'
+        token_value = "ExponentPushToken[unique123]"
 
         DevicePushToken.objects.create(
             user=user,
             token=token_value,
-            device_type='ios',
+            device_type="ios",
         )
 
         with pytest.raises(IntegrityError):
             DevicePushToken.objects.create(
                 user=user,
                 token=token_value,  # Same token
-                device_type='android',
+                device_type="android",
             )
 
     def test_push_token_device_types(self, user):
         """Test all device types are valid"""
-        device_types = ['ios', 'android', 'web']
+        device_types = ["ios", "android", "web"]
 
         for i, device_type in enumerate(device_types):
             token = DevicePushToken.objects.create(
                 user=user,
-                token=f'ExpoPushToken[{device_type}{i}]',
+                token=f"ExpoPushToken[{device_type}{i}]",
                 device_type=device_type,
             )
             assert token.device_type == device_type
@@ -738,9 +729,9 @@ class TestDevicePushToken:
         """Test push token with app version"""
         token = DevicePushToken.objects.create(
             user=user,
-            token='ExpoPushToken[version123]',
-            device_type='ios',
-            app_version='1.2.3',
+            token="ExpoPushToken[version123]",
+            device_type="ios",
+            app_version="1.2.3",
         )
 
-        assert token.app_version == '1.2.3'
+        assert token.app_version == "1.2.3"

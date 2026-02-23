@@ -69,7 +69,7 @@ export function useThreadWebSocket({
       setConnectionInfo(newInfo);
       onConnectionChange?.(newInfo);
     },
-    [connectionInfo, onConnectionChange]
+    [connectionInfo, onConnectionChange],
   );
 
   // Clear typing timeout for a user
@@ -109,14 +109,11 @@ export function useThreadWebSocket({
                 if (newPages.length > 0) {
                   // Add to the most recent page (last page)
                   const lastPageIndex = newPages.length - 1;
-                  newPages[lastPageIndex] = [
-                    ...newPages[lastPageIndex],
-                    messageData.message,
-                  ];
+                  newPages[lastPageIndex] = [...newPages[lastPageIndex], messageData.message];
                 }
 
                 return { ...oldData, pages: newPages };
-              }
+              },
             );
 
             // Update thread's last message info in thread lists
@@ -126,7 +123,7 @@ export function useThreadWebSocket({
                 if (!oldData) return oldData;
 
                 const updateThreadInResults = (results: any[]) =>
-                  results.map(thread =>
+                  results.map((thread) =>
                     thread.id === threadId
                       ? {
                           ...thread,
@@ -136,7 +133,7 @@ export function useThreadWebSocket({
                           last_message_preview: messageData.message.content.substring(0, 100),
                           unread_count: messageData.is_own_message ? 0 : thread.unread_count + 1,
                         }
-                      : thread
+                      : thread,
                   );
 
                 if (oldData.pages) {
@@ -155,7 +152,7 @@ export function useThreadWebSocket({
                 }
 
                 return oldData;
-              }
+              },
             );
 
             // Notify parent component
@@ -165,7 +162,7 @@ export function useThreadWebSocket({
           case 'typing_indicator':
             const typingData = data as TypingIndicatorMessage;
 
-            setTypingState(prev => {
+            setTypingState((prev) => {
               const newState = { ...prev };
 
               if (typingData.is_typing) {
@@ -181,7 +178,7 @@ export function useThreadWebSocket({
 
                 // Set timeout to automatically stop typing indicator
                 typingTimeoutRefs.current[typingData.user_id] = setTimeout(() => {
-                  setTypingState(current => {
+                  setTypingState((current) => {
                     const updated = { ...current };
                     if (updated[typingData.user_id]) {
                       updated[typingData.user_id].isTyping = false;
@@ -213,8 +210,8 @@ export function useThreadWebSocket({
                 if (!oldData) return oldData;
 
                 const updateMessageInPages = (pages: Message[][]) =>
-                  pages.map(page =>
-                    page.map(message => {
+                  pages.map((page) =>
+                    page.map((message) => {
                       if (message.id === readData.message_id) {
                         const readBy = [...message.read_by];
                         if (!readBy.includes(readData.user_id)) {
@@ -223,14 +220,14 @@ export function useThreadWebSocket({
                         return { ...message, read_by: readBy };
                       }
                       return message;
-                    })
+                    }),
                   );
 
                 return {
                   ...oldData,
                   pages: updateMessageInPages(oldData.pages || []),
                 };
-              }
+              },
             );
             break;
 
@@ -238,13 +235,10 @@ export function useThreadWebSocket({
             const threadData = data as ThreadUpdatedMessage;
 
             // Update thread data in cache
-            queryClient.setQueryData(
-              messagingQueryKeys.thread(threadId),
-              (oldThread: any) => {
-                if (!oldThread) return oldThread;
-                return { ...oldThread, ...threadData.thread_data };
-              }
-            );
+            queryClient.setQueryData(messagingQueryKeys.thread(threadId), (oldThread: any) => {
+              if (!oldThread) return oldThread;
+              return { ...oldThread, ...threadData.thread_data };
+            });
 
             // Update in thread lists
             queryClient.setQueriesData(
@@ -253,8 +247,8 @@ export function useThreadWebSocket({
                 if (!oldData) return oldData;
 
                 const updateThreadInResults = (results: any[]) =>
-                  results.map(thread =>
-                    thread.id === threadId ? { ...thread, ...threadData.thread_data } : thread
+                  results.map((thread) =>
+                    thread.id === threadId ? { ...thread, ...threadData.thread_data } : thread,
                   );
 
                 if (oldData.pages) {
@@ -273,7 +267,7 @@ export function useThreadWebSocket({
                 }
 
                 return oldData;
-              }
+              },
             );
             break;
 
@@ -295,7 +289,15 @@ export function useThreadWebSocket({
         onError?.('Failed to parse WebSocket message');
       }
     },
-    [threadId, queryClient, onMessage, onTypingUpdate, onError, updateConnectionInfo, clearTypingTimeout]
+    [
+      threadId,
+      queryClient,
+      onMessage,
+      onTypingUpdate,
+      onError,
+      updateConnectionInfo,
+      clearTypingTimeout,
+    ],
   );
 
   // Connect to WebSocket
@@ -333,7 +335,7 @@ export function useThreadWebSocket({
         console.error('WebSocket error:', error);
         updateConnectionInfo({
           state: 'error',
-          error: 'WebSocket connection error'
+          error: 'WebSocket connection error',
         });
         onError?.('WebSocket connection error');
       };
@@ -375,16 +377,25 @@ export function useThreadWebSocket({
           updateConnectionInfo({ state: 'disconnected' });
         }
       };
-
     } catch (error) {
       console.error('Failed to create WebSocket:', error);
       updateConnectionInfo({
         state: 'error',
-        error: 'Failed to create WebSocket connection'
+        error: 'Failed to create WebSocket connection',
       });
       onError?.('Failed to create WebSocket connection');
     }
-  }, [enabled, threadId, connectionInfo.reconnectAttempts, maxReconnectAttempts, reconnectDelay, handleMessage, updateConnectionInfo, onError, clearTypingTimeout]);
+  }, [
+    enabled,
+    threadId,
+    connectionInfo.reconnectAttempts,
+    maxReconnectAttempts,
+    reconnectDelay,
+    handleMessage,
+    updateConnectionInfo,
+    onError,
+    clearTypingTimeout,
+  ]);
 
   // Disconnect from WebSocket
   const disconnect = useCallback(() => {
@@ -419,27 +430,36 @@ export function useThreadWebSocket({
   }, []);
 
   // Convenience functions for common operations
-  const sendTextMessage = useCallback((content: string, isInternalNote = false) => {
-    return sendMessage({
-      type: 'send_message',
-      content,
-      is_internal_note: isInternalNote,
-    });
-  }, [sendMessage]);
+  const sendTextMessage = useCallback(
+    (content: string, isInternalNote = false) => {
+      return sendMessage({
+        type: 'send_message',
+        content,
+        is_internal_note: isInternalNote,
+      });
+    },
+    [sendMessage],
+  );
 
-  const sendTypingIndicator = useCallback((isTyping: boolean) => {
-    return sendMessage({
-      type: 'typing_indicator',
-      is_typing: isTyping,
-    });
-  }, [sendMessage]);
+  const sendTypingIndicator = useCallback(
+    (isTyping: boolean) => {
+      return sendMessage({
+        type: 'typing_indicator',
+        is_typing: isTyping,
+      });
+    },
+    [sendMessage],
+  );
 
-  const markMessageAsRead = useCallback((messageId: string) => {
-    return sendMessage({
-      type: 'mark_as_read',
-      message_id: messageId,
-    });
-  }, [sendMessage]);
+  const markMessageAsRead = useCallback(
+    (messageId: string) => {
+      return sendMessage({
+        type: 'mark_as_read',
+        message_id: messageId,
+      });
+    },
+    [sendMessage],
+  );
 
   // Effect to handle connection lifecycle
   useEffect(() => {
@@ -507,7 +527,7 @@ export function useGlobalMessagingWebSocket({
       setConnectionInfo(newInfo);
       onConnectionChange?.(newInfo);
     },
-    [connectionInfo, onConnectionChange]
+    [connectionInfo, onConnectionChange],
   );
 
   // Handle incoming WebSocket messages
@@ -573,7 +593,7 @@ export function useGlobalMessagingWebSocket({
         onError?.('Failed to parse WebSocket message');
       }
     },
-    [queryClient, onThreadNotification, onUnreadCountUpdate, onError, updateConnectionInfo]
+    [queryClient, onThreadNotification, onUnreadCountUpdate, onError, updateConnectionInfo],
   );
 
   // Connect to global WebSocket
@@ -611,7 +631,7 @@ export function useGlobalMessagingWebSocket({
         console.error('Global WebSocket error:', error);
         updateConnectionInfo({
           state: 'error',
-          error: 'Global WebSocket connection error'
+          error: 'Global WebSocket connection error',
         });
         onError?.('Global WebSocket connection error');
       };
@@ -650,16 +670,23 @@ export function useGlobalMessagingWebSocket({
           updateConnectionInfo({ state: 'disconnected' });
         }
       };
-
     } catch (error) {
       console.error('Failed to create global WebSocket:', error);
       updateConnectionInfo({
         state: 'error',
-        error: 'Failed to create global WebSocket connection'
+        error: 'Failed to create global WebSocket connection',
       });
       onError?.('Failed to create global WebSocket connection');
     }
-  }, [enabled, connectionInfo.reconnectAttempts, maxReconnectAttempts, reconnectDelay, handleMessage, updateConnectionInfo, onError]);
+  }, [
+    enabled,
+    connectionInfo.reconnectAttempts,
+    maxReconnectAttempts,
+    reconnectDelay,
+    handleMessage,
+    updateConnectionInfo,
+    onError,
+  ]);
 
   // Disconnect from global WebSocket
   const disconnect = useCallback(() => {

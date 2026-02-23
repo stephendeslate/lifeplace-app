@@ -27,10 +27,7 @@ interface VIPStatusCardProps {
   onViewAllBenefits?: () => void;
 }
 
-export const VIPStatusCard: React.FC<VIPStatusCardProps> = ({
-  status,
-  onViewAllBenefits,
-}) => {
+export const VIPStatusCard: React.FC<VIPStatusCardProps> = ({ status, onViewAllBenefits }) => {
   const currentTier = status.current_tier || DEFAULT_GUEST_TIER;
   const isGuest = currentTier.level === 0 || currentTier.name === 'Guest';
   const isPremier = currentTier.level === 2 || currentTier.name === 'Premier';
@@ -39,12 +36,7 @@ export const VIPStatusCard: React.FC<VIPStatusCardProps> = ({
   const hasMoreBenefits = benefits.length > 3;
 
   return (
-    <GlassCard
-      variant="gold"
-      intensity="subtle"
-      hover={false}
-      sx={{ p: 3 }}
-    >
+    <GlassCard variant="gold" intensity="subtle" hover={false} sx={{ p: 3 }}>
       {/* Header with Tier Badge */}
       <Box
         sx={{
@@ -102,7 +94,8 @@ export const VIPStatusCard: React.FC<VIPStatusCardProps> = ({
               Start your journey to Partner Member
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              Complete your first bookings to unlock exclusive benefits and become a valued Partner Member.
+              Complete your first bookings to unlock exclusive benefits and become a valued Partner
+              Member.
             </Typography>
           </Box>
         </Box>
@@ -126,7 +119,8 @@ export const VIPStatusCard: React.FC<VIPStatusCardProps> = ({
             p: 2,
             mb: 2,
             borderRadius: 2,
-            background: 'linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(245,158,11,0.05) 100%)',
+            background:
+              'linear-gradient(135deg, rgba(245,158,11,0.1) 0%, rgba(245,158,11,0.05) 100%)',
             border: '1px solid',
             borderColor: alpha('#F59E0B', 0.2),
           }}
@@ -135,7 +129,8 @@ export const VIPStatusCard: React.FC<VIPStatusCardProps> = ({
             You have reached our highest tier!
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            Thank you for being a valued Premier Member. Enjoy all the exclusive benefits of our top tier.
+            Thank you for being a valued Premier Member. Enjoy all the exclusive benefits of our top
+            tier.
           </Typography>
         </Box>
       )}
@@ -169,9 +164,7 @@ export const VIPStatusCard: React.FC<VIPStatusCardProps> = ({
             },
           }}
         >
-          {hasMoreBenefits
-            ? `View all ${benefits.length} benefits`
-            : 'View all benefits'}
+          {hasMoreBenefits ? `View all ${benefits.length} benefits` : 'View all benefits'}
         </Button>
       )}
 

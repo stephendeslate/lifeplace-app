@@ -1,8 +1,8 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import * as Sentry from '@sentry/react'
-import './index.css'
-import App from './App.tsx'
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import * as Sentry from '@sentry/react';
+import './index.css';
+import App from './App.tsx';
 
 // Initialize Sentry for error monitoring in production (v2)
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
@@ -68,16 +68,26 @@ window.addEventListener('error', (event) => {
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Sentry.ErrorBoundary
-      fallback={({ error, resetError }: { error: unknown; componentStack: string; eventId: string; resetError: () => void }) => (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          padding: '20px',
-          textAlign: 'center'
-        }}>
+      fallback={({
+        error,
+        resetError,
+      }: {
+        error: unknown;
+        componentStack: string;
+        eventId: string;
+        resetError: () => void;
+      }) => (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100vh',
+            padding: '20px',
+            textAlign: 'center',
+          }}
+        >
           <h1 style={{ color: '#d32f2f', marginBottom: '16px' }}>Something went wrong</h1>
           <p style={{ color: '#666', marginBottom: '24px' }}>
             An unexpected error occurred. Our team has been notified.
@@ -91,21 +101,23 @@ createRoot(document.getElementById('root')!).render(
               border: 'none',
               borderRadius: '4px',
               cursor: 'pointer',
-              fontSize: '16px'
+              fontSize: '16px',
             }}
           >
             Try Again
           </button>
           {import.meta.env.DEV && (
-            <pre style={{
-              marginTop: '24px',
-              padding: '16px',
-              backgroundColor: '#f5f5f5',
-              borderRadius: '4px',
-              overflow: 'auto',
-              maxWidth: '100%',
-              textAlign: 'left'
-            }}>
+            <pre
+              style={{
+                marginTop: '24px',
+                padding: '16px',
+                backgroundColor: '#f5f5f5',
+                borderRadius: '4px',
+                overflow: 'auto',
+                maxWidth: '100%',
+                textAlign: 'left',
+              }}
+            >
               {error?.toString()}
             </pre>
           )}
@@ -118,4 +130,4 @@ createRoot(document.getElementById('root')!).render(
       <App />
     </Sentry.ErrorBoundary>
   </StrictMode>,
-)
+);

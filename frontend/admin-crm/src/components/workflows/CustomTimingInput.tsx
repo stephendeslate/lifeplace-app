@@ -13,10 +13,7 @@ import {
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
 import type { TimingType, TimingUnit, CustomTiming } from '../../types/workflows.types';
-import {
-  stringToCustomTiming,
-  customTimingToString,
-} from '../../types/workflows.types';
+import { stringToCustomTiming, customTimingToString } from '../../types/workflows.types';
 
 export interface CustomTimingInputProps {
   /** Current value as string (e.g., 'AFTER_3_DAYS', 'ON_CREATION') */
@@ -87,22 +84,25 @@ export const CustomTimingInput: React.FC<CustomTimingInputProps> = ({
   }, [value]);
 
   // Build string and call onChange when internal state changes
-  const updateValue = useCallback((newType: TimingType, newValue: number, newUnit: TimingUnit) => {
-    // Validate
-    if (newType !== 'immediate' && (newValue < minValue || newValue > maxValue)) {
-      setLocalError(`Value must be between ${minValue} and ${maxValue}`);
-      return;
-    }
-    setLocalError(null);
+  const updateValue = useCallback(
+    (newType: TimingType, newValue: number, newUnit: TimingUnit) => {
+      // Validate
+      if (newType !== 'immediate' && (newValue < minValue || newValue > maxValue)) {
+        setLocalError(`Value must be between ${minValue} and ${maxValue}`);
+        return;
+      }
+      setLocalError(null);
 
-    const timing: CustomTiming = {
-      type: newType,
-      value: newValue,
-      unit: newUnit,
-    };
-    const str = customTimingToString(timing);
-    onChange(str);
-  }, [onChange, minValue, maxValue]);
+      const timing: CustomTiming = {
+        type: newType,
+        value: newValue,
+        unit: newUnit,
+      };
+      const str = customTimingToString(timing);
+      onChange(str);
+    },
+    [onChange, minValue, maxValue],
+  );
 
   const handleTypeChange = (event: SelectChangeEvent<TimingType>) => {
     const newType = event.target.value as TimingType;
@@ -124,7 +124,7 @@ export const CustomTimingInput: React.FC<CustomTimingInputProps> = ({
 
   const filteredTypeOptions = showBeforeEvent
     ? TIMING_TYPE_OPTIONS
-    : TIMING_TYPE_OPTIONS.filter(opt => opt.value !== 'before_event');
+    : TIMING_TYPE_OPTIONS.filter((opt) => opt.value !== 'before_event');
 
   const displayError = errorText || localError;
 
@@ -132,11 +132,7 @@ export const CustomTimingInput: React.FC<CustomTimingInputProps> = ({
     <Box data-testid={testId}>
       <Box display="flex" gap={2} alignItems="flex-start" flexWrap="wrap">
         {/* Timing Type Select */}
-        <FormControl
-          sx={{ minWidth: 180 }}
-          error={error || !!displayError}
-          disabled={disabled}
-        >
+        <FormControl sx={{ minWidth: 180 }} error={error || !!displayError} disabled={disabled}>
           <InputLabel id={`${testId}-type-label`}>{label}</InputLabel>
           <Select
             labelId={`${testId}-type-label`}

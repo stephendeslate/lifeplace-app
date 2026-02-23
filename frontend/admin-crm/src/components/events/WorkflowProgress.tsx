@@ -1,14 +1,7 @@
 // frontend/admin-crm/src/components/events/WorkflowProgress.tsx
 
 import React from 'react';
-import {
-  Box,
-  LinearProgress,
-  Typography,
-  Chip,
-  Stack,
-  useTheme,
-} from '@mui/material';
+import { Box, LinearProgress, Typography, Chip, Stack, useTheme } from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
   RadioButtonUnchecked as RadioButtonUncheckedIcon,
@@ -40,7 +33,7 @@ export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({
             {progress.current_stage_name}
           </Typography>
         </Box>
-        
+
         <LinearProgress
           variant="determinate"
           value={progress.percentage}
@@ -53,7 +46,7 @@ export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({
             },
           }}
         />
-        
+
         <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
           {progress.current_task_name}
         </Typography>
@@ -84,7 +77,7 @@ export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({
             {progress.percentage}%
           </Typography>
         </Box>
-        
+
         <LinearProgress
           variant="determinate"
           value={progress.percentage}
@@ -133,7 +126,7 @@ export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({
               const stageNumber = index + 1;
               const isCompleted = stageNumber < progress.current_stage;
               const isCurrent = stageNumber === progress.current_stage;
-              
+
               return (
                 <Box key={index} display="flex" alignItems="center" gap={1}>
                   {isCompleted ? (
@@ -143,10 +136,12 @@ export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({
                   ) : (
                     <RadioButtonUncheckedIcon sx={{ color: 'grey.400', fontSize: 20 }} />
                   )}
-                  
+
                   <Typography
                     variant="body2"
-                    color={isCompleted ? 'success.main' : isCurrent ? 'primary.main' : 'text.secondary'}
+                    color={
+                      isCompleted ? 'success.main' : isCurrent ? 'primary.main' : 'text.secondary'
+                    }
                     fontWeight={isCurrent ? 'medium' : 'normal'}
                   >
                     {stageNumber}. {stageName}

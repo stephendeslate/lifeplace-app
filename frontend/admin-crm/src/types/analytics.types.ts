@@ -23,10 +23,10 @@ export interface DashboardKPIs {
   confirmed_bookings: number;
   completed_bookings: number;
   cancelled_bookings: number;
-  event_revenue: number;           // Revenue from completed events only
-  total_revenue: number;           // All collected payments (includes cancelled event deposits)
-  event_revenue_trend: number;     // Trend for event revenue
-  total_revenue_trend: number;     // Trend for total revenue
+  event_revenue: number; // Revenue from completed events only
+  total_revenue: number; // All collected payments (includes cancelled event deposits)
+  event_revenue_trend: number; // Trend for event revenue
+  total_revenue_trend: number; // Trend for total revenue
   avg_booking_value: number;
   new_clients: number;
   booking_sessions: number;
@@ -224,7 +224,7 @@ export const LEAD_SOURCE_OPTIONS = [
   { value: 'OTHER', label: 'Other' },
 ] as const;
 
-export type LeadSourceValue = typeof LEAD_SOURCE_OPTIONS[number]['value'];
+export type LeadSourceValue = (typeof LEAD_SOURCE_OPTIONS)[number]['value'];
 
 // ============================================================================
 // Booking Flow Analytics Types

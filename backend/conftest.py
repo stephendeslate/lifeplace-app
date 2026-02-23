@@ -7,13 +7,14 @@ This file is automatically loaded by pytest and provides:
 - Plugin configuration
 """
 
-import pytest
 from django.conf import settings
 
+import pytest
 
 # =============================================================================
 # DJANGO SETTINGS OVERRIDES (applied before test collection)
 # =============================================================================
+
 
 def pytest_configure():
     """
@@ -23,22 +24,22 @@ def pytest_configure():
     # Use local memory cache for all cache backends to avoid Redis dependency
     # The actual settings.py defines: default, sessions, analytics
     settings.CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'default-cache',
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "default-cache",
         },
-        'sessions': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'sessions-cache',
+        "sessions": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "sessions-cache",
         },
-        'analytics': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'analytics-cache',
+        "analytics": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "analytics-cache",
         },
     }
 
     # Use database-backed sessions instead of cache
-    settings.SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+    settings.SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
     # Celery eager mode
     settings.CELERY_TASK_ALWAYS_EAGER = True
@@ -46,8 +47,8 @@ def pytest_configure():
 
     # Disable Channels layer for testing
     settings.CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
         }
     }
 
@@ -67,6 +68,7 @@ def pytest_configure():
 # CELERY CONFIGURATION
 # =============================================================================
 
+
 @pytest.fixture(autouse=True)
 def celery_eager_mode(settings):
     """Force Celery tasks to execute synchronously in tests."""
@@ -78,30 +80,32 @@ def celery_eager_mode(settings):
 # CACHE CONFIGURATION
 # =============================================================================
 
+
 @pytest.fixture(autouse=True)
 def use_dummy_cache(settings):
     """Use local memory cache in tests to avoid Redis dependency."""
     settings.CACHES = {
-        'default': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'default-cache',
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "default-cache",
         },
-        'sessions': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'sessions-cache',
+        "sessions": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "sessions-cache",
         },
-        'analytics': {
-            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-            'LOCATION': 'analytics-cache',
+        "analytics": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "analytics-cache",
         },
     }
-    settings.SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+    settings.SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 
 @pytest.fixture
 def clear_cache():
     """Explicitly clear cache when needed."""
     from django.core.cache import cache
+
     cache.clear()
     yield
     cache.clear()
@@ -110,6 +114,7 @@ def clear_cache():
 # =============================================================================
 # SECURITY LOGGING MOCK
 # =============================================================================
+
 
 @pytest.fixture(autouse=True)
 def mock_security_logging(mocker):
@@ -124,55 +129,33 @@ def mock_security_logging(mocker):
     from unittest.mock import MagicMock
 
     # Mock all SecurityLogger methods that access the database
-    mocker.patch(
-        'core.utils.security_logging.SecurityLogger.log_event',
-        return_value=None
-    )
-    mocker.patch(
-        'core.utils.security_logging.SecurityLogger.log_login_success',
-        return_value=None
-    )
-    mocker.patch(
-        'core.utils.security_logging.SecurityLogger.log_login_failure',
-        return_value=None
-    )
-    mocker.patch(
-        'core.utils.security_logging.SecurityLogger.log_admin_action',
-        return_value=None
-    )
-    mocker.patch(
-        'core.utils.security_logging.SecurityLogger.log_permission_denied',
-        return_value=None
-    )
-    mocker.patch(
-        'core.utils.security_logging.SecurityLogger.log_suspicious_activity',
-        return_value=None
-    )
+    mocker.patch("core.utils.security_logging.SecurityLogger.log_event", return_value=None)
+    mocker.patch("core.utils.security_logging.SecurityLogger.log_login_success", return_value=None)
+    mocker.patch("core.utils.security_logging.SecurityLogger.log_login_failure", return_value=None)
+    mocker.patch("core.utils.security_logging.SecurityLogger.log_admin_action", return_value=None)
+    mocker.patch("core.utils.security_logging.SecurityLogger.log_permission_denied", return_value=None)
+    mocker.patch("core.utils.security_logging.SecurityLogger.log_suspicious_activity", return_value=None)
     # Mock the module-level convenience function
-    mocker.patch(
-        'core.utils.security_logging.log_security_event',
-        return_value=None
-    )
+    mocker.patch("core.utils.security_logging.log_security_event", return_value=None)
     # Mock SecurityEvent.objects to prevent any direct DB access
     mock_manager = MagicMock()
     mock_manager.create.return_value = MagicMock(id=1)
     mock_manager.filter.return_value = mock_manager
     mock_manager.count.return_value = 0
     mock_manager.exists.return_value = False
-    mocker.patch(
-        'core.utils.security_logging.SecurityEvent.objects',
-        mock_manager
-    )
+    mocker.patch("core.utils.security_logging.SecurityEvent.objects", mock_manager)
 
 
 # =============================================================================
 # API CLIENT FIXTURES
 # =============================================================================
 
+
 @pytest.fixture
 def api_client():
     """Return a DRF API client instance."""
     from rest_framework.test import APIClient
+
     return APIClient()
 
 
@@ -189,14 +172,14 @@ def authenticated_client(api_client):
     """
     from rest_framework_simplejwt.tokens import RefreshToken
 
-    def _get_client(user=None, role='CLIENT'):
+    def _get_client(user=None, role="CLIENT"):
         from core.factories.users import UserFactory
 
         if user is None:
-            user = UserFactory(role=role, is_staff=(role == 'ADMIN'))
+            user = UserFactory(role=role, is_staff=(role == "ADMIN"))
 
         refresh = RefreshToken.for_user(user)
-        api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
         api_client.user = user
         return api_client
 
@@ -206,37 +189,32 @@ def authenticated_client(api_client):
 @pytest.fixture
 def admin_client(authenticated_client):
     """Return an authenticated admin API client."""
-    return authenticated_client(role='ADMIN')
+    return authenticated_client(role="ADMIN")
 
 
 @pytest.fixture
 def client_user_client(authenticated_client):
     """Return an authenticated client user API client."""
-    return authenticated_client(role='CLIENT')
+    return authenticated_client(role="CLIENT")
 
 
 # =============================================================================
 # EXTERNAL SERVICE MOCKS
 # =============================================================================
 
+
 @pytest.fixture
 def mock_stripe(mocker):
     """Mock Stripe PaymentIntent.create API call."""
-    mock = mocker.patch('stripe.PaymentIntent.create')
-    mock.return_value = mocker.Mock(
-        id='pi_test_123456',
-        status='succeeded',
-        amount=250000,
-        currency='php',
-        metadata={}
-    )
+    mock = mocker.patch("stripe.PaymentIntent.create")
+    mock.return_value = mocker.Mock(id="pi_test_123456", status="succeeded", amount=250000, currency="php", metadata={})
     return mock
 
 
 @pytest.fixture
 def mock_stripe_webhook(mocker):
     """Mock Stripe webhook signature verification."""
-    mock = mocker.patch('stripe.Webhook.construct_event')
+    mock = mocker.patch("stripe.Webhook.construct_event")
     return mock
 
 
@@ -244,26 +222,21 @@ def mock_stripe_webhook(mocker):
 def mock_brevo_email(mocker):
     """Mock Brevo/SendinBlue email sending."""
     return mocker.patch(
-        'core.domains.communications.services.CommunicationService.send_communication',
-        return_value=mocker.Mock(
-            id='test-record-id',
-            delivery_status='SENT'
-        )
+        "core.domains.communications.services.CommunicationService.send_communication",
+        return_value=mocker.Mock(id="test-record-id", delivery_status="SENT"),
     )
 
 
 @pytest.fixture
 def mock_expo_push(mocker):
     """Mock Expo push notifications."""
-    return mocker.patch(
-        'exponent_server_sdk.PushClient.publish',
-        return_value=mocker.Mock(status='ok')
-    )
+    return mocker.patch("exponent_server_sdk.PushClient.publish", return_value=mocker.Mock(status="ok"))
 
 
 # =============================================================================
 # TIME FREEZING
 # =============================================================================
+
 
 @pytest.fixture
 def frozen_time():
@@ -276,6 +249,7 @@ def frozen_time():
                 # Test code here
     """
     from freezegun import freeze_time
+
     return freeze_time
 
 
@@ -283,16 +257,19 @@ def frozen_time():
 # REQUEST FACTORY
 # =============================================================================
 
+
 @pytest.fixture
 def request_factory():
     """Return a DRF API request factory."""
     from rest_framework.test import APIRequestFactory
+
     return APIRequestFactory()
 
 
 # =============================================================================
 # SECURITY EVENTS TABLE (for --no-migrations compatibility)
 # =============================================================================
+
 
 @pytest.fixture
 def ensure_security_events_table():
@@ -307,6 +284,7 @@ def ensure_security_events_table():
     Use this fixture in any test that calls user.delete().
     """
     from django.db import connection
+
     with connection.cursor() as cursor:
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS security_events (

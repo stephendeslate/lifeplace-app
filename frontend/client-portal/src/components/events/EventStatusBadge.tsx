@@ -11,10 +11,10 @@ interface EventStatusBadgeProps {
   variant?: ChipProps['variant'];
 }
 
-const EventStatusBadge: React.FC<EventStatusBadgeProps> = ({ 
-  status, 
-  size = 'medium', 
-  variant = 'filled'
+const EventStatusBadge: React.FC<EventStatusBadgeProps> = ({
+  status,
+  size = 'medium',
+  variant = 'filled',
 }) => {
   const getStatusConfig = (status: string): { color: ChipProps['color']; label: string } => {
     switch (status) {
@@ -29,7 +29,7 @@ const EventStatusBadge: React.FC<EventStatusBadgeProps> = ({
         return { color: 'success', label: 'Completed' };
       case 'CANCELLED':
         return { color: 'error', label: 'Cancelled' };
-      
+
       // Payment statuses
       case 'PENDING':
         return { color: 'warning', label: 'Payment Pending' };
@@ -39,7 +39,7 @@ const EventStatusBadge: React.FC<EventStatusBadgeProps> = ({
         return { color: 'success', label: 'Paid' };
       case 'OVERDUE':
         return { color: 'error', label: 'Overdue' };
-      
+
       default:
         return { color: 'default', label: status };
     }

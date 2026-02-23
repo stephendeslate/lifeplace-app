@@ -1,15 +1,13 @@
-import type { GalleryPhoto } from "../../../types/gallery.types";
+import type { GalleryPhoto } from '../../../types/gallery.types';
 
-export function createMockGalleryPhoto(
-  overrides: Partial<GalleryPhoto> = {},
-): GalleryPhoto {
+export function createMockGalleryPhoto(overrides: Partial<GalleryPhoto> = {}): GalleryPhoto {
   const id = overrides.id || Math.floor(Math.random() * 10000);
   return {
     id,
     image: `/media/gallery/photo-${id}.jpg`,
     title: `Gallery Photo ${id}`,
     description: `Description for photo ${id}`,
-    category: "GENERAL",
+    category: 'GENERAL',
     venue: null,
     venue_name: null,
     event_type: null,
@@ -17,8 +15,8 @@ export function createMockGalleryPhoto(
     is_featured: false,
     is_active: true,
     sort_order: id,
-    created_at: "2024-06-15T10:00:00Z",
-    updated_at: "2024-06-15T10:00:00Z",
+    created_at: '2024-06-15T10:00:00Z',
+    updated_at: '2024-06-15T10:00:00Z',
     ...overrides,
   };
 }
@@ -26,28 +24,28 @@ export function createMockGalleryPhoto(
 export function createMockGalleryPhotos(count: number): GalleryPhoto[] {
   const photoConfigs = [
     {
-      title: "Wedding Ceremony",
-      category: "WEDDING",
+      title: 'Wedding Ceremony',
+      category: 'WEDDING',
       is_featured: true,
     },
     {
-      title: "Team Building Activity",
-      category: "TEAM_BUILDING",
+      title: 'Team Building Activity',
+      category: 'TEAM_BUILDING',
       is_featured: false,
     },
     {
-      title: "Retreat Sunset View",
-      category: "CAMPS_AND_RETREATS",
+      title: 'Retreat Sunset View',
+      category: 'CAMPS_AND_RETREATS',
       is_featured: true,
     },
     {
-      title: "Workshop Setup",
-      category: "WORKSHOP",
+      title: 'Workshop Setup',
+      category: 'WORKSHOP',
       is_featured: false,
     },
     {
-      title: "Venue Atmosphere",
-      category: "ATMOSPHERE",
+      title: 'Venue Atmosphere',
+      category: 'ATMOSPHERE',
       is_featured: false,
     },
   ];
@@ -76,8 +74,8 @@ export function createMockGalleryCategory(
   overrides: Partial<GalleryCategory> = {},
 ): GalleryCategory {
   return {
-    value: "GENERAL",
-    label: "General",
+    value: 'GENERAL',
+    label: 'General',
     count: 10,
     ...overrides,
   };
@@ -86,33 +84,33 @@ export function createMockGalleryCategory(
 export function createMockGalleryCategories(): GalleryCategory[] {
   return [
     createMockGalleryCategory({
-      value: "GENERAL",
-      label: "General",
+      value: 'GENERAL',
+      label: 'General',
       count: 15,
     }),
     createMockGalleryCategory({
-      value: "WEDDING",
-      label: "Wedding",
+      value: 'WEDDING',
+      label: 'Wedding',
       count: 25,
     }),
     createMockGalleryCategory({
-      value: "TEAM_BUILDING",
-      label: "Team Building",
+      value: 'TEAM_BUILDING',
+      label: 'Team Building',
       count: 12,
     }),
     createMockGalleryCategory({
-      value: "CAMPS_AND_RETREATS",
-      label: "Camps & Retreats",
+      value: 'CAMPS_AND_RETREATS',
+      label: 'Camps & Retreats',
       count: 8,
     }),
     createMockGalleryCategory({
-      value: "WORKSHOP",
-      label: "Workshop",
+      value: 'WORKSHOP',
+      label: 'Workshop',
       count: 6,
     }),
     createMockGalleryCategory({
-      value: "ATMOSPHERE",
-      label: "Atmosphere & Details",
+      value: 'ATMOSPHERE',
+      label: 'Atmosphere & Details',
       count: 10,
     }),
   ];

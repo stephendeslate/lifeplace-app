@@ -80,7 +80,7 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
   const [signatureIntentConfirmed, setSignatureIntentConfirmed] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
 
-  const currentStepIndex = SIGNING_STEPS.findIndex(step => step.key === currentStep);
+  const currentStepIndex = SIGNING_STEPS.findIndex((step) => step.key === currentStep);
   const requiresWitness = false; // TODO: Get from template when available
 
   // Reset state when dialog opens/closes
@@ -145,16 +145,20 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
         onSuccess: (contractSignature) => {
           // Since we don't have the full contract object from the signature response,
           // we can either refetch the contract or update the original contract
-          const updatedContract = { ...contract!, signatures: [...(contract?.signatures || []), contractSignature] };
+          const updatedContract = {
+            ...contract!,
+            signatures: [...(contract?.signatures || []), contractSignature],
+          };
           onSignComplete(updatedContract);
           onClose();
         },
         onError: (error) => {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to submit signature';
+          const errorMessage =
+            error instanceof Error ? error.message : 'Failed to submit signature';
           onError(errorMessage);
           setErrors([errorMessage]);
         },
-      }
+      },
     );
   }, [
     contract,
@@ -184,7 +188,8 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
       }
       case 'signature_capture': {
         const hasSignature = signatureData !== null;
-        const hasWitnessInfo = !requiresWitness || (witnessName.trim() !== '' && witnessSignature.trim() !== '');
+        const hasWitnessInfo =
+          !requiresWitness || (witnessName.trim() !== '' && witnessSignature.trim() !== '');
         return hasSignature && hasWitnessInfo;
       }
       case 'confirmation':
@@ -192,7 +197,17 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
       default:
         return false;
     }
-  }, [currentStep, signerName, signerEmail, legalDisclosureAccepted, signatureData, requiresWitness, witnessName, witnessSignature, signatureIntentConfirmed]);
+  }, [
+    currentStep,
+    signerName,
+    signerEmail,
+    legalDisclosureAccepted,
+    signatureData,
+    requiresWitness,
+    witnessName,
+    witnessSignature,
+    signatureIntentConfirmed,
+  ]);
 
   const renderStepContent = () => {
     if (!contract) return null;
@@ -204,7 +219,7 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
             <Typography variant="h6" sx={{ mb: 2 }}>
               Contract Review
             </Typography>
-            
+
             <Paper elevation={0} sx={{ p: 2, backgroundColor: theme.palette.grey[50], mb: 2 }}>
               <Typography variant="subtitle2" gutterBottom>
                 Contract Details
@@ -216,7 +231,10 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
                 <strong>Status:</strong> {contract.status}
               </Typography>
               <Typography variant="body2" gutterBottom>
-                <strong>Event:</strong> {typeof contract.event === 'object' && contract.event?.name ? contract.event.name : `Event #${typeof contract.event === 'number' ? contract.event : contract.event?.id || 'Unknown'}`}
+                <strong>Event:</strong>{' '}
+                {typeof contract.event === 'object' && contract.event?.name
+                  ? contract.event.name
+                  : `Event #${typeof contract.event === 'number' ? contract.event : contract.event?.id || 'Unknown'}`}
               </Typography>
               {contract.contract_value && (
                 <Typography variant="body2" gutterBottom>
@@ -226,7 +244,8 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
             </Paper>
 
             <Alert severity="info" sx={{ mb: 2 }}>
-              Please review the contract details above before proceeding to sign as a company representative.
+              Please review the contract details above before proceeding to sign as a company
+              representative.
             </Alert>
 
             {contract.content && (
@@ -308,12 +327,20 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
                 <Typography variant="subtitle2" sx={{ mb: 2 }}>
                   Electronic Signature Consent
                 </Typography>
-                
+
                 <Alert severity="info" sx={{ mb: 2 }}>
-                  By proceeding with electronic signature, you understand and agree to the following terms.
+                  By proceeding with electronic signature, you understand and agree to the following
+                  terms.
                 </Alert>
 
-                <Box sx={{ p: 2, border: `1px solid ${theme.palette.divider}`, borderRadius: 1, mb: 2 }}>
+                <Box
+                  sx={{
+                    p: 2,
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: 1,
+                    mb: 2,
+                  }}
+                >
                   <Typography variant="body2" sx={{ mb: 1 }}>
                     <strong>Electronic Signature Disclosure:</strong>
                   </Typography>
@@ -327,7 +354,8 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
                     • You have the right to request paper copies of signed documents
                   </Typography>
                   <Typography variant="body2">
-                    • Technical requirements: A device with internet access and a supported web browser
+                    • Technical requirements: A device with internet access and a supported web
+                    browser
                   </Typography>
                 </Box>
 
@@ -341,7 +369,8 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
                   }
                   label={
                     <Typography variant="body2">
-                      I have read, understand, and agree to the electronic signature disclosure above
+                      I have read, understand, and agree to the electronic signature disclosure
+                      above
                     </Typography>
                   }
                 />
@@ -361,7 +390,7 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
               onSignatureChange={(data) => {
                 setSignatureData(data);
                 if (data) {
-                  setErrors(prev => prev.filter(error => !error.includes('signature')));
+                  setErrors((prev) => prev.filter((error) => !error.includes('signature')));
                 }
               }}
               width={isMobile ? 300 : 500}
@@ -408,7 +437,8 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
 
             <Alert severity="success" sx={{ mb: 3 }}>
               <Typography variant="body2">
-                You are about to electronically sign this contract as a {SIGNATURE_ROLES.find(r => r.value === signerRole)?.label}
+                You are about to electronically sign this contract as a{' '}
+                {SIGNATURE_ROLES.find((r) => r.value === signerRole)?.label}
               </Typography>
             </Alert>
 
@@ -419,10 +449,10 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
               <Typography variant="body2">Name: {signerName}</Typography>
               {signerTitle && <Typography variant="body2">Title: {signerTitle}</Typography>}
               <Typography variant="body2">Email: {signerEmail}</Typography>
-              <Typography variant="body2">Role: {SIGNATURE_ROLES.find(r => r.value === signerRole)?.label}</Typography>
               <Typography variant="body2">
-                Date: {new Date().toLocaleDateString()}
+                Role: {SIGNATURE_ROLES.find((r) => r.value === signerRole)?.label}
               </Typography>
+              <Typography variant="body2">Date: {new Date().toLocaleDateString()}</Typography>
               {requiresWitness && witnessName && (
                 <Typography variant="body2">Witness: {witnessName}</Typography>
               )}
@@ -456,7 +486,7 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
               }
               label={
                 <Typography variant="body2">
-                  I confirm my intent to sign this contract electronically and agree that this 
+                  I confirm my intent to sign this contract electronically and agree that this
                   electronic signature is legally binding
                 </Typography>
               }
@@ -494,8 +524,8 @@ export const AdminContractSigningDialog: React.FC<AdminContractSigningDialogProp
 
       <DialogContent dividers>
         {/* Progress Stepper */}
-        <Stepper 
-          activeStep={currentStepIndex} 
+        <Stepper
+          activeStep={currentStepIndex}
           sx={{ mb: 3 }}
           orientation={isMobile ? 'vertical' : 'horizontal'}
         >

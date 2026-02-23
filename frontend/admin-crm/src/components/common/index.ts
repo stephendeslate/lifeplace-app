@@ -20,18 +20,10 @@ export { default as ModernSearch } from './ModernSearch';
 export type { ModernSearchFilter, ModernSearchProps } from './ModernSearch';
 
 // Modern Page Layout
-export {
-  ModernPageLayout,
-  ModernSettingsLayout,
-  ModernOverviewLayout
-} from './ModernPageLayout';
+export { ModernPageLayout, ModernSettingsLayout, ModernOverviewLayout } from './ModernPageLayout';
 
 // Modern Card System
-export {
-  ModernCard,
-  ModernGlassCard,
-  ModernMetricCard,
-} from './ModernCard';
+export { ModernCard, ModernGlassCard, ModernMetricCard } from './ModernCard';
 
 // Modern Page Header
 export {
@@ -49,28 +41,28 @@ export { ActivityTimeline } from './ActivityTimeline';
 export type { ActivityItem } from './ActivityTimeline';
 
 // Quick Actions
-export { 
+export {
   QuickActions,
   createEventActions,
   createClientActions,
-  createPaymentActions 
+  createPaymentActions,
 } from './QuickActions';
 export type { QuickAction } from './QuickActions';
 
 // Financial Summary
-export { 
+export {
   FinancialSummary,
   calculateEventFinancials,
-  calculateClientFinancials 
+  calculateClientFinancials,
 } from './FinancialSummary';
 export type { FinancialMetric, PaymentBreakdown } from './FinancialSummary';
 
 // Entity Navigation
-export { 
+export {
   EntityNavigation,
   createClientReference,
   createEventReference,
-  createPaymentReference 
+  createPaymentReference,
 } from './EntityNavigation';
 export type { EntityReference } from './EntityNavigation';
 
@@ -79,12 +71,12 @@ export { WorkflowVisualization } from './WorkflowVisualization';
 export type { WorkflowStage, WorkflowTask } from './WorkflowVisualization';
 
 // Table Skeleton (alias as ModernTableSkeleton)
-export { 
+export {
   TableSkeleton,
   TableSkeleton as ModernTableSkeleton,
   CardSkeleton,
   ListSkeleton,
-  FormSkeleton 
+  FormSkeleton,
 } from './TableSkeleton';
 
 // Existing components
@@ -95,11 +87,7 @@ export { ModernEmptyState } from './ModernEmptyState';
 export { TemplatePreviewDialog } from './TemplatePreviewDialog';
 
 // Settings Components System
-export {
-  SettingsTable,
-  SettingsFormDialog,
-  SettingsPage,
-} from './settings';
+export { SettingsTable, SettingsFormDialog, SettingsPage } from './settings';
 export type {
   SettingsTableProps,
   SettingsTableColumn,
@@ -110,11 +98,7 @@ export type {
 } from './settings';
 
 // Status Chips - Reusable status display components
-export {
-  PaymentStatusChip,
-  PaymentPlanStatusChip,
-  InstallmentStatusChip,
-} from './StatusChips';
+export { PaymentStatusChip, PaymentPlanStatusChip, InstallmentStatusChip } from './StatusChips';
 
 // Image Upload Components
 export { ImageUploadField } from './ImageUploadField';

@@ -10,16 +10,16 @@ API contract:
 """
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Any
 
 from config import config
-from utils import think_time, generate_test_contact_info, generate_test_event_datetime
+from utils import generate_test_contact_info, generate_test_event_datetime, think_time
 
 logger = logging.getLogger(__name__)
 
 
 # Step types where we stop (don't submit payment or confirmation)
-STOP_BEFORE_STEPS = {'payment_info', 'confirmation'}
+STOP_BEFORE_STEPS = {"payment_info", "confirmation"}
 
 
 class BookingFlowBehavior:
@@ -34,9 +34,9 @@ class BookingFlowBehavior:
     def __init__(self, client, base_url: str):
         self.client = client
         self.base_url = base_url
-        self.current_session_id: Optional[str] = None
-        self.current_step: Optional[Dict] = None  # {id, step_type, ...}
-        self.booking_flow_id: Optional[str] = config.booking_flow_id
+        self.current_session_id: str | None = None
+        self.current_step: dict | None = None  # {id, step_type, ...}
+        self.booking_flow_id: str | None = config.booking_flow_id
 
     def execute_booking_flow(self, rate_tracker) -> bool:
         """
@@ -63,8 +63,8 @@ class BookingFlowBehavior:
             steps_completed = 0
 
             while self.current_step and steps_completed < max_steps:
-                step_type = self.current_step.get('step_type')
-                step_id = self.current_step.get('id')
+                step_type = self.current_step.get("step_type")
+                step_id = self.current_step.get("id")
 
                 # Stop before payment/confirmation
                 if step_type in STOP_BEFORE_STEPS:
@@ -82,12 +82,12 @@ class BookingFlowBehavior:
                 steps_completed += 1
 
                 # Validate availability after date_time step
-                if step_type == 'date_time':
+                if step_type == "date_time":
                     think_time(1, 2)
                     self._validate_availability(rate_tracker)
 
                 # Calculate pricing after package/addon steps
-                if step_type in ('package_selection', 'addon_selection'):
+                if step_type in ("package_selection", "addon_selection"):
                     self._calculate_pricing(rate_tracker)
 
                 think_time(2, 4)
@@ -106,38 +106,34 @@ class BookingFlowBehavior:
             if self.current_session_id:
                 self._release_reservation(rate_tracker)
 
-    def _build_step_data(self, step_type: str) -> Dict[str, Any]:
+    def _build_step_data(self, step_type: str) -> dict[str, Any]:
         """Build the correct step_data payload for a given step type."""
 
-        if step_type == 'introduction':
+        if step_type == "introduction":
             return {"acknowledged": True}
 
-        elif step_type == 'date_time':
+        elif step_type == "date_time":
             return generate_test_event_datetime()
 
-        elif step_type == 'venue_selection':
+        elif step_type == "venue_selection":
             return {"selected_venue_ids": []}
 
-        elif step_type == 'package_selection':
+        elif step_type == "package_selection":
             package_id = config.package_id
             if package_id:
-                return {
-                    "selected_packages": [
-                        {"product_id": int(package_id), "quantity": 1}
-                    ]
-                }
+                return {"selected_packages": [{"product_id": int(package_id), "quantity": 1}]}
             return {"selected_packages": []}
 
-        elif step_type == 'addon_selection':
+        elif step_type == "addon_selection":
             return {"selected_addons": []}
 
-        elif step_type == 'questionnaire':
+        elif step_type == "questionnaire":
             return {}
 
-        elif step_type == 'pricing_summary':
+        elif step_type == "pricing_summary":
             return {"terms_accepted": True}
 
-        elif step_type == 'contact_info':
+        elif step_type == "contact_info":
             return generate_test_contact_info()
 
         else:
@@ -147,9 +143,7 @@ class BookingFlowBehavior:
     def _browse_flows(self, rate_tracker) -> bool:
         """Browse available booking flows."""
         with self.client.get(
-            "/api/bookingflow/public/flows/",
-            catch_response=True,
-            name="/api/bookingflow/public/flows/"
+            "/api/bookingflow/public/flows/", catch_response=True, name="/api/bookingflow/public/flows/"
         ) as response:
             rate_tracker.record_call()
 
@@ -183,7 +177,7 @@ class BookingFlowBehavior:
             f"/api/bookingflow/public/flows/{self.booking_flow_id}/start_session/",
             json={},
             catch_response=True,
-            name="/api/bookingflow/public/flows/{id}/start_session/"
+            name="/api/bookingflow/public/flows/{id}/start_session/",
         ) as response:
             rate_tracker.record_call()
 
@@ -209,7 +203,7 @@ class BookingFlowBehavior:
                 response.failure(f"Failed to start session: {response.status_code}")
                 return False
 
-    def _update_step(self, step_id: int, step_type: str, step_data: Dict, rate_tracker) -> bool:
+    def _update_step(self, step_id: int, step_type: str, step_data: dict, rate_tracker) -> bool:
         """
         Update a session step with the correct API contract.
 
@@ -227,7 +221,7 @@ class BookingFlowBehavior:
                 "mark_completed": True,
             },
             catch_response=True,
-            name=f"/api/bookingflow/session/update/ [{step_type}]"
+            name=f"/api/bookingflow/session/update/ [{step_type}]",
         ) as response:
             rate_tracker.record_call()
 
@@ -266,7 +260,7 @@ class BookingFlowBehavior:
             f"/api/bookingflow/public/flows/session/{self.current_session_id}/validate-availability/",
             json={},
             catch_response=True,
-            name="/api/bookingflow/session/validate-availability/"
+            name="/api/bookingflow/session/validate-availability/",
         ) as response:
             rate_tracker.record_call()
 
@@ -290,7 +284,7 @@ class BookingFlowBehavior:
             f"/api/bookingflow/public/flows/session/{self.current_session_id}/calculate-pricing/",
             json={},
             catch_response=True,
-            name="/api/bookingflow/session/calculate-pricing/"
+            name="/api/bookingflow/session/calculate-pricing/",
         ) as response:
             rate_tracker.record_call()
 
@@ -313,12 +307,10 @@ class BookingFlowBehavior:
             f"/api/bookingflow/public/flows/session/{self.current_session_id}/release-reservation/",
             json={},
             catch_response=True,
-            name="/api/bookingflow/session/release-reservation/"
+            name="/api/bookingflow/session/release-reservation/",
         ) as response:
             rate_tracker.record_call()
             response.success()
             self.current_session_id = None
             self.current_step = None
             return True
-
-

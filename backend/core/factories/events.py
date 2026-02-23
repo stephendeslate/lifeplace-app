@@ -6,11 +6,13 @@ Based on actual models in core/domains/events/models.py:
 - Event (complex model with many status fields)
 """
 
-import factory
-from factory.django import DjangoModelFactory
-from django.utils import timezone
 from datetime import timedelta
 from decimal import Decimal
+
+from django.utils import timezone
+
+import factory
+from factory.django import DjangoModelFactory
 
 
 class EventTypeFactory(DjangoModelFactory):
@@ -21,34 +23,23 @@ class EventTypeFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'events.EventType'
-        django_get_or_create = ('name',)
+        model = "events.EventType"
+        django_get_or_create = ("name",)
 
-    name = factory.Sequence(lambda n: f'Event Type {n}')
-    description = factory.Faker('sentence')
+    name = factory.Sequence(lambda n: f"Event Type {n}")
+    description = factory.Faker("sentence")
     is_active = True
 
     class Params:
         """Traits for common event types."""
 
-        wedding = factory.Trait(
-            name='Wedding',
-            description='Wedding events and ceremonies'
-        )
+        wedding = factory.Trait(name="Wedding", description="Wedding events and ceremonies")
 
-        corporate = factory.Trait(
-            name='Corporate',
-            description='Corporate events and meetings'
-        )
+        corporate = factory.Trait(name="Corporate", description="Corporate events and meetings")
 
-        birthday = factory.Trait(
-            name='Birthday',
-            description='Birthday celebrations'
-        )
+        birthday = factory.Trait(name="Birthday", description="Birthday celebrations")
 
-        inactive = factory.Trait(
-            is_active=False
-        )
+        inactive = factory.Trait(is_active=False)
 
 
 class EventFactory(DjangoModelFactory):
@@ -63,13 +54,13 @@ class EventFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'events.Event'
+        model = "events.Event"
 
-    client = factory.SubFactory('core.factories.users.UserFactory')
+    client = factory.SubFactory("core.factories.users.UserFactory")
     event_type = factory.SubFactory(EventTypeFactory)
-    name = factory.Faker('sentence', nb_words=3)
-    status = 'LEAD'
-    payment_status = 'UNPAID'
+    name = factory.Faker("sentence", nb_words=3)
+    status = "LEAD"
+    payment_status = "UNPAID"
 
     @factory.lazy_attribute
     def start_date(self):
@@ -83,71 +74,50 @@ class EventFactory(DjangoModelFactory):
 
     # Payment fields
     total_amount_due = None
-    total_amount_paid = Decimal('0')
+    total_amount_paid = Decimal("0")
 
     # Date hold fields
-    date_hold_status = 'NONE'
+    date_hold_status = "NONE"
     date_blocked = False
 
     # Check-in fields
-    check_in_status = 'PENDING'
+    check_in_status = "PENDING"
 
     class Params:
         """Traits for common event configurations."""
 
-        confirmed = factory.Trait(
-            status='CONFIRMED'
-        )
+        confirmed = factory.Trait(status="CONFIRMED")
 
         completed = factory.Trait(
-            status='COMPLETED',
-            start_date=factory.LazyFunction(
-                lambda: timezone.now() - timedelta(days=7)
-            )
+            status="COMPLETED", start_date=factory.LazyFunction(lambda: timezone.now() - timedelta(days=7))
         )
 
         cancelled = factory.Trait(
-            status='CANCELLED',
-            cancelled_at=factory.LazyFunction(timezone.now),
-            cancelled_reason='CLIENT_REQUEST'
+            status="CANCELLED", cancelled_at=factory.LazyFunction(timezone.now), cancelled_reason="CLIENT_REQUEST"
         )
 
         paid = factory.Trait(
-            payment_status='PAID',
-            total_amount_paid=Decimal('5000.00'),
-            total_amount_due=Decimal('5000.00')
+            payment_status="PAID", total_amount_paid=Decimal("5000.00"), total_amount_due=Decimal("5000.00")
         )
 
         partially_paid = factory.Trait(
-            payment_status='PARTIALLY_PAID',
-            total_amount_paid=Decimal('2500.00'),
-            total_amount_due=Decimal('5000.00')
+            payment_status="PARTIALLY_PAID", total_amount_paid=Decimal("2500.00"), total_amount_due=Decimal("5000.00")
         )
 
         date_blocked_trait = factory.Trait(
-            date_blocked=True,
-            date_hold_status='PERMANENT_BLOCK',
-            date_blocked_at=factory.LazyFunction(timezone.now)
+            date_blocked=True, date_hold_status="PERMANENT_BLOCK", date_blocked_at=factory.LazyFunction(timezone.now)
         )
 
         temporary_hold = factory.Trait(
-            date_hold_status='TEMPORARY_HOLD',
-            date_hold_expires_at=factory.LazyFunction(
-                lambda: timezone.now() + timedelta(days=7)
-            ),
-            date_held_at=factory.LazyFunction(timezone.now)
+            date_hold_status="TEMPORARY_HOLD",
+            date_hold_expires_at=factory.LazyFunction(lambda: timezone.now() + timedelta(days=7)),
+            date_held_at=factory.LazyFunction(timezone.now),
         )
 
         upcoming = factory.Trait(
-            status='CONFIRMED',
-            start_date=factory.LazyFunction(
-                lambda: timezone.now() + timedelta(days=7)
-            )
+            status="CONFIRMED", start_date=factory.LazyFunction(lambda: timezone.now() + timedelta(days=7))
         )
 
         past = factory.Trait(
-            status='COMPLETED',
-            start_date=factory.LazyFunction(
-                lambda: timezone.now() - timedelta(days=30)
-            )
+            status="COMPLETED", start_date=factory.LazyFunction(lambda: timezone.now() - timedelta(days=30))
         )

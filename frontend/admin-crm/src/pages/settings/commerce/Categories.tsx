@@ -1,140 +1,138 @@
 // Categories Settings Page - Standardized Version
 // Migrated to use the unified settings system
 
-import React from "react";
-import { Category as CategoryIcon } from "@mui/icons-material";
+import React from 'react';
+import { Category as CategoryIcon } from '@mui/icons-material';
 import {
   PermissionAwareSettingsPage,
   type SettingsPageConfig,
   type SettingsTableColumn,
-} from "../../../components/common/settings";
-import { useProductCategories } from "../../../hooks/useProducts";
+} from '../../../components/common/settings';
+import { useProductCategories } from '../../../hooks/useProducts';
 import type {
   ProductCategory,
   CreateCategoryData,
   UpdateCategoryData,
-} from "../../../types/products.types";
-import type { ModernFormSection } from "../../../components/common/ModernForm";
+} from '../../../types/products.types';
+import type { ModernFormSection } from '../../../components/common/ModernForm';
 
 // Table columns configuration
 const columns: SettingsTableColumn<ProductCategory>[] = [
   {
-    key: "name",
-    label: "Category Name",
+    key: 'name',
+    label: 'Category Name',
     sortable: true,
     searchable: true,
   },
   {
-    key: "full_path",
-    label: "Path",
-    render: (value) => String(value || "-"),
+    key: 'full_path',
+    label: 'Path',
+    render: (value) => String(value || '-'),
   },
   {
-    key: "products_count",
-    label: "Products",
-    align: "center",
+    key: 'products_count',
+    label: 'Products',
+    align: 'center',
     render: (value) => String(value || 0),
   },
   {
-    key: "children_count",
-    label: "Subcategories",
-    align: "center",
+    key: 'children_count',
+    label: 'Subcategories',
+    align: 'center',
     render: (value) => String(value || 0),
   },
   {
-    key: "sort_order",
-    label: "Order",
-    align: "center",
+    key: 'sort_order',
+    label: 'Order',
+    align: 'center',
     sortable: true,
   },
   {
-    key: "requires_venue",
-    label: "Venue Required",
-    align: "center",
-    render: (value) => (value ? "Yes" : "No"),
+    key: 'requires_venue',
+    label: 'Venue Required',
+    align: 'center',
+    render: (value) => (value ? 'Yes' : 'No'),
   },
   {
-    key: "is_active",
-    label: "Status",
-    align: "center",
-    render: (value) => (value ? "Active" : "Inactive"),
+    key: 'is_active',
+    label: 'Status',
+    align: 'center',
+    render: (value) => (value ? 'Active' : 'Inactive'),
   },
   {
-    key: "updated_at",
-    label: "Last Modified",
+    key: 'updated_at',
+    label: 'Last Modified',
     sortable: true,
-    render: (value) =>
-      value ? new Date(String(value)).toLocaleDateString() : "-",
+    render: (value) => (value ? new Date(String(value)).toLocaleDateString() : '-'),
   },
 ];
 
 // Form sections
 const formSections: ModernFormSection[] = [
   {
-    title: "Basic Information",
+    title: 'Basic Information',
     fields: [
       {
-        name: "name",
-        label: "Category Name",
-        type: "text",
+        name: 'name',
+        label: 'Category Name',
+        type: 'text',
         required: true,
-        placeholder: "e.g., Wedding Photography",
-        helperText: "A descriptive name for this category",
+        placeholder: 'e.g., Wedding Photography',
+        helperText: 'A descriptive name for this category',
       },
       {
-        name: "description",
-        label: "Description",
-        type: "textarea",
+        name: 'description',
+        label: 'Description',
+        type: 'textarea',
         multiline: true,
         rows: 3,
-        placeholder: "Describe what products belong in this category...",
-        helperText: "Optional description for internal reference",
+        placeholder: 'Describe what products belong in this category...',
+        helperText: 'Optional description for internal reference',
       },
       {
-        name: "parent",
-        label: "Parent Category",
-        type: "select",
-        helperText: "Leave empty for top-level category",
+        name: 'parent',
+        label: 'Parent Category',
+        type: 'select',
+        helperText: 'Leave empty for top-level category',
         options: [
-          { value: "", label: "No Parent (Top Level)" },
+          { value: '', label: 'No Parent (Top Level)' },
           // TODO: Add dynamic parent categories
         ],
       },
     ],
   },
   {
-    title: "Category Settings",
+    title: 'Category Settings',
     fields: [
       {
-        name: "sort_order",
-        label: "Display Order",
-        type: "number",
+        name: 'sort_order',
+        label: 'Display Order',
+        type: 'number',
         required: true,
-        helperText:
-          "Order in which this category appears (lower numbers first)",
+        helperText: 'Order in which this category appears (lower numbers first)',
       },
       {
-        name: "requires_venue",
-        label: "Requires Venue",
-        type: "switch",
-        helperText: "Products in this category require a venue selection",
+        name: 'requires_venue',
+        label: 'Requires Venue',
+        type: 'switch',
+        helperText: 'Products in this category require a venue selection',
       },
       {
-        name: "typical_duration_hours",
-        label: "Typical Duration (Hours)",
-        type: "number",
-        helperText: "Default duration for products in this category",
+        name: 'typical_duration_hours',
+        label: 'Typical Duration (Hours)',
+        type: 'number',
+        helperText: 'Default duration for products in this category',
       },
     ],
   },
   {
-    title: "Status",
+    title: 'Status',
     fields: [
       {
-        name: "is_active",
-        label: "Active",
-        type: "switch",
-        helperText: "Active categories are shown in product selection",
+        name: 'is_active',
+        label: 'Active',
+        type: 'switch',
+        helperText: 'Active categories are shown in product selection',
       },
     ],
   },
@@ -143,24 +141,24 @@ const formSections: ModernFormSection[] = [
 // Default values for new categories
 const defaultCategory: ProductCategory = {
   id: 0,
-  name: "",
-  description: "",
-  slug: "",
+  name: '',
+  description: '',
+  slug: '',
   parent: null,
   is_active: true,
   sort_order: 1,
   requires_venue: false,
   typical_duration_hours: null,
-  full_path: "",
+  full_path: '',
   level: 0,
   children_count: 0,
   products_count: 0,
   includes: [],
   notes: [],
-  badge_text: "",
-  rates_page_section: "",
-  created_at: "",
-  updated_at: "",
+  badge_text: '',
+  rates_page_section: '',
+  created_at: '',
+  updated_at: '',
 };
 
 export const Categories = () => {
@@ -181,33 +179,32 @@ export const Categories = () => {
   // Settings page configuration
   const config: SettingsPageConfig<ProductCategory> = {
     page: {
-      title: "Product Categories",
-      subtitle: "Organize your products into categories for better management",
+      title: 'Product Categories',
+      subtitle: 'Organize your products into categories for better management',
       icon: React.createElement(CategoryIcon),
       breadcrumbs: [
-        { label: "Settings", href: "/settings" },
-        { label: "Commerce", href: "/settings/commerce" },
-        { label: "Categories" },
+        { label: 'Settings', href: '/settings' },
+        { label: 'Commerce', href: '/settings/commerce' },
+        { label: 'Categories' },
       ],
     },
 
     table: {
       columns,
-      searchFields: ["name", "description"],
-      defaultSort: { key: "sort_order", order: "asc" },
+      searchFields: ['name', 'description'],
+      defaultSort: { key: 'sort_order', order: 'asc' },
       emptyState: {
         icon: React.createElement(CategoryIcon),
-        title: "No Categories Found",
-        description:
-          "Create your first category to start organizing your products.",
+        title: 'No Categories Found',
+        description: 'Create your first category to start organizing your products.',
       },
     },
 
     form: {
-      title: "Product Category",
-      subtitle: "Configure category settings and organization.",
+      title: 'Product Category',
+      subtitle: 'Configure category settings and organization.',
       sections: formSections,
-      maxWidth: "md",
+      maxWidth: 'md',
     },
 
     features: {
@@ -277,17 +274,15 @@ export const Categories = () => {
   };
 
   // Fetch fresh category data before editing to ensure we have the latest values
-  const handleFetchItem = async (
-    id: string | number,
-  ): Promise<ProductCategory> => {
-    const { productsApi } = await import("../../../apis/products.api");
+  const handleFetchItem = async (id: string | number): Promise<ProductCategory> => {
+    const { productsApi } = await import('../../../apis/products.api');
     return productsApi.getCategory(Number(id));
   };
 
   return (
     <PermissionAwareSettingsPage
       config={config}
-      requiredPermissions={["can_manage_financial_settings"]}
+      requiredPermissions={['can_manage_financial_settings']}
       data={categories}
       defaultValues={defaultCategory}
       isLoading={isLoadingCategories}

@@ -9,14 +9,14 @@ from .views import (
     NotificationViewSet,
 )
 
-app_name = 'notifications'
+app_name = "notifications"
 
 router = DefaultRouter()
-router.register(r'notifications', NotificationViewSet, basename='notification')
-router.register(r'types', NotificationTypeViewSet, basename='notification-type')
-router.register(r'preferences', NotificationPreferenceViewSet, basename='notification-preference')
-router.register(r'push-tokens', DevicePushTokenViewSet, basename='push-token')
+router.register(r"notifications", NotificationViewSet, basename="notification")
+router.register(r"types", NotificationTypeViewSet, basename="notification-type")
+router.register(r"preferences", NotificationPreferenceViewSet, basename="notification-preference")
+router.register(r"push-tokens", DevicePushTokenViewSet, basename="push-token")
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", include(router.urls)),
 ]

@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/apis/bookingflows.api.ts
 
-import api from "../utils/api";
+import api from '../utils/api';
 import type {
   BookingFlow,
   BookingFlowDetail,
@@ -20,11 +20,8 @@ import type {
   AssignQuestionnairesData,
   StepConfiguration,
   PaymentTermsConfiguration,
-} from "../types/bookingflows.types";
-import type {
-  PaginatedResponse,
-  PaginationParams,
-} from "../types/common.types";
+} from '../types/bookingflows.types';
+import type { PaginatedResponse, PaginationParams } from '../types/common.types';
 
 export interface BookingFlowQueryParams extends PaginationParams {
   search?: string;
@@ -46,15 +43,14 @@ export const bookingFlowsApi = {
     params?: BookingFlowQueryParams,
   ): Promise<PaginatedResponse<BookingFlow>> => {
     const searchParams = new URLSearchParams();
-    if (params?.search) searchParams.append("search", params.search);
+    if (params?.search) searchParams.append('search', params.search);
     if (params?.event_type !== undefined)
-      searchParams.append("event_type", params.event_type.toString());
+      searchParams.append('event_type', params.event_type.toString());
     if (params?.is_active !== undefined)
-      searchParams.append("is_active", params.is_active.toString());
-    if (params?.page) searchParams.append("page", params.page.toString());
-    if (params?.page_size)
-      searchParams.append("page_size", params.page_size.toString());
-    if (params?.ordering) searchParams.append("ordering", params.ordering);
+      searchParams.append('is_active', params.is_active.toString());
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.page_size) searchParams.append('page_size', params.page_size.toString());
+    if (params?.ordering) searchParams.append('ordering', params.ordering);
 
     const response = await api.get<PaginatedResponse<BookingFlow>>(
       `/bookingflow/flows/?${searchParams.toString()}`,
@@ -63,27 +59,17 @@ export const bookingFlowsApi = {
   },
 
   getBookingFlow: async (id: number): Promise<BookingFlowDetail> => {
-    const response = await api.get<BookingFlowDetail>(
-      `/bookingflow/flows/${id}/`,
-    );
+    const response = await api.get<BookingFlowDetail>(`/bookingflow/flows/${id}/`);
     return response.data;
   },
 
-  createBookingFlow: async (
-    data: CreateBookingFlowData,
-  ): Promise<BookingFlow> => {
-    const response = await api.post<BookingFlow>("/bookingflow/flows/", data);
+  createBookingFlow: async (data: CreateBookingFlowData): Promise<BookingFlow> => {
+    const response = await api.post<BookingFlow>('/bookingflow/flows/', data);
     return response.data;
   },
 
-  updateBookingFlow: async (
-    id: number,
-    data: UpdateBookingFlowData,
-  ): Promise<BookingFlow> => {
-    const response = await api.patch<BookingFlow>(
-      `/bookingflow/flows/${id}/`,
-      data,
-    );
+  updateBookingFlow: async (id: number, data: UpdateBookingFlowData): Promise<BookingFlow> => {
+    const response = await api.patch<BookingFlow>(`/bookingflow/flows/${id}/`, data);
     return response.data;
   },
 
@@ -91,28 +77,16 @@ export const bookingFlowsApi = {
     await api.delete(`/bookingflow/flows/${id}/`);
   },
 
-  duplicateBookingFlow: async (
-    id: number,
-    data: DuplicateFlowData,
-  ): Promise<BookingFlow> => {
-    const response = await api.post<BookingFlow>(
-      `/bookingflow/flows/${id}/duplicate/`,
-      data,
-    );
+  duplicateBookingFlow: async (id: number, data: DuplicateFlowData): Promise<BookingFlow> => {
+    const response = await api.post<BookingFlow>(`/bookingflow/flows/${id}/duplicate/`, data);
     return response.data;
   },
 
   getActiveBookingFlows: async (): Promise<BookingFlow[]> => {
-    const response = await api.get<PaginatedResponse<BookingFlow>>(
-      "/bookingflow/flows/active/",
-    );
+    const response = await api.get<PaginatedResponse<BookingFlow>>('/bookingflow/flows/active/');
 
     // Handle paginated response
-    if (
-      response.data &&
-      typeof response.data === "object" &&
-      "results" in response.data
-    ) {
+    if (response.data && typeof response.data === 'object' && 'results' in response.data) {
       return response.data.results;
     }
 
@@ -151,9 +125,7 @@ export const bookingFlowsApi = {
 
   // Flow Steps Management
   getFlowSteps: async (flowId: number): Promise<BookingFlowStep[]> => {
-    const response = await api.get<BookingFlowStep[]>(
-      `/bookingflow/flows/${flowId}/steps/`,
-    );
+    const response = await api.get<BookingFlowStep[]>(`/bookingflow/flows/${flowId}/steps/`);
     return response.data;
   },
 
@@ -161,14 +133,12 @@ export const bookingFlowsApi = {
     params?: BookingFlowStepQueryParams,
   ): Promise<PaginatedResponse<BookingFlowStep>> => {
     const searchParams = new URLSearchParams();
-    if (params?.search) searchParams.append("search", params.search);
-    if (params?.flow_id)
-      searchParams.append("flow_id", params.flow_id.toString());
-    if (params?.step_type) searchParams.append("step_type", params.step_type);
-    if (params?.page) searchParams.append("page", params.page.toString());
-    if (params?.page_size)
-      searchParams.append("page_size", params.page_size.toString());
-    if (params?.ordering) searchParams.append("ordering", params.ordering);
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.flow_id) searchParams.append('flow_id', params.flow_id.toString());
+    if (params?.step_type) searchParams.append('step_type', params.step_type);
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.page_size) searchParams.append('page_size', params.page_size.toString());
+    if (params?.ordering) searchParams.append('ordering', params.ordering);
 
     const response = await api.get<PaginatedResponse<BookingFlowStep>>(
       `/bookingflow/steps/?${searchParams.toString()}`,
@@ -177,19 +147,12 @@ export const bookingFlowsApi = {
   },
 
   getBookingFlowStep: async (id: number): Promise<BookingFlowStep> => {
-    const response = await api.get<BookingFlowStep>(
-      `/bookingflow/steps/${id}/`,
-    );
+    const response = await api.get<BookingFlowStep>(`/bookingflow/steps/${id}/`);
     return response.data;
   },
 
-  createBookingFlowStep: async (
-    data: CreateBookingFlowStepData,
-  ): Promise<BookingFlowStep> => {
-    const response = await api.post<BookingFlowStep>(
-      "/bookingflow/steps/",
-      data,
-    );
+  createBookingFlowStep: async (data: CreateBookingFlowStepData): Promise<BookingFlowStep> => {
+    const response = await api.post<BookingFlowStep>('/bookingflow/steps/', data);
     return response.data;
   },
 
@@ -197,10 +160,7 @@ export const bookingFlowsApi = {
     id: number,
     data: UpdateBookingFlowStepData,
   ): Promise<BookingFlowStep> => {
-    const response = await api.patch<BookingFlowStep>(
-      `/bookingflow/steps/${id}/`,
-      data,
-    );
+    const response = await api.patch<BookingFlowStep>(`/bookingflow/steps/${id}/`, data);
     return response.data;
   },
 
@@ -209,10 +169,7 @@ export const bookingFlowsApi = {
   },
 
   reorderSteps: async (data: ReorderStepsData): Promise<BookingFlowStep[]> => {
-    const response = await api.post<BookingFlowStep[]>(
-      "/bookingflow/steps/reorder/",
-      data,
-    );
+    const response = await api.post<BookingFlowStep[]>('/bookingflow/steps/reorder/', data);
     return response.data;
   },
 
@@ -236,23 +193,19 @@ export const bookingFlowsApi = {
         reason: string;
         migration_available: boolean;
       }>;
-    }>("/bookingflow/steps/available_step_types/");
+    }>('/bookingflow/steps/available_step_types/');
     return response.data;
   },
 
   // Step Configuration Management
-  getStepConfiguration: async (
-    stepId: number,
-  ): Promise<StepConfiguration | null> => {
+  getStepConfiguration: async (stepId: number): Promise<StepConfiguration | null> => {
     try {
       const response = await api.get<StepConfiguration>(
         `/bookingflow/steps/${stepId}/configuration/`,
       );
       return response.data;
     } catch (error) {
-      if (
-        (error as { response?: { status?: number } }).response?.status === 404
-      ) {
+      if ((error as { response?: { status?: number } }).response?.status === 404) {
         return null;
       }
       throw error;
@@ -280,9 +233,7 @@ export const bookingFlowsApi = {
       );
       return response.data;
     } catch (error) {
-      if (
-        (error as { response?: { status?: number } }).response?.status === 404
-      ) {
+      if ((error as { response?: { status?: number } }).response?.status === 404) {
         return null;
       }
       throw error;
@@ -301,9 +252,7 @@ export const bookingFlowsApi = {
   },
 
   // FIXED: Availability step migration endpoint
-  migrateAvailabilityToDateTime: async (
-    stepId: number,
-  ): Promise<BookingFlowStep> => {
+  migrateAvailabilityToDateTime: async (stepId: number): Promise<BookingFlowStep> => {
     const response = await api.post<BookingFlowStep>(
       `/bookingflow/steps/${stepId}/migrate_availability_to_datetime/`,
     );
@@ -566,27 +515,20 @@ export const bookingFlowsApi = {
   },
 
   // Booking Sessions Management
-  getBookingSessions: async (
-    filters?: BookingSessionFilters,
-  ): Promise<BookingSession[]> => {
+  getBookingSessions: async (filters?: BookingSessionFilters): Promise<BookingSession[]> => {
     const params = new URLSearchParams();
-    if (filters?.booking_flow)
-      params.append("booking_flow", filters.booking_flow.toString());
+    if (filters?.booking_flow) params.append('booking_flow', filters.booking_flow.toString());
     if (filters?.is_completed !== undefined)
-      params.append("is_completed", filters.is_completed.toString());
+      params.append('is_completed', filters.is_completed.toString());
     if (filters?.is_abandoned !== undefined)
-      params.append("is_abandoned", filters.is_abandoned.toString());
+      params.append('is_abandoned', filters.is_abandoned.toString());
 
     const response = await api.get<PaginatedResponse<BookingSession>>(
       `/bookingflow/sessions/?${params.toString()}`,
     );
 
     // Handle paginated response
-    if (
-      response.data &&
-      typeof response.data === "object" &&
-      "results" in response.data
-    ) {
+    if (response.data && typeof response.data === 'object' && 'results' in response.data) {
       return response.data.results;
     }
 
@@ -594,19 +536,12 @@ export const bookingFlowsApi = {
   },
 
   getBookingSession: async (id: number): Promise<BookingSession> => {
-    const response = await api.get<BookingSession>(
-      `/bookingflow/sessions/${id}/`,
-    );
+    const response = await api.get<BookingSession>(`/bookingflow/sessions/${id}/`);
     return response.data;
   },
 
-  createBookingSession: async (
-    data: CreateBookingSessionData,
-  ): Promise<BookingSession> => {
-    const response = await api.post<BookingSession>(
-      "/bookingflow/sessions/",
-      data,
-    );
+  createBookingSession: async (data: CreateBookingSessionData): Promise<BookingSession> => {
+    const response = await api.post<BookingSession>('/bookingflow/sessions/', data);
     return response.data;
   },
 
@@ -650,20 +585,16 @@ export const bookingFlowsApi = {
     return response.data;
   },
 
-  abandonSession: async (
-    id: number,
-    reason?: string,
-  ): Promise<BookingSession> => {
-    const response = await api.post<BookingSession>(
-      `/bookingflow/sessions/${id}/abandon/`,
-      { reason },
-    );
+  abandonSession: async (id: number, reason?: string): Promise<BookingSession> => {
+    const response = await api.post<BookingSession>(`/bookingflow/sessions/${id}/abandon/`, {
+      reason,
+    });
     return response.data;
   },
 
   // Public Booking Flow Endpoints (for client portal)
   getPublicBookingFlows: async (): Promise<BookingFlow[]> => {
-    const response = await api.get<BookingFlow[]>("/bookingflow/public/flows/");
+    const response = await api.get<BookingFlow[]>('/bookingflow/public/flows/');
     return Array.isArray(response.data) ? response.data : [];
   },
 
@@ -718,8 +649,8 @@ export const bookingFlowsApi = {
     filters?: BookingFlowAnalyticsFilters,
   ): Promise<BookingFlowAnalytics[]> => {
     const params = new URLSearchParams();
-    if (filters?.start_date) params.append("start_date", filters.start_date);
-    if (filters?.end_date) params.append("end_date", filters.end_date);
+    if (filters?.start_date) params.append('start_date', filters.start_date);
+    if (filters?.end_date) params.append('end_date', filters.end_date);
 
     const response = await api.get<BookingFlowAnalytics[]>(
       `/bookingflow/flows/${flowId}/analytics/?${params.toString()}`,
@@ -731,37 +662,27 @@ export const bookingFlowsApi = {
     filters?: BookingFlowAnalyticsFilters,
   ): Promise<BookingFlowAnalytics[]> => {
     const params = new URLSearchParams();
-    if (filters?.flow_id) params.append("flow_id", filters.flow_id.toString());
-    if (filters?.start_date) params.append("start_date", filters.start_date);
-    if (filters?.end_date) params.append("end_date", filters.end_date);
+    if (filters?.flow_id) params.append('flow_id', filters.flow_id.toString());
+    if (filters?.start_date) params.append('start_date', filters.start_date);
+    if (filters?.end_date) params.append('end_date', filters.end_date);
 
     const response = await api.get<PaginatedResponse<BookingFlowAnalytics>>(
       `/bookingflow/analytics/?${params.toString()}`,
     );
 
     // Handle paginated response
-    if (
-      response.data &&
-      typeof response.data === "object" &&
-      "results" in response.data
-    ) {
+    if (response.data && typeof response.data === 'object' && 'results' in response.data) {
       return response.data.results;
     }
 
     return Array.isArray(response.data) ? response.data : [];
   },
 
-  updateDailyAnalytics: async (
-    flowId: number,
-    date?: string,
-  ): Promise<BookingFlowAnalytics> => {
-    const response = await api.post<BookingFlowAnalytics>(
-      "/bookingflow/analytics/update_daily/",
-      {
-        flow_id: flowId,
-        date,
-      },
-    );
+  updateDailyAnalytics: async (flowId: number, date?: string): Promise<BookingFlowAnalytics> => {
+    const response = await api.post<BookingFlowAnalytics>('/bookingflow/analytics/update_daily/', {
+      flow_id: flowId,
+      date,
+    });
     return response.data;
   },
 };

@@ -98,13 +98,9 @@ export function formatMessageTimestamp(
     includeTime?: boolean;
     includeDate?: boolean;
     relative?: boolean;
-  } = {}
+  } = {},
 ): string {
-  const {
-    includeTime = true,
-    includeDate = true,
-    relative = false,
-  } = options;
+  const { includeTime = true, includeDate = true, relative = false } = options;
 
   const date = new Date(timestamp);
   const now = new Date();
@@ -250,7 +246,11 @@ export function canAssignThreads(user: User): boolean {
 /**
  * Check if a user can access a message
  */
-export function canAccessMessage(user: User, message: Message, thread?: MessageThreadListItem): boolean {
+export function canAccessMessage(
+  user: User,
+  message: Message,
+  thread?: MessageThreadListItem,
+): boolean {
   // Check thread access first
   if (thread && !canAccessThread(user, thread)) return false;
 
@@ -273,7 +273,10 @@ export function canEditMessage(user: User, message: Message): boolean {
 /**
  * Get comprehensive permissions for a user and thread
  */
-export function getThreadPermissions(user: User, thread?: MessageThreadListItem): ThreadPermissions {
+export function getThreadPermissions(
+  user: User,
+  thread?: MessageThreadListItem,
+): ThreadPermissions {
   return {
     canRead: thread ? canAccessThread(user, thread) : true,
     canWrite: thread ? canAccessThread(user, thread) : true,
@@ -298,7 +301,11 @@ export function validateFile(file: File): { isValid: boolean; error?: string } {
     };
   }
 
-  if (!MESSAGING_CONSTANTS.ALLOWED_FILE_TYPES.includes(file.type as typeof MESSAGING_CONSTANTS.ALLOWED_FILE_TYPES[number])) {
+  if (
+    !MESSAGING_CONSTANTS.ALLOWED_FILE_TYPES.includes(
+      file.type as (typeof MESSAGING_CONSTANTS.ALLOWED_FILE_TYPES)[number],
+    )
+  ) {
     return {
       isValid: false,
       error: 'File type not allowed',
@@ -366,7 +373,9 @@ export function sortThreadsByPriority(threads: MessageThreadListItem[]): Message
 /**
  * Sort threads by last message timestamp (newest first)
  */
-export function sortThreadsByLastMessage(threads: MessageThreadListItem[]): MessageThreadListItem[] {
+export function sortThreadsByLastMessage(
+  threads: MessageThreadListItem[],
+): MessageThreadListItem[] {
   return [...threads].sort((a, b) => {
     const aTime = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
     const bTime = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
@@ -377,7 +386,9 @@ export function sortThreadsByLastMessage(threads: MessageThreadListItem[]): Mess
 /**
  * Sort threads by unread count (highest first)
  */
-export function sortThreadsByUnreadCount(threads: MessageThreadListItem[]): MessageThreadListItem[] {
+export function sortThreadsByUnreadCount(
+  threads: MessageThreadListItem[],
+): MessageThreadListItem[] {
   return [...threads].sort((a, b) => b.unread_count - a.unread_count);
 }
 
@@ -386,9 +397,9 @@ export function sortThreadsByUnreadCount(threads: MessageThreadListItem[]): Mess
  */
 export function filterThreadsByStatus(
   threads: MessageThreadListItem[],
-  statuses: MessageThreadStatus[]
+  statuses: MessageThreadStatus[],
 ): MessageThreadListItem[] {
-  return threads.filter(thread => statuses.includes(thread.status));
+  return threads.filter((thread) => statuses.includes(thread.status));
 }
 
 /**
@@ -396,9 +407,9 @@ export function filterThreadsByStatus(
  */
 export function filterThreadsByPriority(
   threads: MessageThreadListItem[],
-  priorities: MessagePriority[]
+  priorities: MessagePriority[],
 ): MessageThreadListItem[] {
-  return threads.filter(thread => priorities.includes(thread.priority));
+  return threads.filter((thread) => priorities.includes(thread.priority));
 }
 
 /**
@@ -406,16 +417,17 @@ export function filterThreadsByPriority(
  */
 export function filterThreadsBySearch(
   threads: MessageThreadListItem[],
-  searchTerm: string
+  searchTerm: string,
 ): MessageThreadListItem[] {
   if (!searchTerm.trim()) return threads;
 
   const term = searchTerm.toLowerCase();
-  return threads.filter(thread =>
-    thread.subject.toLowerCase().includes(term) ||
-    thread.client_name.toLowerCase().includes(term) ||
-    thread.last_message_content.toLowerCase().includes(term) ||
-    (thread.event_name && thread.event_name.toLowerCase().includes(term))
+  return threads.filter(
+    (thread) =>
+      thread.subject.toLowerCase().includes(term) ||
+      thread.client_name.toLowerCase().includes(term) ||
+      thread.last_message_content.toLowerCase().includes(term) ||
+      (thread.event_name && thread.event_name.toLowerCase().includes(term)),
   );
 }
 
@@ -435,7 +447,7 @@ export function getThreadUrl(threadId: string, baseUrl = '/messages'): string {
  */
 export function getNewThreadUrl(
   baseUrl = '/messages',
-  params?: { clientId?: string; eventId?: string }
+  params?: { clientId?: string; eventId?: string },
 ): string {
   const url = `${baseUrl}/new`;
   if (params) {
@@ -465,7 +477,8 @@ export function getFileTypeIcon(attachment: MessageAttachment): string {
   if (attachment.file_type.startsWith('image/')) return '🖼️';
   if (attachment.file_type === 'application/pdf') return '📄';
   if (attachment.file_type.includes('word')) return '📝';
-  if (attachment.file_type.includes('excel') || attachment.file_type.includes('spreadsheet')) return '📊';
+  if (attachment.file_type.includes('excel') || attachment.file_type.includes('spreadsheet'))
+    return '📊';
   if (attachment.file_type.includes('text')) return '📄';
 
   // Fallback based on extension
@@ -499,8 +512,8 @@ export function getFileTypeIcon(attachment: MessageAttachment): string {
  * Merge new messages into existing message list while avoiding duplicates
  */
 export function mergeMessages(existing: Message[], newMessages: Message[]): Message[] {
-  const existingIds = new Set(existing.map(msg => msg.id));
-  const uniqueNew = newMessages.filter(msg => !existingIds.has(msg.id));
+  const existingIds = new Set(existing.map((msg) => msg.id));
+  const uniqueNew = newMessages.filter((msg) => !existingIds.has(msg.id));
   return [...existing, ...uniqueNew];
 }
 
@@ -508,14 +521,14 @@ export function mergeMessages(existing: Message[], newMessages: Message[]): Mess
  * Update a message in a list
  */
 export function updateMessageInList(messages: Message[], updatedMessage: Message): Message[] {
-  return messages.map(msg => msg.id === updatedMessage.id ? updatedMessage : msg);
+  return messages.map((msg) => (msg.id === updatedMessage.id ? updatedMessage : msg));
 }
 
 /**
  * Remove a message from a list
  */
 export function removeMessageFromList(messages: Message[], messageId: string): Message[] {
-  return messages.filter(msg => msg.id !== messageId);
+  return messages.filter((msg) => msg.id !== messageId);
 }
 
 /**

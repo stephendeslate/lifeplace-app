@@ -22,9 +22,12 @@ RUN apt-get update \
 # Create non-root user for security
 RUN useradd -m -u 1000 -s /bin/bash appuser
 
-# Install Python dependencies
+# Install uv for fast Python package management
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Install Python dependencies (uv is a drop-in pip replacement, 10-100x faster)
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN uv pip install --system --no-cache -r requirements.txt
 
 # Copy project
 COPY . .

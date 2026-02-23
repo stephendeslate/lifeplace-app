@@ -68,82 +68,94 @@ export const GalleryUploadField: React.FC<GalleryUploadFieldProps> = ({
   }, []);
 
   // Validate file
-  const validateFile = useCallback((file: File): string | null => {
-    // Check file type
-    if (!acceptedTypes.includes(file.type)) {
-      return `Invalid file type. Accepted: ${acceptedTypes.map(t => t.split('/')[1]).join(', ')}`;
-    }
+  const validateFile = useCallback(
+    (file: File): string | null => {
+      // Check file type
+      if (!acceptedTypes.includes(file.type)) {
+        return `Invalid file type. Accepted: ${acceptedTypes.map((t) => t.split('/')[1]).join(', ')}`;
+      }
 
-    // Check file size
-    const maxSizeBytes = maxSizeMB * 1024 * 1024;
-    if (file.size > maxSizeBytes) {
-      return `File too large. Maximum size: ${maxSizeMB}MB`;
-    }
+      // Check file size
+      const maxSizeBytes = maxSizeMB * 1024 * 1024;
+      if (file.size > maxSizeBytes) {
+        return `File too large. Maximum size: ${maxSizeMB}MB`;
+      }
 
-    return null;
-  }, [acceptedTypes, maxSizeMB]);
+      return null;
+    },
+    [acceptedTypes, maxSizeMB],
+  );
 
   // Handle file selection (multiple files)
-  const handleFilesSelect = useCallback((files: FileList) => {
-    setError(null);
+  const handleFilesSelect = useCallback(
+    (files: FileList) => {
+      setError(null);
 
-    const remainingSlots = maxImages - value.length;
-    if (remainingSlots <= 0) {
-      setError(`Maximum ${maxImages} images allowed`);
-      return;
-    }
-
-    const newFiles: File[] = [];
-    const errors: string[] = [];
-
-    for (let i = 0; i < Math.min(files.length, remainingSlots); i++) {
-      const file = files[i];
-      const validationError = validateFile(file);
-
-      if (validationError) {
-        errors.push(`${file.name}: ${validationError}`);
-      } else {
-        newFiles.push(file);
+      const remainingSlots = maxImages - value.length;
+      if (remainingSlots <= 0) {
+        setError(`Maximum ${maxImages} images allowed`);
+        return;
       }
-    }
 
-    if (files.length > remainingSlots) {
-      errors.push(`Only ${remainingSlots} more image(s) can be added`);
-    }
+      const newFiles: File[] = [];
+      const errors: string[] = [];
 
-    if (errors.length > 0) {
-      setError(errors.join('. '));
-    }
+      for (let i = 0; i < Math.min(files.length, remainingSlots); i++) {
+        const file = files[i];
+        const validationError = validateFile(file);
 
-    if (newFiles.length > 0) {
-      setIsLoading(true);
-      setTimeout(() => {
-        onChange([...value, ...newFiles]);
-        setIsLoading(false);
-      }, 200);
-    }
-  }, [value, maxImages, validateFile, onChange]);
+        if (validationError) {
+          errors.push(`${file.name}: ${validationError}`);
+        } else {
+          newFiles.push(file);
+        }
+      }
+
+      if (files.length > remainingSlots) {
+        errors.push(`Only ${remainingSlots} more image(s) can be added`);
+      }
+
+      if (errors.length > 0) {
+        setError(errors.join('. '));
+      }
+
+      if (newFiles.length > 0) {
+        setIsLoading(true);
+        setTimeout(() => {
+          onChange([...value, ...newFiles]);
+          setIsLoading(false);
+        }, 200);
+      }
+    },
+    [value, maxImages, validateFile, onChange],
+  );
 
   // Handle drop
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
 
-    if (disabled) return;
+      if (disabled) return;
 
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      handleFilesSelect(files);
-    }
-  }, [disabled, handleFilesSelect]);
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFilesSelect(files);
+      }
+    },
+    [disabled, handleFilesSelect],
+  );
 
   // Handle drag events
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!disabled) setIsDragging(true);
-  }, [disabled]);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!disabled) setIsDragging(true);
+    },
+    [disabled],
+  );
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -152,16 +164,19 @@ export const GalleryUploadField: React.FC<GalleryUploadFieldProps> = ({
   }, []);
 
   // Handle file input change
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      handleFilesSelect(files);
-    }
-    // Reset input so same file can be selected again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }, [handleFilesSelect]);
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        handleFilesSelect(files);
+      }
+      // Reset input so same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+    [handleFilesSelect],
+  );
 
   // Handle add button click
   const handleAddClick = useCallback(() => {
@@ -171,23 +186,22 @@ export const GalleryUploadField: React.FC<GalleryUploadFieldProps> = ({
   }, [disabled]);
 
   // Handle delete
-  const handleDelete = useCallback((index: number) => {
-    const newValue = [...value];
-    newValue.splice(index, 1);
-    onChange(newValue);
-    setError(null);
-  }, [value, onChange]);
+  const handleDelete = useCallback(
+    (index: number) => {
+      const newValue = [...value];
+      newValue.splice(index, 1);
+      onChange(newValue);
+      setError(null);
+    },
+    [value, onChange],
+  );
 
   const canAddMore = value.length < maxImages && !disabled;
 
   return (
     <Box>
       {label && (
-        <Typography
-          variant="subtitle2"
-          color="text.secondary"
-          sx={{ mb: 1, fontWeight: 500 }}
-        >
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
           {label}
         </Typography>
       )}
@@ -270,9 +284,7 @@ export const GalleryUploadField: React.FC<GalleryUploadFieldProps> = ({
               width: thumbnailSize,
               height: thumbnailSize,
               border: `2px dashed ${
-                isDragging
-                  ? theme.palette.primary.main
-                  : theme.palette.divider
+                isDragging ? theme.palette.primary.main : theme.palette.divider
               }`,
               borderRadius: 1,
               cursor: 'pointer',
@@ -293,19 +305,11 @@ export const GalleryUploadField: React.FC<GalleryUploadFieldProps> = ({
             {isLoading ? (
               <CircularProgress size={24} />
             ) : isDragging ? (
-              <CloudUploadIcon
-                sx={{ fontSize: 32, color: theme.palette.primary.main }}
-              />
+              <CloudUploadIcon sx={{ fontSize: 32, color: theme.palette.primary.main }} />
             ) : (
               <>
-                <AddIcon
-                  sx={{ fontSize: 28, color: theme.palette.grey[500] }}
-                />
-                <Typography
-                  variant="caption"
-                  color="text.disabled"
-                  sx={{ mt: 0.5 }}
-                >
+                <AddIcon sx={{ fontSize: 28, color: theme.palette.grey[500] }} />
+                <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5 }}>
                   Add
                 </Typography>
               </>
@@ -334,10 +338,7 @@ export const GalleryUploadField: React.FC<GalleryUploadFieldProps> = ({
 
       {/* Count and helper text */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-        <Typography
-          variant="caption"
-          color={error ? 'error' : 'text.secondary'}
-        >
+        <Typography variant="caption" color={error ? 'error' : 'text.secondary'}>
           {error || helperText}
         </Typography>
         <Typography variant="caption" color="text.disabled">

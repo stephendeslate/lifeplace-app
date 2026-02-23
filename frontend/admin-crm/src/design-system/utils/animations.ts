@@ -346,7 +346,7 @@ export const glassAnimations = {
 // Helper function to create animation styles
 export const createAnimation = (
   animation: string,
-  config: AnimationConfig = {}
+  config: AnimationConfig = {},
 ): Record<string, string | number> => {
   const {
     duration = 'normal',
@@ -356,13 +356,13 @@ export const createAnimation = (
     iterationCount = 1,
   } = config;
 
-  const durationValue = typeof duration === 'string' 
-    ? `${tokens.animation.duration[duration]}ms`
-    : `${duration}ms`;
+  const durationValue =
+    typeof duration === 'string' ? `${tokens.animation.duration[duration]}ms` : `${duration}ms`;
 
-  const easingValue = typeof easing === 'string'
-    ? tokens.animation.easing[easing as keyof typeof tokens.animation.easing]
-    : easing;
+  const easingValue =
+    typeof easing === 'string'
+      ? tokens.animation.easing[easing as keyof typeof tokens.animation.easing]
+      : easing;
 
   return {
     animation: `${animation} ${durationValue} ${easingValue} ${delay}ms ${fillMode}`,
@@ -375,21 +375,21 @@ export const createTransition = (
   property: string | string[] = 'all',
   duration: Duration | number = 'normal',
   easing: EasingFunction | string = 'standard',
-  delay: number = 0
+  delay: number = 0,
 ): string => {
   const properties = Array.isArray(property) ? property : [property];
-  const durationValue = typeof duration === 'string' 
-    ? `${tokens.animation.duration[duration]}ms`
-    : `${duration}ms`;
+  const durationValue =
+    typeof duration === 'string' ? `${tokens.animation.duration[duration]}ms` : `${duration}ms`;
 
-  const easingValue = typeof easing === 'string'
-    ? tokens.animation.easing[easing as keyof typeof tokens.animation.easing]
-    : easing;
+  const easingValue =
+    typeof easing === 'string'
+      ? tokens.animation.easing[easing as keyof typeof tokens.animation.easing]
+      : easing;
 
   const delayValue = delay > 0 ? ` ${delay}ms` : '';
 
   return properties
-    .map(prop => `${prop} ${durationValue} ${easingValue}${delayValue}`)
+    .map((prop) => `${prop} ${durationValue} ${easingValue}${delayValue}`)
     .join(', ');
 };
 
@@ -402,20 +402,20 @@ export const staggerUtilities = {
 
   // Create stagger animation styles
   createStaggerStyles: (
-    totalItems: number, 
+    totalItems: number,
     baseDelay: number = 50,
     animation: string,
-    config: AnimationConfig = {}
+    config: AnimationConfig = {},
   ) => {
     const styles: Record<string, Record<string, unknown>> = {};
-    
+
     for (let i = 1; i <= totalItems; i++) {
       const delay = (i - 1) * baseDelay;
       styles[`&:nth-child(${i})`] = {
         ...createAnimation(animation, { ...config, delay }),
       };
     }
-    
+
     return styles;
   },
 
@@ -471,17 +471,19 @@ export const hoverAnimations = {
 
 // Loading animations
 export const loadingAnimations = {
-  spinner: (spin: string) => createAnimation(spin, {
-    duration: 1000,
-    easing: 'linear' as const,
-    iterationCount: 'infinite',
-  }),
+  spinner: (spin: string) =>
+    createAnimation(spin, {
+      duration: 1000,
+      easing: 'linear' as const,
+      iterationCount: 'infinite',
+    }),
 
-  pulse: (pulse: string) => createAnimation(pulse, {
-    duration: 2000,
-    easing: 'standard',
-    iterationCount: 'infinite',
-  }),
+  pulse: (pulse: string) =>
+    createAnimation(pulse, {
+      duration: 2000,
+      easing: 'standard',
+      iterationCount: 'infinite',
+    }),
 
   shimmer: (width: string = '100%') => ({
     background: `linear-gradient(90deg, 
@@ -500,36 +502,33 @@ export const pageTransitions = {
     initial: { y: 20, opacity: 0 },
     animate: { y: 0, opacity: 1 },
     exit: { y: -20, opacity: 0 },
-    transition: { duration: 0.3, ease: tokens.animation.easing.standard }
+    transition: { duration: 0.3, ease: tokens.animation.easing.standard },
   },
 
   slideRight: {
     initial: { x: -20, opacity: 0 },
     animate: { x: 0, opacity: 1 },
     exit: { x: 20, opacity: 0 },
-    transition: { duration: 0.3, ease: tokens.animation.easing.standard }
+    transition: { duration: 0.3, ease: tokens.animation.easing.standard },
   },
 
   fade: {
     initial: { opacity: 0 },
     animate: { opacity: 1 },
     exit: { opacity: 0 },
-    transition: { duration: 0.2, ease: tokens.animation.easing.standard }
+    transition: { duration: 0.2, ease: tokens.animation.easing.standard },
   },
 
   scale: {
     initial: { scale: 0.95, opacity: 0 },
     animate: { scale: 1, opacity: 1 },
     exit: { scale: 0.95, opacity: 0 },
-    transition: { duration: 0.2, ease: tokens.animation.easing.standard }
+    transition: { duration: 0.2, ease: tokens.animation.easing.standard },
   },
 };
 
 // Utility function to create custom animations
-export const createCustomAnimation = (
-  keyframes: string,
-  config: AnimationConfig = {}
-) => {
+export const createCustomAnimation = (keyframes: string, config: AnimationConfig = {}) => {
   return createAnimation(keyframes, config);
 };
 
@@ -558,7 +557,10 @@ export const performanceUtils = {
   },
 
   // Conditionally apply animation based on user preference
-  respectReducedMotion: (animationStyle: Record<string, unknown>, fallbackStyle: Record<string, unknown> = {}) => {
+  respectReducedMotion: (
+    animationStyle: Record<string, unknown>,
+    fallbackStyle: Record<string, unknown> = {},
+  ) => {
     return performanceUtils.prefersReducedMotion() ? fallbackStyle : animationStyle;
   },
 

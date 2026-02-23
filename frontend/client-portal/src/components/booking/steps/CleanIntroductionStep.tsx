@@ -19,10 +19,7 @@ import {
 import { GlassCard } from '../../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
 import { useAccessibility } from '../../accessibility';
-import type { 
-  IntroductionStepData, 
-  IntroductionStepConfiguration 
-} from '../../../types/booking';
+import type { IntroductionStepData, IntroductionStepConfiguration } from '../../../types/booking';
 
 interface CleanIntroductionStepProps {
   stepData?: IntroductionStepData;
@@ -46,20 +43,31 @@ export const CleanIntroductionStep: React.FC<CleanIntroductionStepProps> = ({
 
   const data = stepData;
 
-  const handleAcknowledgment = useCallback((acknowledged: boolean) => {
-    onDataChange({ acknowledged });
-    if (acknowledged) {
-      announceToScreenReader('Terms and conditions acknowledged. You can now proceed to the next step.');
-    }
-  }, [onDataChange, announceToScreenReader]);
+  const handleAcknowledgment = useCallback(
+    (acknowledged: boolean) => {
+      onDataChange({ acknowledged });
+      if (acknowledged) {
+        announceToScreenReader(
+          'Terms and conditions acknowledged. You can now proceed to the next step.',
+        );
+      }
+    },
+    [onDataChange, announceToScreenReader],
+  );
 
-  const getFieldError = useCallback((fieldName: string) => {
-    return externalValidationErrors[fieldName]?.[0];
-  }, [externalValidationErrors]);
+  const getFieldError = useCallback(
+    (fieldName: string) => {
+      return externalValidationErrors[fieldName]?.[0];
+    },
+    [externalValidationErrors],
+  );
 
-  const hasFieldError = useCallback((fieldName: string) => {
-    return !!(externalValidationErrors[fieldName]?.length > 0);
-  }, [externalValidationErrors]);
+  const hasFieldError = useCallback(
+    (fieldName: string) => {
+      return !!(externalValidationErrors[fieldName]?.length > 0);
+    },
+    [externalValidationErrors],
+  );
 
   const isProcessing = externalIsValidating;
   const isComplete = data.acknowledged === true;
@@ -81,17 +89,21 @@ export const CleanIntroductionStep: React.FC<CleanIntroductionStepProps> = ({
           >
             <CelebrationIcon sx={{ fontSize: 40 }} />
           </Avatar>
-          
+
           <Typography variant="h3" sx={{ fontWeight: 700, mb: 2 }}>
             {config?.title || 'Welcome to Your Event Booking'}
           </Typography>
-          
+
           {config?.content && (
-            <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto', lineHeight: 1.6 }}>
+            <Typography
+              variant="h6"
+              color="text.secondary"
+              sx={{ maxWidth: 600, mx: 'auto', lineHeight: 1.6 }}
+            >
               {config.content}
             </Typography>
           )}
-          
+
           <Chip
             label={`Booking: ${eventTypeName}`}
             color="primary"
@@ -105,7 +117,6 @@ export const CleanIntroductionStep: React.FC<CleanIntroductionStepProps> = ({
         </Box>
       </AnimatedElement>
 
-
       {/* Terms and Conditions */}
       <AnimatedElement animation="slideUp" delay={500}>
         <GlassCard
@@ -115,8 +126,8 @@ export const CleanIntroductionStep: React.FC<CleanIntroductionStepProps> = ({
             mb: 4,
             backgroundColor: alpha('#fff', 0.08),
             backdropFilter: 'blur(20px)',
-            border: hasFieldError('acknowledged') 
-              ? `2px solid ${theme.palette.error.main}` 
+            border: hasFieldError('acknowledged')
+              ? `2px solid ${theme.palette.error.main}`
               : `1px solid ${alpha('#fff', 0.1)}`,
           }}
         >
@@ -124,9 +135,10 @@ export const CleanIntroductionStep: React.FC<CleanIntroductionStepProps> = ({
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
               Terms & Conditions
             </Typography>
-            
+
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3, lineHeight: 1.6 }}>
-              By proceeding with this booking, you acknowledge that you have read and agree to our terms and conditions.
+              By proceeding with this booking, you acknowledge that you have read and agree to our
+              terms and conditions.
             </Typography>
 
             <FormControlLabel
@@ -157,16 +169,18 @@ export const CleanIntroductionStep: React.FC<CleanIntroductionStepProps> = ({
             )}
 
             {isComplete && (
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 1, 
-                mt: 2,
-                p: 2,
-                backgroundColor: alpha(theme.palette.success.main, 0.1),
-                borderRadius: 2,
-                border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
-              }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  mt: 2,
+                  p: 2,
+                  backgroundColor: alpha(theme.palette.success.main, 0.1),
+                  borderRadius: 2,
+                  border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+                }}
+              >
                 <CheckCircleIcon color="success" fontSize="small" />
                 <Typography variant="body2" color="success.main" sx={{ fontWeight: 600 }}>
                   Thank you! You can now proceed to the next step.

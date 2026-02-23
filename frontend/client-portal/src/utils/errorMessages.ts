@@ -20,7 +20,11 @@ export const getErrorMessage = (error: unknown): string => {
     }
 
     // Network errors
-    if (message.includes('network') || message.includes('fetch') || message.includes('failed to fetch')) {
+    if (
+      message.includes('network') ||
+      message.includes('fetch') ||
+      message.includes('failed to fetch')
+    ) {
       return 'Connection error. Please check your internet and try again.';
     }
     if (message.includes('timeout') || message.includes('timed out')) {

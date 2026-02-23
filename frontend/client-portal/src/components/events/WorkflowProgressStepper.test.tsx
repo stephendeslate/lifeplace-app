@@ -30,18 +30,14 @@ const mockProgress: WorkflowProgress = {
 describe('WorkflowProgressStepper', () => {
   describe('linear variant', () => {
     it('renders progress bar with percentage', () => {
-      renderWithTheme(
-        <WorkflowProgressStepper progress={mockProgress} variant="linear" />
-      );
+      renderWithTheme(<WorkflowProgressStepper progress={mockProgress} variant="linear" />);
 
       expect(screen.getByText('25% Complete')).toBeInTheDocument();
       expect(screen.getByText('Quote Review')).toBeInTheDocument();
     });
 
     it('displays current stage name', () => {
-      renderWithTheme(
-        <WorkflowProgressStepper progress={mockProgress} variant="linear" />
-      );
+      renderWithTheme(<WorkflowProgressStepper progress={mockProgress} variant="linear" />);
 
       expect(screen.getByText('Quote Review')).toBeInTheDocument();
     });
@@ -49,17 +45,13 @@ describe('WorkflowProgressStepper', () => {
 
   describe('compact variant', () => {
     it('renders stage count', () => {
-      renderWithTheme(
-        <WorkflowProgressStepper progress={mockProgress} variant="compact" />
-      );
+      renderWithTheme(<WorkflowProgressStepper progress={mockProgress} variant="compact" />);
 
       expect(screen.getByText('1/4')).toBeInTheDocument();
     });
 
     it('displays current stage name', () => {
-      renderWithTheme(
-        <WorkflowProgressStepper progress={mockProgress} variant="compact" />
-      );
+      renderWithTheme(<WorkflowProgressStepper progress={mockProgress} variant="compact" />);
 
       expect(screen.getByText('Quote Review')).toBeInTheDocument();
     });
@@ -68,7 +60,7 @@ describe('WorkflowProgressStepper', () => {
   describe('stepper variant', () => {
     it('renders all stage names when showLabels is true', () => {
       renderWithTheme(
-        <WorkflowProgressStepper progress={mockProgress} variant="stepper" showLabels />
+        <WorkflowProgressStepper progress={mockProgress} variant="stepper" showLabels />,
       );
 
       expect(screen.getByText('Initial Contact')).toBeInTheDocument();
@@ -78,9 +70,7 @@ describe('WorkflowProgressStepper', () => {
     });
 
     it('renders stage type labels', () => {
-      renderWithTheme(
-        <WorkflowProgressStepper progress={mockProgress} variant="stepper" />
-      );
+      renderWithTheme(<WorkflowProgressStepper progress={mockProgress} variant="stepper" />);
 
       expect(screen.getByText('Planning')).toBeInTheDocument();
       expect(screen.getByText('Preparation')).toBeInTheDocument();
@@ -88,18 +78,14 @@ describe('WorkflowProgressStepper', () => {
     });
 
     it('renders progress summary', () => {
-      renderWithTheme(
-        <WorkflowProgressStepper progress={mockProgress} variant="stepper" />
-      );
+      renderWithTheme(<WorkflowProgressStepper progress={mockProgress} variant="stepper" />);
 
       expect(screen.getByText('Overall Progress:')).toBeInTheDocument();
       expect(screen.getByText('25%')).toBeInTheDocument();
     });
 
     it('renders Event Progress title', () => {
-      renderWithTheme(
-        <WorkflowProgressStepper progress={mockProgress} variant="stepper" />
-      );
+      renderWithTheme(<WorkflowProgressStepper progress={mockProgress} variant="stepper" />);
 
       expect(screen.getByText('Event Progress')).toBeInTheDocument();
     });
@@ -117,9 +103,7 @@ describe('WorkflowProgressStepper', () => {
         })) as WorkflowProgress['stages'],
       };
 
-      renderWithTheme(
-        <WorkflowProgressStepper progress={startProgress} variant="linear" />
-      );
+      renderWithTheme(<WorkflowProgressStepper progress={startProgress} variant="linear" />);
 
       expect(screen.getByText('0% Complete')).toBeInTheDocument();
     });
@@ -136,9 +120,7 @@ describe('WorkflowProgressStepper', () => {
         })) as WorkflowProgress['stages'],
       };
 
-      renderWithTheme(
-        <WorkflowProgressStepper progress={completeProgress} variant="linear" />
-      );
+      renderWithTheme(<WorkflowProgressStepper progress={completeProgress} variant="linear" />);
 
       expect(screen.getByText('100% Complete')).toBeInTheDocument();
     });
@@ -158,9 +140,7 @@ describe('WorkflowProgressStepper', () => {
 
       // Should not throw
       expect(() => {
-        renderWithTheme(
-          <WorkflowProgressStepper progress={emptyProgress} variant="stepper" />
-        );
+        renderWithTheme(<WorkflowProgressStepper progress={emptyProgress} variant="stepper" />);
       }).not.toThrow();
     });
 
@@ -170,9 +150,7 @@ describe('WorkflowProgressStepper', () => {
         current_stage_name: null,
       };
 
-      renderWithTheme(
-        <WorkflowProgressStepper progress={notStartedProgress} variant="linear" />
-      );
+      renderWithTheme(<WorkflowProgressStepper progress={notStartedProgress} variant="linear" />);
 
       expect(screen.getByText('Not started')).toBeInTheDocument();
     });
@@ -185,7 +163,7 @@ describe('WorkflowProgressStepper', () => {
           progress={mockProgress}
           variant="stepper"
           className="custom-class"
-        />
+        />,
       );
 
       expect(container.querySelector('.custom-class')).toBeInTheDocument();

@@ -8,11 +8,7 @@ interface FeatureGateProps {
   fallback?: React.ReactNode;
 }
 
-export const FeatureGate: React.FC<FeatureGateProps> = ({
-  feature,
-  children,
-  fallback = null
-}) => {
+export const FeatureGate: React.FC<FeatureGateProps> = ({ feature, children, fallback = null }) => {
   return isFeatureEnabled(feature) ? <>{children}</> : <>{fallback}</>;
 };
 

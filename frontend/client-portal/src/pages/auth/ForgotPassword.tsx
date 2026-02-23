@@ -14,11 +14,7 @@ import {
   alpha,
   CircularProgress,
 } from '@mui/material';
-import {
-  Email,
-  ArrowBack,
-  CheckCircle,
-} from '@mui/icons-material';
+import { Email, ArrowBack, CheckCircle } from '@mui/icons-material';
 import { useToastActions } from '../../contexts/ToastContext';
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
@@ -29,10 +25,7 @@ interface ForgotPasswordProps {
   onNavigateToHome?: () => void;
 }
 
-const ForgotPassword: React.FC<ForgotPasswordProps> = ({
-  onNavigateToLogin,
-  onNavigateToHome,
-}) => {
+const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onNavigateToLogin, onNavigateToHome }) => {
   const { showSuccess, showError } = useToastActions();
   const theme = useTheme();
 
@@ -109,10 +102,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
       if (errorObj?.response?.data?.detail) {
         setErrors({ form: errorObj.response.data.detail });
       } else {
-        showError(
-          'Request Failed',
-          'Failed to send reset email. Please try again.'
-        );
+        showError('Request Failed', 'Failed to send reset email. Please try again.');
       }
     } finally {
       setIsSubmitting(false);
@@ -389,7 +379,11 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Email sx={{ color: errors.email ? theme.palette.error.light : alpha('#fff', 0.7) }} />
+                          <Email
+                            sx={{
+                              color: errors.email ? theme.palette.error.light : alpha('#fff', 0.7),
+                            }}
+                          />
                         </InputAdornment>
                       ),
                     }}

@@ -37,15 +37,17 @@ describe('PodcastsHero', () => {
     it('renders the podcast icon', () => {
       render(<PodcastsHero />);
       // MUI icons are rendered as SVGs with a specific data-testid or role
-      const icon = document.querySelector('[data-testid="PodcastsIcon"]') ||
-                   document.querySelector('svg[class*="MuiSvgIcon"]');
+      const icon =
+        document.querySelector('[data-testid="PodcastsIcon"]') ||
+        document.querySelector('svg[class*="MuiSvgIcon"]');
       expect(icon).toBeTruthy();
     });
 
     it('renders the scroll indicator arrow', () => {
       render(<PodcastsHero />);
-      const arrow = document.querySelector('[data-testid="KeyboardArrowDownIcon"]') ||
-                    document.querySelector('svg[class*="MuiSvgIcon"]');
+      const arrow =
+        document.querySelector('[data-testid="KeyboardArrowDownIcon"]') ||
+        document.querySelector('svg[class*="MuiSvgIcon"]');
       expect(arrow).toBeTruthy();
     });
   });
@@ -208,7 +210,9 @@ describe('PodcastsHero', () => {
 
     it('displays correct tagline', () => {
       render(<PodcastsHero />);
-      expect(screen.getByText(/insights on life, rest, relationships, and purpose/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/insights on life, rest, relationships, and purpose/i),
+      ).toBeInTheDocument();
     });
 
     it('displays correct featured quote', () => {

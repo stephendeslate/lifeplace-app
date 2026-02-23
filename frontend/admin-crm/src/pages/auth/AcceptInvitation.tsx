@@ -95,7 +95,9 @@ export const AcceptInvitation: React.FC = () => {
         setInvitation(invitationData);
       } catch (error: unknown) {
         console.error('Error fetching invitation:', error);
-        const message = (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Invalid or expired invitation link';
+        const message =
+          (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+          'Invalid or expired invitation link';
         setError(message);
       } finally {
         setIsLoading(false);
@@ -145,20 +147,22 @@ export const AcceptInvitation: React.FC = () => {
 
       showSuccess(
         'Account Created Successfully!',
-        'You have been logged in and can now access the admin dashboard.'
+        'You have been logged in and can now access the admin dashboard.',
       );
 
       // Redirect to dashboard and reload to trigger auth context update
       navigate('/dashboard', { replace: true });
       window.location.reload();
-
     } catch (error: unknown) {
       console.error('Error accepting invitation:', error);
-      const apiError = error as { response?: { data?: { detail?: string; password?: string[]; non_field_errors?: string[] } } };
-      const message = apiError.response?.data?.detail ||
-                     apiError.response?.data?.password?.[0] ||
-                     apiError.response?.data?.non_field_errors?.[0] ||
-                     'Failed to accept invitation';
+      const apiError = error as {
+        response?: { data?: { detail?: string; password?: string[]; non_field_errors?: string[] } };
+      };
+      const message =
+        apiError.response?.data?.detail ||
+        apiError.response?.data?.password?.[0] ||
+        apiError.response?.data?.non_field_errors?.[0] ||
+        'Failed to accept invitation';
       showError('Account Creation Failed', message);
     } finally {
       setIsSubmitting(false);
@@ -228,22 +232,13 @@ export const AcceptInvitation: React.FC = () => {
             bgcolor: 'background.paper',
           }}
         >
-          <Alert
-            severity="error"
-            sx={{ mb: 3 }}
-          >
+          <Alert severity="error" sx={{ mb: 3 }}>
             <Typography variant="h6" gutterBottom>
               Invalid Invitation
             </Typography>
-            <Typography variant="body2">
-              {error}
-            </Typography>
+            <Typography variant="body2">{error}</Typography>
           </Alert>
-          <Button
-            variant="contained"
-            onClick={() => navigate('/login')}
-            sx={{ mt: 2 }}
-          >
+          <Button variant="contained" onClick={() => navigate('/login')} sx={{ mt: 2 }}>
             Go to Login
           </Button>
         </Box>
@@ -274,135 +269,132 @@ export const AcceptInvitation: React.FC = () => {
           bgcolor: 'background.paper',
         }}
       >
-          {/* Header */}
-          <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <AdminPanelSettings
-              color="primary"
-              sx={{ fontSize: 48, mb: 2 }}
-            />
-            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
-              Welcome to LifePlace Admin
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Complete your account setup to get started
-            </Typography>
-          </Box>
+        {/* Header */}
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
+          <AdminPanelSettings color="primary" sx={{ fontSize: 48, mb: 2 }} />
+          <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+            Welcome to LifePlace Admin
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Complete your account setup to get started
+          </Typography>
+        </Box>
 
-          {/* Invitation Details */}
-          {invitation && (
-            <Box sx={{ mb: 4 }}>
-              <Alert severity="info" sx={{ mb: 3 }}>
-                <Typography variant="body2">
-                  You've been invited to join as an administrator.
-                </Typography>
-              </Alert>
+        {/* Invitation Details */}
+        {invitation && (
+          <Box sx={{ mb: 4 }}>
+            <Alert severity="info" sx={{ mb: 3 }}>
+              <Typography variant="body2">
+                You've been invited to join as an administrator.
+              </Typography>
+            </Alert>
 
-              <Stack spacing={2}>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Person color="action" />
-                  <Box>
-                    <Typography variant="subtitle2" color="text.secondary">
-                      Name
-                    </Typography>
-                    <Typography variant="body2">
-                      {invitation.first_name} {invitation.last_name}
-                    </Typography>
-                  </Box>
+            <Stack spacing={2}>
+              <Box display="flex" alignItems="center" gap={2}>
+                <Person color="action" />
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Name
+                  </Typography>
+                  <Typography variant="body2">
+                    {invitation.first_name} {invitation.last_name}
+                  </Typography>
                 </Box>
-              </Stack>
-
-              <Divider sx={{ my: 3 }} />
-            </Box>
-          )}
-
-          {/* Form */}
-          <Box component="form" onSubmit={handleSubmit}>
-            <Typography variant="h6" fontWeight="bold" gutterBottom>
-              Set Your Password
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Choose a secure password for your admin account
-            </Typography>
-
-            <Stack spacing={3}>
-              <TextField
-                label="Password"
-                type={showPassword ? 'text' : 'password'}
-                value={formData.password}
-                onChange={(e) => handleFieldChange('password', e.target.value)}
-                error={!!formErrors.password}
-                helperText={formErrors.password || 'Must be at least 8 characters'}
-                fullWidth
-                disabled={isSubmitting}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock color="action" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowPassword(!showPassword)}
-                        edge="end"
-                        disabled={isSubmitting}
-                      >
-                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
-              <TextField
-                label="Confirm Password"
-                type={showConfirmPassword ? 'text' : 'password'}
-                value={formData.confirm_password}
-                onChange={(e) => handleFieldChange('confirm_password', e.target.value)}
-                error={!!formErrors.confirm_password}
-                helperText={formErrors.confirm_password}
-                fullWidth
-                disabled={isSubmitting}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Lock color="action" />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        edge="end"
-                        disabled={isSubmitting}
-                      >
-                        {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                fullWidth
-                disabled={isSubmitting}
-                startIcon={isSubmitting ? <CircularProgress size={20} /> : <CheckCircle />}
-                sx={{ py: 1.5, mt: 2 }}
-              >
-                {isSubmitting ? 'Creating Account...' : 'Create Account & Continue'}
-              </Button>
+              </Box>
             </Stack>
-          </Box>
 
-          {/* Footer */}
-          <Box sx={{ mt: 4, textAlign: 'center' }}>
-            <Typography variant="caption" color="text.secondary">
-              By creating an account, you agree to our terms of service and privacy policy.
-            </Typography>
+            <Divider sx={{ my: 3 }} />
           </Box>
+        )}
+
+        {/* Form */}
+        <Box component="form" onSubmit={handleSubmit}>
+          <Typography variant="h6" fontWeight="bold" gutterBottom>
+            Set Your Password
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            Choose a secure password for your admin account
+          </Typography>
+
+          <Stack spacing={3}>
+            <TextField
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
+              value={formData.password}
+              onChange={(e) => handleFieldChange('password', e.target.value)}
+              error={!!formErrors.password}
+              helperText={formErrors.password || 'Must be at least 8 characters'}
+              fullWidth
+              disabled={isSubmitting}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock color="action" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                      disabled={isSubmitting}
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <TextField
+              label="Confirm Password"
+              type={showConfirmPassword ? 'text' : 'password'}
+              value={formData.confirm_password}
+              onChange={(e) => handleFieldChange('confirm_password', e.target.value)}
+              error={!!formErrors.confirm_password}
+              helperText={formErrors.confirm_password}
+              fullWidth
+              disabled={isSubmitting}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Lock color="action" />
+                  </InputAdornment>
+                ),
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      edge="end"
+                      disabled={isSubmitting}
+                    >
+                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              fullWidth
+              disabled={isSubmitting}
+              startIcon={isSubmitting ? <CircularProgress size={20} /> : <CheckCircle />}
+              sx={{ py: 1.5, mt: 2 }}
+            >
+              {isSubmitting ? 'Creating Account...' : 'Create Account & Continue'}
+            </Button>
+          </Stack>
+        </Box>
+
+        {/* Footer */}
+        <Box sx={{ mt: 4, textAlign: 'center' }}>
+          <Typography variant="caption" color="text.secondary">
+            By creating an account, you agree to our terms of service and privacy policy.
+          </Typography>
+        </Box>
       </Box>
     </Box>
   );

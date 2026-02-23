@@ -1,16 +1,7 @@
 // frontend/admin-crm/src/components/notifications/NotificationCountsDisplay.tsx
 
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Chip,
-  Stack,
-  Paper,
-  Divider,
-} from '@mui/material';
+import { Box, Typography, Card, CardContent, Chip, Stack, Paper, Divider } from '@mui/material';
 import {
   Notifications,
   MarkEmailUnread,
@@ -42,38 +33,52 @@ export const NotificationCountsDisplay: React.FC<NotificationCountsDisplayProps>
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'SYSTEM': return tokens.color.notification.system;
-      case 'EVENT': return tokens.color.notification.event;
-      case 'TASK': return tokens.color.notification.task;
-      case 'PAYMENT': return tokens.color.notification.payment;
-      case 'CLIENT': return tokens.color.notification.client;
-      case 'CONTRACT': return tokens.color.notification.contract;
-      case 'WORKFLOW': return tokens.color.notification.workflow;
-      case 'COMMUNICATION': return tokens.color.notification.communication;
-      default: return tokens.color.notification.system;
+      case 'SYSTEM':
+        return tokens.color.notification.system;
+      case 'EVENT':
+        return tokens.color.notification.event;
+      case 'TASK':
+        return tokens.color.notification.task;
+      case 'PAYMENT':
+        return tokens.color.notification.payment;
+      case 'CLIENT':
+        return tokens.color.notification.client;
+      case 'CONTRACT':
+        return tokens.color.notification.contract;
+      case 'WORKFLOW':
+        return tokens.color.notification.workflow;
+      case 'COMMUNICATION':
+        return tokens.color.notification.communication;
+      default:
+        return tokens.color.notification.system;
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'URGENT': return 'error';
-      case 'HIGH': return 'warning';
-      case 'NORMAL': return 'info';
-      case 'LOW': return 'default';
-      default: return 'default';
+      case 'URGENT':
+        return 'error';
+      case 'HIGH':
+        return 'warning';
+      case 'NORMAL':
+        return 'info';
+      case 'LOW':
+        return 'default';
+      default:
+        return 'default';
     }
   };
 
   const formatCategoryName = (category: string) => {
     const categoryMap: Record<string, string> = {
-      'SYSTEM': 'System',
-      'EVENT': 'Events',
-      'TASK': 'Tasks',
-      'PAYMENT': 'Payments',
-      'CLIENT': 'Clients',
-      'CONTRACT': 'Contracts',
-      'WORKFLOW': 'Workflow',
-      'COMMUNICATION': 'Communication',
+      SYSTEM: 'System',
+      EVENT: 'Events',
+      TASK: 'Tasks',
+      PAYMENT: 'Payments',
+      CLIENT: 'Clients',
+      CONTRACT: 'Contracts',
+      WORKFLOW: 'Workflow',
+      COMMUNICATION: 'Communication',
     };
     return categoryMap[category] || category;
   };
@@ -138,7 +143,7 @@ export const NotificationCountsDisplay: React.FC<NotificationCountsDisplayProps>
                   By Category
                 </Typography>
               </Box>
-              
+
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 {Object.entries(counts.by_category)
                   .sort(([, a], [, b]) => b - a)
@@ -155,7 +160,7 @@ export const NotificationCountsDisplay: React.FC<NotificationCountsDisplayProps>
                         fontSize: '0.75rem',
                         '&:hover': {
                           bgcolor: getCategoryColor(category) + '10',
-                        }
+                        },
                       }}
                     />
                   ))}
@@ -181,7 +186,7 @@ export const NotificationCountsDisplay: React.FC<NotificationCountsDisplayProps>
                   By Priority
                 </Typography>
               </Box>
-              
+
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                 {Object.entries(counts.by_priority)
                   .filter(([priority]) => priority !== 'NORMAL' || counts.by_priority[priority] > 0)
@@ -191,7 +196,16 @@ export const NotificationCountsDisplay: React.FC<NotificationCountsDisplayProps>
                       key={priority}
                       label={`${priority}: ${count}`}
                       size="small"
-                      color={getPriorityColor(priority) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
+                      color={
+                        getPriorityColor(priority) as
+                          | 'default'
+                          | 'primary'
+                          | 'secondary'
+                          | 'error'
+                          | 'info'
+                          | 'success'
+                          | 'warning'
+                      }
                       variant="outlined"
                       sx={{ fontSize: '0.75rem' }}
                     />

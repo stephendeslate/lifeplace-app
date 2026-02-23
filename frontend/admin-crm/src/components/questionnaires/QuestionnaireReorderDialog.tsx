@@ -12,10 +12,7 @@ import {
   Chip,
   Stack,
 } from '@mui/material';
-import {
-  EventNote as EventIcon,
-  QuestionAnswer as FieldsIcon,
-} from '@mui/icons-material';
+import { EventNote as EventIcon, QuestionAnswer as FieldsIcon } from '@mui/icons-material';
 import { DraggableList } from '../common/DraggableList';
 import { useQuestionnaires } from '../../hooks/useQuestionnaires';
 import type { Questionnaire } from '../../types/questionnaires.types';
@@ -37,7 +34,7 @@ export const QuestionnaireReorderDialog: React.FC<QuestionnaireReorderDialogProp
 
   const handleReorder = async (reorderedQuestionnaires: Questionnaire[]) => {
     const orderMapping: Record<string, number> = {};
-    
+
     reorderedQuestionnaires.forEach((questionnaire, index) => {
       orderMapping[questionnaire.id.toString()] = index + 1;
     });
@@ -73,7 +70,7 @@ export const QuestionnaireReorderDialog: React.FC<QuestionnaireReorderDialogProp
             <Chip label="Inactive" size="small" variant="outlined" />
           )}
         </Box>
-        
+
         <Stack direction="row" spacing={1} flexWrap="wrap">
           {questionnaire.event_type_name ? (
             <Chip
@@ -84,14 +81,9 @@ export const QuestionnaireReorderDialog: React.FC<QuestionnaireReorderDialogProp
               variant="outlined"
             />
           ) : (
-            <Chip
-              label="Any Event Type"
-              size="small"
-              variant="outlined"
-              color="default"
-            />
+            <Chip label="Any Event Type" size="small" variant="outlined" color="default" />
           )}
-          
+
           {questionnaire.fields && (
             <Chip
               icon={<FieldsIcon />}
@@ -118,7 +110,7 @@ export const QuestionnaireReorderDialog: React.FC<QuestionnaireReorderDialogProp
         <Typography variant="body2" color="text.secondary" gutterBottom>
           Drag and drop questionnaires to change their display order.
         </Typography>
-        
+
         <Box mt={2}>
           <DraggableList<Questionnaire>
             items={questionnaires}
@@ -133,10 +125,7 @@ export const QuestionnaireReorderDialog: React.FC<QuestionnaireReorderDialogProp
         </Box>
       </DialogContent>
       <DialogActions>
-        <Button 
-          onClick={onClose}
-          disabled={isReorderingQuestionnaires}
-        >
+        <Button onClick={onClose} disabled={isReorderingQuestionnaires}>
           Close
         </Button>
       </DialogActions>

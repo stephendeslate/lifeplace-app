@@ -63,22 +63,20 @@ describe('Validation Utilities', () => {
 
     it('returns error for short password', () => {
       expect(validatePassword('pass1')).toBe(
-        `Password must be at least ${PASSWORD_RULES.minLength} characters long`
+        `Password must be at least ${PASSWORD_RULES.minLength} characters long`,
       );
     });
 
     it('returns error for password without lowercase when required', () => {
       // Only numbers and uppercase
       expect(validatePassword('PASSWORD1')).toBe(
-        'Password must contain at least one lowercase letter'
+        'Password must contain at least one lowercase letter',
       );
     });
 
     it('returns error for password without numbers when required', () => {
       // Only letters
-      expect(validatePassword('passwordonly')).toBe(
-        'Password must contain at least one number'
-      );
+      expect(validatePassword('passwordonly')).toBe('Password must contain at least one number');
     });
 
     it('accepts password with minimum requirements', () => {
@@ -93,20 +91,18 @@ describe('Validation Utilities', () => {
     });
 
     it('returns error for empty confirmation', () => {
-      expect(validatePasswordConfirmation('Password123', '')).toBe(
-        'Please confirm your password'
-      );
+      expect(validatePasswordConfirmation('Password123', '')).toBe('Please confirm your password');
     });
 
     it('returns error when passwords do not match', () => {
       expect(validatePasswordConfirmation('Password123', 'Password456')).toBe(
-        'Passwords do not match'
+        'Passwords do not match',
       );
     });
 
     it('is case sensitive', () => {
       expect(validatePasswordConfirmation('Password123', 'password123')).toBe(
-        'Passwords do not match'
+        'Passwords do not match',
       );
     });
   });
@@ -178,20 +174,18 @@ describe('Validation Utilities', () => {
     });
 
     it('returns error for single character', () => {
-      expect(validateName('J', 'First name')).toBe(
-        'First name must be at least 2 characters long'
-      );
+      expect(validateName('J', 'First name')).toBe('First name must be at least 2 characters long');
     });
 
     it('returns error for name with numbers', () => {
       expect(validateName('John123', 'First name')).toBe(
-        'First name can only contain letters, spaces, hyphens, and apostrophes'
+        'First name can only contain letters, spaces, hyphens, and apostrophes',
       );
     });
 
     it('returns error for name with special characters', () => {
       expect(validateName('John@Doe', 'Name')).toBe(
-        'Name can only contain letters, spaces, hyphens, and apostrophes'
+        'Name can only contain letters, spaces, hyphens, and apostrophes',
       );
     });
   });
@@ -373,7 +367,7 @@ describe('Validation Utilities', () => {
       });
       expect(result.isValid).toBe(false);
       expect(result.errors.new_password).toBe(
-        'New password must be different from current password'
+        'New password must be different from current password',
       );
     });
   });

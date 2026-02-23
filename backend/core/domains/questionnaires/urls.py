@@ -4,14 +4,14 @@ from rest_framework.routers import DefaultRouter
 
 from . import views
 
-app_name = 'questionnaires'
+app_name = "questionnaires"
 
 router = DefaultRouter()
-router.register(r'questionnaires', views.QuestionnaireViewSet, basename='questionnaire')
-router.register(r'fields', views.QuestionnaireFieldViewSet, basename='field')
-router.register(r'responses', views.QuestionnaireResponseViewSet, basename='response')
-router.register(r'event-questionnaires', views.EventQuestionnaireViewSet, basename='event-questionnaire')
+router.register(r"questionnaires", views.QuestionnaireViewSet, basename="questionnaire")
+router.register(r"fields", views.QuestionnaireFieldViewSet, basename="field")
+router.register(r"responses", views.QuestionnaireResponseViewSet, basename="response")
+router.register(r"event-questionnaires", views.EventQuestionnaireViewSet, basename="event-questionnaire")
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", include(router.urls)),
 ]

@@ -71,18 +71,17 @@ export const NoteCard: React.FC<NoteCardProps> = ({
     } else if (diffInHours < 24 * 7) {
       return date.toLocaleDateString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
     } else {
-      return date.toLocaleDateString([], { 
-        month: 'short', 
+      return date.toLocaleDateString([], {
+        month: 'short',
         day: 'numeric',
-        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
       });
     }
   };
 
   const shouldTruncate = compact && note.content.length > 150;
-  const displayContent = shouldTruncate && !expanded 
-    ? note.content.substring(0, 150) + '...'
-    : note.content;
+  const displayContent =
+    shouldTruncate && !expanded ? note.content.substring(0, 150) + '...' : note.content;
 
   return (
     <Card
@@ -100,9 +99,9 @@ export const NoteCard: React.FC<NoteCardProps> = ({
         <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
           <Box flex={1} minWidth={0}>
             {note.title && (
-              <Typography 
-                variant={compact ? "subtitle2" : "h6"} 
-                fontWeight="medium" 
+              <Typography
+                variant={compact ? 'subtitle2' : 'h6'}
+                fontWeight="medium"
                 gutterBottom
                 sx={{
                   overflow: 'hidden',
@@ -114,10 +113,16 @@ export const NoteCard: React.FC<NoteCardProps> = ({
                 {note.title}
               </Typography>
             )}
-            
+
             <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
               {/* Visibility indicator */}
-              <Tooltip title={note.is_client_visible ? 'Visible to client in their portal' : 'Internal note - only visible to admins'}>
+              <Tooltip
+                title={
+                  note.is_client_visible
+                    ? 'Visible to client in their portal'
+                    : 'Internal note - only visible to admins'
+                }
+              >
                 <Chip
                   icon={note.is_client_visible ? <VisibilityIcon /> : <VisibilityOffIcon />}
                   label={note.is_client_visible ? 'Shared' : 'Internal'}
@@ -155,21 +160,17 @@ export const NoteCard: React.FC<NoteCardProps> = ({
           </Box>
 
           {(allowEdit || allowDelete) && (
-            <IconButton
-              size="small"
-              onClick={handleMenuOpen}
-              sx={{ ml: 1, flexShrink: 0 }}
-            >
+            <IconButton size="small" onClick={handleMenuOpen} sx={{ ml: 1, flexShrink: 0 }}>
               <MoreVertIcon />
             </IconButton>
           )}
         </Box>
 
         {/* Content */}
-        <Typography 
-          variant="body2" 
+        <Typography
+          variant="body2"
           color="text.primary"
-          sx={{ 
+          sx={{
             whiteSpace: 'pre-wrap',
             wordBreak: 'break-word',
             mt: 1,
@@ -184,7 +185,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({
             <IconButton
               size="small"
               onClick={() => setExpanded(!expanded)}
-              sx={{ 
+              sx={{
                 fontSize: '0.75rem',
                 color: 'primary.main',
                 '&:hover': {
@@ -234,7 +235,7 @@ export const NoteCard: React.FC<NoteCardProps> = ({
             <ListItemText>Edit Note</ListItemText>
           </MenuItem>
         )}
-        
+
         {allowDelete && (
           <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
             <ListItemIcon>

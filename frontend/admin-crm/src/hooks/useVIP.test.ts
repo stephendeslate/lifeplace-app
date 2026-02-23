@@ -1,23 +1,23 @@
 // frontend/admin-crm/src/hooks/useVIP.test.ts
 
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import {
   useVIPSettings,
   useVIPTiers,
   useVIPBenefits,
   useClientVIPStatuses,
   useClientVIPDetail,
-} from "./useVIP";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+} from './useVIP';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
-describe("useVIP", () => {
-  describe("useVIPSettings", () => {
-    it("fetches VIP settings successfully", async () => {
+describe('useVIP', () => {
+  describe('useVIPSettings', () => {
+    it('fetches VIP settings successfully', async () => {
       const { result } = renderHook(() => useVIPSettings(), {
         wrapper: createTestWrapper(),
       });
@@ -31,13 +31,13 @@ describe("useVIP", () => {
 
       expect(result.current.settings).toBeDefined();
       expect(result.current.settings?.is_program_enabled).toBe(true);
-      expect(result.current.settings?.program_name).toBe("LifePlace VIP");
+      expect(result.current.settings?.program_name).toBe('LifePlace VIP');
     });
 
-    it("handles API error gracefully", async () => {
+    it('handles API error gracefully', async () => {
       server.use(
         http.get(`${BASE_URL}/vip/settings/`, () => {
-          return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+          return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
         }),
       );
 
@@ -53,7 +53,7 @@ describe("useVIP", () => {
       );
     });
 
-    it("updates settings via mutateAsync", async () => {
+    it('updates settings via mutateAsync', async () => {
       const { result } = renderHook(() => useVIPSettings(), {
         wrapper: createTestWrapper(),
       });
@@ -66,15 +66,15 @@ describe("useVIP", () => {
       );
 
       await act(async () => {
-        await result.current.updateSettings({ program_name: "Updated VIP" });
+        await result.current.updateSettings({ program_name: 'Updated VIP' });
       });
 
       expect(result.current.isUpdatingSettings).toBe(false);
     });
   });
 
-  describe("useVIPTiers", () => {
-    it("fetches tiers with pagination", async () => {
+  describe('useVIPTiers', () => {
+    it('fetches tiers with pagination', async () => {
       const { result } = renderHook(() => useVIPTiers(), {
         wrapper: createTestWrapper(),
       });
@@ -92,7 +92,7 @@ describe("useVIP", () => {
       expect(result.current.totalCount).toBeGreaterThan(0);
     });
 
-    it("fetches active tiers", async () => {
+    it('fetches active tiers', async () => {
       const { result } = renderHook(() => useVIPTiers(), {
         wrapper: createTestWrapper(),
       });
@@ -108,7 +108,7 @@ describe("useVIP", () => {
       expect(Array.isArray(result.current.activeTiers)).toBe(true);
     });
 
-    it("creates a tier via mutateAsync", async () => {
+    it('creates a tier via mutateAsync', async () => {
       const { result } = renderHook(() => useVIPTiers(), {
         wrapper: createTestWrapper(),
       });
@@ -122,11 +122,11 @@ describe("useVIP", () => {
 
       await act(async () => {
         await result.current.createTier({
-          name: "Platinum",
+          name: 'Platinum',
           level: 4,
-          description: "Top tier",
-          color: "#E5E4E2",
-          icon: "diamond",
+          description: 'Top tier',
+          color: '#E5E4E2',
+          icon: 'diamond',
           is_default: false,
           is_active: true,
         });
@@ -136,8 +136,8 @@ describe("useVIP", () => {
     });
   });
 
-  describe("useVIPBenefits", () => {
-    it("fetches benefits successfully", async () => {
+  describe('useVIPBenefits', () => {
+    it('fetches benefits successfully', async () => {
       const { result } = renderHook(() => useVIPBenefits(), {
         wrapper: createTestWrapper(),
       });
@@ -154,7 +154,7 @@ describe("useVIP", () => {
       expect(result.current.benefits.length).toBeGreaterThan(0);
     });
 
-    it("fetches benefit types", async () => {
+    it('fetches benefit types', async () => {
       const { result } = renderHook(() => useVIPBenefits(), {
         wrapper: createTestWrapper(),
       });
@@ -171,7 +171,7 @@ describe("useVIP", () => {
       expect(result.current.benefitTypes.length).toBeGreaterThan(0);
     });
 
-    it("creates a benefit via mutateAsync", async () => {
+    it('creates a benefit via mutateAsync', async () => {
       const { result } = renderHook(() => useVIPBenefits(), {
         wrapper: createTestWrapper(),
       });
@@ -186,11 +186,11 @@ describe("useVIP", () => {
       await act(async () => {
         await result.current.createBenefit({
           tier: 2,
-          benefit_type: "PERCENTAGE_DISCOUNT",
-          value: "15.00",
-          description: "Test discount",
-          display_name: "Test",
-          application_mode: "AUTOMATIC",
+          benefit_type: 'PERCENTAGE_DISCOUNT',
+          value: '15.00',
+          description: 'Test discount',
+          display_name: 'Test',
+          application_mode: 'AUTOMATIC',
           is_active: true,
         });
       });
@@ -199,8 +199,8 @@ describe("useVIP", () => {
     });
   });
 
-  describe("useClientVIPStatuses", () => {
-    it("fetches client VIP statuses", async () => {
+  describe('useClientVIPStatuses', () => {
+    it('fetches client VIP statuses', async () => {
       const { result } = renderHook(() => useClientVIPStatuses(), {
         wrapper: createTestWrapper(),
       });
@@ -217,7 +217,7 @@ describe("useVIP", () => {
       expect(result.current.clientStatuses.length).toBeGreaterThan(0);
     });
 
-    it("provides mutation functions for tier assignment and point management", async () => {
+    it('provides mutation functions for tier assignment and point management', async () => {
       const { result } = renderHook(() => useClientVIPStatuses(), {
         wrapper: createTestWrapper(),
       });
@@ -229,14 +229,14 @@ describe("useVIP", () => {
         { timeout: 5000 },
       );
 
-      expect(result.current.assignTier).toBeTypeOf("function");
-      expect(result.current.awardPoints).toBeTypeOf("function");
-      expect(result.current.adjustPoints).toBeTypeOf("function");
+      expect(result.current.assignTier).toBeTypeOf('function');
+      expect(result.current.awardPoints).toBeTypeOf('function');
+      expect(result.current.adjustPoints).toBeTypeOf('function');
     });
   });
 
-  describe("useClientVIPDetail", () => {
-    it("fetches client VIP detail including tier history and transactions", async () => {
+  describe('useClientVIPDetail', () => {
+    it('fetches client VIP detail including tier history and transactions', async () => {
       const { result } = renderHook(() => useClientVIPDetail(1), {
         wrapper: createTestWrapper(),
       });

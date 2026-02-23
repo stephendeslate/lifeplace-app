@@ -10,23 +10,22 @@ from .views import (
     PublicBookingFlowViewSet,
 )
 
-app_name = 'bookingflow'
+app_name = "bookingflow"
 
 # Admin router for authenticated/admin endpoints
 router = DefaultRouter()
-router.register(r'flows', BookingFlowViewSet, basename='bookingflow')
-router.register(r'steps', BookingFlowStepViewSet, basename='bookingflowstep')
-router.register(r'sessions', BookingSessionViewSet, basename='bookingsession')
-router.register(r'analytics', BookingFlowAnalyticsViewSet, basename='bookinganalytics')
+router.register(r"flows", BookingFlowViewSet, basename="bookingflow")
+router.register(r"steps", BookingFlowStepViewSet, basename="bookingflowstep")
+router.register(r"sessions", BookingSessionViewSet, basename="bookingsession")
+router.register(r"analytics", BookingFlowAnalyticsViewSet, basename="bookinganalytics")
 
 # Public router for client-facing endpoints
 public_router = DefaultRouter()
-public_router.register(r'public/flows', PublicBookingFlowViewSet, basename='publicbookingflow')
+public_router.register(r"public/flows", PublicBookingFlowViewSet, basename="publicbookingflow")
 
 urlpatterns = [
     # Admin endpoints
-    path('', include(router.urls)),
-    
+    path("", include(router.urls)),
     # Public endpoints
-    path('', include(public_router.urls)),
+    path("", include(public_router.urls)),
 ]

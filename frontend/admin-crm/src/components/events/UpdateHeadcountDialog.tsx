@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/events/UpdateHeadcountDialog.tsx
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -16,12 +16,12 @@ import {
   FormControlLabel,
   Divider,
   Alert,
-} from "@mui/material";
-import { People as PeopleIcon } from "@mui/icons-material";
-import { useUpdateHeadcount } from "../../hooks/useUpdateHeadcount";
-import { useCurrencySettings } from "../../hooks/useCurrency";
-import { formatCurrency } from "../../utils/currency";
-import type { Event } from "../../types/events.types";
+} from '@mui/material';
+import { People as PeopleIcon } from '@mui/icons-material';
+import { useUpdateHeadcount } from '../../hooks/useUpdateHeadcount';
+import { useCurrencySettings } from '../../hooks/useCurrency';
+import { formatCurrency } from '../../utils/currency';
+import type { Event } from '../../types/events.types';
 
 interface UpdateHeadcountDialogProps {
   open: boolean;
@@ -34,35 +34,27 @@ export const UpdateHeadcountDialog: React.FC<UpdateHeadcountDialogProps> = ({
   onClose,
   event,
 }) => {
-  const [newHeadcount, setNewHeadcount] = useState<number>(
-    event.num_participants || 0,
-  );
-  const [notes, setNotes] = useState("");
+  const [newHeadcount, setNewHeadcount] = useState<number>(event.num_participants || 0);
+  const [notes, setNotes] = useState('');
   const [createQuoteRevision, setCreateQuoteRevision] = useState(true);
-  const [createSupplementaryInvoice, setCreateSupplementaryInvoice] =
-    useState(true);
+  const [createSupplementaryInvoice, setCreateSupplementaryInvoice] = useState(true);
 
   const updateHeadcountMutation = useUpdateHeadcount();
   const { settings: currencySettings } = useCurrencySettings();
 
   const formatEventPrice = (price: string | number) => {
-    const currency = currencySettings?.defaultCurrency || "PHP";
+    const currency = currencySettings?.defaultCurrency || 'PHP';
     return formatCurrency(price, currency, {
-      showSymbol: currencySettings?.displayFormat !== "code",
+      showSymbol: currencySettings?.displayFormat !== 'code',
       showCode:
-        currencySettings?.displayFormat === "code" ||
-        currencySettings?.displayFormat === "both",
-      minimumFractionDigits:
-        currencySettings?.decimalPlaces ?? (currency === "PHP" ? 0 : 2),
-      maximumFractionDigits:
-        currencySettings?.decimalPlaces ?? (currency === "PHP" ? 0 : 2),
+        currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
     });
   };
 
   const currentHeadcount = event.num_participants || 0;
-  const currentTotal = parseFloat(
-    event.current_total_amount || event.total_price || "0",
-  );
+  const currentTotal = parseFloat(event.current_total_amount || event.total_price || '0');
 
   // Derive per-person rate from current total / headcount
   const perPersonRate = useMemo(() => {
@@ -81,7 +73,7 @@ export const UpdateHeadcountDialog: React.FC<UpdateHeadcountDialogProps> = ({
   useEffect(() => {
     if (open) {
       setNewHeadcount(event.num_participants || 0);
-      setNotes("");
+      setNotes('');
       setCreateQuoteRevision(true);
       setCreateSupplementaryInvoice(true);
     }
@@ -90,9 +82,9 @@ export const UpdateHeadcountDialog: React.FC<UpdateHeadcountDialogProps> = ({
   // Auto-adjust supplementary invoice label based on delta direction
   const invoiceLabel = useMemo(() => {
     if (headcountDelta < 0) {
-      return "Flag for refund";
+      return 'Flag for refund';
     }
-    return "Create supplementary invoice";
+    return 'Create supplementary invoice';
   }, [headcountDelta]);
 
   // Default supplementary invoice checkbox based on delta
@@ -139,14 +131,14 @@ export const UpdateHeadcountDialog: React.FC<UpdateHeadcountDialogProps> = ({
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       {open && (
         <>
-          <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <PeopleIcon color="primary" /> Update Headcount
           </DialogTitle>
 
           <DialogContent>
             <Stack spacing={3} sx={{ mt: 1 }}>
               {/* Event Info */}
-              <Box sx={{ p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
+              <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   Event
                 </Typography>
@@ -161,33 +153,23 @@ export const UpdateHeadcountDialog: React.FC<UpdateHeadcountDialogProps> = ({
               </Box>
 
               {/* Current Headcount */}
-              <Box sx={{ p: 2, bgcolor: "action.hover", borderRadius: 1 }}>
+              <Box sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
                 <Typography
                   variant="caption"
                   color="text.secondary"
                   sx={{
-                    textTransform: "uppercase",
+                    textTransform: 'uppercase',
                     letterSpacing: 0.5,
                     fontWeight: 600,
                   }}
                 >
                   Current Headcount
                 </Typography>
-                <Typography
-                  variant="h5"
-                  fontWeight={700}
-                  color="primary.main"
-                  sx={{ mt: 0.5 }}
-                >
-                  {currentHeadcount}{" "}
-                  {currentHeadcount === 1 ? "guest" : "guests"}
+                <Typography variant="h5" fontWeight={700} color="primary.main" sx={{ mt: 0.5 }}>
+                  {currentHeadcount} {currentHeadcount === 1 ? 'guest' : 'guests'}
                 </Typography>
                 {perPersonRate > 0 && (
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mt: 0.5 }}
-                  >
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                     {formatEventPrice(perPersonRate)} per person (estimated)
                   </Typography>
                 )}
@@ -203,15 +185,13 @@ export const UpdateHeadcountDialog: React.FC<UpdateHeadcountDialogProps> = ({
                   const val = parseInt(e.target.value, 10);
                   if (!isNaN(val) && val >= 0) {
                     setNewHeadcount(val);
-                  } else if (e.target.value === "") {
+                  } else if (e.target.value === '') {
                     setNewHeadcount(0);
                   }
                 }}
                 inputProps={{ min: 1 }}
                 error={isInvalid}
-                helperText={
-                  isInvalid ? "Headcount must be at least 1" : undefined
-                }
+                helperText={isInvalid ? 'Headcount must be at least 1' : undefined}
                 disabled={isLoading}
               />
 
@@ -220,11 +200,7 @@ export const UpdateHeadcountDialog: React.FC<UpdateHeadcountDialogProps> = ({
                 <>
                   <Divider />
                   <Box>
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight={600}
-                      gutterBottom
-                    >
+                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                       Price Impact Preview
                     </Typography>
                     <Stack spacing={1}>
@@ -254,13 +230,13 @@ export const UpdateHeadcountDialog: React.FC<UpdateHeadcountDialogProps> = ({
                           fontWeight={700}
                           color={
                             priceDelta > 0
-                              ? "error.main"
+                              ? 'error.main'
                               : priceDelta < 0
-                                ? "success.main"
-                                : "text.primary"
+                                ? 'success.main'
+                                : 'text.primary'
                           }
                         >
-                          {priceDelta > 0 ? "+" : ""}
+                          {priceDelta > 0 ? '+' : ''}
                           {formatEventPrice(priceDelta)}
                         </Typography>
                       </Box>
@@ -271,8 +247,7 @@ export const UpdateHeadcountDialog: React.FC<UpdateHeadcountDialogProps> = ({
 
               {!isUnchanged && perPersonRate === 0 && currentTotal > 0 && (
                 <Alert severity="info" variant="outlined">
-                  Price impact will be calculated by the server based on package
-                  pricing.
+                  Price impact will be calculated by the server based on package pricing.
                 </Alert>
               )}
 
@@ -281,11 +256,7 @@ export const UpdateHeadcountDialog: React.FC<UpdateHeadcountDialogProps> = ({
                 <>
                   <Divider />
                   <Box>
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight={600}
-                      gutterBottom
-                    >
+                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
                       Options
                     </Typography>
                     <Stack spacing={0.5}>
@@ -293,9 +264,7 @@ export const UpdateHeadcountDialog: React.FC<UpdateHeadcountDialogProps> = ({
                         control={
                           <Checkbox
                             checked={createQuoteRevision}
-                            onChange={(e) =>
-                              setCreateQuoteRevision(e.target.checked)
-                            }
+                            onChange={(e) => setCreateQuoteRevision(e.target.checked)}
                             disabled={isLoading}
                           />
                         }
@@ -305,9 +274,7 @@ export const UpdateHeadcountDialog: React.FC<UpdateHeadcountDialogProps> = ({
                         control={
                           <Checkbox
                             checked={createSupplementaryInvoice}
-                            onChange={(e) =>
-                              setCreateSupplementaryInvoice(e.target.checked)
-                            }
+                            onChange={(e) => setCreateSupplementaryInvoice(e.target.checked)}
                             disabled={isLoading}
                           />
                         }
@@ -340,12 +307,10 @@ export const UpdateHeadcountDialog: React.FC<UpdateHeadcountDialogProps> = ({
               onClick={handleSubmit}
               variant="contained"
               disabled={isLoading || isUnchanged || isInvalid}
-              startIcon={
-                isLoading ? <CircularProgress size={20} /> : <PeopleIcon />
-              }
+              startIcon={isLoading ? <CircularProgress size={20} /> : <PeopleIcon />}
               sx={{ minWidth: 160 }}
             >
-              {isLoading ? "Updating..." : "Update Headcount"}
+              {isLoading ? 'Updating...' : 'Update Headcount'}
             </Button>
           </DialogActions>
         </>

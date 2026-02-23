@@ -48,17 +48,15 @@ export interface ApiError {
  * Type guard to check if an error is an ApiError
  */
 export function isApiError(error: unknown): error is ApiError {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    ('response' in error || 'message' in error)
-  );
+  return typeof error === 'object' && error !== null && ('response' in error || 'message' in error);
 }
 
 /**
  * Type guard to check if error has a response
  */
-export function hasErrorResponse(error: unknown): error is ApiError & { response: NonNullable<ApiError['response']> } {
+export function hasErrorResponse(
+  error: unknown,
+): error is ApiError & { response: NonNullable<ApiError['response']> } {
   return isApiError(error) && error.response !== undefined;
 }
 
@@ -104,6 +102,6 @@ export interface ErrorInfo {
   message: string;
   statusCode?: number;
   validationErrors?: ValidationError[];
-  severity: typeof ErrorSeverity[keyof typeof ErrorSeverity];
+  severity: (typeof ErrorSeverity)[keyof typeof ErrorSeverity];
   retryable: boolean;
 }

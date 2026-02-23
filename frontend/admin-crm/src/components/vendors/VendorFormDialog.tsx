@@ -129,13 +129,15 @@ export const VendorFormDialog: React.FC<VendorFormDialogProps> = ({
           is_active: vendor.is_active ?? true,
           is_bookable: vendor.is_bookable ?? true,
           sort_order: vendor.sort_order?.toString() || '0',
-          operating_rules: rules ? {
-            minimum_lead_days: rules.minimum_lead_days?.toString() || '0',
-            minimum_service_hours: rules.minimum_service_hours || '',
-            maximum_service_hours: rules.maximum_service_hours || '',
-            setup_hours: rules.setup_hours || '0',
-            teardown_hours: rules.teardown_hours || '0',
-          } : defaultOperatingRules,
+          operating_rules: rules
+            ? {
+                minimum_lead_days: rules.minimum_lead_days?.toString() || '0',
+                minimum_service_hours: rules.minimum_service_hours || '',
+                maximum_service_hours: rules.maximum_service_hours || '',
+                setup_hours: rules.setup_hours || '0',
+                teardown_hours: rules.teardown_hours || '0',
+              }
+            : defaultOperatingRules,
         });
       } else {
         setFormData(defaultFormData);
@@ -151,46 +153,43 @@ export const VendorFormDialog: React.FC<VendorFormDialogProps> = ({
     }
   }, [open]);
 
-  const handleInputChange = (field: keyof VendorFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const handleRulesChange = (field: keyof OperatingRulesFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      operating_rules: {
-        ...prev.operating_rules,
+  const handleInputChange =
+    (field: keyof VendorFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
+        ...prev,
         [field]: value,
-      },
-    }));
-  };
+      }));
+      if (errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: '' }));
+      }
+    };
 
-  const handleSwitchChange = (field: keyof VendorFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.checked,
-    }));
-  };
+  const handleRulesChange =
+    (field: keyof OperatingRulesFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
+        ...prev,
+        operating_rules: {
+          ...prev.operating_rules,
+          [field]: value,
+        },
+      }));
+    };
+
+  const handleSwitchChange =
+    (field: keyof VendorFormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: event.target.checked,
+      }));
+    };
 
   const toggleSection = (section: string) => {
-    setExpandedSections(prev =>
-      prev.includes(section)
-        ? prev.filter(s => s !== section)
-        : [...prev, section]
+    setExpandedSections((prev) =>
+      prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section],
     );
   };
 
@@ -230,13 +229,15 @@ export const VendorFormDialog: React.FC<VendorFormDialogProps> = ({
       parseFloat(rules.setup_hours) > 0 ||
       parseFloat(rules.teardown_hours) > 0;
 
-    const operatingRulesData: CreateOperatingRulesData | undefined = hasOperatingRules ? {
-      minimum_lead_days: parseInt(rules.minimum_lead_days) || 0,
-      minimum_service_hours: rules.minimum_service_hours || null,
-      maximum_service_hours: rules.maximum_service_hours || null,
-      setup_hours: rules.setup_hours || '0',
-      teardown_hours: rules.teardown_hours || '0',
-    } : undefined;
+    const operatingRulesData: CreateOperatingRulesData | undefined = hasOperatingRules
+      ? {
+          minimum_lead_days: parseInt(rules.minimum_lead_days) || 0,
+          minimum_service_hours: rules.minimum_service_hours || null,
+          maximum_service_hours: rules.maximum_service_hours || null,
+          setup_hours: rules.setup_hours || '0',
+          teardown_hours: rules.teardown_hours || '0',
+        }
+      : undefined;
 
     const submitData: CreateVendorData | UpdateVendorData = {
       name: formData.name.trim(),
@@ -266,16 +267,12 @@ export const VendorFormDialog: React.FC<VendorFormDialogProps> = ({
     }
   };
 
-  const actions = createDialogActions(
-    handleClose,
-    handleSubmit,
-    {
-      cancelLabel: 'Cancel',
-      confirmLabel: editingVendor ? 'Update Vendor' : 'Create Vendor',
-      isLoading,
-      confirmDisabled: isLoading,
-    }
-  );
+  const actions = createDialogActions(handleClose, handleSubmit, {
+    cancelLabel: 'Cancel',
+    confirmLabel: editingVendor ? 'Update Vendor' : 'Create Vendor',
+    isLoading,
+    confirmDisabled: isLoading,
+  });
 
   return (
     <ModernDialog
@@ -501,7 +498,9 @@ export const VendorFormDialog: React.FC<VendorFormDialogProps> = ({
                 />
 
                 <Divider />
-                <Typography variant="subtitle2" color="text.secondary">Service Duration</Typography>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Service Duration
+                </Typography>
 
                 <Box display="flex" gap={2}>
                   <TextField
@@ -529,7 +528,9 @@ export const VendorFormDialog: React.FC<VendorFormDialogProps> = ({
                 </Box>
 
                 <Divider />
-                <Typography variant="subtitle2" color="text.secondary">Setup/Teardown Time</Typography>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Setup/Teardown Time
+                </Typography>
 
                 <Box display="flex" gap={2}>
                   <TextField

@@ -20,7 +20,7 @@ export const useVendors = (filters?: VendorFilters) => {
     data: vendors = [],
     isLoading: isLoadingVendors,
     error: vendorsError,
-    refetch: refetchVendors
+    refetch: refetchVendors,
   } = useQuery({
     queryKey: ['vendors', filters],
     queryFn: () => vendorsApi.getVendors(filters),
@@ -59,9 +59,12 @@ export const useVendors = (filters?: VendorFilters) => {
       showSuccess('Vendor Created', `${newVendor.name} has been created successfully.`);
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create vendor'
-        : 'Failed to create vendor';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to create vendor'
+          : 'Failed to create vendor';
       showError('Create Failed', message);
     },
   });
@@ -75,9 +78,12 @@ export const useVendors = (filters?: VendorFilters) => {
       showSuccess('Vendor Updated', `${updatedVendor.name} has been updated successfully.`);
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update vendor'
-        : 'Failed to update vendor';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to update vendor'
+          : 'Failed to update vendor';
       showError('Update Failed', message);
     },
   });
@@ -89,9 +95,12 @@ export const useVendors = (filters?: VendorFilters) => {
       showSuccess('Vendor Deleted', 'Vendor has been deleted successfully.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete vendor'
-        : 'Failed to delete vendor';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to delete vendor'
+          : 'Failed to delete vendor';
       showError('Delete Failed', message);
     },
   });
@@ -140,17 +149,19 @@ export const useVendorOperatingRules = (vendorId: number) => {
   });
 
   const updateRulesMutation = useMutation({
-    mutationFn: (data: CreateOperatingRulesData) =>
-      vendorsApi.updateOperatingRules(vendorId, data),
+    mutationFn: (data: CreateOperatingRulesData) => vendorsApi.updateOperatingRules(vendorId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendor-operating-rules', vendorId] });
       queryClient.invalidateQueries({ queryKey: ['vendor', vendorId] });
       showSuccess('Rules Updated', 'Operating rules have been updated successfully.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update operating rules'
-        : 'Failed to update operating rules';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to update operating rules'
+          : 'Failed to update operating rules';
       showError('Update Failed', message);
     },
   });
@@ -203,9 +214,12 @@ export const usePackageVendors = (filters?: PackageVendorFilters) => {
       showSuccess('Vendor Assigned', 'Vendor has been assigned to the package.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to assign vendor'
-        : 'Failed to assign vendor';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to assign vendor'
+          : 'Failed to assign vendor';
       showError('Assignment Failed', message);
     },
   });
@@ -219,9 +233,12 @@ export const usePackageVendors = (filters?: PackageVendorFilters) => {
       showSuccess('Assignment Updated', 'Package vendor assignment has been updated.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update assignment'
-        : 'Failed to update assignment';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to update assignment'
+          : 'Failed to update assignment';
       showError('Update Failed', message);
     },
   });
@@ -234,9 +251,12 @@ export const usePackageVendors = (filters?: PackageVendorFilters) => {
       showSuccess('Vendor Removed', 'Vendor has been removed from the package.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to remove vendor'
-        : 'Failed to remove vendor';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to remove vendor'
+          : 'Failed to remove vendor';
       showError('Removal Failed', message);
     },
   });
@@ -249,9 +269,12 @@ export const usePackageVendors = (filters?: PackageVendorFilters) => {
       showSuccess('Vendors Assigned', 'Vendors have been assigned to the package.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to assign vendors'
-        : 'Failed to assign vendors';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to assign vendors'
+          : 'Failed to assign vendors';
       showError('Assignment Failed', message);
     },
   });

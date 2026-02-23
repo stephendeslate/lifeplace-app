@@ -16,7 +16,7 @@ export interface AccessibilityContextType {
   settings: AccessibilitySettings;
   updateSetting: <K extends keyof AccessibilitySettings>(
     key: K,
-    value: AccessibilitySettings[K]
+    value: AccessibilitySettings[K],
   ) => void;
   announceToScreenReader: (message: string) => void;
   isAccessibilityPanelOpen: boolean;

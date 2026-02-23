@@ -43,11 +43,11 @@ export const permissionsApi = {
    */
   updateUserPermissions: async (
     userId: number,
-    permissions: AdminPermissions
+    permissions: AdminPermissions,
   ): Promise<UpdatePermissionsResponse> => {
     const response = await api.patch<UpdatePermissionsResponse>(
       `/users/${userId}/permissions/`,
-      permissions
+      permissions,
     );
     return response.data;
   },

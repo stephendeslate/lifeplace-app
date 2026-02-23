@@ -6,7 +6,7 @@ export interface BookingFlow {
   description: string;
   event_type: number | null;
   event_type_name: string; // Always provided by backend serializer
-  
+
   // Integration with other domains
   workflow_template: number | null;
   workflow_template_details?: {
@@ -23,7 +23,7 @@ export interface BookingFlow {
     id: number;
     name: string;
   };
-  
+
   // Flow configuration
   is_active: boolean;
   allow_guest_booking: boolean;
@@ -32,7 +32,7 @@ export interface BookingFlow {
   enable_progress_saving: boolean;
   max_advance_booking_days: number;
   min_advance_booking_days: number;
-  
+
   // Pricing and discounts
   allow_discounts: boolean;
   available_discounts: number[];
@@ -41,24 +41,24 @@ export interface BookingFlow {
     name: string;
     code: string;
   }[];
-  
+
   // Payment configuration - NEW fields from evolved backend
   allowed_payment_gateways: number[];
   default_payment_gateway: number | null;
   require_immediate_payment: boolean;
-  
+
   // Completion actions
   redirect_url: string;
   success_message: string;
-  
+
   // Analytics and testing
   is_test_mode: boolean;
   conversion_tracking_code: string;
-  
+
   // Computed fields
   total_steps: number;
   enabled_steps_count: number;
-  
+
   created_at: string;
   updated_at: string;
 }
@@ -74,22 +74,22 @@ export interface BookingFlowStep {
   step_type_display: string;
   description: string;
   order: number;
-  
+
   // Step behavior
   is_enabled: boolean;
   is_required: boolean;
   is_skippable: boolean;
-  
+
   // Conditional display
   display_conditions: Record<string, unknown>;
-  
+
   // Step configuration
   configuration: Record<string, unknown>;
   configuration_data?: StepConfiguration;
-  
+
   // Validation rules
   validation_rules: Record<string, unknown>;
-  
+
   created_at: string;
   updated_at: string;
 }
@@ -221,7 +221,7 @@ export interface QuestionnaireStepItem {
 export interface PackageSelectionStepConfiguration {
   id: number;
   step: number;
-  
+
   // Product filtering
   available_categories: number[];
   available_categories_details?: {
@@ -234,12 +234,12 @@ export interface PackageSelectionStepConfiguration {
     name: string;
     base_price: string;
   }[];
-  
+
   // Selection behavior
   selection_type: 'SINGLE' | 'MULTIPLE';
   min_selection: number;
   max_selection: number;
-  
+
   // Display options
   show_pricing: boolean;
   show_descriptions: boolean;
@@ -260,7 +260,7 @@ export interface PackageSelectionStepConfiguration {
 export interface AddonSelectionStepConfiguration {
   id: number;
   step: number;
-  
+
   // Product filtering
   available_categories: number[];
   available_categories_details?: {
@@ -273,7 +273,7 @@ export interface AddonSelectionStepConfiguration {
     name: string;
     base_price: string;
   }[];
-  
+
   // Selection behavior
   min_selection: number;
   max_selection: number;
@@ -333,7 +333,7 @@ export interface ContactInfoStepConfiguration {
   require_phone: boolean;
   require_address: boolean;
   require_company: boolean;
-  
+
   // Additional fields
   custom_fields: Array<{
     name: string;
@@ -341,11 +341,11 @@ export interface ContactInfoStepConfiguration {
     required: boolean;
     placeholder?: string;
   }>;
-  
+
   // Account creation
   offer_account_creation: boolean;
   require_account_creation: boolean;
-  
+
   created_at: string;
   updated_at: string;
 }
@@ -405,28 +405,28 @@ export interface PaymentTermsConfiguration {
 
   // Deposit configuration overrides (null = use global)
   deposit_type: 'PERCENTAGE' | 'FIXED' | null;
-  deposit_percentage: number | null;  // Decimal as number
-  deposit_fixed_amount: number | null;  // Decimal as number
+  deposit_percentage: number | null; // Decimal as number
+  deposit_fixed_amount: number | null; // Decimal as number
   deposit_is_refundable: boolean | null;
   deposit_is_deductible: boolean | null;
   deposit_waived_on_full_payment: boolean | null;
 
   // Late fee configuration overrides (null = use global)
   late_fee_type: 'FIXED' | 'PERCENTAGE' | null;
-  late_fee_amount: number | null;  // Decimal as number
-  late_fee_percentage: number | null;  // Decimal as number
+  late_fee_amount: number | null; // Decimal as number
+  late_fee_percentage: number | null; // Decimal as number
 
   // Security deposit configuration overrides (null = use global)
   security_deposit_enabled: boolean | null;
-  security_deposit_amount: number | null;  // Decimal as number
+  security_deposit_amount: number | null; // Decimal as number
   security_deposit_is_refundable: boolean | null;
-  security_deposit_description: string;  // Empty string = use global
+  security_deposit_description: string; // Empty string = use global
 
   // Cancellation configuration overrides (null = use global)
-  cancellation_admin_fee_percentage: number | null;  // Decimal as number
+  cancellation_admin_fee_percentage: number | null; // Decimal as number
 
   // Payment schedule configuration overrides (null = use global)
-  downpayment_percentage: number | null;  // Decimal as number
+  downpayment_percentage: number | null; // Decimal as number
   downpayment_due_days: number | null;
   balance_due_days: number | null;
   balance_due_type: 'DAYS_BEFORE' | 'DAY_BEFORE' | null;

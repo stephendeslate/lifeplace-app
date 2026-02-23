@@ -20,10 +20,16 @@ const TestConsumer: React.FC = () => {
 
   return (
     <div>
-      <button onClick={() => showToast({ type: 'success', title: 'Success Title', message: 'Success message' })}>
+      <button
+        onClick={() =>
+          showToast({ type: 'success', title: 'Success Title', message: 'Success message' })
+        }
+      >
         Show Success
       </button>
-      <button onClick={() => showToast({ type: 'error', title: 'Error Title', message: 'Error message' })}>
+      <button
+        onClick={() => showToast({ type: 'error', title: 'Error Title', message: 'Error message' })}
+      >
         Show Error
       </button>
       <button onClick={() => showToast({ type: 'warning', title: 'Warning Title' })}>
@@ -82,7 +88,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <div data-testid="child">Test Child</div>
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByTestId('child')).toBeInTheDocument();
@@ -92,7 +98,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByTestId('toast-count')).toHaveTextContent('0');
@@ -104,7 +110,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       fireEvent.click(screen.getByText('Show Success'));
@@ -116,7 +122,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       fireEvent.click(screen.getByText('Show Success'));
@@ -128,7 +134,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       fireEvent.click(screen.getByText('Show Success'));
@@ -140,7 +146,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       fireEvent.click(screen.getByText('Show Success'));
@@ -154,7 +160,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       fireEvent.click(screen.getByText('Show With Action'));
@@ -166,7 +172,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       fireEvent.click(screen.getByText('Show Success'));
@@ -180,7 +186,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       fireEvent.click(screen.getByText('Show Persistent'));
@@ -201,7 +207,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       fireEvent.click(screen.getByText('Show Success'));
@@ -220,7 +226,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       fireEvent.click(screen.getByText('Show Success'));
@@ -229,7 +235,7 @@ describe('ToastContext', () => {
       const closeButtons = screen.getAllByRole('button', { name: '' });
       // The close button is usually the last small button
       const closeButton = closeButtons.find(
-        (btn) => btn.querySelector('svg[data-testid="CloseIcon"]') !== null
+        (btn) => btn.querySelector('svg[data-testid="CloseIcon"]') !== null,
       );
       if (closeButton) {
         fireEvent.click(closeButton);
@@ -242,7 +248,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       fireEvent.click(screen.getByText('Show Success'));
@@ -262,7 +268,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       fireEvent.click(screen.getByText('Show Success'));
@@ -275,7 +281,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       fireEvent.click(screen.getByText('Show Error'));
@@ -288,7 +294,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       fireEvent.click(screen.getByText('Show Warning'));
@@ -301,7 +307,7 @@ describe('ToastContext', () => {
       render(
         <TestWrapper>
           <TestConsumer />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       fireEvent.click(screen.getByText('Show Persistent'));
@@ -322,7 +328,7 @@ describe('useToast hook', () => {
     };
 
     expect(() => render(<ThrowingComponent />)).toThrow(
-      'useToast must be used within a ToastProvider'
+      'useToast must be used within a ToastProvider',
     );
 
     consoleError.mockRestore();
@@ -342,7 +348,7 @@ describe('useToastActions hook', () => {
     render(
       <TestWrapper>
         <ToastActionsConsumer />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     fireEvent.click(screen.getByText('Success'));
@@ -355,7 +361,7 @@ describe('useToastActions hook', () => {
     render(
       <TestWrapper>
         <ToastActionsConsumer />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     fireEvent.click(screen.getByText('Error'));
@@ -368,7 +374,7 @@ describe('useToastActions hook', () => {
     render(
       <TestWrapper>
         <ToastActionsConsumer />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     fireEvent.click(screen.getByText('Warning'));
@@ -381,7 +387,7 @@ describe('useToastActions hook', () => {
     render(
       <TestWrapper>
         <ToastActionsConsumer />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     fireEvent.click(screen.getByText('Info'));
@@ -394,7 +400,7 @@ describe('useToastActions hook', () => {
     render(
       <TestWrapper>
         <ToastActionsConsumer />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     fireEvent.click(screen.getByText('Error'));

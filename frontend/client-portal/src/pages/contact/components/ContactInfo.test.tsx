@@ -12,9 +12,7 @@ describe('ContactInfo', () => {
 
   it('renders the section description', () => {
     render(<ContactInfo />);
-    expect(
-      screen.getByText(/Reach out to us through any of these channels/i)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Reach out to us through any of these channels/i)).toBeInTheDocument();
   });
 
   it('renders all four contact cards', () => {
@@ -71,7 +69,7 @@ describe('ContactInfo', () => {
     expect(directionsButton).toBeInTheDocument();
     expect(directionsButton).toHaveAttribute(
       'href',
-      'https://maps.google.com/?q=Patutong+Malaki+North+Alfonso+Cavite'
+      'https://maps.google.com/?q=Patutong+Malaki+North+Alfonso+Cavite',
     );
     expect(directionsButton).toHaveAttribute('target', '_blank');
     expect(directionsButton).toHaveAttribute('rel', 'noopener noreferrer');

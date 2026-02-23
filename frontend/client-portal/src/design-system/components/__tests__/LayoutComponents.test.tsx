@@ -10,7 +10,7 @@ describe('Section Component', () => {
     render(
       <Section>
         <div>Test Content</div>
-      </Section>
+      </Section>,
     );
     expect(screen.getByText('Test Content')).toBeInTheDocument();
   });
@@ -19,7 +19,7 @@ describe('Section Component', () => {
     const { container } = render(
       <Section background="cream">
         <div>Content</div>
-      </Section>
+      </Section>,
     );
     const section = container.querySelector('section');
     expect(section).toBeInTheDocument();
@@ -29,7 +29,7 @@ describe('Section Component', () => {
     const { container } = render(
       <Section spacing="large">
         <div>Content</div>
-      </Section>
+      </Section>,
     );
     expect(container.querySelector('section')).toBeInTheDocument();
   });
@@ -40,7 +40,7 @@ describe('Container Component', () => {
     render(
       <Container>
         <div>Test Content</div>
-      </Container>
+      </Container>,
     );
     expect(screen.getByText('Test Content')).toBeInTheDocument();
   });
@@ -49,7 +49,7 @@ describe('Container Component', () => {
     const { container } = render(
       <Container maxWidth="narrow">
         <div>Content</div>
-      </Container>
+      </Container>,
     );
     const containerElement = container.firstChild;
     expect(containerElement).toBeInTheDocument();
@@ -59,7 +59,7 @@ describe('Container Component', () => {
     const { container } = render(
       <Container padding={false}>
         <div>Content</div>
-      </Container>
+      </Container>,
     );
     expect(container.firstChild).toBeInTheDocument();
   });
@@ -67,12 +67,7 @@ describe('Container Component', () => {
 
 describe('ImageWithOverlay Component', () => {
   it('renders image with alt text', () => {
-    render(
-      <ImageWithOverlay
-        image="/test-image.jpg"
-        alt="Test Image"
-      />
-    );
+    render(<ImageWithOverlay image="/test-image.jpg" alt="Test Image" />);
     const image = screen.getByAltText('Test Image');
     expect(image).toBeInTheDocument();
     expect(image).toHaveAttribute('src', '/test-image.jpg');
@@ -80,45 +75,29 @@ describe('ImageWithOverlay Component', () => {
 
   it('renders children content over image', () => {
     render(
-      <ImageWithOverlay
-        image="/test-image.jpg"
-        alt="Test Image"
-      >
+      <ImageWithOverlay image="/test-image.jpg" alt="Test Image">
         <div>Overlay Content</div>
-      </ImageWithOverlay>
+      </ImageWithOverlay>,
     );
     expect(screen.getByText('Overlay Content')).toBeInTheDocument();
   });
 
   it('applies lazy loading to images', () => {
-    render(
-      <ImageWithOverlay
-        image="/test-image.jpg"
-        alt="Test Image"
-      />
-    );
+    render(<ImageWithOverlay image="/test-image.jpg" alt="Test Image" />);
     const image = screen.getByAltText('Test Image');
     expect(image).toHaveAttribute('loading', 'lazy');
   });
 
   it('renders with different overlay types', () => {
     const { container } = render(
-      <ImageWithOverlay
-        image="/test-image.jpg"
-        alt="Test Image"
-        overlay="gradient"
-      />
+      <ImageWithOverlay image="/test-image.jpg" alt="Test Image" overlay="gradient" />,
     );
     expect(container.firstChild).toBeInTheDocument();
   });
 
   it('renders without overlay when overlay="none"', () => {
     const { container } = render(
-      <ImageWithOverlay
-        image="/test-image.jpg"
-        alt="Test Image"
-        overlay="none"
-      />
+      <ImageWithOverlay image="/test-image.jpg" alt="Test Image" overlay="none" />,
     );
     expect(container.firstChild).toBeInTheDocument();
   });

@@ -39,11 +39,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { addWeeks, addMonths, format } from 'date-fns';
 import { GlassCard } from '../../design-system';
 import FinancialApi from '../../apis/financial.api';
-import type {
-  Invoice,
-  PaymentPlanRequest,
-  PaymentPlan,
-} from '../../types/financial.types';
+import type { Invoice, PaymentPlanRequest, PaymentPlan } from '../../types/financial.types';
 
 interface PaymentPlanDialogProps {
   open: boolean;
@@ -61,7 +57,11 @@ interface InstallmentPreview {
 
 const FREQUENCY_OPTIONS = [
   { value: 'WEEKLY', label: 'Weekly', addFunction: addWeeks },
-  { value: 'BIWEEKLY', label: 'Bi-weekly', addFunction: (date: Date, amount: number) => addWeeks(date, amount * 2) },
+  {
+    value: 'BIWEEKLY',
+    label: 'Bi-weekly',
+    addFunction: (date: Date, amount: number) => addWeeks(date, amount * 2),
+  },
   { value: 'MONTHLY', label: 'Monthly', addFunction: addMonths },
 ] as const;
 
@@ -92,7 +92,7 @@ export const PaymentPlanDialog: React.FC<PaymentPlanDialogProps> = ({
   useEffect(() => {
     const previews: InstallmentPreview[] = [];
     const downPaymentDate = new Date(formData.down_payment_due_date);
-    const frequency = FREQUENCY_OPTIONS.find(f => f.value === formData.frequency);
+    const frequency = FREQUENCY_OPTIONS.find((f) => f.value === formData.frequency);
 
     if (!frequency) return;
 
@@ -123,14 +123,14 @@ export const PaymentPlanDialog: React.FC<PaymentPlanDialogProps> = ({
   const handleDownPaymentChange = (value: number) => {
     const maxDownPayment = totalAmount * 0.8; // Max 80% down payment
     const clampedValue = Math.max(0, Math.min(value, maxDownPayment));
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       down_payment_amount: clampedValue.toString(),
     }));
   };
 
   const handleInstallmentCountChange = (value: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       number_of_installments: value,
     }));
@@ -172,7 +172,7 @@ export const PaymentPlanDialog: React.FC<PaymentPlanDialogProps> = ({
         sx: {
           backgroundColor: alpha('#fff', 0.95),
           backdropFilter: 'blur(10px)',
-        }
+        },
       }}
     >
       <DialogTitle>
@@ -188,11 +188,7 @@ export const PaymentPlanDialog: React.FC<PaymentPlanDialogProps> = ({
               </Typography>
             </Box>
           </Stack>
-          <Button
-            onClick={onClose}
-            sx={{ minWidth: 'auto', p: 1 }}
-            disabled={loading}
-          >
+          <Button onClick={onClose} sx={{ minWidth: 'auto', p: 1 }} disabled={loading}>
             <CloseIcon />
           </Button>
         </Stack>
@@ -246,7 +242,10 @@ export const PaymentPlanDialog: React.FC<PaymentPlanDialogProps> = ({
 
           {/* Configuration Form */}
           <Stack spacing={3}>
-            <Typography variant="h6" sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: 1 }}
+            >
               <CalculatorIcon />
               Plan Configuration
             </Typography>
@@ -261,7 +260,11 @@ export const PaymentPlanDialog: React.FC<PaymentPlanDialogProps> = ({
                 value={formData.down_payment_amount}
                 onChange={(e) => handleDownPaymentChange(parseFloat(e.target.value) || 0)}
                 InputProps={{
-                  startAdornment: <Typography sx={{ mr: 1 }}>{FinancialApi.getCurrencySymbol(invoice.currency)}</Typography>,
+                  startAdornment: (
+                    <Typography sx={{ mr: 1 }}>
+                      {FinancialApi.getCurrencySymbol(invoice.currency)}
+                    </Typography>
+                  ),
                 }}
                 fullWidth
                 inputProps={{
@@ -298,10 +301,12 @@ export const PaymentPlanDialog: React.FC<PaymentPlanDialogProps> = ({
               <TextField
                 select
                 value={formData.frequency}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  frequency: e.target.value as PaymentPlanRequest['frequency']
-                }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    frequency: e.target.value as PaymentPlanRequest['frequency'],
+                  }))
+                }
                 label="Payment Frequency"
                 disabled={loading}
               >
@@ -319,9 +324,9 @@ export const PaymentPlanDialog: React.FC<PaymentPlanDialogProps> = ({
               value={new Date(formData.down_payment_due_date)}
               onChange={(date) => {
                 if (date) {
-                  setFormData(prev => ({
+                  setFormData((prev) => ({
                     ...prev,
-                    down_payment_due_date: date.toISOString().split('T')[0]
+                    down_payment_due_date: date.toISOString().split('T')[0],
                   }));
                 }
               }}
@@ -340,7 +345,7 @@ export const PaymentPlanDialog: React.FC<PaymentPlanDialogProps> = ({
             <TextField
               label="Notes (Optional)"
               value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
               multiline
               rows={3}
               placeholder="Any special notes or instructions for this payment plan..."
@@ -366,17 +371,19 @@ export const PaymentPlanDialog: React.FC<PaymentPlanDialogProps> = ({
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ fontWeight: 600 }}>Payment</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 600 }}>Amount</TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 600 }}>Due Date</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600 }}>
+                        Amount
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600 }}>
+                        Due Date
+                      </TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {installmentPreviews.map((installment, index) => (
                       <TableRow key={index}>
                         <TableCell>
-                          <Typography variant="body2">
-                            {installment.description}
-                          </Typography>
+                          <Typography variant="body2">{installment.description}</Typography>
                         </TableCell>
                         <TableCell align="right">
                           <Typography variant="body2" sx={{ fontWeight: 500 }}>
@@ -397,16 +404,13 @@ export const PaymentPlanDialog: React.FC<PaymentPlanDialogProps> = ({
           )}
 
           {/* Error Display */}
-          {error && (
-            <Alert severity="error">
-              {error}
-            </Alert>
-          )}
+          {error && <Alert severity="error">{error}</Alert>}
 
           {/* Validation Warnings */}
           {remainingAmount <= 0 && (
             <Alert severity="warning">
-              Down payment covers the full amount. Consider reducing the down payment to create installments.
+              Down payment covers the full amount. Consider reducing the down payment to create
+              installments.
             </Alert>
           )}
         </Stack>

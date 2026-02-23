@@ -1,9 +1,9 @@
-import { useQuery } from "@tanstack/react-query";
-import { GalleryApi } from "../apis/gallery.api";
+import { useQuery } from '@tanstack/react-query';
+import { GalleryApi } from '../apis/gallery.api';
 
 export const useVenueGallery = () => {
   return useQuery({
-    queryKey: ["venues", "gallery"],
+    queryKey: ['venues', 'gallery'],
     queryFn: () => GalleryApi.getVenuesWithGallery(),
     staleTime: 10 * 60 * 1000,
   });
@@ -11,7 +11,7 @@ export const useVenueGallery = () => {
 
 export const useGalleryVenues = () => {
   return useQuery({
-    queryKey: ["gallery", "venues"],
+    queryKey: ['gallery', 'venues'],
     queryFn: () => GalleryApi.getGalleryVenues(),
     staleTime: 10 * 60 * 1000,
   });
@@ -19,7 +19,7 @@ export const useGalleryVenues = () => {
 
 export const useGalleryPhotos = (category?: string) => {
   return useQuery({
-    queryKey: ["gallery", "photos", category],
+    queryKey: ['gallery', 'photos', category],
     queryFn: () => GalleryApi.getGalleryPhotos(category),
     staleTime: 10 * 60 * 1000,
   });
@@ -27,7 +27,7 @@ export const useGalleryPhotos = (category?: string) => {
 
 export const useEventTypeImages = () => {
   return useQuery({
-    queryKey: ["event-types", "images"],
+    queryKey: ['event-types', 'images'],
     queryFn: () => GalleryApi.getEventTypesWithImages(),
     staleTime: 10 * 60 * 1000,
   });

@@ -23,8 +23,8 @@ export interface DocumentItem {
   eventId: number;
   eventName: string;
   category: DocumentCategory;
-  fileType: string;        // MIME type or file extension
-  fileSize: number;        // Size in bytes
+  fileType: string; // MIME type or file extension
+  fileSize: number; // Size in bytes
   downloadUrl: string;
   createdAt: string;
   uploadedBy?: string;
@@ -63,12 +63,15 @@ export interface DocumentUploadData {
 }
 
 // Document type configuration for UI
-export const DOCUMENT_TYPE_CONFIGS: Record<DocumentType, {
-  label: string;
-  pluralLabel: string;
-  color: string;
-  icon: string;
-}> = {
+export const DOCUMENT_TYPE_CONFIGS: Record<
+  DocumentType,
+  {
+    label: string;
+    pluralLabel: string;
+    color: string;
+    icon: string;
+  }
+> = {
   CONTRACT: {
     label: 'Contract',
     pluralLabel: 'Contracts',

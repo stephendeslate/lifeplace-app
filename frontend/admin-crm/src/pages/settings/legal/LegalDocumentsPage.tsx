@@ -74,7 +74,9 @@ const LegalDocumentEditor: React.FC<{
       title: formData.title,
       content: formData.content,
       version: formData.version,
-      effective_date: formData.effective_date ? formData.effective_date.toISOString().split('T')[0] : null,
+      effective_date: formData.effective_date
+        ? formData.effective_date.toISOString().split('T')[0]
+        : null,
       is_published: formData.is_published,
     };
 
@@ -107,7 +109,10 @@ const LegalDocumentEditor: React.FC<{
                 width: 48,
                 height: 48,
                 borderRadius: 2,
-                bgcolor: document.document_type === 'TERMS_OF_SERVICE' ? 'primary.light' : 'secondary.light',
+                bgcolor:
+                  document.document_type === 'TERMS_OF_SERVICE'
+                    ? 'primary.light'
+                    : 'secondary.light',
               }}
             >
               {getDocumentIcon()}
@@ -122,9 +127,7 @@ const LegalDocumentEditor: React.FC<{
               </Typography>
             </Box>
           </Box>
-          <IconButton>
-            {isExpanded ? <ExpandLess /> : <ExpandMore />}
-          </IconButton>
+          <IconButton>{isExpanded ? <ExpandLess /> : <ExpandMore />}</IconButton>
         </Box>
 
         {/* Expanded Form */}
@@ -225,7 +228,9 @@ const LegalDocumentEditor: React.FC<{
                     type="submit"
                     variant="contained"
                     disabled={isUpdating}
-                    startIcon={isUpdating ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+                    startIcon={
+                      isUpdating ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />
+                    }
                   >
                     {isUpdating ? 'Saving...' : 'Save Changes'}
                   </Button>
@@ -241,7 +246,8 @@ const LegalDocumentEditor: React.FC<{
 
 export const LegalDocumentsPage: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
-  const { legalDocuments, isLoadingDocuments, updateLegalDocument, isUpdatingDocument } = useLegalDocuments();
+  const { legalDocuments, isLoadingDocuments, updateLegalDocument, isUpdatingDocument } =
+    useLegalDocuments();
 
   // Wrapper to convert (documentType, data) arguments to { documentType, data } object
   const handleUpdateDocument = (documentType: string, data: LegalDocumentUpdateData) => {
@@ -260,7 +266,14 @@ export const LegalDocumentsPage: React.FC = () => {
   if (isLoadingDocuments) {
     return (
       <ModernSettingsLayout>
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '400px',
+          }}
+        >
           <CircularProgress />
         </Box>
       </ModernSettingsLayout>

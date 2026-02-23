@@ -32,7 +32,7 @@ export const salesApi = {
     if (filters?.search) params.append('search', filters.search);
     if (filters?.event_type) params.append('event_type', filters.event_type.toString());
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    
+
     const response = await api.get(`/sales/templates/?${params.toString()}`);
     const data = response.data as PaginatedResponse<QuoteTemplate> | QuoteTemplate[];
     return Array.isArray(data) ? data : data.results || [];
@@ -48,7 +48,10 @@ export const salesApi = {
     return response.data;
   },
 
-  updateQuoteTemplate: async (id: number, data: UpdateQuoteTemplateData): Promise<QuoteTemplate> => {
+  updateQuoteTemplate: async (
+    id: number,
+    data: UpdateQuoteTemplateData,
+  ): Promise<QuoteTemplate> => {
     const response = await api.patch<QuoteTemplate>(`/sales/templates/${id}/`, data);
     return response.data;
   },
@@ -81,12 +84,17 @@ export const salesApi = {
     return response.data;
   },
 
-  createQuoteTemplateProduct: async (data: CreateQuoteTemplateProductData): Promise<QuoteTemplateProduct> => {
+  createQuoteTemplateProduct: async (
+    data: CreateQuoteTemplateProductData,
+  ): Promise<QuoteTemplateProduct> => {
     const response = await api.post<QuoteTemplateProduct>('/sales/template-products/', data);
     return response.data;
   },
 
-  updateQuoteTemplateProduct: async (id: number, data: UpdateQuoteTemplateProductData): Promise<QuoteTemplateProduct> => {
+  updateQuoteTemplateProduct: async (
+    id: number,
+    data: UpdateQuoteTemplateProductData,
+  ): Promise<QuoteTemplateProduct> => {
     const response = await api.patch<QuoteTemplateProduct>(`/sales/template-products/${id}/`, data);
     return response.data;
   },
@@ -102,7 +110,7 @@ export const salesApi = {
     if (filters?.event_id) params.append('event_id', filters.event_id.toString());
     if (filters?.status) params.append('status', filters.status);
     if (filters?.template) params.append('template', filters.template.toString());
-    
+
     const response = await api.get(`/sales/quotes/?${params.toString()}`);
     const data = response.data as PaginatedResponse<EventQuote> | EventQuote[];
     return Array.isArray(data) ? data : data.results || [];
@@ -156,7 +164,7 @@ export const salesApi = {
   getQuoteLineItems: async (filters?: QuoteLineItemFilters): Promise<QuoteLineItem[]> => {
     const params = new URLSearchParams();
     if (filters?.quote) params.append('quote', filters.quote.toString());
-    
+
     const response = await api.get(`/sales/line-items/?${params.toString()}`);
     const data = response.data as PaginatedResponse<QuoteLineItem> | QuoteLineItem[];
     return Array.isArray(data) ? data : data.results || [];
@@ -172,7 +180,10 @@ export const salesApi = {
     return response.data;
   },
 
-  updateQuoteLineItem: async (id: number, data: UpdateQuoteLineItemData): Promise<QuoteLineItem> => {
+  updateQuoteLineItem: async (
+    id: number,
+    data: UpdateQuoteLineItemData,
+  ): Promise<QuoteLineItem> => {
     const response = await api.patch<QuoteLineItem>(`/sales/line-items/${id}/`, data);
     return response.data;
   },
@@ -192,7 +203,10 @@ export const salesApi = {
     return response.data;
   },
 
-  updateQuoteOption: async (id: number, data: Partial<CreateQuoteOptionData>): Promise<QuoteOption> => {
+  updateQuoteOption: async (
+    id: number,
+    data: Partial<CreateQuoteOptionData>,
+  ): Promise<QuoteOption> => {
     const response = await api.patch<QuoteOption>(`/sales/options/${id}/`, data);
     return response.data;
   },
@@ -213,7 +227,10 @@ export const salesApi = {
     return response.data;
   },
 
-  createQuoteReminder: async (quoteId: number, data: { scheduled_date: string; message?: string }): Promise<QuoteReminder> => {
+  createQuoteReminder: async (
+    quoteId: number,
+    data: { scheduled_date: string; message?: string },
+  ): Promise<QuoteReminder> => {
     const response = await api.post<QuoteReminder>(`/sales/quotes/${quoteId}/reminders/`, data);
     return response.data;
   },
@@ -239,38 +256,49 @@ export const salesApi = {
     return response.data;
   },
 
-  getQuotesForClient: async (clientId: number) : Promise<EventQuote[]> =>  {
-    const response = await api.get<PaginatedResponse<EventQuote>>(`/sales/quotes/?client_id=${clientId}`);
+  getQuotesForClient: async (clientId: number): Promise<EventQuote[]> => {
+    const response = await api.get<PaginatedResponse<EventQuote>>(
+      `/sales/quotes/?client_id=${clientId}`,
+    );
     return response.data.results;
   },
 
   // Get venues for a product (for venue-based hours selection)
-  getProductVenues: async (productId: number, eventTypeId?: number): Promise<{
-    venue_id: number;
-    venue_name: string;
-    included_hours: number;
-    excess_hour_price: number;
-    is_all_day_access?: boolean;
-    has_event_type_config?: boolean;
-  }[]> => {
-    const params = new URLSearchParams();
-    params.append('product_id', productId.toString());
-    if (eventTypeId) {
-      params.append('event_type_id', eventTypeId.toString());
-    }
-    const response = await api.get<{
+  getProductVenues: async (
+    productId: number,
+    eventTypeId?: number,
+  ): Promise<
+    {
       venue_id: number;
       venue_name: string;
       included_hours: number;
       excess_hour_price: number;
       is_all_day_access?: boolean;
       has_event_type_config?: boolean;
-    }[]>(`/sales/line-items/product_venues/?${params.toString()}`);
+    }[]
+  > => {
+    const params = new URLSearchParams();
+    params.append('product_id', productId.toString());
+    if (eventTypeId) {
+      params.append('event_type_id', eventTypeId.toString());
+    }
+    const response = await api.get<
+      {
+        venue_id: number;
+        venue_name: string;
+        included_hours: number;
+        excess_hour_price: number;
+        is_all_day_access?: boolean;
+        has_event_type_config?: boolean;
+      }[]
+    >(`/sales/line-items/product_venues/?${params.toString()}`);
     return response.data;
   },
 
   // Get booking session line items for an event
-  getBookingSessionLineItems: async (eventId: number): Promise<{
+  getBookingSessionLineItems: async (
+    eventId: number,
+  ): Promise<{
     has_booking_session: boolean;
     session_id?: string;
     line_items?: {
@@ -331,16 +359,18 @@ export const salesApi = {
     tax_rate: string;
     item_type: string;
     is_tax_inclusive: boolean;
-    venue_hours_breakdown: {
-      venue_id: number;
-      venue_name: string;
-      included_hours: number;
-      additional_hours: number;
-      excess_hour_price: number;
-      venue_cost: number;
-      is_all_day_access?: boolean;
-      has_event_type_config?: boolean;
-    }[] | null;
+    venue_hours_breakdown:
+      | {
+          venue_id: number;
+          venue_name: string;
+          included_hours: number;
+          additional_hours: number;
+          excess_hour_price: number;
+          venue_cost: number;
+          is_all_day_access?: boolean;
+          has_event_type_config?: boolean;
+        }[]
+      | null;
   }> => {
     const response = await api.post<{
       product_id: number;
@@ -356,16 +386,18 @@ export const salesApi = {
       tax_rate: string;
       item_type: string;
       is_tax_inclusive: boolean;
-      venue_hours_breakdown: {
-        venue_id: number;
-        venue_name: string;
-        included_hours: number;
-        additional_hours: number;
-        excess_hour_price: number;
-        venue_cost: number;
-        is_all_day_access?: boolean;
-        has_event_type_config?: boolean;
-      }[] | null;
+      venue_hours_breakdown:
+        | {
+            venue_id: number;
+            venue_name: string;
+            included_hours: number;
+            additional_hours: number;
+            excess_hour_price: number;
+            venue_cost: number;
+            is_all_day_access?: boolean;
+            has_event_type_config?: boolean;
+          }[]
+        | null;
     }>('/sales/line-items/calculate_pricing/', data);
     return response.data;
   },

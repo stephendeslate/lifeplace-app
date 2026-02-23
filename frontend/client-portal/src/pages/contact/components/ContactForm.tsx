@@ -1,14 +1,7 @@
 // pages/contact/components/ContactForm.tsx
 
 import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Stack,
-  TextField,
-  MenuItem,
-  Alert,
-} from '@mui/material';
+import { Box, Typography, Stack, TextField, MenuItem, Alert } from '@mui/material';
 import { Send, Check } from '@mui/icons-material';
 import { Section, Container, ModernCard, AnimatedElement, tokens } from '../../../design-system';
 import { Button } from '../../../design-system';
@@ -116,7 +109,8 @@ export const ContactForm: React.FC = () => {
                     fontSize: tokens.typography.sizes.md,
                   }}
                 >
-                  Have a question or inquiry? Fill out the form below and we'll get back to you soon.
+                  Have a question or inquiry? Fill out the form below and we'll get back to you
+                  soon.
                 </Typography>
               </Box>
 
@@ -135,7 +129,8 @@ export const ContactForm: React.FC = () => {
                     },
                   }}
                 >
-                  Thank you for your inquiry! We've received your message and will get back to you within 24-48 hours.
+                  Thank you for your inquiry! We've received your message and will get back to you
+                  within 24-48 hours.
                 </Alert>
               )}
 
@@ -426,8 +421,8 @@ export const ContactForm: React.FC = () => {
                   lineHeight: tokens.typography.lineHeights.relaxed,
                 }}
               >
-                By submitting this form, you agree to be contacted regarding your inquiry.
-                Your information will not be shared with third parties.
+                By submitting this form, you agree to be contacted regarding your inquiry. Your
+                information will not be shared with third parties.
               </Typography>
             </Stack>
           </ModernCard>

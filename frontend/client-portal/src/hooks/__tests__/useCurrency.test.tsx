@@ -147,11 +147,14 @@ describe('useCurrencySettings', () => {
     });
 
     it('respects decimal places setting', async () => {
-      localStorage.setItem(CURRENCY_SETTINGS_KEY, JSON.stringify({
-        defaultCurrency: 'USD',
-        displayFormat: 'symbol',
-        decimalPlaces: 2,
-      }));
+      localStorage.setItem(
+        CURRENCY_SETTINGS_KEY,
+        JSON.stringify({
+          defaultCurrency: 'USD',
+          displayFormat: 'symbol',
+          decimalPlaces: 2,
+        }),
+      );
 
       const { result } = renderHook(() => useCurrencySettings());
 
@@ -159,7 +162,7 @@ describe('useCurrencySettings', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      const formatted = result.current.formatAmount(1000.50);
+      const formatted = result.current.formatAmount(1000.5);
       expect(formatted).toContain('1,000.50');
     });
 

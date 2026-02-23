@@ -54,18 +54,33 @@ import { formatPhilippinesTime } from '../../utils/timezone';
 // Helper Components
 // ============================================================================
 
-const classificationColor = (classification: string): 'success' | 'info' | 'warning' | 'error' | 'default' => {
+const classificationColor = (
+  classification: string,
+): 'success' | 'info' | 'warning' | 'error' | 'default' => {
   switch (classification) {
-    case 'Elite': return 'success';
-    case 'High': return 'info';
-    case 'Medium': return 'warning';
-    case 'Low': return 'error';
-    default: return 'default';
+    case 'Elite':
+      return 'success';
+    case 'High':
+      return 'info';
+    case 'Medium':
+      return 'warning';
+    case 'Low':
+      return 'error';
+    default:
+      return 'default';
   }
 };
 
-const TrendIndicator: React.FC<{ value: number | null; suffix?: string }> = ({ value, suffix = '%' }) => {
-  if (value === null || value === undefined) return <Typography variant="body2" color="text.secondary">-</Typography>;
+const TrendIndicator: React.FC<{ value: number | null; suffix?: string }> = ({
+  value,
+  suffix = '%',
+}) => {
+  if (value === null || value === undefined)
+    return (
+      <Typography variant="body2" color="text.secondary">
+        -
+      </Typography>
+    );
   const isPositive = value >= 0;
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -75,7 +90,9 @@ const TrendIndicator: React.FC<{ value: number | null; suffix?: string }> = ({ v
         <TrendingDownIcon sx={{ fontSize: 16, color: 'error.main' }} />
       )}
       <Typography variant="body2" color={isPositive ? 'success.main' : 'error.main'}>
-        {isPositive ? '+' : ''}{value.toFixed(1)}{suffix}
+        {isPositive ? '+' : ''}
+        {value.toFixed(1)}
+        {suffix}
       </Typography>
     </Box>
   );
@@ -90,22 +107,32 @@ const MetricCard: React.FC<{
 }> = ({ title, value, trend7d, trend30d, icon }) => (
   <Card sx={{ flex: 1, minWidth: 200 }}>
     <CardContent>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-        <Typography variant="body2" color="text.secondary">{title}</Typography>
+      <Box
+        sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}
+      >
+        <Typography variant="body2" color="text.secondary">
+          {title}
+        </Typography>
         {icon}
       </Box>
-      <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>{value}</Typography>
+      <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+        {value}
+      </Typography>
       {(trend7d !== undefined || trend30d !== undefined) && (
         <Stack direction="row" spacing={2}>
           {trend7d !== undefined && (
             <Box>
-              <Typography variant="caption" color="text.secondary">7d</Typography>
+              <Typography variant="caption" color="text.secondary">
+                7d
+              </Typography>
               <TrendIndicator value={trend7d ?? null} />
             </Box>
           )}
           {trend30d !== undefined && (
             <Box>
-              <Typography variant="caption" color="text.secondary">30d</Typography>
+              <Typography variant="caption" color="text.secondary">
+                30d
+              </Typography>
               <TrendIndicator value={trend30d ?? null} />
             </Box>
           )}
@@ -123,8 +150,12 @@ const DORACard: React.FC<{
 }> = ({ title, value, classification, subtitle }) => (
   <Card sx={{ flex: 1, minWidth: 200 }}>
     <CardContent>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>{title}</Typography>
-      <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>{value}</Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+        {title}
+      </Typography>
+      <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
+        {value}
+      </Typography>
       <Chip
         label={classification}
         color={classificationColor(classification)}
@@ -150,19 +181,24 @@ const PlatformImpactTab: React.FC = () => {
 
   const snapshots = snapshotsData?.snapshots || [];
 
-  const chartData = useMemo(() =>
-    snapshots.map(s => ({
-      date: formatPhilippinesTime(s.date, false, 'MMM d'),
-      revenue: s.total_revenue,
-      bookings: s.total_bookings,
-      clients: s.new_clients,
-      conversion: s.conversion_rate,
-    })),
-    [snapshots]
+  const chartData = useMemo(
+    () =>
+      snapshots.map((s) => ({
+        date: formatPhilippinesTime(s.date, false, 'MMM d'),
+        revenue: s.total_revenue,
+        bookings: s.total_bookings,
+        clients: s.new_clients,
+        conversion: s.conversion_rate,
+      })),
+    [snapshots],
   );
 
   if (summaryLoading || snapshotsLoading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (!summary) {
@@ -203,17 +239,16 @@ const PlatformImpactTab: React.FC = () => {
           trend7d={summary.trends_7d.clients_pct}
           trend30d={summary.trends_30d.clients_pct}
         />
-        <MetricCard
-          title="Conversion Rate"
-          value={`${summary.latest_conversion_rate}%`}
-        />
+        <MetricCard title="Conversion Rate" value={`${summary.latest_conversion_rate}%`} />
       </Box>
 
       {/* Revenue Trend Chart */}
       {chartData.length > 0 && (
         <Card>
           <CardContent>
-            <Typography variant="h6" sx={{ mb: 2 }}>Revenue Trend</Typography>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Revenue Trend
+            </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -221,7 +256,14 @@ const PlatformImpactTab: React.FC = () => {
                 <YAxis fontSize={12} />
                 <RechartsTooltip />
                 <Legend />
-                <Line type="monotone" dataKey="revenue" stroke="#1976d2" name="Revenue (₱)" strokeWidth={2} dot={false} />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#1976d2"
+                  name="Revenue (₱)"
+                  strokeWidth={2}
+                  dot={false}
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -232,7 +274,9 @@ const PlatformImpactTab: React.FC = () => {
       {chartData.length > 0 && (
         <Card>
           <CardContent>
-            <Typography variant="h6" sx={{ mb: 2 }}>Bookings & New Clients</Typography>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Bookings & New Clients
+            </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -256,26 +300,32 @@ const SystemHealthTab: React.FC = () => {
 
   const snapshots = healthData?.snapshots || [];
 
-  const chartData = useMemo(() =>
-    snapshots.map(s => ({
-      date: formatPhilippinesTime(s.date, false, 'MMM d'),
-      errors: s.error_count,
-      success_rate: s.celery_success_rate,
-      open_breakers: s.open_circuit_breakers,
-      broker_ping: s.broker_ping_ms,
-    })),
-    [snapshots]
+  const chartData = useMemo(
+    () =>
+      snapshots.map((s) => ({
+        date: formatPhilippinesTime(s.date, false, 'MMM d'),
+        errors: s.error_count,
+        success_rate: s.celery_success_rate,
+        open_breakers: s.open_circuit_breakers,
+        broker_ping: s.broker_ping_ms,
+      })),
+    [snapshots],
   );
 
   if (isLoading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   if (snapshots.length === 0) {
     return (
       <Box sx={{ textAlign: 'center', py: 4 }}>
         <Typography color="text.secondary">
-          No system health snapshots available yet. Data will appear after the daily health check runs.
+          No system health snapshots available yet. Data will appear after the daily health check
+          runs.
         </Typography>
       </Box>
     );
@@ -290,21 +340,36 @@ const SystemHealthTab: React.FC = () => {
         <MetricCard
           title="Celery Success Rate"
           value={`${latest.celery_success_rate}%`}
-          icon={latest.celery_success_rate >= 99 ? <CheckCircleIcon color="success" /> : <WarningIcon color="warning" />}
+          icon={
+            latest.celery_success_rate >= 99 ? (
+              <CheckCircleIcon color="success" />
+            ) : (
+              <WarningIcon color="warning" />
+            )
+          }
         />
         <MetricCard
           title="DLQ Errors (Latest)"
           value={latest.error_count}
-          icon={latest.error_count === 0 ? <CheckCircleIcon color="success" /> : <WarningIcon color="warning" />}
+          icon={
+            latest.error_count === 0 ? (
+              <CheckCircleIcon color="success" />
+            ) : (
+              <WarningIcon color="warning" />
+            )
+          }
         />
-        <MetricCard
-          title="Pending Review"
-          value={latest.pending_review_count}
-        />
+        <MetricCard title="Pending Review" value={latest.pending_review_count} />
         <MetricCard
           title="Open Circuit Breakers"
           value={latest.open_circuit_breakers}
-          icon={latest.open_circuit_breakers === 0 ? <CheckCircleIcon color="success" /> : <WarningIcon color="error" />}
+          icon={
+            latest.open_circuit_breakers === 0 ? (
+              <CheckCircleIcon color="success" />
+            ) : (
+              <WarningIcon color="error" />
+            )
+          }
         />
       </Box>
 
@@ -312,7 +377,9 @@ const SystemHealthTab: React.FC = () => {
       {chartData.length > 0 && (
         <Card>
           <CardContent>
-            <Typography variant="h6" sx={{ mb: 2 }}>Error Count Trend</Typography>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Error Count Trend
+            </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -330,14 +397,23 @@ const SystemHealthTab: React.FC = () => {
       {chartData.length > 0 && (
         <Card>
           <CardContent>
-            <Typography variant="h6" sx={{ mb: 2 }}>Task Success Rate</Typography>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Task Success Rate
+            </Typography>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" fontSize={12} />
                 <YAxis domain={[90, 100]} fontSize={12} />
                 <RechartsTooltip />
-                <Line type="monotone" dataKey="success_rate" stroke="#2e7d32" name="Success Rate (%)" strokeWidth={2} dot={false} />
+                <Line
+                  type="monotone"
+                  dataKey="success_rate"
+                  stroke="#2e7d32"
+                  name="Success Rate (%)"
+                  strokeWidth={2}
+                  dot={false}
+                />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -348,7 +424,9 @@ const SystemHealthTab: React.FC = () => {
       {latest.circuit_breaker_states && Object.keys(latest.circuit_breaker_states).length > 0 && (
         <Card>
           <CardContent>
-            <Typography variant="h6" sx={{ mb: 2 }}>Circuit Breaker States</Typography>
+            <Typography variant="h6" sx={{ mb: 2 }}>
+              Circuit Breaker States
+            </Typography>
             <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               {Object.entries(latest.circuit_breaker_states).map(([service, state]) => (
                 <Chip
@@ -371,7 +449,11 @@ const DeploymentsTab: React.FC = () => {
   const { data: deployments, isLoading: deploymentsLoading } = useDeploymentHistory(25);
 
   if (doraLoading || deploymentsLoading) {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>;
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
   }
 
   return (
@@ -445,11 +527,21 @@ const DeploymentsTab: React.FC = () => {
                     <TableRow key={d.id}>
                       <TableCell>
                         {d.github_run_url ? (
-                          <Link href={d.github_run_url} target="_blank" rel="noopener" sx={{ fontFamily: 'monospace', fontSize: 13 }}>
+                          <Link
+                            href={d.github_run_url}
+                            target="_blank"
+                            rel="noopener"
+                            sx={{ fontFamily: 'monospace', fontSize: 13 }}
+                          >
                             {d.git_sha_short}
                           </Link>
                         ) : (
-                          <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: 13 }}>{d.git_sha_short}</Typography>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontFamily: 'monospace', fontSize: 13 }}
+                          >
+                            {d.git_sha_short}
+                          </Typography>
                         )}
                       </TableCell>
                       <TableCell>
@@ -459,7 +551,13 @@ const DeploymentsTab: React.FC = () => {
                         <Chip
                           label={d.status}
                           size="small"
-                          color={d.status === 'SUCCESS' ? 'success' : d.status === 'FAILURE' ? 'error' : 'warning'}
+                          color={
+                            d.status === 'SUCCESS'
+                              ? 'success'
+                              : d.status === 'FAILURE'
+                                ? 'error'
+                                : 'warning'
+                          }
                         />
                       </TableCell>
                       <TableCell>
@@ -475,9 +573,7 @@ const DeploymentsTab: React.FC = () => {
                           : '-'}
                       </TableCell>
                       <TableCell>
-                        {d.lead_time_seconds != null
-                          ? humanizeSeconds(d.lead_time_seconds)
-                          : '-'}
+                        {d.lead_time_seconds != null ? humanizeSeconds(d.lead_time_seconds) : '-'}
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" color="text.secondary">

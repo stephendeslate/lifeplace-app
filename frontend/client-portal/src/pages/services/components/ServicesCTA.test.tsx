@@ -7,7 +7,15 @@ import { ServicesCTA } from './ServicesCTA';
 
 // Mock the design system components
 vi.mock('../../../design-system', () => ({
-  Section: ({ children, background, spacing }: { children: React.ReactNode; background?: string; spacing?: string }) => (
+  Section: ({
+    children,
+    background,
+    spacing,
+  }: {
+    children: React.ReactNode;
+    background?: string;
+    spacing?: string;
+  }) => (
     <section data-testid="section" data-background={background} data-spacing={spacing}>
       {children}
     </section>
@@ -17,12 +25,29 @@ vi.mock('../../../design-system', () => ({
       {children}
     </div>
   ),
-  AnimatedElement: ({ children, animation, delay }: { children: React.ReactNode; animation?: string; delay?: number }) => (
+  AnimatedElement: ({
+    children,
+    animation,
+    delay,
+  }: {
+    children: React.ReactNode;
+    animation?: string;
+    delay?: number;
+  }) => (
     <div data-testid="animated-element" data-animation={animation} data-delay={delay}>
       {children}
     </div>
   ),
-  Button: ({ children, variant, size, startIcon, endIcon, onClick, ariaLabel, ...props }: {
+  Button: ({
+    children,
+    variant,
+    size,
+    startIcon,
+    endIcon,
+    onClick,
+    ariaLabel,
+    ...props
+  }: {
     children: React.ReactNode;
     variant?: string;
     size?: string;
@@ -94,14 +119,14 @@ describe('ServicesCTA', () => {
 
     it('renders the description text', () => {
       render(<ServicesCTA />);
-      expect(
-        screen.getByText(/Contact us today to discuss your event needs/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Contact us today to discuss your event needs/i)).toBeInTheDocument();
     });
 
     it('renders both CTA buttons', () => {
       render(<ServicesCTA />);
-      expect(screen.getByRole('button', { name: /book your event at lifeplace alfonso/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /book your event at lifeplace alfonso/i }),
+      ).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /call lifeplace alfonso/i })).toBeInTheDocument();
     });
 
@@ -130,7 +155,9 @@ describe('ServicesCTA', () => {
 
       render(<ServicesCTA onNavigateToBooking={mockNavigate} />);
 
-      const bookButton = screen.getByRole('button', { name: /book your event at lifeplace alfonso/i });
+      const bookButton = screen.getByRole('button', {
+        name: /book your event at lifeplace alfonso/i,
+      });
       await user.click(bookButton);
 
       expect(mockNavigate).toHaveBeenCalledTimes(1);
@@ -160,7 +187,9 @@ describe('ServicesCTA', () => {
 
       render(<ServicesCTA />);
 
-      const bookButton = screen.getByRole('button', { name: /book your event at lifeplace alfonso/i });
+      const bookButton = screen.getByRole('button', {
+        name: /book your event at lifeplace alfonso/i,
+      });
       await user.click(bookButton);
 
       // Should not throw an error
@@ -171,7 +200,9 @@ describe('ServicesCTA', () => {
   describe('Button Variants and Styling', () => {
     it('renders Book Your Event button with terracotta variant', () => {
       render(<ServicesCTA />);
-      const bookButton = screen.getByRole('button', { name: /book your event at lifeplace alfonso/i });
+      const bookButton = screen.getByRole('button', {
+        name: /book your event at lifeplace alfonso/i,
+      });
 
       // Check if button exists (variant styling is applied via styled components)
       expect(bookButton).toBeInTheDocument();
@@ -187,7 +218,9 @@ describe('ServicesCTA', () => {
 
     it('renders buttons with large size', () => {
       render(<ServicesCTA />);
-      const bookButton = screen.getByRole('button', { name: /book your event at lifeplace alfonso/i });
+      const bookButton = screen.getByRole('button', {
+        name: /book your event at lifeplace alfonso/i,
+      });
       const callButton = screen.getByRole('button', { name: /call lifeplace alfonso/i });
 
       expect(bookButton).toBeInTheDocument();
@@ -205,7 +238,9 @@ describe('ServicesCTA', () => {
 
     it('renders Phone icon in Call Us button', () => {
       render(<ServicesCTA />);
-      const bookButton = screen.getByRole('button', { name: /book your event at lifeplace alfonso/i });
+      const bookButton = screen.getByRole('button', {
+        name: /book your event at lifeplace alfonso/i,
+      });
       const callButton = screen.getByRole('button', { name: /call lifeplace alfonso/i });
 
       // Both buttons should be present
@@ -219,11 +254,11 @@ describe('ServicesCTA', () => {
       render(<ServicesCTA />);
 
       expect(
-        screen.getByRole('button', { name: /book your event at lifeplace alfonso/i })
+        screen.getByRole('button', { name: /book your event at lifeplace alfonso/i }),
       ).toBeInTheDocument();
 
       expect(
-        screen.getByRole('button', { name: /call lifeplace alfonso at \+63 993 526 0943/i })
+        screen.getByRole('button', { name: /call lifeplace alfonso at \+63 993 526 0943/i }),
       ).toBeInTheDocument();
     });
 
@@ -249,7 +284,9 @@ describe('ServicesCTA', () => {
   describe('Responsive Layout', () => {
     it('renders buttons in a stack layout', () => {
       const { container } = render(<ServicesCTA />);
-      const bookButton = screen.getByRole('button', { name: /book your event at lifeplace alfonso/i });
+      const bookButton = screen.getByRole('button', {
+        name: /book your event at lifeplace alfonso/i,
+      });
       const callButton = screen.getByRole('button', { name: /call lifeplace alfonso/i });
 
       expect(bookButton).toBeInTheDocument();
@@ -319,7 +356,9 @@ describe('ServicesCTA', () => {
       // Verify all major elements are present
       expect(screen.getByText('Ready to Plan Your Event?')).toBeInTheDocument();
       expect(screen.getByText(/Contact us today/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /book your event at lifeplace alfonso/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /book your event at lifeplace alfonso/i }),
+      ).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /call lifeplace alfonso/i })).toBeInTheDocument();
       expect(screen.getByText('+63 993 526 0943')).toBeInTheDocument();
       expect(screen.getByText('reservations.lifeplace@gmail.com')).toBeInTheDocument();

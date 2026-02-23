@@ -87,16 +87,16 @@ export const ConfirmDialogProvider: React.FC<ConfirmDialogProviderProps> = ({ ch
           if (options.allowAsync) {
             setLoading(true);
             try {
-              await new Promise(resolve => setTimeout(resolve, 0)); // Allow for async operations
+              await new Promise((resolve) => setTimeout(resolve, 0)); // Allow for async operations
             } finally {
               setLoading(false);
             }
           }
-          setDialogState(prev => ({ ...prev, open: false }));
+          setDialogState((prev) => ({ ...prev, open: false }));
           resolve(true);
         },
         onCancel: () => {
-          setDialogState(prev => ({ ...prev, open: false }));
+          setDialogState((prev) => ({ ...prev, open: false }));
           resolve(false);
         },
       });
@@ -119,7 +119,8 @@ export const ConfirmDialogProvider: React.FC<ConfirmDialogProviderProps> = ({ ch
   const confirmLeaveBooking = (): Promise<boolean> => {
     return confirm({
       title: 'Leave Booking?',
-      message: 'You have unsaved changes in your booking. If you leave now, your progress will be lost. Are you sure you want to leave?',
+      message:
+        'You have unsaved changes in your booking. If you leave now, your progress will be lost. Are you sure you want to leave?',
       type: 'warning',
       confirmText: 'Leave',
       cancelText: 'Stay',
@@ -154,7 +155,9 @@ export const ConfirmDialogProvider: React.FC<ConfirmDialogProviderProps> = ({ ch
   };
 
   return (
-    <ConfirmDialogContext.Provider value={{ confirm, confirmDelete, confirmLeaveBooking, confirmClearBooking }}>
+    <ConfirmDialogContext.Provider
+      value={{ confirm, confirmDelete, confirmLeaveBooking, confirmClearBooking }}
+    >
       {children}
       <Dialog
         open={dialogState.open}

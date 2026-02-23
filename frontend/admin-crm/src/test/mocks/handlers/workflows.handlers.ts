@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/test/mocks/handlers/workflows.handlers.ts
 
-import { http, HttpResponse, delay } from "msw";
+import { http, HttpResponse, delay } from 'msw';
 import {
   mockWorkflowTemplates,
   mockWorkflowStages,
@@ -8,7 +8,7 @@ import {
   createMockWorkflowTemplate,
   createMockWorkflowStage,
   createMockWorkflowWebhook,
-} from "../data/workflows.mock";
+} from '../data/workflows.mock';
 import type {
   CreateWorkflowTemplateData,
   UpdateWorkflowTemplateData,
@@ -19,9 +19,9 @@ import type {
   WorkflowTrigger,
   EventWorkflowOverride,
   WebhookEventType,
-} from "../../../types/workflows.types";
+} from '../../../types/workflows.types';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
 // Mutable stores for testing mutations
 let templatesStore = [...mockWorkflowTemplates];
@@ -31,42 +31,42 @@ const triggersStore: WorkflowTrigger[] = [
   {
     id: 1,
     event: 1,
-    event_name: "Smith Wedding",
+    event_name: 'Smith Wedding',
     stage: 1,
-    stage_name: "Send Welcome Email",
-    trigger_type: "EVENT_CREATED",
-    trigger_type_display: "Event Created",
-    details: "Event created trigger",
+    stage_name: 'Send Welcome Email',
+    trigger_type: 'EVENT_CREATED',
+    trigger_type_display: 'Event Created',
+    details: 'Event created trigger',
     result_data: {},
     processed: false,
     processed_at: null,
-    created_at: "2024-06-15T10:00:00Z",
+    created_at: '2024-06-15T10:00:00Z',
   },
 ];
 const overridesStore: EventWorkflowOverride[] = [
   {
     id: 1,
     event: 1,
-    event_name: "Smith Wedding",
+    event_name: 'Smith Wedding',
     stage: 1,
-    stage_name: "Send Welcome Email",
-    override_type: "SKIP",
-    override_type_display: "Skip Stage",
-    custom_trigger_time: "",
-    custom_stage_name: "",
-    custom_stage_category: "",
+    stage_name: 'Send Welcome Email',
+    override_type: 'SKIP',
+    override_type_display: 'Skip Stage',
+    custom_trigger_time: '',
+    custom_stage_name: '',
+    custom_stage_category: '',
     custom_order: null,
     custom_is_automated: false,
-    custom_automation_type: "",
+    custom_automation_type: '',
     custom_email_template: null,
-    custom_task_description: "",
-    reason: "Client already contacted",
+    custom_task_description: '',
+    reason: 'Client already contacted',
     executed: false,
     executed_at: null,
     created_by: 1,
-    created_by_name: "Admin User",
-    created_at: "2024-06-15T10:00:00Z",
-    updated_at: "2024-06-15T10:00:00Z",
+    created_by_name: 'Admin User',
+    created_at: '2024-06-15T10:00:00Z',
+    updated_at: '2024-06-15T10:00:00Z',
   },
 ];
 
@@ -84,11 +84,11 @@ export const workflowsHandlers = [
     await delay(30);
 
     const url = new URL(request.url);
-    const search = url.searchParams.get("search");
-    const eventType = url.searchParams.get("event_type");
-    const isActive = url.searchParams.get("is_active");
-    const page = parseInt(url.searchParams.get("page") || "1");
-    const pageSize = parseInt(url.searchParams.get("page_size") || "25");
+    const search = url.searchParams.get('search');
+    const eventType = url.searchParams.get('event_type');
+    const isActive = url.searchParams.get('is_active');
+    const page = parseInt(url.searchParams.get('page') || '1');
+    const pageSize = parseInt(url.searchParams.get('page_size') || '25');
 
     let filtered = [...templatesStore];
 
@@ -104,7 +104,7 @@ export const workflowsHandlers = [
       filtered = filtered.filter((t) => t.event_type === parseInt(eventType));
     }
     if (isActive !== null && isActive !== undefined) {
-      const isActiveBool = isActive === "true";
+      const isActiveBool = isActive === 'true';
       filtered = filtered.filter((t) => t.is_active === isActiveBool);
     }
 
@@ -114,12 +114,8 @@ export const workflowsHandlers = [
 
     return HttpResponse.json({
       count: filtered.length,
-      next:
-        end < filtered.length
-          ? `${BASE_URL}/workflows/templates/?page=${page + 1}`
-          : null,
-      previous:
-        page > 1 ? `${BASE_URL}/workflows/templates/?page=${page - 1}` : null,
+      next: end < filtered.length ? `${BASE_URL}/workflows/templates/?page=${page + 1}` : null,
+      previous: page > 1 ? `${BASE_URL}/workflows/templates/?page=${page - 1}` : null,
       results: paginatedResults,
     });
   }),
@@ -139,7 +135,7 @@ export const workflowsHandlers = [
     const template = templatesStore.find((t) => t.id === id);
 
     if (!template) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     return HttpResponse.json(template);
@@ -153,7 +149,7 @@ export const workflowsHandlers = [
     const newTemplate = createMockWorkflowTemplate({
       id: templatesStore.length + 1,
       name: body.name,
-      description: body.description || "",
+      description: body.description || '',
       event_type: body.event_type,
       is_active: body.is_active ?? true,
     });
@@ -163,24 +159,21 @@ export const workflowsHandlers = [
   }),
 
   // PATCH /api/workflows/templates/:id/
-  http.patch(
-    `${BASE_URL}/workflows/templates/:id/`,
-    async ({ params, request }) => {
-      await delay(50);
+  http.patch(`${BASE_URL}/workflows/templates/:id/`, async ({ params, request }) => {
+    await delay(50);
 
-      const id = parseInt(params.id as string);
-      const idx = templatesStore.findIndex((t) => t.id === id);
+    const id = parseInt(params.id as string);
+    const idx = templatesStore.findIndex((t) => t.id === id);
 
-      if (idx === -1) {
-        return HttpResponse.json({ detail: "Not found" }, { status: 404 });
-      }
+    if (idx === -1) {
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+    }
 
-      const updates = (await request.json()) as UpdateWorkflowTemplateData;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      templatesStore[idx] = { ...templatesStore[idx], ...(updates as any) };
-      return HttpResponse.json(templatesStore[idx]);
-    },
-  ),
+    const updates = (await request.json()) as UpdateWorkflowTemplateData;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    templatesStore[idx] = { ...templatesStore[idx], ...(updates as any) };
+    return HttpResponse.json(templatesStore[idx]);
+  }),
 
   // DELETE /api/workflows/templates/:id/
   http.delete(`${BASE_URL}/workflows/templates/:id/`, async ({ params }) => {
@@ -190,7 +183,7 @@ export const workflowsHandlers = [
     const idx = templatesStore.findIndex((t) => t.id === id);
 
     if (idx === -1) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     templatesStore.splice(idx, 1);
@@ -198,41 +191,35 @@ export const workflowsHandlers = [
   }),
 
   // POST /api/workflows/templates/:id/duplicate/
-  http.post(
-    `${BASE_URL}/workflows/templates/:id/duplicate/`,
-    async ({ params, request }) => {
-      await delay(50);
+  http.post(`${BASE_URL}/workflows/templates/:id/duplicate/`, async ({ params, request }) => {
+    await delay(50);
 
-      const id = parseInt(params.id as string);
-      const original = templatesStore.find((t) => t.id === id);
+    const id = parseInt(params.id as string);
+    const original = templatesStore.find((t) => t.id === id);
 
-      if (!original) {
-        return HttpResponse.json({ detail: "Not found" }, { status: 404 });
-      }
+    if (!original) {
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+    }
 
-      const body = (await request.json()) as { name?: string };
-      const duplicated = createMockWorkflowTemplate({
-        ...original,
-        id: templatesStore.length + 1,
-        name: body.name || `${original.name} (Copy)`,
-      });
+    const body = (await request.json()) as { name?: string };
+    const duplicated = createMockWorkflowTemplate({
+      ...original,
+      id: templatesStore.length + 1,
+      name: body.name || `${original.name} (Copy)`,
+    });
 
-      templatesStore.push(duplicated);
-      return HttpResponse.json(duplicated, { status: 201 });
-    },
-  ),
+    templatesStore.push(duplicated);
+    return HttpResponse.json(duplicated, { status: 201 });
+  }),
 
   // GET /api/workflows/templates/:id/stages/
-  http.get(
-    `${BASE_URL}/workflows/templates/:templateId/stages/`,
-    async ({ params }) => {
-      await delay(30);
+  http.get(`${BASE_URL}/workflows/templates/:templateId/stages/`, async ({ params }) => {
+    await delay(30);
 
-      const templateId = parseInt(params.templateId as string);
-      const stages = stagesStore.filter((s) => s.template === templateId);
-      return HttpResponse.json(stages);
-    },
-  ),
+    const templateId = parseInt(params.templateId as string);
+    const stages = stagesStore.filter((s) => s.template === templateId);
+    return HttpResponse.json(stages);
+  }),
 
   // === Workflow Stages ===
 
@@ -241,8 +228,8 @@ export const workflowsHandlers = [
     await delay(30);
 
     const url = new URL(request.url);
-    const templateId = url.searchParams.get("template_id");
-    const stage = url.searchParams.get("stage");
+    const templateId = url.searchParams.get('template_id');
+    const stage = url.searchParams.get('stage');
 
     let filtered = [...stagesStore];
 
@@ -264,7 +251,7 @@ export const workflowsHandlers = [
     const stage = stagesStore.find((s) => s.id === id);
 
     if (!stage) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     return HttpResponse.json(stage);
@@ -289,23 +276,20 @@ export const workflowsHandlers = [
   }),
 
   // PATCH /api/workflows/stages/:id/
-  http.patch(
-    `${BASE_URL}/workflows/stages/:id/`,
-    async ({ params, request }) => {
-      await delay(50);
+  http.patch(`${BASE_URL}/workflows/stages/:id/`, async ({ params, request }) => {
+    await delay(50);
 
-      const id = parseInt(params.id as string);
-      const idx = stagesStore.findIndex((s) => s.id === id);
+    const id = parseInt(params.id as string);
+    const idx = stagesStore.findIndex((s) => s.id === id);
 
-      if (idx === -1) {
-        return HttpResponse.json({ detail: "Not found" }, { status: 404 });
-      }
+    if (idx === -1) {
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+    }
 
-      const updates = (await request.json()) as UpdateWorkflowStageData;
-      stagesStore[idx] = { ...stagesStore[idx], ...updates };
-      return HttpResponse.json(stagesStore[idx]);
-    },
-  ),
+    const updates = (await request.json()) as UpdateWorkflowStageData;
+    stagesStore[idx] = { ...stagesStore[idx], ...updates };
+    return HttpResponse.json(stagesStore[idx]);
+  }),
 
   // DELETE /api/workflows/stages/:id/
   http.delete(`${BASE_URL}/workflows/stages/:id/`, async ({ params }) => {
@@ -315,7 +299,7 @@ export const workflowsHandlers = [
     const idx = stagesStore.findIndex((s) => s.id === id);
 
     if (idx === -1) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     stagesStore.splice(idx, 1);
@@ -338,26 +322,23 @@ export const workflowsHandlers = [
   }),
 
   // POST /api/workflows/stages/:id/trigger/
-  http.post(
-    `${BASE_URL}/workflows/stages/:id/trigger/`,
-    async ({ params, request }) => {
-      await delay(50);
+  http.post(`${BASE_URL}/workflows/stages/:id/trigger/`, async ({ params, request }) => {
+    await delay(50);
 
-      const id = parseInt(params.id as string);
-      const stage = stagesStore.find((s) => s.id === id);
+    const id = parseInt(params.id as string);
+    const stage = stagesStore.find((s) => s.id === id);
 
-      if (!stage) {
-        return HttpResponse.json({ detail: "Not found" }, { status: 404 });
-      }
+    if (!stage) {
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+    }
 
-      const body = (await request.json()) as { event_id: number };
-      return HttpResponse.json({
-        success: true,
-        message: `Stage "${stage.name}" triggered for event ${body.event_id}`,
-        trigger_id: triggersStore.length + 1,
-      });
-    },
-  ),
+    const body = (await request.json()) as { event_id: number };
+    return HttpResponse.json({
+      success: true,
+      message: `Stage "${stage.name}" triggered for event ${body.event_id}`,
+      trigger_id: triggersStore.length + 1,
+    });
+  }),
 
   // === Workflow Triggers ===
 
@@ -366,10 +347,10 @@ export const workflowsHandlers = [
     await delay(30);
 
     const url = new URL(request.url);
-    const eventId = url.searchParams.get("event_id");
-    const templateId = url.searchParams.get("template_id");
-    const triggerType = url.searchParams.get("trigger_type");
-    const processed = url.searchParams.get("processed");
+    const eventId = url.searchParams.get('event_id');
+    const templateId = url.searchParams.get('template_id');
+    const triggerType = url.searchParams.get('trigger_type');
+    const processed = url.searchParams.get('processed');
 
     let filtered = [...triggersStore];
 
@@ -384,7 +365,7 @@ export const workflowsHandlers = [
       filtered = filtered.filter((t) => t.trigger_type === triggerType);
     }
     if (processed !== null && processed !== undefined) {
-      const processedBool = processed === "true";
+      const processedBool = processed === 'true';
       filtered = filtered.filter((t) => t.processed === processedBool);
     }
 
@@ -399,7 +380,7 @@ export const workflowsHandlers = [
     const trigger = triggersStore.find((t) => t.id === id);
 
     if (!trigger) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     return HttpResponse.json(trigger);
@@ -412,10 +393,10 @@ export const workflowsHandlers = [
     await delay(30);
 
     const url = new URL(request.url);
-    const eventId = url.searchParams.get("event_id");
-    const stageId = url.searchParams.get("stage_id");
-    const overrideType = url.searchParams.get("override_type");
-    const executed = url.searchParams.get("executed");
+    const eventId = url.searchParams.get('event_id');
+    const stageId = url.searchParams.get('stage_id');
+    const overrideType = url.searchParams.get('override_type');
+    const executed = url.searchParams.get('executed');
 
     let filtered = [...overridesStore];
 
@@ -429,7 +410,7 @@ export const workflowsHandlers = [
       filtered = filtered.filter((o) => o.override_type === overrideType);
     }
     if (executed !== null && executed !== undefined) {
-      const executedBool = executed === "true";
+      const executedBool = executed === 'true';
       filtered = filtered.filter((o) => o.executed === executedBool);
     }
 
@@ -437,21 +418,18 @@ export const workflowsHandlers = [
   }),
 
   // GET /api/workflows/overrides/for_event/
-  http.get(
-    `${BASE_URL}/workflows/overrides/for_event/`,
-    async ({ request }) => {
-      await delay(30);
+  http.get(`${BASE_URL}/workflows/overrides/for_event/`, async ({ request }) => {
+    await delay(30);
 
-      const url = new URL(request.url);
-      const eventId = url.searchParams.get("event_id");
+    const url = new URL(request.url);
+    const eventId = url.searchParams.get('event_id');
 
-      const filtered = eventId
-        ? overridesStore.filter((o) => o.event === parseInt(eventId))
-        : overridesStore;
+    const filtered = eventId
+      ? overridesStore.filter((o) => o.event === parseInt(eventId))
+      : overridesStore;
 
-      return HttpResponse.json(filtered);
-    },
-  ),
+    return HttpResponse.json(filtered);
+  }),
 
   // GET /api/workflows/overrides/:id/
   http.get(`${BASE_URL}/workflows/overrides/:id/`, async ({ params }) => {
@@ -461,7 +439,7 @@ export const workflowsHandlers = [
     const override = overridesStore.find((o) => o.id === id);
 
     if (!override) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     return HttpResponse.json(override);
@@ -475,24 +453,28 @@ export const workflowsHandlers = [
     const newOverride: EventWorkflowOverride = {
       id: overridesStore.length + 1,
       event: body.event as number,
-      event_name: "Event",
+      event_name: 'Event',
       stage: body.stage as number,
-      stage_name: "Stage",
-      override_type: ((body.override_type as string) || "SKIP") as "SKIP" | "DISABLE_AUTOMATION" | "CUSTOM_TIMING" | "ADD_STAGE",
-      override_type_display: "",
-      custom_trigger_time: "",
-      custom_stage_name: "",
-      custom_stage_category: "" as const,
+      stage_name: 'Stage',
+      override_type: ((body.override_type as string) || 'SKIP') as
+        | 'SKIP'
+        | 'DISABLE_AUTOMATION'
+        | 'CUSTOM_TIMING'
+        | 'ADD_STAGE',
+      override_type_display: '',
+      custom_trigger_time: '',
+      custom_stage_name: '',
+      custom_stage_category: '' as const,
       custom_order: null,
       custom_is_automated: false,
-      custom_automation_type: "",
+      custom_automation_type: '',
       custom_email_template: null,
-      custom_task_description: "",
-      reason: (body.reason as string) || "",
+      custom_task_description: '',
+      reason: (body.reason as string) || '',
       executed: false,
       executed_at: null,
       created_by: 1,
-      created_by_name: "Admin User",
+      created_by_name: 'Admin User',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -502,26 +484,23 @@ export const workflowsHandlers = [
   }),
 
   // PATCH /api/workflows/overrides/:id/
-  http.patch(
-    `${BASE_URL}/workflows/overrides/:id/`,
-    async ({ params, request }) => {
-      await delay(50);
+  http.patch(`${BASE_URL}/workflows/overrides/:id/`, async ({ params, request }) => {
+    await delay(50);
 
-      const id = parseInt(params.id as string);
-      const idx = overridesStore.findIndex((o) => o.id === id);
+    const id = parseInt(params.id as string);
+    const idx = overridesStore.findIndex((o) => o.id === id);
 
-      if (idx === -1) {
-        return HttpResponse.json({ detail: "Not found" }, { status: 404 });
-      }
+    if (idx === -1) {
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+    }
 
-      const updates = (await request.json()) as Record<string, unknown>;
-      overridesStore[idx] = {
-        ...overridesStore[idx],
-        ...updates,
-      } as EventWorkflowOverride;
-      return HttpResponse.json(overridesStore[idx]);
-    },
-  ),
+    const updates = (await request.json()) as Record<string, unknown>;
+    overridesStore[idx] = {
+      ...overridesStore[idx],
+      ...updates,
+    } as EventWorkflowOverride;
+    return HttpResponse.json(overridesStore[idx]);
+  }),
 
   // DELETE /api/workflows/overrides/:id/
   http.delete(`${BASE_URL}/workflows/overrides/:id/`, async ({ params }) => {
@@ -531,7 +510,7 @@ export const workflowsHandlers = [
     const idx = overridesStore.findIndex((o) => o.id === id);
 
     if (idx === -1) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     overridesStore.splice(idx, 1);
@@ -539,86 +518,80 @@ export const workflowsHandlers = [
   }),
 
   // POST /api/workflows/overrides/skip_stage/
-  http.post(
-    `${BASE_URL}/workflows/overrides/skip_stage/`,
-    async ({ request }) => {
-      await delay(50);
+  http.post(`${BASE_URL}/workflows/overrides/skip_stage/`, async ({ request }) => {
+    await delay(50);
 
-      const body = (await request.json()) as {
-        event_id: number;
-        stage_id: number;
-        reason?: string;
-      };
-      const newOverride: EventWorkflowOverride = {
-        id: overridesStore.length + 1,
-        event: body.event_id,
-        event_name: "Event",
-        stage: body.stage_id,
-        stage_name: "Stage",
-        override_type: "SKIP",
-        override_type_display: "Skip Stage",
-        custom_trigger_time: "",
-        custom_stage_name: "",
-        custom_stage_category: "",
-        custom_order: null,
-        custom_is_automated: false,
-        custom_automation_type: "",
-        custom_email_template: null,
-        custom_task_description: "",
-        reason: body.reason || "",
-        executed: false,
-        executed_at: null,
-        created_by: 1,
-        created_by_name: "Admin User",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+    const body = (await request.json()) as {
+      event_id: number;
+      stage_id: number;
+      reason?: string;
+    };
+    const newOverride: EventWorkflowOverride = {
+      id: overridesStore.length + 1,
+      event: body.event_id,
+      event_name: 'Event',
+      stage: body.stage_id,
+      stage_name: 'Stage',
+      override_type: 'SKIP',
+      override_type_display: 'Skip Stage',
+      custom_trigger_time: '',
+      custom_stage_name: '',
+      custom_stage_category: '',
+      custom_order: null,
+      custom_is_automated: false,
+      custom_automation_type: '',
+      custom_email_template: null,
+      custom_task_description: '',
+      reason: body.reason || '',
+      executed: false,
+      executed_at: null,
+      created_by: 1,
+      created_by_name: 'Admin User',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-      overridesStore.push(newOverride);
-      return HttpResponse.json(newOverride, { status: 201 });
-    },
-  ),
+    overridesStore.push(newOverride);
+    return HttpResponse.json(newOverride, { status: 201 });
+  }),
 
   // POST /api/workflows/overrides/disable_automation/
-  http.post(
-    `${BASE_URL}/workflows/overrides/disable_automation/`,
-    async ({ request }) => {
-      await delay(50);
+  http.post(`${BASE_URL}/workflows/overrides/disable_automation/`, async ({ request }) => {
+    await delay(50);
 
-      const body = (await request.json()) as {
-        event_id: number;
-        stage_id: number;
-        reason?: string;
-      };
-      const newOverride: EventWorkflowOverride = {
-        id: overridesStore.length + 1,
-        event: body.event_id,
-        event_name: "Event",
-        stage: body.stage_id,
-        stage_name: "Stage",
-        override_type: "DISABLE_AUTOMATION",
-        override_type_display: "Disable Automation",
-        custom_trigger_time: "",
-        custom_stage_name: "",
-        custom_stage_category: "",
-        custom_order: null,
-        custom_is_automated: false,
-        custom_automation_type: "",
-        custom_email_template: null,
-        custom_task_description: "",
-        reason: body.reason || "",
-        executed: false,
-        executed_at: null,
-        created_by: 1,
-        created_by_name: "Admin User",
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+    const body = (await request.json()) as {
+      event_id: number;
+      stage_id: number;
+      reason?: string;
+    };
+    const newOverride: EventWorkflowOverride = {
+      id: overridesStore.length + 1,
+      event: body.event_id,
+      event_name: 'Event',
+      stage: body.stage_id,
+      stage_name: 'Stage',
+      override_type: 'DISABLE_AUTOMATION',
+      override_type_display: 'Disable Automation',
+      custom_trigger_time: '',
+      custom_stage_name: '',
+      custom_stage_category: '',
+      custom_order: null,
+      custom_is_automated: false,
+      custom_automation_type: '',
+      custom_email_template: null,
+      custom_task_description: '',
+      reason: body.reason || '',
+      executed: false,
+      executed_at: null,
+      created_by: 1,
+      created_by_name: 'Admin User',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
 
-      overridesStore.push(newOverride);
-      return HttpResponse.json(newOverride, { status: 201 });
-    },
-  ),
+    overridesStore.push(newOverride);
+    return HttpResponse.json(newOverride, { status: 201 });
+  }),
 
   // === Workflow Webhooks ===
 
@@ -627,18 +600,16 @@ export const workflowsHandlers = [
     await delay(30);
 
     const url = new URL(request.url);
-    const templateId = url.searchParams.get("workflow_template_id");
-    const isActive = url.searchParams.get("is_active");
+    const templateId = url.searchParams.get('workflow_template_id');
+    const isActive = url.searchParams.get('is_active');
 
     let filtered = [...webhooksStore];
 
     if (templateId) {
-      filtered = filtered.filter(
-        (w) => w.workflow_template === parseInt(templateId),
-      );
+      filtered = filtered.filter((w) => w.workflow_template === parseInt(templateId));
     }
     if (isActive !== null && isActive !== undefined) {
-      const isActiveBool = isActive === "true";
+      const isActiveBool = isActive === 'true';
       filtered = filtered.filter((w) => w.is_active === isActiveBool);
     }
 
@@ -649,10 +620,10 @@ export const workflowsHandlers = [
   http.get(`${BASE_URL}/workflows/webhooks/event_types/`, async () => {
     await delay(30);
     return HttpResponse.json([
-      { value: "STAGE_ENTERED", label: "Stage Entered" },
-      { value: "STAGE_COMPLETED", label: "Stage Completed" },
-      { value: "AUTOMATION_EXECUTED", label: "Automation Executed" },
-      { value: "WORKFLOW_COMPLETED", label: "Workflow Completed" },
+      { value: 'STAGE_ENTERED', label: 'Stage Entered' },
+      { value: 'STAGE_COMPLETED', label: 'Stage Completed' },
+      { value: 'AUTOMATION_EXECUTED', label: 'Automation Executed' },
+      { value: 'WORKFLOW_COMPLETED', label: 'Workflow Completed' },
     ]);
   }),
 
@@ -664,7 +635,7 @@ export const workflowsHandlers = [
     const webhook = webhooksStore.find((w) => w.id === id);
 
     if (!webhook) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     return HttpResponse.json(webhook);
@@ -690,23 +661,20 @@ export const workflowsHandlers = [
   }),
 
   // PATCH /api/workflows/webhooks/:id/
-  http.patch(
-    `${BASE_URL}/workflows/webhooks/:id/`,
-    async ({ params, request }) => {
-      await delay(50);
+  http.patch(`${BASE_URL}/workflows/webhooks/:id/`, async ({ params, request }) => {
+    await delay(50);
 
-      const id = parseInt(params.id as string);
-      const idx = webhooksStore.findIndex((w) => w.id === id);
+    const id = parseInt(params.id as string);
+    const idx = webhooksStore.findIndex((w) => w.id === id);
 
-      if (idx === -1) {
-        return HttpResponse.json({ detail: "Not found" }, { status: 404 });
-      }
+    if (idx === -1) {
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+    }
 
-      const updates = (await request.json()) as UpdateWorkflowWebhookData;
-      webhooksStore[idx] = { ...webhooksStore[idx], ...updates };
-      return HttpResponse.json(webhooksStore[idx]);
-    },
-  ),
+    const updates = (await request.json()) as UpdateWorkflowWebhookData;
+    webhooksStore[idx] = { ...webhooksStore[idx], ...updates };
+    return HttpResponse.json(webhooksStore[idx]);
+  }),
 
   // DELETE /api/workflows/webhooks/:id/
   http.delete(`${BASE_URL}/workflows/webhooks/:id/`, async ({ params }) => {
@@ -716,7 +684,7 @@ export const workflowsHandlers = [
     const idx = webhooksStore.findIndex((w) => w.id === id);
 
     if (idx === -1) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     webhooksStore.splice(idx, 1);
@@ -731,19 +699,19 @@ export const workflowsHandlers = [
     const webhook = webhooksStore.find((w) => w.id === id);
 
     if (!webhook) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     return HttpResponse.json({
-      message: "Test delivery sent successfully",
+      message: 'Test delivery sent successfully',
       delivery: {
         id: 1,
         webhook: id,
-        event_type: "STAGE_COMPLETED",
+        event_type: 'STAGE_COMPLETED',
         payload: { test: true },
         response_status: 200,
         response_body: '{"ok": true}',
-        status: "SUCCESS",
+        status: 'SUCCESS',
         attempted_at: new Date().toISOString(),
         completed_at: new Date().toISOString(),
         duration_ms: 150,
@@ -753,52 +721,49 @@ export const workflowsHandlers = [
   }),
 
   // GET /api/workflows/webhooks/:id/deliveries/
-  http.get(
-    `${BASE_URL}/workflows/webhooks/:webhookId/deliveries/`,
-    async ({ request }) => {
-      await delay(30);
+  http.get(`${BASE_URL}/workflows/webhooks/:webhookId/deliveries/`, async ({ request }) => {
+    await delay(30);
 
-      const url = new URL(request.url);
-      const status = url.searchParams.get("status");
-      const eventType = url.searchParams.get("event_type");
+    const url = new URL(request.url);
+    const status = url.searchParams.get('status');
+    const eventType = url.searchParams.get('event_type');
 
-      let deliveries = [
-        {
-          id: 1,
-          webhook: 1,
-          event_type: "STAGE_COMPLETED" as const,
-          payload: { stage_id: 1, event_id: 1 },
-          response_status: 200,
-          response_body: '{"ok": true}',
-          status: "SUCCESS" as const,
-          attempted_at: "2024-06-15T10:00:00Z",
-          completed_at: "2024-06-15T10:00:01Z",
-          duration_ms: 150,
-          created_at: "2024-06-15T10:00:00Z",
-        },
-        {
-          id: 2,
-          webhook: 1,
-          event_type: "STAGE_ENTERED" as const,
-          payload: { stage_id: 2, event_id: 1 },
-          response_status: 500,
-          response_body: "Internal Server Error",
-          status: "FAILED" as const,
-          attempted_at: "2024-06-15T11:00:00Z",
-          completed_at: "2024-06-15T11:00:02Z",
-          duration_ms: 2000,
-          created_at: "2024-06-15T11:00:00Z",
-        },
-      ];
+    let deliveries = [
+      {
+        id: 1,
+        webhook: 1,
+        event_type: 'STAGE_COMPLETED' as const,
+        payload: { stage_id: 1, event_id: 1 },
+        response_status: 200,
+        response_body: '{"ok": true}',
+        status: 'SUCCESS' as const,
+        attempted_at: '2024-06-15T10:00:00Z',
+        completed_at: '2024-06-15T10:00:01Z',
+        duration_ms: 150,
+        created_at: '2024-06-15T10:00:00Z',
+      },
+      {
+        id: 2,
+        webhook: 1,
+        event_type: 'STAGE_ENTERED' as const,
+        payload: { stage_id: 2, event_id: 1 },
+        response_status: 500,
+        response_body: 'Internal Server Error',
+        status: 'FAILED' as const,
+        attempted_at: '2024-06-15T11:00:00Z',
+        completed_at: '2024-06-15T11:00:02Z',
+        duration_ms: 2000,
+        created_at: '2024-06-15T11:00:00Z',
+      },
+    ];
 
-      if (status) {
-        deliveries = deliveries.filter((d) => d.status === status);
-      }
-      if (eventType) {
-        deliveries = deliveries.filter((d) => d.event_type === eventType);
-      }
+    if (status) {
+      deliveries = deliveries.filter((d) => d.status === status);
+    }
+    if (eventType) {
+      deliveries = deliveries.filter((d) => d.event_type === eventType);
+    }
 
-      return HttpResponse.json(deliveries);
-    },
-  ),
+    return HttpResponse.json(deliveries);
+  }),
 ];

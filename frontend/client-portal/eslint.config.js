@@ -1,12 +1,12 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import jsxA11y from 'eslint-plugin-jsx-a11y'
-import tseslint from 'typescript-eslint'
+import js from '@eslint/js';
+import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist'] },
+  { ignores: ['dist', '.react-router', 'build'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
@@ -28,17 +28,14 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       // JSX Accessibility rules (recommended set)
       ...jsxA11y.configs.recommended.rules,
-      'react-refresh/only-export-components': [
-        'warn',
-        { allowConstantExport: true },
-      ],
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
           argsIgnorePattern: '^_',
           varsIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_'
-        }
+          caughtErrorsIgnorePattern: '^_',
+        },
       ],
       // Accessibility rules with specific configurations
       'jsx-a11y/alt-text': 'error',
@@ -54,10 +51,13 @@ export default tseslint.config(
       'jsx-a11y/html-has-lang': 'error',
       'jsx-a11y/img-redundant-alt': 'warn',
       'jsx-a11y/interactive-supports-focus': 'warn',
-      'jsx-a11y/label-has-associated-control': ['warn', {
-        controlComponents: ['TextField', 'Select', 'Input'],
-        depth: 3,
-      }],
+      'jsx-a11y/label-has-associated-control': [
+        'warn',
+        {
+          controlComponents: ['TextField', 'Select', 'Input'],
+          depth: 3,
+        },
+      ],
       'jsx-a11y/media-has-caption': 'warn',
       'jsx-a11y/mouse-events-have-key-events': 'warn',
       'jsx-a11y/no-access-key': 'error',
@@ -81,10 +81,10 @@ export default tseslint.config(
     files: [
       '**/contexts/**/*.tsx',
       '**/components/common/*.tsx',
-      '**/components/analytics/common/*.tsx'
+      '**/components/analytics/common/*.tsx',
     ],
     rules: {
       'react-refresh/only-export-components': 'off',
     },
   },
-)
+);

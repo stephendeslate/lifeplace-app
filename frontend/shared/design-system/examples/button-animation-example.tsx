@@ -170,7 +170,12 @@ export const IconButtonExamples: React.FC = () => {
         </Typography>
         <Stack direction="row" spacing={2} flexWrap="wrap" gap={2}>
           <IconButton icon={<EditIcon />} ariaLabel="Disabled edit" variant="sage" disabled />
-          <IconButton icon={<DeleteIcon />} ariaLabel="Disabled delete" variant="terracotta" disabled />
+          <IconButton
+            icon={<DeleteIcon />}
+            ariaLabel="Disabled delete"
+            variant="terracotta"
+            disabled
+          />
         </Stack>
       </Box>
     </Container>
@@ -319,9 +324,7 @@ export const AnimatedElementExamples: React.FC = () => {
         </Typography>
         <Stack direction="row" spacing={4}>
           <AnimatedElement animation="float" triggerOnce={false}>
-            <Box sx={{ p: 3, bgcolor: 'primary.main', color: 'white', borderRadius: 2 }}>
-              Float
-            </Box>
+            <Box sx={{ p: 3, bgcolor: 'primary.main', color: 'white', borderRadius: 2 }}>Float</Box>
           </AnimatedElement>
 
           <AnimatedElement animation="sway" triggerOnce={false}>
@@ -331,9 +334,7 @@ export const AnimatedElementExamples: React.FC = () => {
           </AnimatedElement>
 
           <AnimatedElement animation="pulse" triggerOnce={false}>
-            <Box sx={{ p: 3, bgcolor: 'success.main', color: 'white', borderRadius: 2 }}>
-              Pulse
-            </Box>
+            <Box sx={{ p: 3, bgcolor: 'success.main', color: 'white', borderRadius: 2 }}>Pulse</Box>
           </AnimatedElement>
         </Stack>
       </Box>
@@ -369,8 +370,8 @@ export const CombinedExample: React.FC = () => {
 
           <SlideUp delay={500}>
             <Typography variant="body1" paragraph>
-              Experience the power of our new design system with beautiful animations,
-              accessible buttons, and modern aesthetics.
+              Experience the power of our new design system with beautiful animations, accessible
+              buttons, and modern aesthetics.
             </Typography>
           </SlideUp>
 

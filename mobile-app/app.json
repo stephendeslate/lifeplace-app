@@ -119,6 +119,7 @@
         }
       ],
       "expo-local-authentication",
+      "expo-updates",
       "expo-web-browser",
       [
         "expo-build-properties",
@@ -135,6 +136,15 @@
       "iosDisplayInForeground": true,
       "androidMode": "default",
       "androidCollapsedTitle": "LifePlace"
+    },
+    "updates": {
+      "enabled": true,
+      "url": "https://u.expo.dev/53b517db-6212-4786-8680-4c555a74fdf4",
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     },
     "experiments": {
       "typedRoutes": true

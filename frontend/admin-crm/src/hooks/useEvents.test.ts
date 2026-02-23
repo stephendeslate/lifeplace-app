@@ -1,15 +1,15 @@
 // frontend/admin-crm/src/hooks/useEvents.test.ts
 
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
-import { useEvents, useEventTypes } from "./useEvents";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { useEvents, useEventTypes } from './useEvents';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-describe("useEventTypes", () => {
-  describe("Query Operations", () => {
-    it("fetches event types successfully", async () => {
+describe('useEventTypes', () => {
+  describe('Query Operations', () => {
+    it('fetches event types successfully', async () => {
       const { result } = renderHook(() => useEventTypes(), {
         wrapper: createTestWrapper(),
       });
@@ -24,11 +24,11 @@ describe("useEventTypes", () => {
       );
 
       expect(result.current.eventTypes.length).toBeGreaterThan(0);
-      expect(result.current.eventTypes[0]).toHaveProperty("name");
-      expect(result.current.eventTypes[0]).toHaveProperty("is_active");
+      expect(result.current.eventTypes[0]).toHaveProperty('name');
+      expect(result.current.eventTypes[0]).toHaveProperty('is_active');
     });
 
-    it("filters by active status", async () => {
+    it('filters by active status', async () => {
       const { result } = renderHook(() => useEventTypes({ is_active: true }), {
         wrapper: createTestWrapper(),
       });
@@ -46,10 +46,10 @@ describe("useEventTypes", () => {
       });
     });
 
-    it("handles API error gracefully", async () => {
+    it('handles API error gracefully', async () => {
       server.use(
-        http.get("http://localhost:8000/api/events/event-types/", () => {
-          return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+        http.get('http://localhost:8000/api/events/event-types/', () => {
+          return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
         }),
       );
 
@@ -66,8 +66,8 @@ describe("useEventTypes", () => {
     });
   });
 
-  describe("Nested Hooks", () => {
-    it("fetches single event type by ID", async () => {
+  describe('Nested Hooks', () => {
+    it('fetches single event type by ID', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useEventTypes(), { wrapper });
 
@@ -78,12 +78,9 @@ describe("useEventTypes", () => {
         { timeout: 5000 },
       );
 
-      const { result: singleResult } = renderHook(
-        () => result.current.useEventType(1),
-        {
-          wrapper,
-        },
-      );
+      const { result: singleResult } = renderHook(() => result.current.useEventType(1), {
+        wrapper,
+      });
 
       await waitFor(
         () => {
@@ -96,7 +93,7 @@ describe("useEventTypes", () => {
       expect(singleResult.current.data?.id).toBe(1);
     });
 
-    it("fetches active event types only", async () => {
+    it('fetches active event types only', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useEventTypes(), { wrapper });
 
@@ -107,12 +104,9 @@ describe("useEventTypes", () => {
         { timeout: 5000 },
       );
 
-      const { result: activeResult } = renderHook(
-        () => result.current.useActiveEventTypes(),
-        {
-          wrapper,
-        },
-      );
+      const { result: activeResult } = renderHook(() => result.current.useActiveEventTypes(), {
+        wrapper,
+      });
 
       await waitFor(
         () => {
@@ -128,8 +122,8 @@ describe("useEventTypes", () => {
     });
   });
 
-  describe("Mutation Operations", () => {
-    it("creates a new event type", async () => {
+  describe('Mutation Operations', () => {
+    it('creates a new event type', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useEventTypes(), { wrapper });
 
@@ -145,9 +139,9 @@ describe("useEventTypes", () => {
       act(() => {
         result.current.createEventType({
           data: {
-            name: "New Event Type",
-            description: "A new type of event",
-            color: "#FF5733",
+            name: 'New Event Type',
+            description: 'A new type of event',
+            color: '#FF5733',
           },
         });
       });
@@ -172,7 +166,7 @@ describe("useEventTypes", () => {
       );
     });
 
-    it("updates an event type", async () => {
+    it('updates an event type', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useEventTypes(), { wrapper });
 
@@ -188,7 +182,7 @@ describe("useEventTypes", () => {
       act(() => {
         result.current.updateEventType({
           id: typeToUpdate.id,
-          data: { name: "Updated Name" },
+          data: { name: 'Updated Name' },
         });
       });
 
@@ -202,7 +196,7 @@ describe("useEventTypes", () => {
       expect(result.current.updateError).toBeFalsy();
     });
 
-    it("deletes an event type without events", async () => {
+    it('deletes an event type without events', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useEventTypes(), { wrapper });
 
@@ -230,9 +224,9 @@ describe("useEventTypes", () => {
   });
 });
 
-describe("useEvents", () => {
-  describe("Query Operations", () => {
-    it("fetches events with pagination", async () => {
+describe('useEvents', () => {
+  describe('Query Operations', () => {
+    it('fetches events with pagination', async () => {
       const { result } = renderHook(() => useEvents(), {
         wrapper: createTestWrapper(),
       });
@@ -251,8 +245,8 @@ describe("useEvents", () => {
       expect(result.current.currentPage).toBe(1);
     });
 
-    it("filters events by status", async () => {
-      const { result } = renderHook(() => useEvents({ status: "CONFIRMED" }), {
+    it('filters events by status', async () => {
+      const { result } = renderHook(() => useEvents({ status: 'CONFIRMED' }), {
         wrapper: createTestWrapper(),
       });
 
@@ -264,12 +258,12 @@ describe("useEvents", () => {
       );
 
       result.current.events.forEach((event) => {
-        expect(event.status).toBe("CONFIRMED");
+        expect(event.status).toBe('CONFIRMED');
       });
     });
 
-    it("searches events by name", async () => {
-      const { result } = renderHook(() => useEvents({ search: "Smith" }), {
+    it('searches events by name', async () => {
+      const { result } = renderHook(() => useEvents({ search: 'Smith' }), {
         wrapper: createTestWrapper(),
       });
 
@@ -283,17 +277,16 @@ describe("useEvents", () => {
       if (result.current.events.length > 0) {
         const hasMatch = result.current.events.some(
           (e) =>
-            e.name.toLowerCase().includes("smith") ||
-            e.client_name.toLowerCase().includes("smith"),
+            e.name.toLowerCase().includes('smith') || e.client_name.toLowerCase().includes('smith'),
         );
         expect(hasMatch).toBe(true);
       }
     });
 
-    it("handles API error gracefully", async () => {
+    it('handles API error gracefully', async () => {
       server.use(
-        http.get("http://localhost:8000/api/events/events/", () => {
-          return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+        http.get('http://localhost:8000/api/events/events/', () => {
+          return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
         }),
       );
 
@@ -310,8 +303,8 @@ describe("useEvents", () => {
     });
   });
 
-  describe("Nested Hooks", () => {
-    it("fetches single event by ID", async () => {
+  describe('Nested Hooks', () => {
+    it('fetches single event by ID', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useEvents(), { wrapper });
 
@@ -322,12 +315,9 @@ describe("useEvents", () => {
         { timeout: 5000 },
       );
 
-      const { result: singleResult } = renderHook(
-        () => result.current.useEvent(1),
-        {
-          wrapper,
-        },
-      );
+      const { result: singleResult } = renderHook(() => result.current.useEvent(1), {
+        wrapper,
+      });
 
       await waitFor(
         () => {
@@ -341,8 +331,8 @@ describe("useEvents", () => {
     });
   });
 
-  describe("Mutation Operations", () => {
-    it("creates a new event", async () => {
+  describe('Mutation Operations', () => {
+    it('creates a new event', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useEvents(), { wrapper });
 
@@ -357,10 +347,10 @@ describe("useEvents", () => {
 
       act(() => {
         result.current.createEvent({
-          name: "New Test Event",
+          name: 'New Test Event',
           event_type: 1,
-          status: "LEAD",
-          start_date: "2024-08-01T10:00:00Z",
+          status: 'LEAD',
+          start_date: '2024-08-01T10:00:00Z',
           client: 1,
         });
       });
@@ -385,7 +375,7 @@ describe("useEvents", () => {
       );
     });
 
-    it("updates an event", async () => {
+    it('updates an event', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useEvents(), { wrapper });
 
@@ -401,7 +391,7 @@ describe("useEvents", () => {
       act(() => {
         result.current.updateEvent({
           id: eventToUpdate.id,
-          data: { name: "Updated Event Name" },
+          data: { name: 'Updated Event Name' },
         });
       });
 
@@ -415,7 +405,7 @@ describe("useEvents", () => {
       expect(result.current.updateEventError).toBeFalsy();
     });
 
-    it("deletes an event", async () => {
+    it('deletes an event', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useEvents(), { wrapper });
 
@@ -454,14 +444,11 @@ describe("useEvents", () => {
     });
   });
 
-  describe("Pagination", () => {
-    it("provides pagination metadata", async () => {
-      const { result } = renderHook(
-        () => useEvents({ page: 1, page_size: 25 }),
-        {
-          wrapper: createTestWrapper(),
-        },
-      );
+  describe('Pagination', () => {
+    it('provides pagination metadata', async () => {
+      const { result } = renderHook(() => useEvents({ page: 1, page_size: 25 }), {
+        wrapper: createTestWrapper(),
+      });
 
       await waitFor(
         () => {
@@ -473,8 +460,8 @@ describe("useEvents", () => {
       expect(result.current.currentPage).toBeDefined();
       expect(result.current.pageCount).toBeDefined();
       expect(result.current.pageSize).toBeDefined();
-      expect(typeof result.current.hasNext).toBe("boolean");
-      expect(typeof result.current.hasPrevious).toBe("boolean");
+      expect(typeof result.current.hasNext).toBe('boolean');
+      expect(typeof result.current.hasPrevious).toBe('boolean');
     });
   });
 });

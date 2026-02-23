@@ -3,24 +3,24 @@ import React from 'react';
 
 /**
  * Comprehensive testing utilities for the LifePlace application
- * 
+ *
  * This module provides a centralized collection of testing utilities including:
  * - Test providers and wrappers
  * - Mock data generators
  * - Accessibility testing helpers
  * - Performance testing utilities
  * - Integration testing tools
- * 
+ *
  * @example
  * ```typescript
  * import { TestProviders, mockContract, testKeyboardNavigation } from '@shared/test-utils'
- * 
+ *
  * // Component testing
  * render(<MyComponent />, { wrapper: TestProviders })
- * 
+ *
  * // Accessibility testing
  * await testKeyboardNavigation(container)
- * 
+ *
  * // Mock data usage
  * const contract = { ...mockContract, status: 'SIGNED' }
  * ```
@@ -35,7 +35,7 @@ export {
   createTestQueryClient,
   mockWebSocketContext,
   mockMessagingContext,
-} from './test-providers'
+} from './test-providers';
 
 // Test Helpers and Mock Data
 export {
@@ -55,7 +55,7 @@ export {
   createMockFile,
   simulateDelay,
   mockClipboard,
-} from './test-helpers'
+} from './test-helpers';
 
 // Accessibility Testing
 export {
@@ -69,7 +69,7 @@ export {
   testHeadingStructure,
   createMockScreenReader,
   testLandmarkRegions,
-} from './accessibility-helpers'
+} from './accessibility-helpers';
 
 // Performance Testing
 export {
@@ -81,7 +81,7 @@ export {
   mockNetworkPerformance,
   testConcurrentFeatures,
   testVirtualScrolling,
-} from './performance-helpers'
+} from './performance-helpers';
 
 // Integration Testing
 export {
@@ -93,7 +93,7 @@ export {
   simulateDataFlow,
   createIntegrationTest,
   simulateMultiUserFlow,
-} from './integration-helpers'
+} from './integration-helpers';
 
 // Common test patterns and utilities
 export const testPatterns = {
@@ -102,15 +102,15 @@ export const testPatterns = {
    */
   componentTest: (Component: React.ComponentType, props = {}) => ({
     renderWithProviders: () => {
-      const { TestProviders } = require('./test-providers')
-      const { render } = require('@testing-library/react')
-      return render(React.createElement(Component, props), { wrapper: TestProviders })
+      const { TestProviders } = require('./test-providers');
+      const { render } = require('@testing-library/react');
+      return render(React.createElement(Component, props), { wrapper: TestProviders });
     },
-    
+
     renderWithTheme: () => {
-      const { ThemeWrapper } = require('./test-providers')
-      const { render } = require('@testing-library/react')
-      return render(React.createElement(Component, props), { wrapper: ThemeWrapper })
+      const { ThemeWrapper } = require('./test-providers');
+      const { render } = require('@testing-library/react');
+      return render(React.createElement(Component, props), { wrapper: ThemeWrapper });
     },
   }),
 
@@ -118,28 +118,28 @@ export const testPatterns = {
    * Hook testing pattern
    */
   hookTest: <T>(hook: () => T, wrapper?: React.ComponentType) => {
-    const { renderHook } = require('@testing-library/react')
-    const { QueryWrapper } = require('./test-providers')
-    return renderHook(hook, { wrapper: wrapper || QueryWrapper })
+    const { renderHook } = require('@testing-library/react');
+    const { QueryWrapper } = require('./test-providers');
+    return renderHook(hook, { wrapper: wrapper || QueryWrapper });
   },
 
   /**
    * API testing pattern
    */
   apiTest: (_apiFunction: Function, mockData: any) => {
-    const { vi } = require('vitest')
+    const { vi } = require('vitest');
     const mockFetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => mockData,
-    })
-    global.fetch = mockFetch
-    
+    });
+    global.fetch = mockFetch;
+
     return {
       mockFetch,
       restore: () => vi.restoreAllMocks(),
-    }
+    };
   },
-}
+};
 
 // Test configuration and constants
 export const testConfig = {
@@ -148,25 +148,25 @@ export const testConfig = {
     medium: 5000,
     long: 10000,
   },
-  
+
   breakpoints: {
     mobile: 375,
     tablet: 768,
     desktop: 1024,
     wide: 1440,
   },
-  
+
   performance: {
     renderTimeThreshold: 16, // 60fps = 16.67ms per frame
     bundleSizeThreshold: 250000, // 250KB
     apiResponseThreshold: 1000, // 1 second
   },
-  
+
   accessibility: {
     colorContrastRatio: 4.5, // WCAG AA standard
     minimumTouchTarget: 44, // 44px minimum touch target
   },
-}
+};
 
 // Test data factories
 export const createTestData = {
@@ -179,7 +179,7 @@ export const createTestData = {
     createdAt: '2024-01-01T00:00:00Z',
     ...overrides,
   }),
-  
+
   event: (overrides = {}) => ({
     id: 'event-1',
     title: 'Test Event',
@@ -190,7 +190,7 @@ export const createTestData = {
     status: 'confirmed',
     ...overrides,
   }),
-  
+
   contract: (overrides = {}) => ({
     id: 'contract-1',
     eventId: 'event-1',
@@ -201,7 +201,7 @@ export const createTestData = {
     createdAt: '2024-01-01T00:00:00Z',
     ...overrides,
   }),
-  
+
   message: (overrides = {}) => ({
     id: 'msg-1',
     content: 'Test message',
@@ -211,16 +211,16 @@ export const createTestData = {
     read: false,
     ...overrides,
   }),
-}
+};
 
 // Export types for TypeScript support
 // TestProviders type is already exported from test-providers
-export type TestConfig = typeof testConfig
-export type MockData = ReturnType<typeof createTestData.user>
+export type TestConfig = typeof testConfig;
+export type MockData = ReturnType<typeof createTestData.user>;
 
 // Default export for convenience
 export default {
   testPatterns,
   testConfig,
   createTestData,
-}
+};

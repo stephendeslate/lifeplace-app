@@ -18,7 +18,7 @@ export const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, index = 
   };
 
   // Determine if this is a premium package (has badge or marked as popular)
-  const isPremium = pkg.badge || pkg.tiers.some(tier => tier.isPopular);
+  const isPremium = pkg.badge || pkg.tiers.some((tier) => tier.isPopular);
   const accentColor = isPremium ? tokens.color.base.gold : tokens.color.base.sage;
 
   return (
@@ -123,9 +123,11 @@ export const PackageCard: React.FC<PackageCardProps> = ({ package: pkg, index = 
                     : `1px solid ${tokens.color.base.neutral[200]}`,
                   position: 'relative',
                   transition: tokens.animation.transition.all,
-                  '&:hover': tier.isPopular ? {
-                    boxShadow: `0 4px 12px ${accentColor[200]}`,
-                  } : {},
+                  '&:hover': tier.isPopular
+                    ? {
+                        boxShadow: `0 4px 12px ${accentColor[200]}`,
+                      }
+                    : {},
                 }}
               >
                 {tier.isPopular && (

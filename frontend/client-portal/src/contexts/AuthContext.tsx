@@ -1,7 +1,13 @@
 // frontend/client-portal/src/contexts/AuthContext.tsx
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { User, AuthContextType, LoginCredentials, RegisterCredentials, AuthTokens } from '../types/auth.types';
+import type {
+  User,
+  AuthContextType,
+  LoginCredentials,
+  RegisterCredentials,
+  AuthTokens,
+} from '../types/auth.types';
 import { storage } from '../utils/storage';
 import { authApi } from '../apis/auth.api';
 
@@ -41,7 +47,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
 
       storage.setTokens(newTokens);
-      
+
       // Get updated user info
       const userData = await getCurrentUser();
       if (userData) {
@@ -60,10 +66,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (credentials: LoginCredentials): Promise<void> => {
     try {
       const data = await authApi.login(credentials);
-      
+
       // For client portal, we accept both CLIENT and ADMIN users
       // but will show a notice if admin users login here
-      
+
       // Store tokens and user data
       storage.setTokens(data.tokens);
       const userWithToken = { ...data.user, token: data.tokens.access };
@@ -145,8 +151,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         // Skip auth initialization if on login/register pages to prevent API calls that could cause loops
         const currentPath = window.location.pathname;
-        const isOnAuthPage = currentPath === '/login' || currentPath === '/register' || currentPath.startsWith('/accept-invitation');
-        
+        const isOnAuthPage =
+          currentPath === '/login' ||
+          currentPath === '/register' ||
+          currentPath.startsWith('/accept-invitation');
+
         // Check if storage is available
         if (!storage.isStorageAvailable()) {
           if (import.meta.env.DEV) console.warn('localStorage is not available');
@@ -156,13 +165,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         const tokens = storage.getTokens();
         const storedUser = storage.getUser();
-        
+
         // If on auth page and no tokens, just set loading to false without making API calls
         if (isOnAuthPage && !tokens?.access) {
           setIsLoading(false);
           return;
         }
-        
+
         if (tokens?.access && storedUser) {
           // Try to get fresh user data
           try {
@@ -200,11 +209,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     if (user) {
       // Refresh token every 25 minutes (tokens expire in 30 minutes)
-      const interval = setInterval(() => {
-        refreshToken().catch((error) => {
-          if (import.meta.env.DEV) console.error('Background token refresh failed:', error);
-        });
-      }, 25 * 60 * 1000);
+      const interval = setInterval(
+        () => {
+          refreshToken().catch((error) => {
+            if (import.meta.env.DEV) console.error('Background token refresh failed:', error);
+          });
+        },
+        25 * 60 * 1000,
+      );
 
       return () => clearInterval(interval);
     }
@@ -217,7 +229,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (event.key === 'lifeplace_client_tokens' && event.newValue === null) {
         setUser(null);
       }
-      
+
       // Handle cart updates from other tabs
       if (event.key === 'lifeplace_client_cart') {
         // Could trigger cart update event here
@@ -237,7 +249,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         refreshToken().catch((error) => {
           if (import.meta.env.DEV) console.error('Visibility refresh failed:', error);
         });
-        
+
         // Clean up expired cart items when page becomes visible
         const cartItems = storage.getCart(); // This automatically filters expired items
         if (cartItems.length !== storage.getCart().length) {
@@ -278,11 +290,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updateUser,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = (): AuthContextType => {

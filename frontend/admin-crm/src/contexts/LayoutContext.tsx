@@ -55,21 +55,24 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({ children }) => {
 
   // Toggle functions
   const toggleSidebar = useCallback(() => {
-    setSidebarOpen(prev => !prev);
+    setSidebarOpen((prev) => !prev);
   }, []);
 
   const toggleSidebarCollapse = useCallback(() => {
     if (!isMobile) {
-      setSidebarCollapsed(prev => !prev);
+      setSidebarCollapsed((prev) => !prev);
     }
   }, [isMobile]);
 
   // Handle sidebar collapsed state changes
-  const handleSetSidebarCollapsed = useCallback((collapsed: boolean) => {
-    if (!isMobile) {
-      setSidebarCollapsed(collapsed);
-    }
-  }, [isMobile]);
+  const handleSetSidebarCollapsed = useCallback(
+    (collapsed: boolean) => {
+      if (!isMobile) {
+        setSidebarCollapsed(collapsed);
+      }
+    },
+    [isMobile],
+  );
 
   const value: LayoutContextType = {
     // Sidebar state
@@ -95,11 +98,7 @@ export const LayoutProvider: React.FC<LayoutProviderProps> = ({ children }) => {
     headerHeight,
   };
 
-  return (
-    <LayoutContext.Provider value={value}>
-      {children}
-    </LayoutContext.Provider>
-  );
+  return <LayoutContext.Provider value={value}>{children}</LayoutContext.Provider>;
 };
 
 export const useLayout = (): LayoutContextType => {

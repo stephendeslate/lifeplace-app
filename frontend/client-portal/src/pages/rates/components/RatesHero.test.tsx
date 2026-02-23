@@ -122,10 +122,12 @@ describe('RatesHero', () => {
       render(<RatesHero />);
 
       // Find the parent box of the scroll icon (the clickable area)
-      const scrollIndicator = screen.getByText('Rates & Packages')
+      const scrollIndicator = screen
+        .getByText('Rates & Packages')
         .closest('div[class*="MuiBox-root"]')
-        ?.parentElement
-        ?.querySelector('div[style*="cursor: pointer"], div[style*="cursor:pointer"]');
+        ?.parentElement?.querySelector(
+          'div[style*="cursor: pointer"], div[style*="cursor:pointer"]',
+        );
 
       if (!scrollIndicator) {
         // Alternative: find by the icon itself and get its clickable parent
@@ -298,7 +300,8 @@ describe('RatesHero', () => {
 
     it('displays full subheading text', () => {
       render(<RatesHero />);
-      const fullText = 'Transparent pricing for all our services. Choose the package that best fits your event needs and budget.';
+      const fullText =
+        'Transparent pricing for all our services. Choose the package that best fits your event needs and budget.';
       expect(screen.getByText(fullText)).toBeInTheDocument();
     });
   });

@@ -9,28 +9,32 @@ import { AnimatedElement } from '../components/AnimatedElement';
 describe('Glass Morphism Component Integration', () => {
   describe('GlassCard', () => {
     it('renders with all variants', () => {
-      const variants: Array<'light' | 'dark' | 'forest' | 'earth' | 'gold'> = 
-        ['light', 'dark', 'forest', 'earth', 'gold'];
-      
-      variants.forEach(variant => {
+      const variants: Array<'light' | 'dark' | 'forest' | 'earth' | 'gold'> = [
+        'light',
+        'dark',
+        'forest',
+        'earth',
+        'gold',
+      ];
+
+      variants.forEach((variant) => {
         const { container } = render(
           <GlassCard variant={variant} data-testid={`glass-${variant}`}>
             Test Content {variant}
-          </GlassCard>
+          </GlassCard>,
         );
         expect(container.firstChild).toBeTruthy();
       });
     });
 
     it('renders with all intensities', () => {
-      const intensities: Array<'subtle' | 'medium' | 'strong'> = 
-        ['subtle', 'medium', 'strong'];
-      
-      intensities.forEach(intensity => {
+      const intensities: Array<'subtle' | 'medium' | 'strong'> = ['subtle', 'medium', 'strong'];
+
+      intensities.forEach((intensity) => {
         const { container } = render(
           <GlassCard intensity={intensity} data-testid={`glass-${intensity}`}>
             Test Content {intensity}
-          </GlassCard>
+          </GlassCard>,
         );
         expect(container.firstChild).toBeTruthy();
       });
@@ -40,7 +44,7 @@ describe('Glass Morphism Component Integration', () => {
       const { container } = render(
         <GlassCard hover={true} data-testid="glass-hover">
           Hoverable Content
-        </GlassCard>
+        </GlassCard>,
       );
       expect(container.firstChild).toBeTruthy();
     });
@@ -48,14 +52,15 @@ describe('Glass Morphism Component Integration', () => {
 
   describe('GradientBackground', () => {
     it('renders with all gradient types', () => {
-      const gradients: Array<'sunrise' | 'sunset' | 'forest' | 'meadow' | 'sky' | 'earth' | 'mist'> = 
-        ['sunrise', 'sunset', 'forest', 'meadow', 'sky', 'earth', 'mist'];
-      
-      gradients.forEach(gradient => {
+      const gradients: Array<
+        'sunrise' | 'sunset' | 'forest' | 'meadow' | 'sky' | 'earth' | 'mist'
+      > = ['sunrise', 'sunset', 'forest', 'meadow', 'sky', 'earth', 'mist'];
+
+      gradients.forEach((gradient) => {
         const { container } = render(
           <GradientBackground gradient={gradient} data-testid={`gradient-${gradient}`}>
             Test Content {gradient}
-          </GradientBackground>
+          </GradientBackground>,
         );
         expect(container.firstChild).toBeTruthy();
       });
@@ -65,7 +70,7 @@ describe('Glass Morphism Component Integration', () => {
       const { container } = render(
         <GradientBackground gradient="forest" animated={true}>
           Animated Background
-        </GradientBackground>
+        </GradientBackground>,
       );
       expect(container.firstChild).toBeTruthy();
     });
@@ -74,7 +79,7 @@ describe('Glass Morphism Component Integration', () => {
       const { container } = render(
         <GradientBackground gradient="forest" overlay={true}>
           Background with Overlay
-        </GradientBackground>
+        </GradientBackground>,
       );
       expect(container.firstChild).toBeTruthy();
     });
@@ -82,14 +87,15 @@ describe('Glass Morphism Component Integration', () => {
 
   describe('AnimatedElement', () => {
     it('renders with all animation types', () => {
-      const animations: Array<'fadeIn' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'scaleUp' | 'scaleDown'> = 
-        ['fadeIn', 'slideUp', 'slideDown', 'slideLeft', 'slideRight', 'scaleUp', 'scaleDown'];
-      
-      animations.forEach(animation => {
+      const animations: Array<
+        'fadeIn' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'scaleUp' | 'scaleDown'
+      > = ['fadeIn', 'slideUp', 'slideDown', 'slideLeft', 'slideRight', 'scaleUp', 'scaleDown'];
+
+      animations.forEach((animation) => {
         const { container } = render(
           <AnimatedElement animation={animation} data-testid={`animated-${animation}`}>
             Test Content {animation}
-          </AnimatedElement>
+          </AnimatedElement>,
         );
         expect(container.firstChild).toBeTruthy();
       });
@@ -99,7 +105,7 @@ describe('Glass Morphism Component Integration', () => {
       const { container } = render(
         <AnimatedElement animation="fadeIn" delay={500}>
           Delayed Animation
-        </AnimatedElement>
+        </AnimatedElement>,
       );
       expect(container.firstChild).toBeTruthy();
     });
@@ -108,7 +114,7 @@ describe('Glass Morphism Component Integration', () => {
       const { container } = render(
         <AnimatedElement animation="fadeIn" duration={1000}>
           Custom Duration Animation
-        </AnimatedElement>
+        </AnimatedElement>,
       );
       expect(container.firstChild).toBeTruthy();
     });
@@ -121,7 +127,7 @@ describe('Glass Morphism Component Integration', () => {
           <GlassCard variant="light" intensity="medium">
             Nested Content
           </GlassCard>
-        </GradientBackground>
+        </GradientBackground>,
       );
       expect(container.firstChild).toBeTruthy();
     });
@@ -129,10 +135,8 @@ describe('Glass Morphism Component Integration', () => {
     it('renders AnimatedElement with GlassCard', () => {
       const { container } = render(
         <AnimatedElement animation="fadeIn" delay={100}>
-          <GlassCard variant="light">
-            Animated Glass Card
-          </GlassCard>
-        </AnimatedElement>
+          <GlassCard variant="light">Animated Glass Card</GlassCard>
+        </AnimatedElement>,
       );
       expect(container.firstChild).toBeTruthy();
     });
@@ -145,7 +149,7 @@ describe('Glass Morphism Component Integration', () => {
               Login Form Content
             </GlassCard>
           </AnimatedElement>
-        </GradientBackground>
+        </GradientBackground>,
       );
       expect(container.firstChild).toBeTruthy();
     });

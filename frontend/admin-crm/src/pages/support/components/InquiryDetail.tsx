@@ -35,14 +35,26 @@ interface InquiryDetailProps {
   onBack: () => void;
 }
 
-const STATUS_CONFIG: Record<SupportStatus, { label: string; color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' }> = {
+const STATUS_CONFIG: Record<
+  SupportStatus,
+  {
+    label: string;
+    color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+  }
+> = {
   active: { label: 'Open', color: 'info' },
   waiting: { label: 'Awaiting Response', color: 'warning' },
   resolved: { label: 'Resolved', color: 'success' },
   archived: { label: 'Archived', color: 'default' },
 };
 
-const PRIORITY_CONFIG: Record<SupportPriority, { label: string; color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' }> = {
+const PRIORITY_CONFIG: Record<
+  SupportPriority,
+  {
+    label: string;
+    color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+  }
+> = {
   urgent: { label: 'Urgent', color: 'error' },
   high: { label: 'High', color: 'warning' },
   normal: { label: 'Normal', color: 'default' },
@@ -150,22 +162,30 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
           Back to Inquiries
         </Button>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
               {inquiry.subject}
             </Typography>
             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-              <Chip
-                label={statusConfig.label}
-                size="small"
-                color={statusConfig.color}
-              />
+              <Chip label={statusConfig.label} size="small" color={statusConfig.color} />
               <Chip
                 label={priorityConfig.label}
                 size="small"
                 color={priorityConfig.color}
-                variant={inquiry.priority === 'normal' || inquiry.priority === 'low' ? 'outlined' : 'filled'}
+                variant={
+                  inquiry.priority === 'normal' || inquiry.priority === 'low'
+                    ? 'outlined'
+                    : 'filled'
+                }
               />
               <Chip
                 label={CATEGORY_LABELS[inquiry.category] || inquiry.category}
@@ -217,17 +237,33 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
                           sx={{
                             width: 36,
                             height: 36,
-                            backgroundColor: fromClient ? 'grey.300' : message.is_internal_note ? 'warning.light' : 'primary.main',
-                            color: fromClient ? 'grey.700' : message.is_internal_note ? 'warning.dark' : 'white',
+                            backgroundColor: fromClient
+                              ? 'grey.300'
+                              : message.is_internal_note
+                                ? 'warning.light'
+                                : 'primary.main',
+                            color: fromClient
+                              ? 'grey.700'
+                              : message.is_internal_note
+                                ? 'warning.dark'
+                                : 'white',
                           }}
                         >
-                          {fromClient ? <PersonIcon fontSize="small" /> : <SupportAgentIcon fontSize="small" />}
+                          {fromClient ? (
+                            <PersonIcon fontSize="small" />
+                          ) : (
+                            <SupportAgentIcon fontSize="small" />
+                          )}
                         </Avatar>
                         <Box>
                           {message.is_internal_note && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
                               <LockIcon fontSize="small" color="warning" />
-                              <Typography variant="caption" color="warning.main" sx={{ fontWeight: 500 }}>
+                              <Typography
+                                variant="caption"
+                                color="warning.main"
+                                sx={{ fontWeight: 500 }}
+                              >
                                 Internal Note
                               </Typography>
                             </Box>
@@ -237,13 +273,13 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
                               backgroundColor: fromClient
                                 ? 'grey.100'
                                 : message.is_internal_note
-                                ? 'warning.light'
-                                : 'primary.main',
+                                  ? 'warning.light'
+                                  : 'primary.main',
                               color: fromClient
                                 ? 'text.primary'
                                 : message.is_internal_note
-                                ? 'warning.dark'
-                                : 'white',
+                                  ? 'warning.dark'
+                                  : 'white',
                               borderRadius: 2,
                               borderTopLeftRadius: fromClient ? 4 : 16,
                               borderTopRightRadius: fromClient ? 16 : 4,
@@ -263,7 +299,8 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
                               mt: 0.5,
                             }}
                           >
-                            {fromClient ? inquiry.client_name : message.sender.display_name} - {formatMessageTime(message.created_at)}
+                            {fromClient ? inquiry.client_name : message.sender.display_name} -{' '}
+                            {formatMessageTime(message.created_at)}
                           </Typography>
                         </Box>
                       </Box>
@@ -282,7 +319,11 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
                 fullWidth
                 multiline
                 rows={3}
-                placeholder={isInternalNote ? 'Type an internal note (not visible to client)...' : 'Type your reply...'}
+                placeholder={
+                  isInternalNote
+                    ? 'Type an internal note (not visible to client)...'
+                    : 'Type your reply...'
+                }
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -306,7 +347,13 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
                 />
                 <Button
                   variant="contained"
-                  endIcon={addReply.isPending ? <CircularProgress size={16} color="inherit" /> : <SendIcon />}
+                  endIcon={
+                    addReply.isPending ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <SendIcon />
+                    )
+                  }
                   onClick={handleSendReply}
                   disabled={!replyContent.trim() || addReply.isPending}
                   color={isInternalNote ? 'warning' : 'primary'}
@@ -404,9 +451,7 @@ export const InquiryDetail: React.FC<InquiryDetailProps> = ({ inquiryId, onBack 
                 <Typography variant="caption" color="text.secondary">
                   Messages
                 </Typography>
-                <Typography variant="body2">
-                  {inquiry.message_count} total
-                </Typography>
+                <Typography variant="body2">{inquiry.message_count} total</Typography>
               </Box>
             </Stack>
           </Paper>

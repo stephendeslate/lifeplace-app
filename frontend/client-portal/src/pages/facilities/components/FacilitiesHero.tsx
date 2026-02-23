@@ -3,12 +3,7 @@
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
 import { KeyboardArrowDown } from '@mui/icons-material';
-import {
-  tokens,
-  HeroBackground,
-  AnimatedElement,
-  Container
-} from '../../../design-system';
+import { tokens, HeroBackground, AnimatedElement, Container } from '../../../design-system';
 import type { FacilitiesHeroProps } from '../types/facilities.types';
 
 /**
@@ -63,15 +58,15 @@ export const FacilitiesHero: React.FC<FacilitiesHeroProps> = () => {
             px: {
               xs: tokens.spacing.space[3],
               sm: tokens.spacing.space[4],
-              md: tokens.spacing.space[6]
+              md: tokens.spacing.space[6],
             },
             pt: {
               xs: tokens.spacing.space[20],
-              md: tokens.spacing.space[24]
+              md: tokens.spacing.space[24],
             },
             pb: {
               xs: tokens.spacing.space[9],
-              md: tokens.spacing.space[14]
+              md: tokens.spacing.space[14],
             },
             textAlign: 'center',
           }}
@@ -80,7 +75,7 @@ export const FacilitiesHero: React.FC<FacilitiesHeroProps> = () => {
             <Stack
               spacing={{
                 xs: tokens.spacing.space[5],
-                md: tokens.spacing.space[8]
+                md: tokens.spacing.space[8],
               }}
               alignItems="center"
               sx={{ width: '100%' }}
@@ -149,7 +144,9 @@ export const FacilitiesHero: React.FC<FacilitiesHeroProps> = () => {
                     },
                   }}
                 >
-                  From intimate ceremonies to grand celebrations, we have the perfect space for every occasion. Our thoughtfully designed venues combine natural beauty with modern amenities to create unforgettable experiences.
+                  From intimate ceremonies to grand celebrations, we have the perfect space for
+                  every occasion. Our thoughtfully designed venues combine natural beauty with
+                  modern amenities to create unforgettable experiences.
                 </Typography>
               </AnimatedElement>
             </Stack>

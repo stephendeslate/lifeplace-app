@@ -2,7 +2,9 @@
 """
 Analytics snapshot models for historical KPI tracking.
 """
+
 from django.db import models
+
 from core.utils.models import BaseModel
 
 
@@ -12,6 +14,7 @@ class DailyKPISnapshot(BaseModel):
     One record per day, populated by Celery beat task.
     Enables historical trend tracking and resume-worthy metrics.
     """
+
     date = models.DateField(unique=True, db_index=True)
 
     # Booking counts (from DashboardService.get_kpi_summary)
@@ -39,20 +42,16 @@ class DailyKPISnapshot(BaseModel):
     cumulative_clients = models.PositiveIntegerField(default=0)
 
     # Day-over-day changes
-    revenue_change_pct = models.DecimalField(
-        max_digits=7, decimal_places=2, null=True, blank=True
-    )
-    bookings_change_pct = models.DecimalField(
-        max_digits=7, decimal_places=2, null=True, blank=True
-    )
+    revenue_change_pct = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
+    bookings_change_pct = models.DecimalField(max_digits=7, decimal_places=2, null=True, blank=True)
 
     # Raw service output for future-proofing
     raw_kpi_data = models.JSONField(default=dict, blank=True)
 
     class Meta:
-        ordering = ['-date']
-        verbose_name = 'Daily KPI Snapshot'
-        verbose_name_plural = 'Daily KPI Snapshots'
+        ordering = ["-date"]
+        verbose_name = "Daily KPI Snapshot"
+        verbose_name_plural = "Daily KPI Snapshots"
 
     def __str__(self):
         return f"KPI Snapshot {self.date}: {self.total_bookings} bookings, ${self.total_revenue} revenue"

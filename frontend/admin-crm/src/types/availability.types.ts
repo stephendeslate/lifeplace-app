@@ -1,17 +1,13 @@
 // frontend/admin-crm/src/types/availability.types.ts
 
-export type AvailabilityStatus = 
-  | 'available' 
-  | 'partially_booked' 
-  | 'fully_booked' 
-  | 'blocked' 
+export type AvailabilityStatus =
+  | 'available'
+  | 'partially_booked'
+  | 'fully_booked'
+  | 'blocked'
   | 'outside_range';
 
-export type ConflictLevel = 
-  | 'none' 
-  | 'lead_only' 
-  | 'confirmed' 
-  | 'multiple_confirmed';
+export type ConflictLevel = 'none' | 'lead_only' | 'confirmed' | 'multiple_confirmed';
 
 export interface EventConflict {
   event_id: number;

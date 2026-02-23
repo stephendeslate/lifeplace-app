@@ -6,11 +6,8 @@ Based on: frontend/admin-crm/src/apis/analytics.api.ts
 """
 
 import logging
-from typing import Dict, Any
 from datetime import datetime, timedelta
-
-from config import config
-from utils import think_time
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +24,7 @@ class AdminDashboardBehavior:
         self.client = client
         self.base_url = base_url
 
-    def load_full_dashboard(self, headers: Dict[str, str], rate_tracker) -> Dict[str, Any]:
+    def load_full_dashboard(self, headers: dict[str, str], rate_tracker) -> dict[str, Any]:
         """Load all admin dashboard analytics endpoints."""
         results = {
             "success_count": 0,
@@ -64,12 +61,7 @@ class AdminDashboardBehavior:
             category = parts[2] if len(parts) > 2 else "dashboard"
             name = f"/api/analytics/{category}/"
 
-            with self.client.get(
-                endpoint,
-                headers=headers,
-                catch_response=True,
-                name=name
-            ) as response:
+            with self.client.get(endpoint, headers=headers, catch_response=True, name=name) as response:
                 rate_tracker.record_call()
 
                 if response.status_code == 200:
@@ -84,8 +76,6 @@ class AdminDashboardBehavior:
 
             results["endpoints_tested"].append(path)
 
-        logger.info(
-            f"Dashboard: {results['success_count']}/{len(results['endpoints_tested'])} endpoints ok"
-        )
+        logger.info(f"Dashboard: {results['success_count']}/{len(results['endpoints_tested'])} endpoints ok")
 
         return results

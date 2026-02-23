@@ -1,8 +1,9 @@
 # backend/core/domains/payments/serializers.py
+from rest_framework import serializers
+
 from core.domains.events.serializers import EventSerializer
 from core.domains.sales.serializers import EventQuoteSerializer
 from core.domains.users.serializers import UserSerializer
-from rest_framework import serializers
 
 from .models import (
     Invoice,
@@ -25,183 +26,167 @@ class PaymentSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentSettings
         fields = [
-            'id',
+            "id",
             # Payment plan settings
-            'balance_due_days',
-            'grace_period_days',
-            'late_fee_enabled',
-            'default_late_fee_amount',
-            'default_deposit_percentage',
+            "balance_due_days",
+            "grace_period_days",
+            "late_fee_enabled",
+            "default_late_fee_amount",
+            "default_deposit_percentage",
             # Enhanced deposit settings
-            'deposit_type',
-            'deposit_fixed_amount',
-            'deposit_is_refundable',
-            'deposit_is_deductible',
-            'deposit_waived_on_full_payment',
+            "deposit_type",
+            "deposit_fixed_amount",
+            "deposit_is_refundable",
+            "deposit_is_deductible",
+            "deposit_waived_on_full_payment",
             # Enhanced late fee settings
-            'late_fee_type',
-            'late_fee_percentage',
+            "late_fee_type",
+            "late_fee_percentage",
             # Security deposit settings
-            'security_deposit_enabled',
-            'security_deposit_amount',
-            'security_deposit_is_refundable',
-            'security_deposit_description',
+            "security_deposit_enabled",
+            "security_deposit_amount",
+            "security_deposit_is_refundable",
+            "security_deposit_description",
             # Cancellation settings
-            'cancellation_admin_fee_percentage',
+            "cancellation_admin_fee_percentage",
             # Payment schedule settings
-            'downpayment_percentage',
-            'downpayment_due_days',
-            'balance_due_type',
+            "downpayment_percentage",
+            "downpayment_due_days",
+            "balance_due_type",
             # NOTE: default_currency removed - currency is now managed by CurrencySettings
             # Auto retry settings
-            'auto_payment_retry_attempts',
-            'auto_payment_retry_delay_days',
+            "auto_payment_retry_attempts",
+            "auto_payment_retry_delay_days",
             # Refund policy settings
-            'allow_refunds',
-            'refund_deadline_hours',
-            'refund_percentage',
-            'refund_policy_text',
+            "allow_refunds",
+            "refund_deadline_hours",
+            "refund_percentage",
+            "refund_policy_text",
             # Date blocking policy settings
-            'date_blocking_policy',
-            'downpayment_due_reference',
-            'downpayment_deadline_days',
+            "date_blocking_policy",
+            "downpayment_due_reference",
+            "downpayment_deadline_days",
             # Child/youth pricing settings
-            'child_pricing_enabled',
-            'child_pricing_tiers',
+            "child_pricing_enabled",
+            "child_pricing_tiers",
             # Service charge settings
-            'service_charge_enabled',
-            'service_charge_percentage',
+            "service_charge_enabled",
+            "service_charge_percentage",
             # Rescheduling fee settings
-            'rescheduling_fee_enabled',
-            'rescheduling_fee_type',
-            'rescheduling_fee_percentage',
-            'rescheduling_fee_fixed_amount',
-            'rescheduling_grace_period_hours',
+            "rescheduling_fee_enabled",
+            "rescheduling_fee_type",
+            "rescheduling_fee_percentage",
+            "rescheduling_fee_fixed_amount",
+            "rescheduling_grace_period_hours",
             # Late checkout fee settings
-            'late_checkout_fee_enabled',
-            'late_checkout_fee_type',
-            'late_checkout_fee_amount',
-            'late_checkout_fee_percentage',
-            'late_checkout_grace_minutes',
-            'late_checkout_max_hours',
+            "late_checkout_fee_enabled",
+            "late_checkout_fee_type",
+            "late_checkout_fee_amount",
+            "late_checkout_fee_percentage",
+            "late_checkout_grace_minutes",
+            "late_checkout_max_hours",
             # Date holding settings
-            'date_hold_enabled',
-            'date_hold_duration_days',
-            'date_hold_max_extensions',
-            'date_hold_extension_days',
+            "date_hold_enabled",
+            "date_hold_duration_days",
+            "date_hold_max_extensions",
+            "date_hold_extension_days",
             # Timestamps
-            'created_at',
-            'updated_at',
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ["id", "created_at", "updated_at"]
 
     def validate_default_deposit_percentage(self, value):
         """Validate deposit percentage is between 0 and 100"""
         if not (0 <= value <= 100):
-            raise serializers.ValidationError(
-                "Default deposit percentage must be between 0 and 100."
-            )
+            raise serializers.ValidationError("Default deposit percentage must be between 0 and 100.")
         return value
 
     def validate_refund_percentage(self, value):
         """Validate refund percentage is between 0 and 100"""
         if not (0 <= value <= 100):
-            raise serializers.ValidationError(
-                "Refund percentage must be between 0 and 100."
-            )
+            raise serializers.ValidationError("Refund percentage must be between 0 and 100.")
         return value
 
     def validate_balance_due_days(self, value):
         """Validate balance due days is positive"""
         if value <= 0:
-            raise serializers.ValidationError(
-                "Balance due days must be a positive number."
-            )
+            raise serializers.ValidationError("Balance due days must be a positive number.")
         return value
 
     def validate_grace_period_days(self, value):
         """Validate grace period days is non-negative"""
         if value < 0:
-            raise serializers.ValidationError(
-                "Grace period days must be non-negative."
-            )
+            raise serializers.ValidationError("Grace period days must be non-negative.")
         return value
 
     def validate_auto_payment_retry_attempts(self, value):
         """Validate retry attempts is non-negative"""
         if value < 0:
-            raise serializers.ValidationError(
-                "Auto payment retry attempts must be non-negative."
-            )
+            raise serializers.ValidationError("Auto payment retry attempts must be non-negative.")
         return value
 
     def validate_auto_payment_retry_delay_days(self, value):
         """Validate retry delay days is positive"""
         if value <= 0:
-            raise serializers.ValidationError(
-                "Auto payment retry delay days must be a positive number."
-            )
+            raise serializers.ValidationError("Auto payment retry delay days must be a positive number.")
         return value
 
     def validate_default_late_fee_amount(self, value):
         """Validate late fee amount is non-negative"""
         if value < 0:
-            raise serializers.ValidationError(
-                "Default late fee amount must be non-negative."
-            )
+            raise serializers.ValidationError("Default late fee amount must be non-negative.")
         return value
 
     def validate_downpayment_percentage(self, value):
         """Validate downpayment percentage is between 0 and 100"""
         if not (0 <= value <= 100):
-            raise serializers.ValidationError(
-                "Downpayment percentage must be between 0 and 100."
-            )
+            raise serializers.ValidationError("Downpayment percentage must be between 0 and 100.")
         return value
 
     def validate_late_fee_percentage(self, value):
         """Validate late fee percentage is between 0 and 100"""
         if not (0 <= value <= 100):
-            raise serializers.ValidationError(
-                "Late fee percentage must be between 0 and 100."
-            )
+            raise serializers.ValidationError("Late fee percentage must be between 0 and 100.")
         return value
 
     def validate_cancellation_admin_fee_percentage(self, value):
         """Validate cancellation admin fee percentage is between 0 and 100"""
         if not (0 <= value <= 100):
-            raise serializers.ValidationError(
-                "Cancellation admin fee percentage must be between 0 and 100."
-            )
+            raise serializers.ValidationError("Cancellation admin fee percentage must be between 0 and 100.")
         return value
 
     def validate_security_deposit_amount(self, value):
         """Validate security deposit amount is non-negative"""
         if value < 0:
-            raise serializers.ValidationError(
-                "Security deposit amount must be non-negative."
-            )
+            raise serializers.ValidationError("Security deposit amount must be non-negative.")
         return value
 
     def validate(self, data):
         """Cross-field validation"""
         # If deposit type is FIXED, fixed amount is required
-        deposit_type = data.get('deposit_type', self.instance.deposit_type if self.instance else 'PERCENTAGE')
-        deposit_fixed_amount = data.get('deposit_fixed_amount', self.instance.deposit_fixed_amount if self.instance else None)
+        deposit_type = data.get("deposit_type", self.instance.deposit_type if self.instance else "PERCENTAGE")
+        deposit_fixed_amount = data.get(
+            "deposit_fixed_amount", self.instance.deposit_fixed_amount if self.instance else None
+        )
 
-        if deposit_type == 'FIXED' and deposit_fixed_amount is None:
-            raise serializers.ValidationError({
-                'deposit_fixed_amount': 'Fixed deposit amount is required when deposit type is FIXED.'
-            })
+        if deposit_type == "FIXED" and deposit_fixed_amount is None:
+            raise serializers.ValidationError(
+                {"deposit_fixed_amount": "Fixed deposit amount is required when deposit type is FIXED."}
+            )
 
         # If security deposit is enabled, amount must be positive
-        security_enabled = data.get('security_deposit_enabled', self.instance.security_deposit_enabled if self.instance else False)
-        security_amount = data.get('security_deposit_amount', self.instance.security_deposit_amount if self.instance else 0)
+        security_enabled = data.get(
+            "security_deposit_enabled", self.instance.security_deposit_enabled if self.instance else False
+        )
+        security_amount = data.get(
+            "security_deposit_amount", self.instance.security_deposit_amount if self.instance else 0
+        )
 
         if security_enabled and (security_amount is None or security_amount <= 0):
-            raise serializers.ValidationError({
-                'security_deposit_amount': 'Security deposit amount must be greater than 0 when enabled.'
-            })
+            raise serializers.ValidationError(
+                {"security_deposit_amount": "Security deposit amount must be greater than 0 when enabled."}
+            )
 
         return data
 
@@ -210,38 +195,57 @@ class TaxRateSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaxRate
         fields = [
-            'id', 'name', 'rate', 'region', 'is_default',
-            'created_at', 'updated_at',
+            "id",
+            "name",
+            "rate",
+            "region",
+            "is_default",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ["id", "created_at", "updated_at"]
 
 
 class PaymentGatewaySerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentGateway
         fields = [
-            'id', 'name', 'code', 'is_active', 'config', 'description',
-            'created_at', 'updated_at',
+            "id",
+            "name",
+            "code",
+            "is_active",
+            "config",
+            "description",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ["id", "created_at", "updated_at"]
         extra_kwargs = {
-            'config': {'write_only': True},  # Hide sensitive config data in responses
+            "config": {"write_only": True},  # Hide sensitive config data in responses
         }
 
 
 class PaymentGatewayAdminSerializer(serializers.ModelSerializer):
     """Admin-safe serializer that shows masked sensitive fields for editing"""
+
     masked_config = serializers.SerializerMethodField()
 
     class Meta:
         model = PaymentGateway
         fields = [
-            'id', 'name', 'code', 'is_active', 'config', 'masked_config', 'description',
-            'created_at', 'updated_at',
+            "id",
+            "name",
+            "code",
+            "is_active",
+            "config",
+            "masked_config",
+            "description",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'masked_config']
+        read_only_fields = ["id", "created_at", "updated_at", "masked_config"]
         extra_kwargs = {
-            'config': {'write_only': True},  # Still write-only for security
+            "config": {"write_only": True},  # Still write-only for security
         }
 
     def get_masked_config(self, obj):
@@ -253,40 +257,46 @@ class PaymentGatewayAdminSerializer(serializers.ModelSerializer):
         masked_config = {}
 
         # Gateway-specific masking
-        if obj.code == 'stripe':
-            masked_config.update({
-                'publishable_key': self._mask_key(config.get('publishable_key')),
-                'secret_key': self._mask_key(config.get('secret_key')),
-                'webhook_secret': self._mask_key(config.get('webhook_secret')),
-                'test_mode': config.get('test_mode', False),
-                '_configured': bool(config.get('publishable_key') and config.get('secret_key')),
-            })
-        elif obj.code == 'paymongo':
-            masked_config.update({
-                'public_key': self._mask_key(config.get('public_key')),
-                'secret_key': self._mask_key(config.get('secret_key')),
-                'webhook_secret': self._mask_key(config.get('webhook_secret')),
-                'test_mode': config.get('test_mode', False),
-                '_configured': bool(config.get('public_key') and config.get('secret_key')),
-            })
-        elif obj.code == 'paypal':
-            masked_config.update({
-                'client_id': self._mask_key(config.get('client_id')),
-                'client_secret': self._mask_key(config.get('client_secret')),
-                'environment': config.get('environment', 'sandbox'),
-                '_configured': bool(config.get('client_id') and config.get('client_secret')),
-            })
+        if obj.code == "stripe":
+            masked_config.update(
+                {
+                    "publishable_key": self._mask_key(config.get("publishable_key")),
+                    "secret_key": self._mask_key(config.get("secret_key")),
+                    "webhook_secret": self._mask_key(config.get("webhook_secret")),
+                    "test_mode": config.get("test_mode", False),
+                    "_configured": bool(config.get("publishable_key") and config.get("secret_key")),
+                }
+            )
+        elif obj.code == "paymongo":
+            masked_config.update(
+                {
+                    "public_key": self._mask_key(config.get("public_key")),
+                    "secret_key": self._mask_key(config.get("secret_key")),
+                    "webhook_secret": self._mask_key(config.get("webhook_secret")),
+                    "test_mode": config.get("test_mode", False),
+                    "_configured": bool(config.get("public_key") and config.get("secret_key")),
+                }
+            )
+        elif obj.code == "paypal":
+            masked_config.update(
+                {
+                    "client_id": self._mask_key(config.get("client_id")),
+                    "client_secret": self._mask_key(config.get("client_secret")),
+                    "environment": config.get("environment", "sandbox"),
+                    "_configured": bool(config.get("client_id") and config.get("client_secret")),
+                }
+            )
         else:
             # Generic masking for other gateways
             for key, value in config.items():
-                if any(sensitive in key.lower() for sensitive in ['key', 'secret', 'token', 'password']):
+                if any(sensitive in key.lower() for sensitive in ["key", "secret", "token", "password"]):
                     masked_config[key] = self._mask_key(value)
                 else:
                     masked_config[key] = value
 
             # Add configuration status
-            sensitive_fields = [k for k in config.keys() if any(s in k.lower() for s in ['key', 'secret', 'token'])]
-            masked_config['_configured'] = len(sensitive_fields) > 0 and all(config.get(k) for k in sensitive_fields)
+            sensitive_fields = [k for k in config if any(s in k.lower() for s in ["key", "secret", "token"])]
+            masked_config["_configured"] = len(sensitive_fields) > 0 and all(config.get(k) for k in sensitive_fields)
 
         return masked_config
 
@@ -312,9 +322,13 @@ class PublicPaymentGatewaySerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentGateway
         fields = [
-            'id', 'name', 'code', 'is_active', 'description',
+            "id",
+            "name",
+            "code",
+            "is_active",
+            "description",
         ]
-        read_only_fields = ['id', 'name', 'code', 'is_active', 'description']
+        read_only_fields = ["id", "name", "code", "is_active", "description"]
 
     def to_representation(self, instance):
         """Custom representation to include only essential public config if needed"""
@@ -323,23 +337,23 @@ class PublicPaymentGatewaySerializer(serializers.ModelSerializer):
         # Add minimal public configuration (no sensitive data)
         public_config = {}
 
-        if instance.code == 'stripe':
+        if instance.code == "stripe":
             # Include safe public fields for Stripe integration
             config = instance.config or {}
-            public_config['test_mode'] = config.get('test_mode', False)
+            public_config["test_mode"] = config.get("test_mode", False)
             # Include publishable_key for Stripe Elements initialization
-            if 'publishable_key' in config:
-                public_config['publishable_key'] = config['publishable_key']
-        elif instance.code == 'paypal':
+            if "publishable_key" in config:
+                public_config["publishable_key"] = config["publishable_key"]
+        elif instance.code == "paypal":
             config = instance.config or {}
-            public_config['environment'] = config.get('environment', 'sandbox')
-        elif instance.code == 'paymongo':
+            public_config["environment"] = config.get("environment", "sandbox")
+        elif instance.code == "paymongo":
             config = instance.config or {}
-            public_config['test_mode'] = config.get('test_mode', False)
+            public_config["test_mode"] = config.get("test_mode", False)
 
         # Only add public_config if it has content
         if public_config:
-            data['public_config'] = public_config
+            data["public_config"] = public_config
 
         return data
 
@@ -351,135 +365,183 @@ class PublicPaymentSettingsSerializer(serializers.ModelSerializer):
     Used for client-facing booking flows and guest checkout.
     Excludes internal/admin-only fields like grace periods, late fees, and retry settings.
     """
+
     # Currency is fetched from CurrencySettings (single source of truth)
     default_currency = serializers.SerializerMethodField()
 
     class Meta:
         model = PaymentSettings
         fields = [
-            'id',
+            "id",
             # Client-facing payment configuration
-            'balance_due_days',
-            'default_deposit_percentage',
-            'default_currency',
+            "balance_due_days",
+            "default_deposit_percentage",
+            "default_currency",
             # Refund policy (public transparency)
-            'allow_refunds',
-            'refund_deadline_hours',
-            'refund_percentage',
-            'refund_policy_text',
+            "allow_refunds",
+            "refund_deadline_hours",
+            "refund_percentage",
+            "refund_policy_text",
         ]
         read_only_fields = [
-            'id',
-            'balance_due_days',
-            'default_deposit_percentage',
-            'default_currency',
-            'allow_refunds',
-            'refund_deadline_hours',
-            'refund_percentage',
-            'refund_policy_text',
+            "id",
+            "balance_due_days",
+            "default_deposit_percentage",
+            "default_currency",
+            "allow_refunds",
+            "refund_deadline_hours",
+            "refund_percentage",
+            "refund_policy_text",
         ]
 
     def get_default_currency(self, obj):
         """Get default currency from CurrencySettings (single source of truth)"""
         from core.domains.settings.models import CurrencySettings
+
         currency_settings = CurrencySettings.get_system_settings()
-        return currency_settings.default_currency if currency_settings else 'PHP'
+        return currency_settings.default_currency if currency_settings else "PHP"
 
 
 class PaymentMethodSerializer(serializers.ModelSerializer):
-    user_details = UserSerializer(source='user', read_only=True)
-    gateway_details = PaymentGatewaySerializer(source='gateway', read_only=True)
-    type_display = serializers.CharField(source='get_type_display', read_only=True)
-    
+    user_details = UserSerializer(source="user", read_only=True)
+    gateway_details = PaymentGatewaySerializer(source="gateway", read_only=True)
+    type_display = serializers.CharField(source="get_type_display", read_only=True)
+
     class Meta:
         model = PaymentMethod
         fields = [
-            'id', 'user', 'user_details', 'type', 'type_display', 'is_default',
-            'nickname', 'instructions', 'gateway', 'gateway_details',
-            'token_reference', 'last_four', 'expiry_date', 'metadata',
-            'created_at', 'updated_at',
+            "id",
+            "user",
+            "user_details",
+            "type",
+            "type_display",
+            "is_default",
+            "nickname",
+            "instructions",
+            "gateway",
+            "gateway_details",
+            "token_reference",
+            "last_four",
+            "expiry_date",
+            "metadata",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ["id", "created_at", "updated_at"]
         extra_kwargs = {
-            'token_reference': {'write_only': True},  # Hide sensitive token data in responses
-            'metadata': {'write_only': True},  # Hide payment method metadata in responses
+            "token_reference": {"write_only": True},  # Hide sensitive token data in responses
+            "metadata": {"write_only": True},  # Hide payment method metadata in responses
         }
 
 
 class PaymentTransactionSerializer(serializers.ModelSerializer):
-    gateway_details = PaymentGatewaySerializer(source='gateway', read_only=True)
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
-    
+    gateway_details = PaymentGatewaySerializer(source="gateway", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+
     class Meta:
         model = PaymentTransaction
         fields = [
-            'id', 'payment', 'gateway', 'gateway_details', 'transaction_id',
-            'amount', 'currency', 'status', 'status_display', 'response_data', 'error_message',
-            'is_test', 'created_at', 'updated_at',
+            "id",
+            "payment",
+            "gateway",
+            "gateway_details",
+            "transaction_id",
+            "amount",
+            "currency",
+            "status",
+            "status_display",
+            "response_data",
+            "error_message",
+            "is_test",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ["id", "created_at", "updated_at"]
         extra_kwargs = {
-            'response_data': {'write_only': True},  # Hide transaction response data in responses
+            "response_data": {"write_only": True},  # Hide transaction response data in responses
         }
 
 
 class PaymentNotificationSerializer(serializers.ModelSerializer):
     payment_details = serializers.SerializerMethodField(read_only=True)
-    notification_type_display = serializers.CharField(source='get_notification_type_display', read_only=True)
-    
+    notification_type_display = serializers.CharField(source="get_notification_type_display", read_only=True)
+
     class Meta:
         model = PaymentNotification
         fields = [
-            'id', 'payment', 'payment_details', 'notification_type',
-            'notification_type_display', 'sent_at', 'sent_to', 'template_used',
-            'is_successful', 'reference', 'created_at', 'updated_at',
+            "id",
+            "payment",
+            "payment_details",
+            "notification_type",
+            "notification_type_display",
+            "sent_at",
+            "sent_to",
+            "template_used",
+            "is_successful",
+            "reference",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
-    
+        read_only_fields = ["id", "created_at", "updated_at"]
+
     def get_payment_details(self, obj):
         if obj.payment:
-            return {
-                'id': obj.payment.id,
-                'payment_number': obj.payment.payment_number,
-                'amount': obj.payment.amount
-            }
+            return {"id": obj.payment.id, "payment_number": obj.payment.payment_number, "amount": obj.payment.amount}
         return None
 
 
 class InvoiceLineItemSerializer(serializers.ModelSerializer):
-    item_type_display = serializers.CharField(source='get_item_type_display', read_only=True)
+    item_type_display = serializers.CharField(source="get_item_type_display", read_only=True)
 
     class Meta:
         model = InvoiceLineItem
         fields = [
-            'id', 'invoice', 'description', 'quantity', 'unit_price',
-            'tax_rate', 'total', 'product', 'created_at', 'updated_at',
+            "id",
+            "invoice",
+            "description",
+            "quantity",
+            "unit_price",
+            "tax_rate",
+            "total",
+            "product",
+            "created_at",
+            "updated_at",
             # Enhanced pricing fields (DRY compliance)
-            'item_type', 'item_type_display', 'base_unit_price',
-            'excess_hours', 'excess_hour_price', 'excess_cost',
+            "item_type",
+            "item_type_display",
+            "base_unit_price",
+            "excess_hours",
+            "excess_hour_price",
+            "excess_cost",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'item_type_display']
+        read_only_fields = ["id", "created_at", "updated_at", "item_type_display"]
 
 
 class InvoiceTaxSerializer(serializers.ModelSerializer):
-    tax_rate_details = TaxRateSerializer(source='tax_rate', read_only=True)
-    
+    tax_rate_details = TaxRateSerializer(source="tax_rate", read_only=True)
+
     class Meta:
         model = InvoiceTax
         fields = [
-            'id', 'invoice', 'tax_rate', 'tax_rate_details', 'taxable_amount',
-            'tax_amount', 'created_at', 'updated_at',
+            "id",
+            "invoice",
+            "tax_rate",
+            "tax_rate_details",
+            "taxable_amount",
+            "tax_amount",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ["id", "created_at", "updated_at"]
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
-    event_details = EventSerializer(source='event', read_only=True)
-    client_details = UserSerializer(source='client', read_only=True)
-    quote_details = EventQuoteSerializer(source='quote', read_only=True)
+    event_details = EventSerializer(source="event", read_only=True)
+    client_details = UserSerializer(source="client", read_only=True)
+    quote_details = EventQuoteSerializer(source="quote", read_only=True)
     line_items = InvoiceLineItemSerializer(many=True, read_only=True)
     taxes = InvoiceTaxSerializer(many=True, read_only=True)
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
     related_payments = serializers.SerializerMethodField(read_only=True)
 
     # Payment tracking fields (calculated from related payments)
@@ -492,11 +554,11 @@ class InvoiceSerializer(serializers.ModelSerializer):
     effective_payment_terms = serializers.SerializerMethodField(read_only=True)
 
     # Mobile app compatibility fields (aliases for expected field names)
-    event_name = serializers.CharField(source='event.name', read_only=True)
-    invoice_number = serializers.CharField(source='invoice_id', read_only=True)
-    issued_date = serializers.DateField(source='issue_date', read_only=True)
+    event_name = serializers.CharField(source="event.name", read_only=True)
+    invoice_number = serializers.CharField(source="invoice_id", read_only=True)
+    issued_date = serializers.DateField(source="issue_date", read_only=True)
     payments = serializers.SerializerMethodField(read_only=True)
-    amount_paid = serializers.DecimalField(source='paid_amount', max_digits=10, decimal_places=2, read_only=True)
+    amount_paid = serializers.DecimalField(source="paid_amount", max_digits=10, decimal_places=2, read_only=True)
     discount_amount = serializers.SerializerMethodField(read_only=True)
     can_pay_online = serializers.SerializerMethodField(read_only=True)
     paid_date = serializers.SerializerMethodField(read_only=True)
@@ -504,21 +566,58 @@ class InvoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
         fields = [
-            'id', 'invoice_id', 'event', 'event_details', 'client', 'client_details',
-            'subtotal', 'tax_amount', 'total_amount', 'currency', 'issue_date', 'due_date',
-            'status', 'status_display', 'notes', 'payment_terms', 'quote',
-            'quote_details', 'invoice_pdf', 'line_items', 'taxes',
-            'related_payments', 'paid_amount', 'remaining_amount',
-            'is_fully_paid', 'is_partially_paid', 'effective_payment_terms',
-            'created_at', 'updated_at',
+            "id",
+            "invoice_id",
+            "event",
+            "event_details",
+            "client",
+            "client_details",
+            "subtotal",
+            "tax_amount",
+            "total_amount",
+            "currency",
+            "issue_date",
+            "due_date",
+            "status",
+            "status_display",
+            "notes",
+            "payment_terms",
+            "quote",
+            "quote_details",
+            "invoice_pdf",
+            "line_items",
+            "taxes",
+            "related_payments",
+            "paid_amount",
+            "remaining_amount",
+            "is_fully_paid",
+            "is_partially_paid",
+            "effective_payment_terms",
+            "created_at",
+            "updated_at",
             # Mobile app compatibility fields
-            'event_name', 'invoice_number', 'issued_date', 'payments',
-            'amount_paid', 'discount_amount', 'can_pay_online', 'paid_date',
+            "event_name",
+            "invoice_number",
+            "issued_date",
+            "payments",
+            "amount_paid",
+            "discount_amount",
+            "can_pay_online",
+            "paid_date",
         ]
         read_only_fields = [
-            'id', 'invoice_id', 'paid_amount', 'remaining_amount',
-            'is_fully_paid', 'is_partially_paid', 'created_at', 'updated_at',
-            'status', 'subtotal', 'tax_amount', 'total_amount',  # Prevent mass assignment of financial/status fields
+            "id",
+            "invoice_id",
+            "paid_amount",
+            "remaining_amount",
+            "is_fully_paid",
+            "is_partially_paid",
+            "created_at",
+            "updated_at",
+            "status",
+            "subtotal",
+            "tax_amount",
+            "total_amount",  # Prevent mass assignment of financial/status fields
         ]
 
     def get_related_payments(self, obj):
@@ -533,31 +632,33 @@ class InvoiceSerializer(serializers.ModelSerializer):
     def get_can_pay_online(self, obj):
         """Check if online payment is available for this invoice"""
         from .models import PaymentGateway
+
         # Invoice can be paid online if there's an active payment gateway and invoice is not fully paid
-        return (
-            obj.status in ['ISSUED', 'PARTIALLY_PAID'] and
-            PaymentGateway.objects.filter(is_active=True).exists()
-        )
+        return obj.status in ["ISSUED", "PARTIALLY_PAID"] and PaymentGateway.objects.filter(is_active=True).exists()
 
     def get_paid_date(self, obj):
         """Get the date when invoice was fully paid"""
-        if obj.status == 'PAID':
+        if obj.status == "PAID":
             # Get the latest completed payment date
-            last_payment = obj.related_payments.filter(status='COMPLETED').order_by('-paid_on').first()
+            last_payment = obj.related_payments.filter(status="COMPLETED").order_by("-paid_on").first()
             if last_payment and last_payment.paid_on:
-                return last_payment.paid_on.isoformat() if hasattr(last_payment.paid_on, 'isoformat') else str(last_payment.paid_on)
+                return (
+                    last_payment.paid_on.isoformat()
+                    if hasattr(last_payment.paid_on, "isoformat")
+                    else str(last_payment.paid_on)
+                )
         return None
 
     def get_discount_amount(self, obj):
         """Get discount amount (calculated from subtotal + tax - total if any discount was applied)"""
         # If the model has a discount_amount field, use it
-        if hasattr(obj, 'discount_amount') and obj.discount_amount:
+        if hasattr(obj, "discount_amount") and obj.discount_amount:
             return str(obj.discount_amount)
         # Otherwise calculate from subtotal + tax - total (if there's a discount)
         expected_total = obj.subtotal + obj.tax_amount
         if expected_total > obj.total_amount:
             return str(expected_total - obj.total_amount)
-        return '0.00'
+        return "0.00"
 
     def get_effective_payment_terms(self, obj):
         """
@@ -571,16 +672,18 @@ class InvoiceSerializer(serializers.ModelSerializer):
             terms = PaymentTermsResolver.get_terms_for_event(obj.event_id)
             # Convert Decimal values to float for JSON serialization
             return {
-                'deposit_type': terms.get('deposit_type'),
-                'deposit_percentage': float(terms.get('deposit_percentage', 0)),
-                'deposit_fixed_amount': float(terms.get('deposit_fixed_amount', 0)) if terms.get('deposit_fixed_amount') else None,
-                'deposit_is_refundable': terms.get('deposit_is_refundable'),
-                'deposit_is_deductible': terms.get('deposit_is_deductible'),
-                'deposit_waived_on_full_payment': terms.get('deposit_waived_on_full_payment'),
-                'balance_due_days': terms.get('balance_due_days'),
-                'balance_due_type': terms.get('balance_due_type'),
-                'grace_period_days': terms.get('grace_period_days'),
-                'currency': terms.get('currency'),
+                "deposit_type": terms.get("deposit_type"),
+                "deposit_percentage": float(terms.get("deposit_percentage", 0)),
+                "deposit_fixed_amount": float(terms.get("deposit_fixed_amount", 0))
+                if terms.get("deposit_fixed_amount")
+                else None,
+                "deposit_is_refundable": terms.get("deposit_is_refundable"),
+                "deposit_is_deductible": terms.get("deposit_is_deductible"),
+                "deposit_waived_on_full_payment": terms.get("deposit_waived_on_full_payment"),
+                "balance_due_days": terms.get("balance_due_days"),
+                "balance_due_type": terms.get("balance_due_type"),
+                "grace_period_days": terms.get("grace_period_days"),
+                "currency": terms.get("currency"),
             }
         except Exception:
             # Fall back to global settings on any error
@@ -589,143 +692,191 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 class RefundSerializer(serializers.ModelSerializer):
     payment_details = serializers.SerializerMethodField(read_only=True)
-    refunded_by_details = UserSerializer(source='refunded_by', read_only=True)
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
-    
+    refunded_by_details = UserSerializer(source="refunded_by", read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+
     class Meta:
         model = Refund
         fields = [
-            'id', 'payment', 'payment_details', 'amount', 'currency', 'reason', 'status',
-            'status_display', 'refunded_by', 'refunded_by_details',
-            'refund_transaction_id', 'gateway_response',
-            'created_at', 'updated_at',
+            "id",
+            "payment",
+            "payment_details",
+            "amount",
+            "currency",
+            "reason",
+            "status",
+            "status_display",
+            "refunded_by",
+            "refunded_by_details",
+            "refund_transaction_id",
+            "gateway_response",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ["id", "created_at", "updated_at"]
         extra_kwargs = {
-            'gateway_response': {'write_only': True},  # Hide sensitive data in responses
+            "gateway_response": {"write_only": True},  # Hide sensitive data in responses
         }
-    
+
     def get_payment_details(self, obj):
         if obj.payment:
-            return {
-                'id': obj.payment.id,
-                'payment_number': obj.payment.payment_number,
-                'amount': obj.payment.amount
-            }
+            return {"id": obj.payment.id, "payment_number": obj.payment.payment_number, "amount": obj.payment.amount}
         return None
 
 
 class BasicPaymentSerializer(serializers.ModelSerializer):
     """Simplified payment serializer without nested objects"""
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
-    
+
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+
     class Meta:
         model = Payment
         fields = [
-            'id', 'payment_number', 'event', 'amount', 'currency', 'status', 'status_display',
-            'due_date', 'paid_on', 'description', 'reference_number', 
-            'receipt_number', 'is_manual', 'created_at', 'updated_at',
+            "id",
+            "payment_number",
+            "event",
+            "amount",
+            "currency",
+            "status",
+            "status_display",
+            "due_date",
+            "paid_on",
+            "description",
+            "reference_number",
+            "receipt_number",
+            "is_manual",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'payment_number', 'created_at', 'updated_at']
+        read_only_fields = ["id", "payment_number", "created_at", "updated_at"]
 
 
 class PaymentSerializer(serializers.ModelSerializer):
     """Full payment serializer with nested objects"""
-    event_details = EventSerializer(source='event', read_only=True)
-    payment_method_details = PaymentMethodSerializer(source='payment_method', read_only=True)
+
+    event_details = EventSerializer(source="event", read_only=True)
+    payment_method_details = PaymentMethodSerializer(source="payment_method", read_only=True)
     inferred_payment_method = serializers.SerializerMethodField(read_only=True)
-    status_display = serializers.CharField(source='get_status_display', read_only=True)
-    quote_details = EventQuoteSerializer(source='quote', read_only=True)
-    invoice_details = InvoiceSerializer(source='invoice', read_only=True)
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    quote_details = EventQuoteSerializer(source="quote", read_only=True)
+    invoice_details = InvoiceSerializer(source="invoice", read_only=True)
     transactions = PaymentTransactionSerializer(many=True, read_only=True)
     refunds = RefundSerializer(many=True, read_only=True)
-    processed_by_details = UserSerializer(source='processed_by', read_only=True)
-    
+    processed_by_details = UserSerializer(source="processed_by", read_only=True)
+
     class Meta:
         model = Payment
         fields = [
-            'id', 'payment_number', 'event', 'event_details', 'amount', 'currency',
-            'status', 'status_display', 'due_date', 'paid_on',
-            'payment_method', 'payment_method_details', 'inferred_payment_method', 'description',
-            'notes', 'reference_number', 'is_manual', 'processed_by',
-            'processed_by_details', 'receipt_number', 'receipt_generated_on',
-            'receipt_sent', 'receipt_sent_on', 'receipt_pdf', 'quote',
-            'quote_details', 'invoice', 'invoice_details',
-            'transactions', 'refunds',
-            'created_at', 'updated_at'
+            "id",
+            "payment_number",
+            "event",
+            "event_details",
+            "amount",
+            "currency",
+            "status",
+            "status_display",
+            "due_date",
+            "paid_on",
+            "payment_method",
+            "payment_method_details",
+            "inferred_payment_method",
+            "description",
+            "notes",
+            "reference_number",
+            "is_manual",
+            "processed_by",
+            "processed_by_details",
+            "receipt_number",
+            "receipt_generated_on",
+            "receipt_sent",
+            "receipt_sent_on",
+            "receipt_pdf",
+            "quote",
+            "quote_details",
+            "invoice",
+            "invoice_details",
+            "transactions",
+            "refunds",
+            "created_at",
+            "updated_at",
         ]
         read_only_fields = [
-            'id', 'payment_number', 'receipt_number', 'created_at', 'updated_at',
-            'status', 'amount',  # Prevent mass assignment of financial/status fields
+            "id",
+            "payment_number",
+            "receipt_number",
+            "created_at",
+            "updated_at",
+            "status",
+            "amount",  # Prevent mass assignment of financial/status fields
         ]
-    
+
     def get_inferred_payment_method(self, obj):
         """Infer payment method information from transaction data when direct payment method is not available"""
         # If we already have payment method details, use them
         if obj.payment_method:
             return None  # Frontend will use payment_method_details
-        
+
         # Look for the most recent completed transaction to infer payment method
-        completed_transaction = obj.transactions.filter(status='COMPLETED').order_by('-created_at').first()
+        completed_transaction = obj.transactions.filter(status="COMPLETED").order_by("-created_at").first()
         if not completed_transaction or not completed_transaction.gateway:
             return None
-            
+
         gateway_code = completed_transaction.gateway.code.lower()
         gateway_name = completed_transaction.gateway.name
-        
+
         # Map gateway codes to payment method types
         gateway_to_method_map = {
-            'stripe': {
-                'type': 'CREDIT_CARD',
-                'type_display': 'Credit Card',
-                'gateway_name': gateway_name,
-                'gateway_code': gateway_code
+            "stripe": {
+                "type": "CREDIT_CARD",
+                "type_display": "Credit Card",
+                "gateway_name": gateway_name,
+                "gateway_code": gateway_code,
             },
-            'paypal': {
-                'type': 'DIGITAL_WALLET', 
-                'type_display': 'PayPal',
-                'gateway_name': gateway_name,
-                'gateway_code': gateway_code
+            "paypal": {
+                "type": "DIGITAL_WALLET",
+                "type_display": "PayPal",
+                "gateway_name": gateway_name,
+                "gateway_code": gateway_code,
             },
-            'bank_transfer': {
-                'type': 'BANK_TRANSFER',
-                'type_display': 'Bank Transfer', 
-                'gateway_name': gateway_name,
-                'gateway_code': gateway_code
+            "bank_transfer": {
+                "type": "BANK_TRANSFER",
+                "type_display": "Bank Transfer",
+                "gateway_name": gateway_name,
+                "gateway_code": gateway_code,
             },
-            'gcash': {
-                'type': 'DIGITAL_WALLET',
-                'type_display': 'GCash',
-                'gateway_name': gateway_name,
-                'gateway_code': gateway_code
-            }
+            "gcash": {
+                "type": "DIGITAL_WALLET",
+                "type_display": "GCash",
+                "gateway_name": gateway_name,
+                "gateway_code": gateway_code,
+            },
         }
-        
-        return gateway_to_method_map.get(gateway_code, {
-            'type': 'CREDIT_CARD',  # Default fallback for unknown gateways
-            'type_display': f'{gateway_name} Payment',
-            'gateway_name': gateway_name,
-            'gateway_code': gateway_code
-        })
+
+        return gateway_to_method_map.get(
+            gateway_code,
+            {
+                "type": "CREDIT_CARD",  # Default fallback for unknown gateways
+                "type_display": f"{gateway_name} Payment",
+                "gateway_name": gateway_name,
+                "gateway_code": gateway_code,
+            },
+        )
 
 
 # New serializers for invoice payment endpoints
 class InvoicePaymentRequestSerializer(serializers.Serializer):
     """Serializer for invoice payment request data"""
+
     payment_type = serializers.ChoiceField(
-        choices=[
-            ('FULL', 'Full Payment'),
-            ('DEPOSIT', 'Deposit Payment'),
-            ('CUSTOM', 'Custom Amount')
-        ],
-        default='FULL',
-        help_text='Payment type - full payment, deposit, or custom amount'
+        choices=[("FULL", "Full Payment"), ("DEPOSIT", "Deposit Payment"), ("CUSTOM", "Custom Amount")],
+        default="FULL",
+        help_text="Payment type - full payment, deposit, or custom amount",
     )
     amount = serializers.DecimalField(
         max_digits=10,
         decimal_places=2,
         required=False,
-        help_text='Custom payment amount (required when payment_type=CUSTOM)'
+        help_text="Custom payment amount (required when payment_type=CUSTOM)",
     )
     payment_method = serializers.IntegerField(required=False, help_text="Saved payment method ID")
     payment_method_id = serializers.CharField(required=False, help_text="Stripe payment method ID or token")
@@ -740,37 +891,41 @@ class InvoicePaymentRequestSerializer(serializers.Serializer):
     def validate(self, data):
         """Validate payment request data"""
         import logging
+
         logger = logging.getLogger(__name__)
 
         # SECURITY: Log only non-sensitive fields for debugging
-        safe_fields = {k: v for k, v in data.items()
-                       if k not in ('payment_method_token', 'payment_method_id', 'card_number', 'cvv', 'cvc')}
+        safe_fields = {
+            k: v
+            for k, v in data.items()
+            if k not in ("payment_method_token", "payment_method_id", "card_number", "cvv", "cvc")
+        }
         # Mask payment_method_id if present (show last 4 chars only)
-        if data.get('payment_method_id'):
-            pm_id = data.get('payment_method_id')
-            safe_fields['payment_method_id'] = f"***{pm_id[-4:]}" if len(str(pm_id)) > 4 else "***"
-        logger.debug(f"Payment validation - fields: {list(safe_fields.keys())}, payment_type: {data.get('payment_type')}")
+        if data.get("payment_method_id"):
+            pm_id = data.get("payment_method_id")
+            safe_fields["payment_method_id"] = f"***{pm_id[-4:]}" if len(str(pm_id)) > 4 else "***"
+        logger.debug(
+            f"Payment validation - fields: {list(safe_fields.keys())}, payment_type: {data.get('payment_type')}"
+        )
 
         # Validate custom amount if payment_type is CUSTOM
-        if data.get('payment_type') == 'CUSTOM':
-            if not data.get('amount'):
-                raise serializers.ValidationError(
-                    "amount is required when payment_type is CUSTOM"
-                )
+        if data.get("payment_type") == "CUSTOM":
+            if not data.get("amount"):
+                raise serializers.ValidationError("amount is required when payment_type is CUSTOM")
             # Validate amount is positive
-            if data.get('amount') <= 0:
-                raise serializers.ValidationError(
-                    "amount must be greater than 0"
-                )
+            if data.get("amount") <= 0:
+                raise serializers.ValidationError("amount must be greater than 0")
 
         # Require either payment method ID/token/saved method or manual payment
-        if not data.get('is_manual', False):
-            payment_method = data.get('payment_method')
-            payment_method_id = data.get('payment_method_id')
-            payment_method_token = data.get('payment_method_token')
+        if not data.get("is_manual", False):
+            payment_method = data.get("payment_method")
+            payment_method_id = data.get("payment_method_id")
+            payment_method_token = data.get("payment_method_token")
 
             # SECURITY: Only log presence of payment method identifiers, not values
-            logger.debug(f"Payment validation - has_method={bool(payment_method)}, has_method_id={bool(payment_method_id)}, has_token={bool(payment_method_token)}")
+            logger.debug(
+                f"Payment validation - has_method={bool(payment_method)}, has_method_id={bool(payment_method_id)}, has_token={bool(payment_method_token)}"
+            )
 
             if not payment_method_id and not payment_method_token and not payment_method:
                 logger.warning("Payment validation error - no payment method identifier provided")
@@ -779,8 +934,8 @@ class InvoicePaymentRequestSerializer(serializers.Serializer):
                 )
 
         # Require gateway for non-manual payments (except when using saved payment methods)
-        if not data.get('is_manual', False) and not data.get('payment_method'):
-            if not data.get('gateway_id') and not data.get('gateway_code'):
+        if not data.get("is_manual", False) and not data.get("payment_method"):
+            if not data.get("gateway_id") and not data.get("gateway_code"):
                 raise serializers.ValidationError(
                     "gateway_id or gateway_code is required for non-manual payments with new payment methods"
                 )
@@ -790,6 +945,7 @@ class InvoicePaymentRequestSerializer(serializers.Serializer):
 
 class PaymentIntentResponseSerializer(serializers.Serializer):
     """Serializer for payment intent response from gateways"""
+
     client_secret = serializers.CharField(help_text="Client secret for frontend payment confirmation")
     payment_intent_id = serializers.CharField(help_text="Payment intent ID from gateway")
     status = serializers.CharField(help_text="Current status of payment intent")
@@ -801,6 +957,7 @@ class PaymentIntentResponseSerializer(serializers.Serializer):
 
 class SetupIntentResponseSerializer(serializers.Serializer):
     """Serializer for setup intent response from gateways"""
+
     setup_intent_id = serializers.CharField(help_text="Setup intent ID from gateway")
     client_secret = serializers.CharField(help_text="Client secret for frontend setup confirmation")
     status = serializers.CharField(help_text="Current status of setup intent")

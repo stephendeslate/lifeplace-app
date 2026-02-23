@@ -53,7 +53,9 @@ const EventInvoices: React.FC<EventInvoicesProps> = ({ eventId }) => {
 
   const invoices = invoicesData?.results || [];
 
-  const getStatusColor = (status: Invoice['status']): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
+  const getStatusColor = (
+    status: Invoice['status'],
+  ): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (status) {
       case 'PAID':
         return 'success';
@@ -71,10 +73,11 @@ const EventInvoices: React.FC<EventInvoicesProps> = ({ eventId }) => {
   };
 
   const getStatusIcon = (invoice: Invoice) => {
-    const isOverdue = invoice.status !== 'PAID' &&
-                      invoice.status !== 'VOID' &&
-                      invoice.status !== 'CANCELLED' &&
-                      isBefore(new Date(invoice.due_date), new Date());
+    const isOverdue =
+      invoice.status !== 'PAID' &&
+      invoice.status !== 'VOID' &&
+      invoice.status !== 'CANCELLED' &&
+      isBefore(new Date(invoice.due_date), new Date());
 
     if (isOverdue) return <OverdueIcon fontSize="small" color="error" />;
 
@@ -93,10 +96,12 @@ const EventInvoices: React.FC<EventInvoicesProps> = ({ eventId }) => {
   };
 
   const isOverdue = (invoice: Invoice) => {
-    return invoice.status !== 'PAID' &&
-           invoice.status !== 'VOID' &&
-           invoice.status !== 'CANCELLED' &&
-           isBefore(new Date(invoice.due_date), new Date());
+    return (
+      invoice.status !== 'PAID' &&
+      invoice.status !== 'VOID' &&
+      invoice.status !== 'CANCELLED' &&
+      isBefore(new Date(invoice.due_date), new Date())
+    );
   };
 
   const getDaysUntilDue = (invoice: Invoice) => {
@@ -194,7 +199,8 @@ const EventInvoices: React.FC<EventInvoicesProps> = ({ eventId }) => {
       {overdueCount > 0 && (
         <Alert severity="warning" sx={{ mb: 2 }} icon={<WarningIcon />}>
           <Typography variant="body2">
-            You have {overdueCount} overdue invoice{overdueCount !== 1 ? 's' : ''}. Please make a payment to avoid late fees.
+            You have {overdueCount} overdue invoice{overdueCount !== 1 ? 's' : ''}. Please make a
+            payment to avoid late fees.
           </Typography>
         </Alert>
       )}
@@ -217,18 +223,12 @@ const EventInvoices: React.FC<EventInvoicesProps> = ({ eventId }) => {
                 },
               }}
             >
-              <ListItemIcon sx={{ minWidth: 48 }}>
-                {getStatusIcon(invoice)}
-              </ListItemIcon>
+              <ListItemIcon sx={{ minWidth: 48 }}>{getStatusIcon(invoice)}</ListItemIcon>
 
               <ListItemText
                 primary={
                   <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                    <Typography
-                      variant="body1"
-                      component="span"
-                      sx={{ fontWeight: 500 }}
-                    >
+                    <Typography variant="body1" component="span" sx={{ fontWeight: 500 }}>
                       Invoice #{invoice.invoice_id}
                     </Typography>
                     <Chip
@@ -248,21 +248,30 @@ const EventInvoices: React.FC<EventInvoicesProps> = ({ eventId }) => {
                       </Typography>
                       {invoice.is_partially_paid && (
                         <Typography component="span" variant="caption" color="text.secondary">
-                          (Paid: {formatAmount(invoice.paid_amount)} / Remaining: {formatAmount(invoice.remaining_amount)})
+                          (Paid: {formatAmount(invoice.paid_amount)} / Remaining:{' '}
+                          {formatAmount(invoice.remaining_amount)})
                         </Typography>
                       )}
                       <Typography component="span" variant="caption" color="text.secondary">
-                        Due: {formatInTimeZone(invoice.due_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
+                        Due:{' '}
+                        {formatInTimeZone(invoice.due_date, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                       </Typography>
-                      {!invoiceOverdue && invoice.status !== 'PAID' && daysUntilDue >= 0 && daysUntilDue <= 7 && (
-                        <Chip
-                          label={daysUntilDue === 0 ? 'Due today' : `${daysUntilDue} day${daysUntilDue !== 1 ? 's' : ''} left`}
-                          size="small"
-                          color="warning"
-                          variant="outlined"
-                          sx={{ height: 20, fontSize: '0.6875rem' }}
-                        />
-                      )}
+                      {!invoiceOverdue &&
+                        invoice.status !== 'PAID' &&
+                        daysUntilDue >= 0 &&
+                        daysUntilDue <= 7 && (
+                          <Chip
+                            label={
+                              daysUntilDue === 0
+                                ? 'Due today'
+                                : `${daysUntilDue} day${daysUntilDue !== 1 ? 's' : ''} left`
+                            }
+                            size="small"
+                            color="warning"
+                            variant="outlined"
+                            sx={{ height: 20, fontSize: '0.6875rem' }}
+                          />
+                        )}
                     </Stack>
 
                     {/* Payment Progress Bar for partially paid invoices */}

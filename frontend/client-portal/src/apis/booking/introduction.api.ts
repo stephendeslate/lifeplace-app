@@ -1,30 +1,26 @@
 // frontend/client-portal/src/apis/booking/introduction.api.ts
 
 import api from '../../utils/api';
-import type {
-  IntroductionStepData,
-  StepValidationResult,
-} from '../../types/booking';
+import type { IntroductionStepData, StepValidationResult } from '../../types/booking';
 
 /**
  * Introduction step API functions
  */
 export class IntroductionApi {
-  
   /**
    * Validate introduction step data
    */
   static async validateStepData(
     sessionId: string,
     stepId: number,
-    stepData: IntroductionStepData
+    stepData: IntroductionStepData,
   ): Promise<StepValidationResult> {
     const response = await api.post<StepValidationResult>(
       `/bookingflow/public/flows/session/${sessionId}/validate/`,
       {
         step_id: stepId,
-        step_data: stepData
-      }
+        step_data: stepData,
+      },
     );
     return response.data;
   }
@@ -36,16 +32,13 @@ export class IntroductionApi {
     sessionId: string,
     stepId: number,
     stepData: IntroductionStepData,
-    markCompleted: boolean = false
+    markCompleted: boolean = false,
   ): Promise<Record<string, unknown>> {
-    const response = await api.patch(
-      `/bookingflow/public/flows/session/${sessionId}/update/`,
-      {
-        step_id: stepId,
-        step_data: stepData,
-        mark_completed: markCompleted
-      }
-    );
+    const response = await api.patch(`/bookingflow/public/flows/session/${sessionId}/update/`, {
+      step_id: stepId,
+      step_data: stepData,
+      mark_completed: markCompleted,
+    });
     return response.data as Record<string, unknown>;
   }
 
@@ -61,7 +54,10 @@ export class IntroductionApi {
   /**
    * Validate introduction data client-side
    */
-  static validateData(data: IntroductionStepData): { isValid: boolean; errors: Record<string, string[]> } {
+  static validateData(data: IntroductionStepData): {
+    isValid: boolean;
+    errors: Record<string, string[]>;
+  } {
     const errors: Record<string, string[]> = {};
 
     // For introduction step, acknowledgment is typically required
@@ -71,7 +67,7 @@ export class IntroductionApi {
 
     return {
       isValid: Object.keys(errors).length === 0,
-      errors
+      errors,
     };
   }
 

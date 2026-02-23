@@ -22,31 +22,27 @@ describe('RatesNote', () => {
 
   it('displays VAT information correctly', () => {
     render(<RatesNote />);
-    expect(
-      screen.getByText(/12% VAT is not included in the quoted prices/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/12% VAT is not included in the quoted prices/)).toBeInTheDocument();
   });
 
   it('displays minimum participants information', () => {
     render(<RatesNote />);
     expect(
-      screen.getByText(/Most packages require a minimum of 80 participants/)
+      screen.getByText(/Most packages require a minimum of 80 participants/),
     ).toBeInTheDocument();
   });
 
   it('displays cabanas and function halls information', () => {
     render(<RatesNote />);
     expect(
-      screen.getByText(
-        /These are excluded from base package rates and can be added as upgrades/
-      )
+      screen.getByText(/These are excluded from base package rates and can be added as upgrades/),
     ).toBeInTheDocument();
   });
 
   it('displays custom packages information', () => {
     render(<RatesNote />);
     expect(
-      screen.getByText(/Contact us for customized packages tailored to your specific needs/)
+      screen.getByText(/Contact us for customized packages tailored to your specific needs/),
     ).toBeInTheDocument();
   });
 

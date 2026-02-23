@@ -7,11 +7,11 @@ import React, {
   useCallback,
   useEffect,
   useRef,
-} from "react";
-import { useNavigate } from "react-router-dom";
-import { debounce, type DebouncedFunc } from "lodash";
-import { BookingCoreApi } from "../apis/booking/core.api";
-import { ErrorHandler } from "../utils/errorHandler";
+} from 'react';
+import { useNavigate } from 'react-router-dom';
+import { debounce, type DebouncedFunc } from 'lodash';
+import { BookingCoreApi } from '../apis/booking/core.api';
+import { ErrorHandler } from '../utils/errorHandler';
 import type {
   BookingState,
   BookingActions,
@@ -21,7 +21,7 @@ import type {
   BookingCompletionResult,
   PaymentGateway,
   StepValidationResult,
-} from "../types/booking";
+} from '../types/booking';
 
 // Initial state
 const initialState: BookingState = {
@@ -47,15 +47,15 @@ const initialState: BookingState = {
   },
   paymentGateways: [],
   selectedPaymentGateway: null,
-  totalPrice: "0.00",
+  totalPrice: '0.00',
   taxRate: 0, // No hardcoded default - fetched from backend TaxRate
   pricingBreakdown: {
-    subtotal: "0.00",
-    tax: "0.00",
-    discount: "0.00",
-    formattedSubtotal: "",
-    formattedTax: "",
-    formattedDiscount: "",
+    subtotal: '0.00',
+    tax: '0.00',
+    discount: '0.00',
+    formattedSubtotal: '',
+    formattedTax: '',
+    formattedDiscount: '',
   },
   breakdown: [],
   recoverableSession: null,
@@ -65,27 +65,27 @@ const initialState: BookingState = {
 
 // Action types
 type BookingAction =
-  | { type: "SET_LOADING"; payload: boolean }
-  | { type: "SET_VALIDATING"; payload: boolean }
-  | { type: "SET_SUBMITTING"; payload: boolean }
-  | { type: "SET_ERROR"; payload: string | null }
-  | { type: "SET_VALIDATION_ERRORS"; payload: Record<string, string[]> }
-  | { type: "CLEAR_ERRORS" }
-  | { type: "SET_AVAILABLE_FLOWS"; payload: BookingFlow[] }
-  | { type: "SELECT_EVENT_TYPE"; payload: EventType }
-  | { type: "SET_CURRENT_FLOW"; payload: BookingFlow }
-  | { type: "SET_CURRENT_SESSION"; payload: BookingSession | null }
+  | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_VALIDATING'; payload: boolean }
+  | { type: 'SET_SUBMITTING'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'SET_VALIDATION_ERRORS'; payload: Record<string, string[]> }
+  | { type: 'CLEAR_ERRORS' }
+  | { type: 'SET_AVAILABLE_FLOWS'; payload: BookingFlow[] }
+  | { type: 'SELECT_EVENT_TYPE'; payload: EventType }
+  | { type: 'SET_CURRENT_FLOW'; payload: BookingFlow }
+  | { type: 'SET_CURRENT_SESSION'; payload: BookingSession | null }
   | {
-      type: "UPDATE_STEP_DATA";
+      type: 'UPDATE_STEP_DATA';
       payload: { stepType: string; data: Record<string, unknown> };
     }
-  | { type: "SET_PROGRESS"; payload: Partial<BookingState["progress"]> }
-  | { type: "SET_PAYMENT_GATEWAYS"; payload: PaymentGateway[] }
-  | { type: "SELECT_PAYMENT_GATEWAY"; payload: PaymentGateway }
-  | { type: "SET_TOTAL_PRICE"; payload: string }
-  | { type: "SET_TAX_RATE"; payload: number }
+  | { type: 'SET_PROGRESS'; payload: Partial<BookingState['progress']> }
+  | { type: 'SET_PAYMENT_GATEWAYS'; payload: PaymentGateway[] }
+  | { type: 'SELECT_PAYMENT_GATEWAY'; payload: PaymentGateway }
+  | { type: 'SET_TOTAL_PRICE'; payload: string }
+  | { type: 'SET_TAX_RATE'; payload: number }
   | {
-      type: "SET_PRICING_BREAKDOWN";
+      type: 'SET_PRICING_BREAKDOWN';
       payload: {
         subtotal: string;
         tax: string;
@@ -95,9 +95,9 @@ type BookingAction =
         formattedDiscount: string;
       };
     }
-  | { type: "RESET_BOOKING" }
+  | { type: 'RESET_BOOKING' }
   | {
-      type: "SET_RECOVERABLE_SESSION";
+      type: 'SET_RECOVERABLE_SESSION';
       payload: {
         sessionId: string;
         lastUpdated: string;
@@ -105,46 +105,43 @@ type BookingAction =
         progressPercentage: number;
       } | null;
     }
-  | { type: "SET_QUICK_QUOTE_MODE"; payload: { sourceStepIndex: number } }
-  | { type: "EXIT_QUICK_QUOTE_MODE" };
+  | { type: 'SET_QUICK_QUOTE_MODE'; payload: { sourceStepIndex: number } }
+  | { type: 'EXIT_QUICK_QUOTE_MODE' };
 
 // Reducer
-function bookingReducer(
-  state: BookingState,
-  action: BookingAction,
-): BookingState {
+function bookingReducer(state: BookingState, action: BookingAction): BookingState {
   switch (action.type) {
-    case "SET_LOADING":
+    case 'SET_LOADING':
       return { ...state, ui: { ...state.ui, isLoading: action.payload } };
 
-    case "SET_VALIDATING":
+    case 'SET_VALIDATING':
       return { ...state, ui: { ...state.ui, isValidating: action.payload } };
 
-    case "SET_SUBMITTING":
+    case 'SET_SUBMITTING':
       return { ...state, ui: { ...state.ui, isSubmitting: action.payload } };
 
-    case "SET_ERROR":
+    case 'SET_ERROR':
       return { ...state, ui: { ...state.ui, error: action.payload } };
 
-    case "SET_VALIDATION_ERRORS":
+    case 'SET_VALIDATION_ERRORS':
       return {
         ...state,
         ui: { ...state.ui, validationErrors: action.payload },
       };
 
-    case "CLEAR_ERRORS":
+    case 'CLEAR_ERRORS':
       return {
         ...state,
         ui: { ...state.ui, error: null, validationErrors: {} },
       };
 
-    case "SET_AVAILABLE_FLOWS":
+    case 'SET_AVAILABLE_FLOWS':
       return { ...state, availableFlows: action.payload };
 
-    case "SELECT_EVENT_TYPE":
+    case 'SELECT_EVENT_TYPE':
       return { ...state, selectedEventType: action.payload };
 
-    case "SET_CURRENT_FLOW":
+    case 'SET_CURRENT_FLOW':
       return {
         ...state,
         currentFlow: action.payload,
@@ -155,14 +152,14 @@ function bookingReducer(
         },
       };
 
-    case "SET_CURRENT_SESSION":
+    case 'SET_CURRENT_SESSION':
       return {
         ...state,
         currentSession: action.payload,
         totalPrice: action.payload?.total_price || state.totalPrice,
       };
 
-    case "UPDATE_STEP_DATA":
+    case 'UPDATE_STEP_DATA':
       return {
         ...state,
         stepData: {
@@ -171,41 +168,41 @@ function bookingReducer(
         },
       };
 
-    case "SET_PROGRESS":
+    case 'SET_PROGRESS':
       return {
         ...state,
         progress: { ...state.progress, ...action.payload },
       };
 
-    case "SET_PAYMENT_GATEWAYS":
+    case 'SET_PAYMENT_GATEWAYS':
       return { ...state, paymentGateways: action.payload };
 
-    case "SELECT_PAYMENT_GATEWAY":
+    case 'SELECT_PAYMENT_GATEWAY':
       return { ...state, selectedPaymentGateway: action.payload };
 
-    case "SET_TOTAL_PRICE":
+    case 'SET_TOTAL_PRICE':
       return { ...state, totalPrice: action.payload };
 
-    case "SET_TAX_RATE":
+    case 'SET_TAX_RATE':
       return { ...state, taxRate: action.payload };
 
-    case "SET_PRICING_BREAKDOWN":
+    case 'SET_PRICING_BREAKDOWN':
       return { ...state, pricingBreakdown: action.payload };
 
-    case "RESET_BOOKING":
+    case 'RESET_BOOKING':
       return initialState;
 
-    case "SET_RECOVERABLE_SESSION":
+    case 'SET_RECOVERABLE_SESSION':
       return { ...state, recoverableSession: action.payload };
 
-    case "SET_QUICK_QUOTE_MODE":
+    case 'SET_QUICK_QUOTE_MODE':
       return {
         ...state,
         quickQuoteMode: true,
         quickQuoteSourceStepIndex: action.payload.sourceStepIndex,
       };
 
-    case "EXIT_QUICK_QUOTE_MODE":
+    case 'EXIT_QUICK_QUOTE_MODE':
       return {
         ...state,
         quickQuoteMode: false,
@@ -224,9 +221,7 @@ const BookingContext = createContext<{
 } | null>(null);
 
 // Provider component
-export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(bookingReducer, initialState);
   const navigate = useNavigate();
 
@@ -270,18 +265,15 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
           // Only update total price if it changed
           if (response.total_price && response.total_price !== totalPrice) {
             dispatch({
-              type: "SET_TOTAL_PRICE",
+              type: 'SET_TOTAL_PRICE',
               payload: response.total_price,
             });
           }
 
           // Handle validation errors from backend
-          if (
-            response.validation_errors &&
-            Object.keys(response.validation_errors).length > 0
-          ) {
+          if (response.validation_errors && Object.keys(response.validation_errors).length > 0) {
             dispatch({
-              type: "SET_VALIDATION_ERRORS",
+              type: 'SET_VALIDATION_ERRORS',
               payload: response.validation_errors as Record<string, string[]>,
             });
           }
@@ -295,10 +287,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
           });
         } catch (error) {
           if (import.meta.env.DEV)
-            console.warn(
-              "Background update failed, data preserved in localStorage:",
-              error,
-            );
+            console.warn('Background update failed, data preserved in localStorage:', error);
           // Data is already saved to localStorage from the pre-API save
         }
       },
@@ -327,7 +316,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
     );
 
     dispatch({
-      type: "SET_PROGRESS",
+      type: 'SET_PROGRESS',
       payload: {
         currentStepIndex: Math.max(0, currentStepIndex),
         canGoBack: currentStepIndex > 0,
@@ -342,18 +331,14 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
     if (state.currentFlow && state.currentSession) {
       updateProgress();
     }
-  }, [
-    state.currentFlow?.id,
-    state.currentSession?.current_step?.id,
-    updateProgress,
-  ]);
+  }, [state.currentFlow?.id, state.currentSession?.current_step?.id, updateProgress]);
 
   // Session recovery on mount
   useEffect(() => {
     BookingCoreApi.cleanupExpiredSessions();
 
     const urlParams = new URLSearchParams(window.location.search);
-    const sessionIdFromUrl = urlParams.get("session_id");
+    const sessionIdFromUrl = urlParams.get('session_id');
 
     if (sessionIdFromUrl) {
       // URL-based recovery - restore the session directly
@@ -361,7 +346,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         .then((sessionData) => {
           if (!BookingCoreApi.isSessionExpired(sessionData.expires_at)) {
             dispatch({
-              type: "SET_CURRENT_SESSION",
+              type: 'SET_CURRENT_SESSION',
               payload: sessionData as unknown as BookingSession,
             });
             return BookingCoreApi.getFlowById(sessionData.booking_flow);
@@ -369,21 +354,18 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         })
         .then((flow) => {
           if (flow) {
-            dispatch({ type: "SET_CURRENT_FLOW", payload: flow });
+            dispatch({ type: 'SET_CURRENT_FLOW', payload: flow });
           }
         })
         .catch((error) => {
-          if (import.meta.env.DEV)
-            console.warn("Failed to recover session from URL:", error);
+          if (import.meta.env.DEV) console.warn('Failed to recover session from URL:', error);
         });
     } else {
       // No URL param - scan localStorage for recoverable sessions (guests)
       const discoverRecoverableSession = () => {
         try {
           const keys = Object.keys(localStorage);
-          const sessionKeys = keys.filter((k) =>
-            k.startsWith("booking_session_"),
-          );
+          const sessionKeys = keys.filter((k) => k.startsWith('booking_session_'));
 
           // Find the most recent non-expired session WITH meaningful progress
           let mostRecentSession: {
@@ -396,13 +378,10 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
 
           for (const key of sessionKeys) {
             try {
-              const data = JSON.parse(localStorage.getItem(key) || "{}");
+              const data = JSON.parse(localStorage.getItem(key) || '{}');
 
               // Skip expired sessions
-              if (
-                data.expires_at &&
-                BookingCoreApi.isSessionExpired(data.expires_at)
-              ) {
+              if (data.expires_at && BookingCoreApi.isSessionExpired(data.expires_at)) {
                 localStorage.removeItem(key); // Clean up expired
                 continue;
               }
@@ -422,30 +401,22 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
               // Skip sessions that are already on the Confirmation step
               // (These are completed bookings that don't need recovery)
               const stepName =
-                data.current_step?.step_type_display ||
-                data.current_step?.step_type ||
-                "";
-              if (stepName.toLowerCase() === "confirmation") {
+                data.current_step?.step_type_display || data.current_step?.step_type || '';
+              if (stepName.toLowerCase() === 'confirmation') {
                 localStorage.removeItem(key); // Clean up completed sessions
                 continue;
               }
 
-              const sessionId = key.replace("booking_session_", "");
-              const lastUpdated =
-                data.updated_at || data.savedAt || data.lastSaved;
-              const timestamp = lastUpdated
-                ? new Date(lastUpdated).getTime()
-                : 0;
+              const sessionId = key.replace('booking_session_', '');
+              const lastUpdated = data.updated_at || data.savedAt || data.lastSaved;
+              const timestamp = lastUpdated ? new Date(lastUpdated).getTime() : 0;
 
               // Track the most recent session with actual progress
-              if (
-                !mostRecentSession ||
-                timestamp > mostRecentSession.timestamp
-              ) {
+              if (!mostRecentSession || timestamp > mostRecentSession.timestamp) {
                 mostRecentSession = {
                   sessionId,
                   lastUpdated: lastUpdated || new Date().toISOString(),
-                  stepName: stepName || "Unknown",
+                  stepName: stepName || 'Unknown',
                   timestamp,
                   progressPercentage,
                 };
@@ -459,7 +430,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
           // Set the most recent recoverable session
           if (mostRecentSession) {
             dispatch({
-              type: "SET_RECOVERABLE_SESSION",
+              type: 'SET_RECOVERABLE_SESSION',
               payload: {
                 sessionId: mostRecentSession.sessionId,
                 lastUpdated: mostRecentSession.lastUpdated,
@@ -469,8 +440,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
             });
           }
         } catch (error) {
-          if (import.meta.env.DEV)
-            console.warn("Error discovering recoverable sessions:", error);
+          if (import.meta.env.DEV) console.warn('Error discovering recoverable sessions:', error);
         }
       };
 
@@ -512,13 +482,12 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
           JSON.stringify(sessionToSave),
         );
       } catch (e) {
-        if (import.meta.env.DEV)
-          console.warn("Failed to save session on unload:", e);
+        if (import.meta.env.DEV) console.warn('Failed to save session on unload:', e);
       }
     };
 
     // Save on page unload (tab close, navigation away)
-    window.addEventListener("beforeunload", saveSessionOnLeave);
+    window.addEventListener('beforeunload', saveSessionOnLeave);
 
     // Save on visibility change (tab switch, minimize)
     const handleVisibilityChange = () => {
@@ -526,15 +495,15 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         saveSessionOnLeave();
       }
     };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     // Save on page hide (mobile browsers)
-    window.addEventListener("pagehide", saveSessionOnLeave);
+    window.addEventListener('pagehide', saveSessionOnLeave);
 
     return () => {
-      window.removeEventListener("beforeunload", saveSessionOnLeave);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("pagehide", saveSessionOnLeave);
+      window.removeEventListener('beforeunload', saveSessionOnLeave);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', saveSessionOnLeave);
     };
   }, [state.currentSession, state.stepData, state.totalPrice]);
 
@@ -558,48 +527,48 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
     }, [state.currentSession]),
 
     fetchAvailableFlows: useCallback(async () => {
-      dispatch({ type: "SET_LOADING", payload: true });
-      dispatch({ type: "CLEAR_ERRORS" });
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERRORS' });
 
       try {
         const flows = await BookingCoreApi.getAvailableFlows();
-        dispatch({ type: "SET_AVAILABLE_FLOWS", payload: flows });
+        dispatch({ type: 'SET_AVAILABLE_FLOWS', payload: flows });
       } catch (error) {
         const errorMessage = ErrorHandler.extractMessage(error);
-        dispatch({ type: "SET_ERROR", payload: errorMessage });
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
       } finally {
-        dispatch({ type: "SET_LOADING", payload: false });
+        dispatch({ type: 'SET_LOADING', payload: false });
       }
     }, []),
 
     selectEventType: useCallback(async (eventType: EventType) => {
-      dispatch({ type: "SET_LOADING", payload: true });
-      dispatch({ type: "CLEAR_ERRORS" });
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERRORS' });
 
       try {
-        dispatch({ type: "SELECT_EVENT_TYPE", payload: eventType });
+        dispatch({ type: 'SELECT_EVENT_TYPE', payload: eventType });
 
         const flows = await BookingCoreApi.getAvailableFlows(eventType.id);
 
         if (flows.length === 0) {
-          throw new Error("No booking flows available for this event type");
+          throw new Error('No booking flows available for this event type');
         }
 
         const selectedFlow = flows[0];
-        dispatch({ type: "SET_CURRENT_FLOW", payload: selectedFlow });
+        dispatch({ type: 'SET_CURRENT_FLOW', payload: selectedFlow });
 
         await actions.startSession(selectedFlow.id);
       } catch (error) {
         const errorMessage = ErrorHandler.extractMessage(error);
-        dispatch({ type: "SET_ERROR", payload: errorMessage });
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
       } finally {
-        dispatch({ type: "SET_LOADING", payload: false });
+        dispatch({ type: 'SET_LOADING', payload: false });
       }
     }, []),
 
     startSession: useCallback(async (flowId: number) => {
-      dispatch({ type: "SET_LOADING", payload: true });
-      dispatch({ type: "CLEAR_ERRORS" });
+      dispatch({ type: 'SET_LOADING', payload: true });
+      dispatch({ type: 'CLEAR_ERRORS' });
 
       try {
         const sessionResponse = await BookingCoreApi.startSession(flowId);
@@ -614,13 +583,13 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
           expires_at: sessionResponse.expires_at,
           is_completed: false,
           is_abandoned: false,
-          total_price: "0.00",
+          total_price: '0.00',
           updated_at: new Date().toISOString(),
           booking_data: {},
           created_at: new Date().toISOString(),
         };
 
-        dispatch({ type: "SET_CURRENT_SESSION", payload: sessionData });
+        dispatch({ type: 'SET_CURRENT_SESSION', payload: sessionData });
 
         BookingCoreApi.saveSessionToLocal(
           sessionResponse.session_id,
@@ -630,24 +599,24 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         await actions.fetchPaymentGateways();
       } catch (error) {
         const errorMessage = ErrorHandler.extractMessage(error);
-        dispatch({ type: "SET_ERROR", payload: errorMessage });
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
       } finally {
-        dispatch({ type: "SET_LOADING", payload: false });
+        dispatch({ type: 'SET_LOADING', payload: false });
       }
     }, []),
 
     updateStepData: useCallback(
       async (stepType: string, data: Record<string, unknown>) => {
         if (!state.currentSession) {
-          throw new Error("No active session");
+          throw new Error('No active session');
         }
 
         // Clear any errors immediately for better UX
-        dispatch({ type: "CLEAR_ERRORS" });
+        dispatch({ type: 'CLEAR_ERRORS' });
 
         const currentStep = state.currentSession.current_step;
         if (!currentStep) {
-          throw new Error("No current step found");
+          throw new Error('No current step found');
         }
 
         // Format the data based on step type
@@ -660,31 +629,29 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         };
 
         // Special handling for package and addon selection
-        if (stepType === "package_selection" && data.selected_packages) {
+        if (stepType === 'package_selection' && data.selected_packages) {
           formattedData = { selected_packages: data.selected_packages };
           bookingDataUpdate.selected_packages = data.selected_packages;
           // Include venue_additional_hours if present
           if (data.venue_additional_hours) {
             (formattedData as Record<string, unknown>).venue_additional_hours =
               data.venue_additional_hours;
-            bookingDataUpdate.venue_additional_hours =
-              data.venue_additional_hours;
+            bookingDataUpdate.venue_additional_hours = data.venue_additional_hours;
           }
-        } else if (stepType === "addon_selection" && data.selected_addons) {
+        } else if (stepType === 'addon_selection' && data.selected_addons) {
           formattedData = { selected_addons: data.selected_addons };
           bookingDataUpdate.selected_addons = data.selected_addons;
           // Include venue_additional_hours if present for pricing calculation
           if (data.venue_additional_hours) {
             (formattedData as Record<string, unknown>).venue_additional_hours =
               data.venue_additional_hours;
-            bookingDataUpdate.venue_additional_hours =
-              data.venue_additional_hours;
+            bookingDataUpdate.venue_additional_hours = data.venue_additional_hours;
           }
         }
 
         // IMMEDIATELY update local state for responsive UI
         dispatch({
-          type: "UPDATE_STEP_DATA",
+          type: 'UPDATE_STEP_DATA',
           payload: { stepType, data: formattedData },
         });
 
@@ -693,7 +660,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
           ...state.currentSession,
           booking_data: bookingDataUpdate,
         };
-        dispatch({ type: "SET_CURRENT_SESSION", payload: updatedSession });
+        dispatch({ type: 'SET_CURRENT_SESSION', payload: updatedSession });
 
         // DEBOUNCED backend update - won't block UI
         if (debouncedUpdateRef.current) {
@@ -709,12 +676,9 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
     ),
 
     validateStep: useCallback(
-      async (
-        stepId: number,
-        data: Record<string, unknown>,
-      ): Promise<StepValidationResult> => {
+      async (stepId: number, data: Record<string, unknown>): Promise<StepValidationResult> => {
         if (!state.currentSession) {
-          throw new Error("No active session");
+          throw new Error('No active session');
         }
 
         // Cancel any pending debounced updates before validation
@@ -734,18 +698,18 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
             result.errors.forEach((error) => {
               errors[error.field] = [error.message];
             });
-            dispatch({ type: "SET_VALIDATION_ERRORS", payload: errors });
+            dispatch({ type: 'SET_VALIDATION_ERRORS', payload: errors });
           } else {
-            dispatch({ type: "CLEAR_ERRORS" });
+            dispatch({ type: 'CLEAR_ERRORS' });
           }
 
           return result;
         } catch (error) {
           const errorMessage = ErrorHandler.extractMessage(error);
-          dispatch({ type: "SET_ERROR", payload: errorMessage });
+          dispatch({ type: 'SET_ERROR', payload: errorMessage });
           return {
             isValid: false,
-            errors: [{ field: "general", message: errorMessage }],
+            errors: [{ field: 'general', message: errorMessage }],
           };
         }
       },
@@ -759,7 +723,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         const targetStep = state.currentFlow.enabled_steps[stepIndex];
         if (targetStep && state.currentSession) {
           dispatch({
-            type: "SET_CURRENT_SESSION",
+            type: 'SET_CURRENT_SESSION',
             payload: {
               ...state.currentSession,
               current_step: targetStep as unknown as Record<string, unknown>,
@@ -774,11 +738,9 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!state.currentFlow || !state.currentSession) return;
 
       // Early return if current step is confirmation type (additional safeguard)
-      if (state.currentSession.current_step?.step_type === "confirmation") {
+      if (state.currentSession.current_step?.step_type === 'confirmation') {
         if (import.meta.env.DEV)
-          console.warn(
-            "nextStep called on confirmation step - blocked by safeguard",
-          );
+          console.warn('nextStep called on confirmation step - blocked by safeguard');
         return;
       }
 
@@ -787,8 +749,8 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         debouncedUpdateRef.current.cancel();
       }
 
-      dispatch({ type: "SET_SUBMITTING", payload: true });
-      dispatch({ type: "CLEAR_ERRORS" });
+      dispatch({ type: 'SET_SUBMITTING', payload: true });
+      dispatch({ type: 'CLEAR_ERRORS' });
 
       try {
         const currentStep = state.currentSession.current_step;
@@ -799,7 +761,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         const stepData = state.stepData[currentStep.step_type as string];
         const updatedBookingData = {
           ...bookingData,
-          ...(stepData && typeof stepData === "object" ? stepData : {}),
+          ...(stepData && typeof stepData === 'object' ? stepData : {}),
         };
 
         // Now do a FULL update with mark_completed = true
@@ -811,12 +773,9 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         );
 
         // Check for validation errors in the response
-        if (
-          response.validation_errors &&
-          Object.keys(response.validation_errors).length > 0
-        ) {
+        if (response.validation_errors && Object.keys(response.validation_errors).length > 0) {
           dispatch({
-            type: "SET_VALIDATION_ERRORS",
+            type: 'SET_VALIDATION_ERRORS',
             payload: response.validation_errors as Record<string, string[]>,
           });
           // Don't proceed - validation failed
@@ -827,9 +786,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         let updatedSession: BookingSession = {
           ...state.currentSession,
           booking_data: updatedBookingData,
-          current_step: responseData.current_step as
-            | Record<string, unknown>
-            | undefined,
+          current_step: responseData.current_step as Record<string, unknown> | undefined,
           progress_percentage: responseData.progress_percentage as number,
           total_price: responseData.total_price as string | undefined,
           updated_at: responseData.updated_at as string,
@@ -837,9 +794,9 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // QUICK QUOTE OVERRIDE: After contact_info, jump to payment_info
         // instead of following the backend's sequential next step
-        if (state.quickQuoteMode && currentStep.step_type === "contact_info") {
+        if (state.quickQuoteMode && currentStep.step_type === 'contact_info') {
           const paymentStep = state.currentFlow.enabled_steps.find(
-            (s) => s.step_type === "payment_info",
+            (s) => s.step_type === 'payment_info',
           );
           if (paymentStep) {
             const goToResponse = await BookingCoreApi.goToStep(
@@ -849,19 +806,17 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
             const goToData = goToResponse as unknown as Record<string, unknown>;
             updatedSession = {
               ...updatedSession,
-              current_step: goToData.current_step as
-                | Record<string, unknown>
-                | undefined,
+              current_step: goToData.current_step as Record<string, unknown> | undefined,
               progress_percentage: goToData.progress_percentage as number,
               updated_at: goToData.updated_at as string,
             };
           }
         }
 
-        dispatch({ type: "SET_CURRENT_SESSION", payload: updatedSession });
+        dispatch({ type: 'SET_CURRENT_SESSION', payload: updatedSession });
 
         if (response.total_price && response.total_price !== state.totalPrice) {
-          dispatch({ type: "SET_TOTAL_PRICE", payload: response.total_price });
+          dispatch({ type: 'SET_TOTAL_PRICE', payload: response.total_price });
         }
 
         BookingCoreApi.saveSessionToLocal(
@@ -870,13 +825,12 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         );
       } catch (error) {
         const errorMessage = ErrorHandler.extractMessage(error);
-        const validationErrors =
-          ErrorHandler.extractValidationErrorsAsRecord(error);
+        const validationErrors = ErrorHandler.extractValidationErrorsAsRecord(error);
 
-        dispatch({ type: "SET_ERROR", payload: errorMessage });
-        dispatch({ type: "SET_VALIDATION_ERRORS", payload: validationErrors });
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
+        dispatch({ type: 'SET_VALIDATION_ERRORS', payload: validationErrors });
       } finally {
-        dispatch({ type: "SET_SUBMITTING", payload: false });
+        dispatch({ type: 'SET_SUBMITTING', payload: false });
       }
     }, [
       state.currentFlow,
@@ -893,21 +847,17 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
       if (state.quickQuoteMode) {
         const currentStepType = state.currentSession.current_step?.step_type;
 
-        dispatch({ type: "SET_SUBMITTING", payload: true });
+        dispatch({ type: 'SET_SUBMITTING', payload: true });
         try {
           let navTargetStep;
 
-          if (
-            currentStepType === "contact_info" &&
-            state.quickQuoteSourceStepIndex !== null
-          ) {
+          if (currentStepType === 'contact_info' && state.quickQuoteSourceStepIndex !== null) {
             // Back from contact_info → return to source step & exit quick quote
-            navTargetStep =
-              state.currentFlow.enabled_steps[state.quickQuoteSourceStepIndex];
-          } else if (currentStepType === "payment_info") {
+            navTargetStep = state.currentFlow.enabled_steps[state.quickQuoteSourceStepIndex];
+          } else if (currentStepType === 'payment_info') {
             // Back from payment_info → go to contact_info (stay in quick quote)
             navTargetStep = state.currentFlow.enabled_steps.find(
-              (s) => s.step_type === "contact_info",
+              (s) => s.step_type === 'contact_info',
             );
           }
 
@@ -919,29 +869,27 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
             const responseData = response as unknown as Record<string, unknown>;
             const updatedSession: BookingSession = {
               ...state.currentSession,
-              current_step: responseData.current_step as
-                | Record<string, unknown>
-                | undefined,
+              current_step: responseData.current_step as Record<string, unknown> | undefined,
               progress_percentage: responseData.progress_percentage as number,
               updated_at: responseData.updated_at as string,
             };
 
-            dispatch({ type: "SET_CURRENT_SESSION", payload: updatedSession });
+            dispatch({ type: 'SET_CURRENT_SESSION', payload: updatedSession });
             BookingCoreApi.saveSessionToLocal(
               state.currentSession.session_id,
               updatedSession as unknown as Record<string, unknown>,
             );
 
             // Exit quick quote mode if going back to source step
-            if (currentStepType === "contact_info") {
-              dispatch({ type: "EXIT_QUICK_QUOTE_MODE" });
+            if (currentStepType === 'contact_info') {
+              dispatch({ type: 'EXIT_QUICK_QUOTE_MODE' });
             }
           }
         } catch (error) {
           const errorMessage = ErrorHandler.extractMessage(error);
-          dispatch({ type: "SET_ERROR", payload: errorMessage });
+          dispatch({ type: 'SET_ERROR', payload: errorMessage });
         } finally {
-          dispatch({ type: "SET_SUBMITTING", payload: false });
+          dispatch({ type: 'SET_SUBMITTING', payload: false });
         }
         return;
       }
@@ -952,7 +900,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         const targetStep = state.currentFlow.enabled_steps[currentIndex - 1];
 
         if (targetStep) {
-          dispatch({ type: "SET_SUBMITTING", payload: true });
+          dispatch({ type: 'SET_SUBMITTING', payload: true });
 
           try {
             const response = await BookingCoreApi.goToStep(
@@ -963,23 +911,21 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
             const responseData = response as unknown as Record<string, unknown>;
             const updatedSession: BookingSession = {
               ...state.currentSession,
-              current_step: responseData.current_step as
-                | Record<string, unknown>
-                | undefined,
+              current_step: responseData.current_step as Record<string, unknown> | undefined,
               progress_percentage: responseData.progress_percentage as number,
               updated_at: responseData.updated_at as string,
             };
 
-            dispatch({ type: "SET_CURRENT_SESSION", payload: updatedSession });
+            dispatch({ type: 'SET_CURRENT_SESSION', payload: updatedSession });
             BookingCoreApi.saveSessionToLocal(
               state.currentSession.session_id,
               updatedSession as unknown as Record<string, unknown>,
             );
           } catch (error) {
             const errorMessage = ErrorHandler.extractMessage(error);
-            dispatch({ type: "SET_ERROR", payload: errorMessage });
+            dispatch({ type: 'SET_ERROR', payload: errorMessage });
           } finally {
-            dispatch({ type: "SET_SUBMITTING", payload: false });
+            dispatch({ type: 'SET_SUBMITTING', payload: false });
           }
         }
       }
@@ -1007,8 +953,8 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         debouncedUpdateRef.current.flush();
       }
 
-      dispatch({ type: "SET_SUBMITTING", payload: true });
-      dispatch({ type: "CLEAR_ERRORS" });
+      dispatch({ type: 'SET_SUBMITTING', payload: true });
+      dispatch({ type: 'CLEAR_ERRORS' });
 
       try {
         // Save current step data WITHOUT mark_completed (preserves selections)
@@ -1018,7 +964,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
           const stepData = state.stepData[currentStep.step_type as string];
           const updatedBookingData = {
             ...bookingData,
-            ...(stepData && typeof stepData === "object" ? stepData : {}),
+            ...(stepData && typeof stepData === 'object' ? stepData : {}),
           };
 
           await BookingCoreApi.updateSessionData(
@@ -1031,15 +977,15 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Find the contact_info step
         const contactInfoStep = state.currentFlow.enabled_steps.find(
-          (s) => s.step_type === "contact_info",
+          (s) => s.step_type === 'contact_info',
         );
         if (!contactInfoStep) {
-          throw new Error("Contact info step not found in this booking flow");
+          throw new Error('Contact info step not found in this booking flow');
         }
 
         // Set quick quote mode
         dispatch({
-          type: "SET_QUICK_QUOTE_MODE",
+          type: 'SET_QUICK_QUOTE_MODE',
           payload: { sourceStepIndex: currentStepIndex },
         });
 
@@ -1052,47 +998,35 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         const responseData = response as unknown as Record<string, unknown>;
         const updatedSession: BookingSession = {
           ...state.currentSession,
-          current_step: responseData.current_step as
-            | Record<string, unknown>
-            | undefined,
+          current_step: responseData.current_step as Record<string, unknown> | undefined,
           progress_percentage: responseData.progress_percentage as number,
           updated_at: responseData.updated_at as string,
         };
 
-        dispatch({ type: "SET_CURRENT_SESSION", payload: updatedSession });
+        dispatch({ type: 'SET_CURRENT_SESSION', payload: updatedSession });
         BookingCoreApi.saveSessionToLocal(
           state.currentSession.session_id,
           updatedSession as unknown as Record<string, unknown>,
         );
       } catch (error) {
         const errorMessage = ErrorHandler.extractMessage(error);
-        dispatch({ type: "SET_ERROR", payload: errorMessage });
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
         // Revert quick quote mode on failure
-        dispatch({ type: "EXIT_QUICK_QUOTE_MODE" });
+        dispatch({ type: 'EXIT_QUICK_QUOTE_MODE' });
       } finally {
-        dispatch({ type: "SET_SUBMITTING", payload: false });
+        dispatch({ type: 'SET_SUBMITTING', payload: false });
       }
-    }, [
-      state.currentFlow,
-      state.currentSession,
-      state.stepData,
-      state.progress.currentStepIndex,
-    ]),
+    }, [state.currentFlow, state.currentSession, state.stepData, state.progress.currentStepIndex]),
 
     // Exit quick quote mode: return to the step the user came from
     exitQuickQuoteMode: useCallback(async () => {
-      if (
-        !state.currentFlow ||
-        !state.currentSession ||
-        state.quickQuoteSourceStepIndex === null
-      )
+      if (!state.currentFlow || !state.currentSession || state.quickQuoteSourceStepIndex === null)
         return;
 
-      dispatch({ type: "SET_SUBMITTING", payload: true });
+      dispatch({ type: 'SET_SUBMITTING', payload: true });
 
       try {
-        const sourceStep =
-          state.currentFlow.enabled_steps[state.quickQuoteSourceStepIndex];
+        const sourceStep = state.currentFlow.enabled_steps[state.quickQuoteSourceStepIndex];
         if (!sourceStep) return;
 
         const response = await BookingCoreApi.goToStep(
@@ -1103,37 +1037,29 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         const responseData = response as unknown as Record<string, unknown>;
         const updatedSession: BookingSession = {
           ...state.currentSession,
-          current_step: responseData.current_step as
-            | Record<string, unknown>
-            | undefined,
+          current_step: responseData.current_step as Record<string, unknown> | undefined,
           progress_percentage: responseData.progress_percentage as number,
           updated_at: responseData.updated_at as string,
         };
 
-        dispatch({ type: "SET_CURRENT_SESSION", payload: updatedSession });
-        dispatch({ type: "EXIT_QUICK_QUOTE_MODE" });
+        dispatch({ type: 'SET_CURRENT_SESSION', payload: updatedSession });
+        dispatch({ type: 'EXIT_QUICK_QUOTE_MODE' });
         BookingCoreApi.saveSessionToLocal(
           state.currentSession.session_id,
           updatedSession as unknown as Record<string, unknown>,
         );
       } catch (error) {
         const errorMessage = ErrorHandler.extractMessage(error);
-        dispatch({ type: "SET_ERROR", payload: errorMessage });
+        dispatch({ type: 'SET_ERROR', payload: errorMessage });
       } finally {
-        dispatch({ type: "SET_SUBMITTING", payload: false });
+        dispatch({ type: 'SET_SUBMITTING', payload: false });
       }
-    }, [
-      state.currentFlow,
-      state.currentSession,
-      state.quickQuoteSourceStepIndex,
-    ]),
+    }, [state.currentFlow, state.currentSession, state.quickQuoteSourceStepIndex]),
 
     completeBooking: useCallback(
-      async (
-        completionType: "payment" | "quote" = "payment",
-      ): Promise<BookingCompletionResult> => {
+      async (completionType: 'payment' | 'quote' = 'payment'): Promise<BookingCompletionResult> => {
         if (!state.currentSession) {
-          throw new Error("No active session");
+          throw new Error('No active session');
         }
 
         // Cancel any pending debounced updates
@@ -1141,8 +1067,8 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
           debouncedUpdateRef.current.cancel();
         }
 
-        dispatch({ type: "SET_SUBMITTING", payload: true });
-        dispatch({ type: "CLEAR_ERRORS" });
+        dispatch({ type: 'SET_SUBMITTING', payload: true });
+        dispatch({ type: 'CLEAR_ERRORS' });
 
         try {
           const result = await BookingCoreApi.completeBooking(
@@ -1153,7 +1079,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
           BookingCoreApi.clearSessionFromLocal(state.currentSession.session_id);
 
           dispatch({
-            type: "SET_CURRENT_SESSION",
+            type: 'SET_CURRENT_SESSION',
             payload: {
               ...state.currentSession,
               is_completed: true,
@@ -1163,10 +1089,10 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
           return result;
         } catch (error) {
           const errorMessage = ErrorHandler.extractMessage(error);
-          dispatch({ type: "SET_ERROR", payload: errorMessage });
+          dispatch({ type: 'SET_ERROR', payload: errorMessage });
           throw error;
         } finally {
-          dispatch({ type: "SET_SUBMITTING", payload: false });
+          dispatch({ type: 'SET_SUBMITTING', payload: false });
         }
       },
       [state.currentSession],
@@ -1176,11 +1102,9 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!state.currentFlow) return;
 
       try {
-        const response = await BookingCoreApi.getFlowPaymentGateways(
-          state.currentFlow.id,
-        );
+        const response = await BookingCoreApi.getFlowPaymentGateways(state.currentFlow.id);
         dispatch({
-          type: "SET_PAYMENT_GATEWAYS",
+          type: 'SET_PAYMENT_GATEWAYS',
           payload: response.available_gateways,
         });
 
@@ -1190,24 +1114,23 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
           );
           if (defaultGateway) {
             dispatch({
-              type: "SELECT_PAYMENT_GATEWAY",
+              type: 'SELECT_PAYMENT_GATEWAY',
               payload: defaultGateway,
             });
           }
         }
       } catch (error) {
-        if (import.meta.env.DEV)
-          console.warn("Failed to load payment gateways:", error);
+        if (import.meta.env.DEV) console.warn('Failed to load payment gateways:', error);
       }
     }, [state.currentFlow]),
 
     selectPaymentGateway: useCallback((gateway: PaymentGateway) => {
-      dispatch({ type: "SELECT_PAYMENT_GATEWAY", payload: gateway });
+      dispatch({ type: 'SELECT_PAYMENT_GATEWAY', payload: gateway });
     }, []),
 
     updateTotalPrice: useCallback(
       async (newTotalPrice: string) => {
-        dispatch({ type: "SET_TOTAL_PRICE", payload: newTotalPrice });
+        dispatch({ type: 'SET_TOTAL_PRICE', payload: newTotalPrice });
 
         if (state.currentSession && state.currentSession.current_step) {
           try {
@@ -1218,8 +1141,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
               false,
             );
           } catch (error) {
-            if (import.meta.env.DEV)
-              console.warn("Failed to update session total price:", error);
+            if (import.meta.env.DEV) console.warn('Failed to update session total price:', error);
           }
         }
       },
@@ -1228,12 +1150,12 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Immediate local price update without backend sync (for optimistic UI updates)
     setOptimisticPrice: useCallback((price: string) => {
-      dispatch({ type: "SET_TOTAL_PRICE", payload: price });
+      dispatch({ type: 'SET_TOTAL_PRICE', payload: price });
     }, []),
 
     // Store tax rate from backend for local calculations
     setTaxRate: useCallback((rate: number) => {
-      dispatch({ type: "SET_TAX_RATE", payload: rate });
+      dispatch({ type: 'SET_TAX_RATE', payload: rate });
     }, []),
 
     // Update pricing breakdown for footer display
@@ -1246,7 +1168,7 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         formattedTax: string;
         formattedDiscount: string;
       }) => {
-        dispatch({ type: "SET_PRICING_BREAKDOWN", payload: breakdown });
+        dispatch({ type: 'SET_PRICING_BREAKDOWN', payload: breakdown });
       },
       [],
     ),
@@ -1265,17 +1187,17 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
         debouncedUpdateRef.current.cancel();
       }
 
-      dispatch({ type: "RESET_BOOKING" });
-      navigate("/");
+      dispatch({ type: 'RESET_BOOKING' });
+      navigate('/');
     }, [state.currentSession, navigate]),
 
     clearErrors: useCallback(() => {
-      dispatch({ type: "CLEAR_ERRORS" });
+      dispatch({ type: 'CLEAR_ERRORS' });
     }, []),
 
     clearRecoverableSession: useCallback((_sessionId?: string) => {
       // Clear the recoverable session state
-      dispatch({ type: "SET_RECOVERABLE_SESSION", payload: null });
+      dispatch({ type: 'SET_RECOVERABLE_SESSION', payload: null });
       // Clear ALL booking sessions from localStorage to ensure a clean slate
       // This prevents old sessions from appearing after clicking "Start Over"
       BookingCoreApi.clearAllSessionsFromLocal();
@@ -1295,15 +1217,13 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const value = { state, actions };
 
-  return (
-    <BookingContext.Provider value={value}>{children}</BookingContext.Provider>
-  );
+  return <BookingContext.Provider value={value}>{children}</BookingContext.Provider>;
 };
 
 export const useBooking = () => {
   const context = useContext(BookingContext);
   if (!context) {
-    throw new Error("useBooking must be used within a BookingProvider");
+    throw new Error('useBooking must be used within a BookingProvider');
   }
   return context;
 };

@@ -22,11 +22,7 @@ interface TaxRateFormDialogProps {
   taxRate?: TaxRate | null;
 }
 
-export const TaxRateFormDialog: React.FC<TaxRateFormDialogProps> = ({
-  open,
-  onClose,
-  taxRate,
-}) => {
+export const TaxRateFormDialog: React.FC<TaxRateFormDialogProps> = ({ open, onClose, taxRate }) => {
   const [formData, setFormData] = useState<TaxRateFormData>({
     name: '',
     rate: '',
@@ -61,26 +57,25 @@ export const TaxRateFormDialog: React.FC<TaxRateFormDialogProps> = ({
     setErrors({});
   }, [taxRate, open]);
 
-  const handleChange = (field: keyof TaxRateFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = field === 'is_default' ? event.target.checked : event.target.value;
-    
-    // For rate field, only allow numbers and decimal point
-    if (field === 'rate') {
-      const numericValue = event.target.value;
-      if (numericValue && !/^\d*\.?\d*$/.test(numericValue)) {
-        return; // Don't update if invalid number format
+  const handleChange =
+    (field: keyof TaxRateFormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = field === 'is_default' ? event.target.checked : event.target.value;
+
+      // For rate field, only allow numbers and decimal point
+      if (field === 'rate') {
+        const numericValue = event.target.value;
+        if (numericValue && !/^\d*\.?\d*$/.test(numericValue)) {
+          return; // Don't update if invalid number format
+        }
       }
-    }
-    
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
+
+      setFormData((prev) => ({ ...prev, [field]: value }));
+
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: '' }));
+      }
+    };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -113,9 +108,12 @@ export const TaxRateFormDialog: React.FC<TaxRateFormDialogProps> = ({
     };
 
     if (isEditing && taxRate) {
-      updateTaxRate({ id: taxRate.id, data: submitData }, {
-        onSuccess: () => onClose(),
-      });
+      updateTaxRate(
+        { id: taxRate.id, data: submitData },
+        {
+          onSuccess: () => onClose(),
+        },
+      );
     } else {
       createTaxRate(submitData, {
         onSuccess: () => onClose(),
@@ -131,16 +129,12 @@ export const TaxRateFormDialog: React.FC<TaxRateFormDialogProps> = ({
     return '';
   };
 
-  const actions = createDialogActions(
-    onClose,
-    handleSubmit,
-    {
-      cancelLabel: 'Cancel',
-      confirmLabel: isEditing ? 'Update Tax Rate' : 'Create Tax Rate',
-      isLoading: isSubmitting,
-      confirmDisabled: isSubmitting,
-    }
-  );
+  const actions = createDialogActions(onClose, handleSubmit, {
+    cancelLabel: 'Cancel',
+    confirmLabel: isEditing ? 'Update Tax Rate' : 'Create Tax Rate',
+    isLoading: isSubmitting,
+    confirmDisabled: isSubmitting,
+  });
 
   return (
     <ModernDialog
@@ -151,76 +145,73 @@ export const TaxRateFormDialog: React.FC<TaxRateFormDialogProps> = ({
       maxWidth="sm"
       fullWidth
     >
-        <Box sx={{ mt: 2 }}>
-          {formData.is_default && (
-            <Alert 
-              severity="info" 
-              sx={{ 
-                mb: 3,
-                backdropFilter: 'blur(10px)',
-                background: 'rgba(255, 255, 255, 0.95)',
-                borderRadius: tokens.spacing.radius.lg,
-                border: `1px solid ${tokens.color.borders.glass}`,
-              }}
-            >
-              This will become the default tax rate applied to new invoices and quotes.
-            </Alert>
-          )}
+      <Box sx={{ mt: 2 }}>
+        {formData.is_default && (
+          <Alert
+            severity="info"
+            sx={{
+              mb: 3,
+              backdropFilter: 'blur(10px)',
+              background: 'rgba(255, 255, 255, 0.95)',
+              borderRadius: tokens.spacing.radius.lg,
+              border: `1px solid ${tokens.color.borders.glass}`,
+            }}
+          >
+            This will become the default tax rate applied to new invoices and quotes.
+          </Alert>
+        )}
 
-          <Stack spacing={3}>
+        <Stack spacing={3}>
+          <TextField
+            fullWidth
+            label="Tax Rate Name"
+            value={formData.name}
+            onChange={handleChange('name')}
+            error={!!errors.name}
+            helperText={errors.name}
+            placeholder="e.g., VAT, Sales Tax, GST"
+          />
+
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
+              gap: 3,
+            }}
+          >
             <TextField
               fullWidth
-              label="Tax Rate Name"
-              value={formData.name}
-              onChange={handleChange('name')}
-              error={!!errors.name}
-              helperText={errors.name}
-              placeholder="e.g., VAT, Sales Tax, GST"
+              label="Rate"
+              value={formData.rate}
+              onChange={handleChange('rate')}
+              error={!!errors.rate}
+              helperText={errors.rate || formatRatePreview()}
+              placeholder="12.00"
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <PercentIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+              }}
             />
-            
-            <Box sx={{ 
-              display: 'flex', 
-              flexDirection: { xs: 'column', sm: 'row' },
-              gap: 3
-            }}>
-              <TextField
-                fullWidth
-                label="Rate"
-                value={formData.rate}
-                onChange={handleChange('rate')}
-                error={!!errors.rate}
-                helperText={errors.rate || formatRatePreview()}
-                placeholder="12.00"
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <PercentIcon sx={{ color: 'text.secondary' }} />
-                    </InputAdornment>
-                  ),
-                }}
-              />
 
-              <TextField
-                fullWidth
-                label="Region"
-                value={formData.region}
-                onChange={handleChange('region')}
-                placeholder="e.g., Philippines, Metro Manila"
-                helperText="Optional: Specify the region this tax rate applies to"
-              />
-            </Box>
-
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.is_default}
-                  onChange={handleChange('is_default')}
-                />
-              }
-              label="Set as default tax rate"
+            <TextField
+              fullWidth
+              label="Region"
+              value={formData.region}
+              onChange={handleChange('region')}
+              placeholder="e.g., Philippines, Metro Manila"
+              helperText="Optional: Specify the region this tax rate applies to"
             />
-          </Stack>
-        </Box>
+          </Box>
+
+          <FormControlLabel
+            control={<Switch checked={formData.is_default} onChange={handleChange('is_default')} />}
+            label="Set as default tax rate"
+          />
+        </Stack>
+      </Box>
     </ModernDialog>
   );
 };

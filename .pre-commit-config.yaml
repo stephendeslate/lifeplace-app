@@ -42,7 +42,7 @@ repos:
   # Python Linting - Backend (Ruff)
   # ===========================================================================
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.9
+    rev: v0.15.2
     hooks:
       # Run the linter
       - id: ruff
@@ -53,16 +53,19 @@ repos:
         files: ^backend/
 
   # ===========================================================================
-  # Python Type Checking (optional - uncomment if mypy is configured)
+  # Python Type Checking (mypy - gradual adoption, scoped to services)
   # ===========================================================================
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v1.8.0
-  #   hooks:
-  #     - id: mypy
-  #       files: ^backend/
-  #       additional_dependencies:
-  #         - django-stubs
-  #         - djangorestframework-stubs
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.15.0
+    hooks:
+      - id: mypy
+        files: ^backend/core/domains/.*/services\.py$
+        args: [--config-file=pyproject.toml]
+        additional_dependencies:
+          - django-stubs==5.2.0
+          - djangorestframework-stubs==3.15.2
+          - types-requests==2.32.0.20241016
+          - types-python-dateutil==2.9.0.20241206
 
   # ===========================================================================
   # Security Checks
@@ -80,6 +83,13 @@ repos:
   # ===========================================================================
   - repo: local
     hooks:
+      - id: prettier
+        name: Prettier
+        entry: npx prettier --check
+        language: system
+        files: ^frontend/.*\.(ts|tsx|js|jsx|json|css)$
+        pass_filenames: true
+
       - id: eslint-admin-crm
         name: ESLint Admin CRM
         entry: bash -c 'cd frontend/admin-crm && npm run lint'
@@ -92,6 +102,13 @@ repos:
         entry: bash -c 'cd frontend/client-portal && npm run lint'
         language: system
         files: ^frontend/client-portal/.*\.(ts|tsx|js|jsx)$
+        pass_filenames: false
+
+      - id: eslint-mobile
+        name: ESLint Mobile App
+        entry: bash -c 'cd mobile-app && npm run lint'
+        language: system
+        files: ^mobile-app/.*\.(ts|tsx)$
         pass_filenames: false
 
       - id: typescript-admin-crm

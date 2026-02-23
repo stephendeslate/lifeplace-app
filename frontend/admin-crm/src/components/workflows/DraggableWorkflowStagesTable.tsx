@@ -131,33 +131,39 @@ export const DraggableWorkflowStagesTable: React.FC<DraggableWorkflowStagesTable
     handleMenuClose();
   };
 
-  const handleDragEnd = useCallback(async (result: DropResult) => {
-    if (!result.destination) return;
-    if (result.destination.index === result.source.index) return;
+  const handleDragEnd = useCallback(
+    async (result: DropResult) => {
+      if (!result.destination) return;
+      if (result.destination.index === result.source.index) return;
 
-    // Create new order from drag result
-    const reorderedStages = Array.from(sortedStages);
-    const [removed] = reorderedStages.splice(result.source.index, 1);
-    reorderedStages.splice(result.destination.index, 0, removed);
+      // Create new order from drag result
+      const reorderedStages = Array.from(sortedStages);
+      const [removed] = reorderedStages.splice(result.source.index, 1);
+      reorderedStages.splice(result.destination.index, 0, removed);
 
-    // Build order mapping
-    const orderMapping: Record<string, number> = {};
-    reorderedStages.forEach((stage, index) => {
-      orderMapping[stage.id.toString()] = index + 1;
-    });
+      // Build order mapping
+      const orderMapping: Record<string, number> = {};
+      reorderedStages.forEach((stage, index) => {
+        orderMapping[stage.id.toString()] = index + 1;
+      });
 
-    setHasReorderChanges(true);
+      setHasReorderChanges(true);
 
-    try {
-      await onReorder(stageType, orderMapping);
-    } finally {
-      setHasReorderChanges(false);
-    }
-  }, [sortedStages, stageType, onReorder]);
+      try {
+        await onReorder(stageType, orderMapping);
+      } finally {
+        setHasReorderChanges(false);
+      }
+    },
+    [sortedStages, stageType, onReorder],
+  );
 
-  const handleInlineSave = useCallback(async (stageId: number, field: 'name' | 'task_description', value: string) => {
-    await onInlineUpdate(stageId, { [field]: value });
-  }, [onInlineUpdate]);
+  const handleInlineSave = useCallback(
+    async (stageId: number, field: 'name' | 'task_description', value: string) => {
+      await onInlineUpdate(stageId, { [field]: value });
+    },
+    [onInlineUpdate],
+  );
 
   const getAutomationIcon = (automationType: string) => {
     const icons = {
@@ -173,7 +179,11 @@ export const DraggableWorkflowStagesTable: React.FC<DraggableWorkflowStagesTable
     return icons[automationType as keyof typeof icons] || <TaskIcon fontSize="small" />;
   };
 
-  const getAutomationChip = (isAutomated: boolean, automationType?: string, stage?: WorkflowStage) => {
+  const getAutomationChip = (
+    isAutomated: boolean,
+    automationType?: string,
+    stage?: WorkflowStage,
+  ) => {
     if (!isAutomated) {
       return (
         <Chip
@@ -286,7 +296,9 @@ export const DraggableWorkflowStagesTable: React.FC<DraggableWorkflowStagesTable
                     <TableCell sx={{ minWidth: 150 }}>Stage Name</TableCell>
                     <TableCell>Automation</TableCell>
                     <TableCell sx={{ minWidth: 200 }}>Description</TableCell>
-                    <TableCell align="right" width="60px">Actions</TableCell>
+                    <TableCell align="right" width="60px">
+                      Actions
+                    </TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -364,7 +376,9 @@ export const DraggableWorkflowStagesTable: React.FC<DraggableWorkflowStagesTable
                           <TableCell onClick={(e) => e.stopPropagation()}>
                             <InlineEditableText
                               value={stage.task_description || ''}
-                              onSave={(desc) => handleInlineSave(stage.id, 'task_description', desc)}
+                              onSave={(desc) =>
+                                handleInlineSave(stage.id, 'task_description', desc)
+                              }
                               placeholder="No description"
                               multiline
                               variant="body2"
@@ -404,11 +418,7 @@ export const DraggableWorkflowStagesTable: React.FC<DraggableWorkflowStagesTable
       </DragDropContext>
 
       {/* Action Menu */}
-      <Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={handleMenuClose}
-      >
+      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleMenuClose}>
         <MenuItem onClick={handleEdit}>
           <ListItemIcon>
             <EditIcon fontSize="small" />

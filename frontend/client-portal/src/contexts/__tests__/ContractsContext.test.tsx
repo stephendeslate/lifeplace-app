@@ -81,29 +81,31 @@ const signedContract: Contract = {
   ...mockContract,
   id: 'contract-2',
   status: 'SIGNED',
-  signatures: [{
-    id: 'sig-1',
-    contract: 'contract-2',
-    signer: {
-      id: 'user-1',
-      email: 'test@example.com',
-      first_name: 'John',
-      last_name: 'Doe',
+  signatures: [
+    {
+      id: 'sig-1',
+      contract: 'contract-2',
+      signer: {
+        id: 'user-1',
+        email: 'test@example.com',
+        first_name: 'John',
+        last_name: 'Doe',
+      },
+      role: 'CLIENT',
+      role_display: 'Client',
+      signature_data: 'signature-data',
+      signed_at: '2024-05-02T10:00:00Z',
+      signer_name: 'John Doe',
+      signer_title: '',
+      signer_email: 'test@example.com',
+      is_verified: true,
+      verification_method: 'electronic_signature',
+      legal_disclosure_accepted: true,
+      signature_intent_confirmed: true,
+      created_at: '2024-05-02T10:00:00Z',
+      updated_at: '2024-05-02T10:00:00Z',
     },
-    role: 'CLIENT',
-    role_display: 'Client',
-    signature_data: 'signature-data',
-    signed_at: '2024-05-02T10:00:00Z',
-    signer_name: 'John Doe',
-    signer_title: '',
-    signer_email: 'test@example.com',
-    is_verified: true,
-    verification_method: 'electronic_signature',
-    legal_disclosure_accepted: true,
-    signature_intent_confirmed: true,
-    created_at: '2024-05-02T10:00:00Z',
-    updated_at: '2024-05-02T10:00:00Z',
-  }],
+  ],
   is_fully_signed: true,
   missing_signatures: [],
   signature_progress: {
@@ -175,9 +177,7 @@ const ContractTestComponent = ({ contractId }: { contractId: string }) => {
       <div data-testid="contract-loading">{isLoading ? 'Loading' : 'Loaded'}</div>
       <div data-testid="contract-id">{contract?.id || 'No contract'}</div>
       <button
-        onClick={() =>
-          updateContract((c) => ({ ...c, status: 'SIGNED' }))
-        }
+        onClick={() => updateContract((c) => ({ ...c, status: 'SIGNED' }))}
         data-testid="update-contract"
       >
         Update Contract
@@ -198,10 +198,7 @@ const OptimisticTestComponent = () => {
       >
         Optimistic Sign
       </button>
-      <button
-        onClick={() => revertOptimisticUpdate('contract-1')}
-        data-testid="revert-optimistic"
-      >
+      <button onClick={() => revertOptimisticUpdate('contract-1')} data-testid="revert-optimistic">
         Revert
       </button>
     </div>
@@ -214,7 +211,7 @@ describe('ContractsContext', () => {
   beforeEach(() => {
     queryClient = createTestQueryClient();
     vi.clearAllMocks();
-    
+
     // Setup default mock responses
     mockContractsApi.getContracts.mockResolvedValue([mockContract, signedContract]);
     mockContractsApi.getPendingSignatures.mockResolvedValue({
@@ -288,7 +285,11 @@ describe('ContractsContext', () => {
 
     it('filters contracts by status correctly', async () => {
       const pendingContract1 = { ...mockContract, status: 'SENT' as const };
-      const pendingContract2 = { ...mockContract, id: 'contract-3', status: 'PARTIALLY_SIGNED' as const };
+      const pendingContract2 = {
+        ...mockContract,
+        id: 'contract-3',
+        status: 'PARTIALLY_SIGNED' as const,
+      };
       const signedContract1 = { ...mockContract, id: 'contract-4', status: 'SIGNED' as const };
 
       mockContractsApi.getContracts.mockResolvedValue([
@@ -368,7 +369,7 @@ describe('ContractsContext', () => {
         <div>
           <TestComponent />
           <OptimisticTestComponent />
-        </div>
+        </div>,
       );
 
       await waitFor(() => {
@@ -412,7 +413,10 @@ describe('ContractsContext', () => {
 
       // Wait for the mutation to be called and complete (error or success)
       await waitFor(() => {
-        expect(mockContractsApi.signContract).toHaveBeenCalledWith('contract-1', expect.any(Object));
+        expect(mockContractsApi.signContract).toHaveBeenCalledWith(
+          'contract-1',
+          expect.any(Object),
+        );
       });
 
       // The error should be handled gracefully without crashing
@@ -423,23 +427,23 @@ describe('ContractsContext', () => {
   describe('Background sync', () => {
     it('sets up visibility change listener', () => {
       const addEventListenerSpy = vi.spyOn(document, 'addEventListener');
-      
+
       renderWithProviders(<TestComponent />);
 
       expect(addEventListenerSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
-      
+
       addEventListenerSpy.mockRestore();
     });
 
     it('cleans up event listeners on unmount', () => {
       const removeEventListenerSpy = vi.spyOn(document, 'removeEventListener');
-      
+
       const { unmount } = renderWithProviders(<TestComponent />);
-      
+
       unmount();
 
       expect(removeEventListenerSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
-      
+
       removeEventListenerSpy.mockRestore();
     });
   });
@@ -455,23 +459,23 @@ describe('ContractsContext', () => {
 
     it('sets up periodic health check', () => {
       const setIntervalSpy = vi.spyOn(global, 'setInterval');
-      
+
       renderWithProviders(<TestComponent />);
 
       expect(setIntervalSpy).toHaveBeenCalledWith(expect.any(Function), 60000);
-      
+
       setIntervalSpy.mockRestore();
     });
 
     it('cleans up health check interval on unmount', () => {
       const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
-      
+
       const { unmount } = renderWithProviders(<TestComponent />);
-      
+
       unmount();
 
       expect(clearIntervalSpy).toHaveBeenCalled();
-      
+
       clearIntervalSpy.mockRestore();
     });
   });

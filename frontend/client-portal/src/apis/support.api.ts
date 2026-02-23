@@ -44,7 +44,7 @@ export const supportApi = {
   addReply: async (inquiryId: string, data: SupportReply): Promise<SupportMessage> => {
     const response = await api.post<SupportMessage>(
       `/messaging/support/${inquiryId}/add_reply/`,
-      data
+      data,
     );
     return response.data;
   },

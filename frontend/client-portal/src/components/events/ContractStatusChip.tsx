@@ -1,12 +1,7 @@
 // frontend/client-portal/src/components/events/ContractStatusChip.tsx
 
 import React from 'react';
-import { 
-  Chip, 
-  Tooltip,
-  useTheme,
-  alpha,
-} from '@mui/material';
+import { Chip, Tooltip, useTheme, alpha } from '@mui/material';
 import {
   Assignment as ContractIcon,
   Edit as SignatureIcon,
@@ -56,7 +51,12 @@ const ContractStatusChip: React.FC<ContractStatusChipProps> = ({
     }
 
     // Urgent expiry (within 3 days) - but only for unsigned contracts
-    if (status !== 'SIGNED' && contractExpiryDays !== null && contractExpiryDays <= 3 && contractExpiryDays >= 0) {
+    if (
+      status !== 'SIGNED' &&
+      contractExpiryDays !== null &&
+      contractExpiryDays <= 3 &&
+      contractExpiryDays >= 0
+    ) {
       return {
         label: `Expires in ${contractExpiryDays}d`,
         color: 'error' as const,
@@ -91,7 +91,9 @@ const ContractStatusChip: React.FC<ContractStatusChipProps> = ({
     // Fully signed
     if (status === 'SIGNED') {
       return {
-        label: showCount ? `${contractsCount} Contract${contractsCount === 1 ? '' : 's'}` : 'Signed',
+        label: showCount
+          ? `${contractsCount} Contract${contractsCount === 1 ? '' : 's'}`
+          : 'Signed',
         color: 'success' as const,
         icon: <SignedIcon fontSize="small" />,
         tooltip: `${contractsCount} contract${contractsCount === 1 ? ' is' : 's are'} fully signed`,
@@ -112,7 +114,9 @@ const ContractStatusChip: React.FC<ContractStatusChipProps> = ({
 
     // Draft or other states
     return {
-      label: showCount ? `${contractsCount} Contract${contractsCount === 1 ? '' : 's'}` : 'Contract',
+      label: showCount
+        ? `${contractsCount} Contract${contractsCount === 1 ? '' : 's'}`
+        : 'Contract',
       color: 'default' as const,
       icon: <ContractIcon fontSize="small" />,
       tooltip: `${contractsCount} contract${contractsCount === 1 ? '' : 's'} associated with this event`,
@@ -131,17 +135,15 @@ const ContractStatusChip: React.FC<ContractStatusChipProps> = ({
         color={displayInfo.color}
         variant={displayInfo.variant}
         sx={{
-          backgroundColor: displayInfo.variant === 'filled' 
-            ? undefined 
-            : alpha('#fff', 0.1),
+          backgroundColor: displayInfo.variant === 'filled' ? undefined : alpha('#fff', 0.1),
           backdropFilter: 'blur(5px)',
-          border: displayInfo.variant === 'outlined' 
-            ? `1px solid ${alpha('#fff', 0.2)}` 
-            : undefined,
+          border:
+            displayInfo.variant === 'outlined' ? `1px solid ${alpha('#fff', 0.2)}` : undefined,
           // Add pulsing animation for urgent items
-          animation: (status === 'EXPIRED' || (contractExpiryDays !== null && contractExpiryDays <= 1)) 
-            ? 'pulse 2s infinite' 
-            : undefined,
+          animation:
+            status === 'EXPIRED' || (contractExpiryDays !== null && contractExpiryDays <= 1)
+              ? 'pulse 2s infinite'
+              : undefined,
           '@keyframes pulse': {
             '0%': {
               opacity: 1,

@@ -95,7 +95,7 @@ describe('AuthContext', () => {
       render(
         <AuthProvider>
           <div data-testid="child">Test Child</div>
-        </AuthProvider>
+        </AuthProvider>,
       );
 
       await waitFor(() => {
@@ -110,7 +110,7 @@ describe('AuthContext', () => {
       render(
         <AuthProvider>
           <TestConsumer />
-        </AuthProvider>
+        </AuthProvider>,
       );
 
       // Wait for loading to finish
@@ -126,7 +126,7 @@ describe('AuthContext', () => {
       render(
         <AuthProvider>
           <TestConsumer />
-        </AuthProvider>
+        </AuthProvider>,
       );
 
       await waitFor(() => {
@@ -155,7 +155,7 @@ describe('AuthContext', () => {
       render(
         <AuthProvider>
           <TestConsumer />
-        </AuthProvider>
+        </AuthProvider>,
       );
 
       await waitFor(() => {
@@ -175,7 +175,7 @@ describe('AuthContext', () => {
       render(
         <AuthProvider>
           <TestConsumer />
-        </AuthProvider>
+        </AuthProvider>,
       );
 
       await waitFor(() => {
@@ -197,7 +197,7 @@ describe('AuthContext', () => {
       render(
         <AuthProvider>
           <TestConsumer />
-        </AuthProvider>
+        </AuthProvider>,
       );
 
       await waitFor(() => {
@@ -229,7 +229,7 @@ describe('AuthContext', () => {
       render(
         <AuthProvider>
           <TestConsumer />
-        </AuthProvider>
+        </AuthProvider>,
       );
 
       await waitFor(() => {
@@ -262,7 +262,7 @@ describe('AuthContext', () => {
       render(
         <AuthProvider>
           <TestConsumer />
-        </AuthProvider>
+        </AuthProvider>,
       );
 
       await waitFor(() => {
@@ -302,7 +302,7 @@ describe('AuthContext', () => {
       render(
         <AuthProvider>
           <TestConsumer />
-        </AuthProvider>
+        </AuthProvider>,
       );
 
       await waitFor(() => {
@@ -341,7 +341,7 @@ describe('AuthContext', () => {
       render(
         <AuthProvider>
           <TestConsumer />
-        </AuthProvider>
+        </AuthProvider>,
       );
 
       await waitFor(() => {
@@ -380,7 +380,7 @@ describe('AuthContext', () => {
       render(
         <AuthProvider>
           <TestConsumer />
-        </AuthProvider>
+        </AuthProvider>,
       );
 
       await waitFor(() => {
@@ -416,7 +416,7 @@ describe('AuthContext', () => {
       render(
         <AuthProvider>
           <TestConsumer />
-        </AuthProvider>
+        </AuthProvider>,
       );
 
       await waitFor(() => {
@@ -432,7 +432,7 @@ describe('AuthContext', () => {
         expect.objectContaining({
           first_name: 'Updated',
           token: 'access-token',
-        })
+        }),
       );
     });
   });
@@ -448,7 +448,7 @@ describe('useAuth hook', () => {
     };
 
     expect(() => render(<ThrowingComponent />)).toThrow(
-      'useAuth must be used within an AuthProvider'
+      'useAuth must be used within an AuthProvider',
     );
 
     consoleError.mockRestore();

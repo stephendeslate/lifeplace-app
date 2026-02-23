@@ -35,7 +35,7 @@ describe('DateTimeApi', () => {
         {
           step_id: 1,
           step_data: stepData,
-        }
+        },
       );
       expect(result.isValid).toBe(true);
     });
@@ -74,7 +74,7 @@ describe('DateTimeApi', () => {
           step_id: 1,
           step_data: stepData,
           mark_completed: false,
-        }
+        },
       );
       expect(result.success).toBe(true);
     });
@@ -91,7 +91,7 @@ describe('DateTimeApi', () => {
         expect.any(String),
         expect.objectContaining({
           mark_completed: true,
-        })
+        }),
       );
     });
   });

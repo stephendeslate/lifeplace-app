@@ -23,7 +23,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Tooltip
+  Tooltip,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -35,7 +35,7 @@ import {
   CheckCircle as DeliveredIcon,
   Error as FailedIcon,
   Schedule as PendingIcon,
-  Mail as MailOpenIcon
+  Mail as MailOpenIcon,
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useCommunications } from '../../hooks/useCommunications';
@@ -55,7 +55,7 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
   event,
   clientId,
   clientEmail,
-  clientName
+  clientName,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [channelFilter, setChannelFilter] = useState<'ALL' | 'EMAIL' | 'SMS'>('ALL');
@@ -68,15 +68,18 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
   const {
     data: communications = [],
     isLoading,
-    refetch
+    refetch,
   } = useRecords({
     event_id: event.id,
     channel: channelFilter === 'ALL' ? undefined : channelFilter,
-    status: statusFilter === 'ALL' ? undefined : statusFilter as 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED'
+    status:
+      statusFilter === 'ALL'
+        ? undefined
+        : (statusFilter as 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED'),
   });
 
   // Filter communications by search term
-  const filteredCommunications = communications.filter(comm => {
+  const filteredCommunications = communications.filter((comm) => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -117,9 +120,11 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
   };
 
   const getChannelIcon = (channel: string) => {
-    return channel === 'EMAIL' ? 
-      <EmailIcon fontSize="small" color="primary" /> : 
-      <SmsIcon fontSize="small" color="secondary" />;
+    return channel === 'EMAIL' ? (
+      <EmailIcon fontSize="small" color="primary" />
+    ) : (
+      <SmsIcon fontSize="small" color="secondary" />
+    );
   };
 
   const handleViewDetails = (record: CommunicationRecord) => {
@@ -211,12 +216,12 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
             No Communications Yet
           </Typography>
           <Typography variant="body2" color="text.secondary" mb={2}>
-            {searchTerm || channelFilter !== 'ALL' || statusFilter !== 'ALL' 
+            {searchTerm || channelFilter !== 'ALL' || statusFilter !== 'ALL'
               ? 'No communications match your filters'
               : 'Start by sending your first message to the client'}
           </Typography>
           {(searchTerm || channelFilter !== 'ALL' || statusFilter !== 'ALL') && (
-            <Button 
+            <Button
               onClick={() => {
                 setSearchTerm('');
                 setChannelFilter('ALL');
@@ -268,24 +273,23 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
                   <TableCell>
                     <Stack direction="row" spacing={1} alignItems="center">
                       {getStatusIcon(comm.delivery_status)}
-                      <Chip 
-                        label={comm.delivery_status} 
+                      <Chip
+                        label={comm.delivery_status}
                         size="small"
                         color={getStatusColor(comm.delivery_status)}
                         variant="outlined"
                       />
                       {comm.is_opened && (
-                        <Tooltip title={`Opened at ${format(new Date(comm.opened_at!), 'MMM d, h:mm a')}`}>
+                        <Tooltip
+                          title={`Opened at ${format(new Date(comm.opened_at!), 'MMM d, h:mm a')}`}
+                        >
                           <MailOpenIcon fontSize="small" color="action" />
                         </Tooltip>
                       )}
                     </Stack>
                   </TableCell>
                   <TableCell>
-                    <IconButton 
-                      size="small" 
-                      onClick={() => handleViewDetails(comm)}
-                    >
+                    <IconButton size="small" onClick={() => handleViewDetails(comm)}>
                       <ViewIcon />
                     </IconButton>
                   </TableCell>
@@ -307,14 +311,14 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
           last_name: clientName.split(' ').slice(1).join(' ') || '',
           date_joined: '',
           is_active: true,
-          has_account: false
+          has_account: false,
         }}
         eventId={event.id}
       />
 
       {/* View Details Dialog */}
-      <Dialog 
-        open={viewDialogOpen} 
+      <Dialog
+        open={viewDialogOpen}
         onClose={() => setViewDialogOpen(false)}
         maxWidth="md"
         fullWidth
@@ -347,8 +351,8 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
                   </Typography>
                   <Stack direction="row" spacing={1} alignItems="center">
                     {getStatusIcon(selectedRecord.delivery_status)}
-                    <Chip 
-                      label={selectedRecord.delivery_status} 
+                    <Chip
+                      label={selectedRecord.delivery_status}
                       size="small"
                       color={getStatusColor(selectedRecord.delivery_status)}
                     />
@@ -367,10 +371,12 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
                     Message Body
                   </Typography>
                   <Paper variant="outlined" sx={{ p: 2, mt: 1 }}>
-                    <Typography 
-                      variant="body2" 
+                    <Typography
+                      variant="body2"
                       sx={{ whiteSpace: 'pre-wrap' }}
-                      dangerouslySetInnerHTML={{ __html: sanitizeHTML(selectedRecord.body, 'email') }}
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHTML(selectedRecord.body, 'email'),
+                      }}
                     />
                   </Paper>
                 </Box>
@@ -405,9 +411,7 @@ export const EventCommunications: React.FC<EventCommunicationsProps> = ({
               </Stack>
             </Box>
             <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
-              <Button onClick={() => setViewDialogOpen(false)}>
-                Close
-              </Button>
+              <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
             </Box>
           </>
         )}

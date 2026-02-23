@@ -33,10 +33,7 @@ interface ResetPasswordProps {
   onNavigateToHome?: () => void;
 }
 
-const ResetPassword: React.FC<ResetPasswordProps> = ({
-  onNavigateToLogin,
-  onNavigateToHome,
-}) => {
+const ResetPassword: React.FC<ResetPasswordProps> = ({ onNavigateToLogin, onNavigateToHome }) => {
   const { tokenId } = useParams<{ tokenId: string }>();
   const { showSuccess, showError } = useToastActions();
   const theme = useTheme();
@@ -137,14 +134,14 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
   const handlePasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setPassword(event.target.value);
     if (errors.password || errors.form) {
-      setErrors(prev => ({ ...prev, password: '', form: '' }));
+      setErrors((prev) => ({ ...prev, password: '', form: '' }));
     }
   };
 
   const handleConfirmPasswordChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setConfirmPassword(event.target.value);
     if (errors.confirmPassword || errors.form) {
-      setErrors(prev => ({ ...prev, confirmPassword: '', form: '' }));
+      setErrors((prev) => ({ ...prev, confirmPassword: '', form: '' }));
     }
   };
 
@@ -173,13 +170,17 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
     } catch (error: unknown) {
       if (import.meta.env.DEV) console.error('Password reset error:', error);
 
-      const err = error as { response?: { data?: { detail?: string; password_feedback?: string[] } }; message?: string };
-      const errorMessage = err?.response?.data?.detail || err.message || 'Failed to reset password. Please try again.';
+      const err = error as {
+        response?: { data?: { detail?: string; password_feedback?: string[] } };
+        message?: string;
+      };
+      const errorMessage =
+        err?.response?.data?.detail || err.message || 'Failed to reset password. Please try again.';
       const feedback = err?.response?.data?.password_feedback || [];
 
       setErrors({ form: errorMessage });
       if (feedback.length > 0) {
-        setErrors(prev => ({ ...prev, form: `${errorMessage}\n${feedback.join('\n')}` }));
+        setErrors((prev) => ({ ...prev, form: `${errorMessage}\n${feedback.join('\n')}` }));
       }
       showError('Reset Failed', errorMessage);
     } finally {
@@ -570,7 +571,13 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Lock sx={{ color: errors.password ? theme.palette.error.light : alpha('#fff', 0.7) }} />
+                          <Lock
+                            sx={{
+                              color: errors.password
+                                ? theme.palette.error.light
+                                : alpha('#fff', 0.7),
+                            }}
+                          />
                         </InputAdornment>
                       ),
                       endAdornment: (
@@ -602,7 +609,13 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Lock sx={{ color: errors.confirmPassword ? theme.palette.error.light : alpha('#fff', 0.7) }} />
+                          <Lock
+                            sx={{
+                              color: errors.confirmPassword
+                                ? theme.palette.error.light
+                                : alpha('#fff', 0.7),
+                            }}
+                          />
                         </InputAdornment>
                       ),
                       endAdornment: (

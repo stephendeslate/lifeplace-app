@@ -5,10 +5,12 @@ Based on actual models in core/domains/clients/models.py:
 - ClientInvitation (UUID primary key, expiration-based)
 """
 
+from datetime import timedelta
+
+from django.utils import timezone
+
 import factory
 from factory.django import DjangoModelFactory
-from django.utils import timezone
-from datetime import timedelta
 
 
 class ClientInvitationFactory(DjangoModelFactory):
@@ -20,10 +22,10 @@ class ClientInvitationFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'clients.ClientInvitation'
+        model = "clients.ClientInvitation"
 
-    client = factory.SubFactory('core.factories.users.UserFactory')
-    invited_by = factory.SubFactory('core.factories.users.UserFactory', admin=True)
+    client = factory.SubFactory("core.factories.users.UserFactory")
+    invited_by = factory.SubFactory("core.factories.users.UserFactory", admin=True)
     is_accepted = False
 
     @factory.lazy_attribute
@@ -34,18 +36,8 @@ class ClientInvitationFactory(DjangoModelFactory):
     class Params:
         """Traits for invitation states."""
 
-        expired = factory.Trait(
-            expires_at=factory.LazyFunction(
-                lambda: timezone.now() - timedelta(days=1)
-            )
-        )
+        expired = factory.Trait(expires_at=factory.LazyFunction(lambda: timezone.now() - timedelta(days=1)))
 
-        accepted = factory.Trait(
-            is_accepted=True
-        )
+        accepted = factory.Trait(is_accepted=True)
 
-        expiring_soon = factory.Trait(
-            expires_at=factory.LazyFunction(
-                lambda: timezone.now() + timedelta(hours=6)
-            )
-        )
+        expiring_soon = factory.Trait(expires_at=factory.LazyFunction(lambda: timezone.now() + timedelta(hours=6)))

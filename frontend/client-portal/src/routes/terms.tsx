@@ -1,14 +1,14 @@
-import { PublicLayout } from "../components/layout";
-import { TermsPage } from "../pages/legal";
+import { PublicLayout } from '../components/layout';
+import { TermsPage } from '../pages/legal';
 
 export function meta() {
   return [
-    { title: "Terms of Service | LifePlace Alfonso" },
+    { title: 'Terms of Service | LifePlace Alfonso' },
     {
-      name: "description",
-      content: "Terms of service for LifePlace Alfonso event bookings.",
+      name: 'description',
+      content: 'Terms of service for LifePlace Alfonso event bookings.',
     },
-    { name: "robots", content: "noindex, nofollow" },
+    { name: 'robots', content: 'noindex, nofollow' },
   ];
 }
 

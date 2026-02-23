@@ -6,22 +6,21 @@ Tests:
 - CacheInvalidator (signal handlers)
 """
 
-import pytest
-import json
-from unittest.mock import patch, MagicMock
-from decimal import Decimal
 from datetime import timedelta
-from django.utils import timezone
+
 from django.core.cache import cache
+from django.utils import timezone
+
+import pytest
 
 from core.domains.events.cache_service import (
-    EventCacheService,
     CacheInvalidator,
+    EventCacheService,
 )
 from core.domains.events.models import (
     Event,
-    EventType,
     EventTask,
+    EventType,
 )
 
 
@@ -50,21 +49,21 @@ class TestEventCacheServiceDetailCaching:
     def test_set_and_get_event_detail(self):
         """Test setting and getting cached event detail."""
         event_data = {
-            'id': 1,
-            'name': 'Test Event',
-            'status': 'CONFIRMED',
+            "id": 1,
+            "name": "Test Event",
+            "status": "CONFIRMED",
         }
 
         EventCacheService.set_event_detail(1, event_data)
         result = EventCacheService.get_event_detail(1)
 
         assert result is not None
-        assert result['name'] == 'Test Event'
-        assert result['status'] == 'CONFIRMED'
+        assert result["name"] == "Test Event"
+        assert result["status"] == "CONFIRMED"
 
     def test_set_event_detail_custom_timeout(self):
         """Test setting event detail with custom timeout."""
-        event_data = {'id': 1, 'name': 'Test'}
+        event_data = {"id": 1, "name": "Test"}
 
         # Should not raise any exceptions
         EventCacheService.set_event_detail(1, event_data, timeout=60)
@@ -104,7 +103,7 @@ class TestEventCacheServiceInvalidation:
 
     def test_invalidate_event_removes_detail(self):
         """Test invalidate_event removes event detail from cache."""
-        EventCacheService.set_event_detail(1, {'id': 1, 'name': 'Test'})
+        EventCacheService.set_event_detail(1, {"id": 1, "name": "Test"})
 
         EventCacheService.invalidate_event(1)
 
@@ -144,16 +143,16 @@ class TestEventCacheServiceGetOrSet:
         def compute_value():
             nonlocal call_count
             call_count += 1
-            return {'computed': True}
+            return {"computed": True}
 
         # First call - should call the function
-        result1 = EventCacheService.get_or_set('test:key', compute_value)
-        assert result1 == {'computed': True}
+        result1 = EventCacheService.get_or_set("test:key", compute_value)
+        assert result1 == {"computed": True}
         assert call_count == 1
 
         # Second call - should use cache
-        result2 = EventCacheService.get_or_set('test:key', compute_value)
-        assert result2 == {'computed': True}
+        result2 = EventCacheService.get_or_set("test:key", compute_value)
+        assert result2 == {"computed": True}
         assert call_count == 1  # Function not called again
 
     def test_get_or_set_does_not_cache_none(self):
@@ -163,14 +162,13 @@ class TestEventCacheServiceGetOrSet:
         def compute_none():
             nonlocal call_count
             call_count += 1
-            return None
 
-        result1 = EventCacheService.get_or_set('test:none', compute_none)
+        result1 = EventCacheService.get_or_set("test:none", compute_none)
         assert result1 is None
         assert call_count == 1
 
         # Second call - should call function again since None not cached
-        result2 = EventCacheService.get_or_set('test:none', compute_none)
+        EventCacheService.get_or_set("test:none", compute_none)
         assert call_count == 2
 
 
@@ -184,7 +182,7 @@ class TestEventCacheServiceEventList:
         event2 = event_factory()
 
         events = Event.objects.filter(id__in=[event1.id, event2.id])
-        filters = {'status': 'LEAD'}
+        filters = {"status": "LEAD"}
 
         EventCacheService.cache_event_list(events, filters)
         cached = EventCacheService.get_cached_event_list(filters)
@@ -200,10 +198,10 @@ class TestEventCacheServiceEventList:
         event = event_factory()
         events = Event.objects.filter(id=event.id)
 
-        EventCacheService.cache_event_list(events, {'status': 'LEAD'})
+        EventCacheService.cache_event_list(events, {"status": "LEAD"})
 
         # Different filters should return None (cache miss)
-        cached = EventCacheService.get_cached_event_list({'status': 'CONFIRMED'})
+        cached = EventCacheService.get_cached_event_list({"status": "CONFIRMED"})
         assert cached is None
 
 
@@ -213,24 +211,24 @@ class TestEventCacheServiceEventTypes:
 
     def test_cache_and_get_event_types(self, event_type_factory):
         """Test caching and retrieving event types."""
-        event_type_factory(name='Wedding')
-        event_type_factory(name='Corporate')
-        event_type_factory(name='Inactive', inactive=True)
+        event_type_factory(name="Wedding")
+        event_type_factory(name="Corporate")
+        event_type_factory(name="Inactive", inactive=True)
 
         EventCacheService.cache_event_types(active_only=True)
         cached = EventCacheService.get_cached_event_types(active_only=True)
 
         assert cached is not None
         assert len(cached) == 2  # Only active types
-        names = [et['name'] for et in cached]
-        assert 'Wedding' in names
-        assert 'Corporate' in names
-        assert 'Inactive' not in names
+        names = [et["name"] for et in cached]
+        assert "Wedding" in names
+        assert "Corporate" in names
+        assert "Inactive" not in names
 
     def test_cache_all_event_types(self, event_type_factory):
         """Test caching all event types including inactive."""
-        event_type_factory(name='Active')
-        event_type_factory(name='Inactive', inactive=True)
+        event_type_factory(name="Active")
+        event_type_factory(name="Inactive", inactive=True)
 
         EventCacheService.cache_event_types(active_only=False)
         cached = EventCacheService.get_cached_event_types(active_only=False)
@@ -248,16 +246,16 @@ class TestEventCacheServiceClientStats:
         client = user_factory()
 
         stats = {
-            'total_events': 5,
-            'upcoming_events': 2,
-            'completed_events': 3,
+            "total_events": 5,
+            "upcoming_events": 2,
+            "completed_events": 3,
         }
 
         EventCacheService.cache_client_event_stats(client.id, stats)
         cached = EventCacheService.get_client_event_stats(client.id)
 
         assert cached is not None
-        assert cached['total_events'] == 5
+        assert cached["total_events"] == 5
 
     def test_get_client_stats_uncached(self, user_factory):
         """Test getting uncached client stats returns None."""
@@ -292,8 +290,8 @@ class TestEventCacheServiceBulkCache:
 
     def test_bulk_cache_events(self, event_factory, user_factory, event_type_factory):
         """Test bulk caching multiple events."""
-        client = user_factory(first_name='John', last_name='Doe')
-        event_type = event_type_factory(name='Wedding')
+        client = user_factory(first_name="John", last_name="Doe")
+        event_type = event_type_factory(name="Wedding")
 
         event1 = event_factory(client=client, event_type=event_type)
         event2 = event_factory(client=client, event_type=event_type)
@@ -306,7 +304,7 @@ class TestEventCacheServiceBulkCache:
 
         assert cached1 is not None
         assert cached2 is not None
-        assert cached1['client_name'] == 'John Doe'
+        assert cached1["client_name"] == "John Doe"
 
 
 @pytest.mark.django_db
@@ -315,14 +313,14 @@ class TestEventCacheServiceQueryset:
 
     def test_cache_queryset(self, event_factory):
         """Test caching a queryset."""
-        event_factory(name='Event 1')
-        event_factory(name='Event 2')
+        event_factory(name="Event 1")
+        event_factory(name="Event 2")
 
-        queryset = Event.objects.filter(status='LEAD')
+        queryset = Event.objects.filter(status="LEAD")
 
         key = EventCacheService.cache_queryset(queryset)
         assert key is not None
-        assert key.startswith('queryset:')
+        assert key.startswith("queryset:")
 
         cached = EventCacheService.get_cached_queryset(key)
         assert cached is not None
@@ -333,7 +331,7 @@ class TestEventCacheServiceQueryset:
         event_factory()
 
         queryset = Event.objects.all()
-        custom_key = 'custom:events:all'
+        custom_key = "custom:events:all"
 
         returned_key = EventCacheService.cache_queryset(queryset, key=custom_key)
         assert returned_key == custom_key
@@ -356,17 +354,13 @@ class TestCacheInvalidator:
         event = event_factory()
 
         # Pre-populate cache
-        EventCacheService.set_event_detail(event.id, {'old': 'data'})
+        EventCacheService.set_event_detail(event.id, {"old": "data"})
 
         # Simulate save signal
-        CacheInvalidator.on_event_save(
-            sender=Event,
-            instance=event,
-            created=False
-        )
+        CacheInvalidator.on_event_save(sender=Event, instance=event, created=False)
 
         # Cache should be invalidated
-        cached = EventCacheService.get_event_detail(event.id)
+        EventCacheService.get_event_detail(event.id)
         # Note: warm_cache_for_event re-caches for CONFIRMED/LEAD events
         # So if event.status is LEAD, there may be new data
 
@@ -374,12 +368,9 @@ class TestCacheInvalidator:
         """Test event delete invalidates cache."""
         event = event_factory()
 
-        EventCacheService.set_event_detail(event.id, {'data': 'test'})
+        EventCacheService.set_event_detail(event.id, {"data": "test"})
 
-        CacheInvalidator.on_event_delete(
-            sender=Event,
-            instance=event
-        )
+        CacheInvalidator.on_event_delete(sender=Event, instance=event)
 
         cached = EventCacheService.get_event_detail(event.id)
         assert cached is None
@@ -395,17 +386,13 @@ class TestCacheInvalidator:
 
         task = EventTask.objects.create(
             event=event,
-            title='Test Task',
+            title="Test Task",
             due_date=timezone.now() + timedelta(days=1),
-            priority='HIGH',
-            status='PENDING',
+            priority="HIGH",
+            status="PENDING",
         )
 
-        CacheInvalidator.on_event_task_change(
-            sender=EventTask,
-            instance=task,
-            created=True
-        )
+        CacheInvalidator.on_event_task_change(sender=EventTask, instance=task, created=True)
 
         # Next task cache should be invalidated
         assert cache.get(key) is None
@@ -413,16 +400,12 @@ class TestCacheInvalidator:
     def test_on_event_type_change_invalidates_cache(self, event_type_factory):
         """Test event type change invalidates type cache."""
         # Pre-populate event type cache
-        event_type_factory(name='Wedding')
+        event_type_factory(name="Wedding")
         EventCacheService.cache_event_types()
 
-        event_type = event_type_factory(name='Corporate')
+        event_type = event_type_factory(name="Corporate")
 
-        CacheInvalidator.on_event_type_change(
-            sender=EventType,
-            instance=event_type,
-            created=True
-        )
+        CacheInvalidator.on_event_type_change(sender=EventType, instance=event_type, created=True)
 
         # Event type cache should be invalidated
         cached = EventCacheService.get_cached_event_types()
@@ -444,27 +427,27 @@ class TestCacheIntegration:
 
     def test_full_cache_cycle(self, event_factory, user_factory, event_type_factory):
         """Test complete cache cycle: set, get, invalidate."""
-        client = user_factory(first_name='Jane', last_name='Smith')
-        event_type = event_type_factory(name='Birthday')
+        client = user_factory(first_name="Jane", last_name="Smith")
+        event_type = event_type_factory(name="Birthday")
         event = event_factory(
             client=client,
             event_type=event_type,
-            name='Birthday Party',
+            name="Birthday Party",
         )
 
         # Set cache
         event_data = {
-            'id': event.id,
-            'name': event.name,
-            'status': event.status,
-            'client_name': f'{client.first_name} {client.last_name}',
+            "id": event.id,
+            "name": event.name,
+            "status": event.status,
+            "client_name": f"{client.first_name} {client.last_name}",
         }
         EventCacheService.set_event_detail(event.id, event_data)
 
         # Get from cache
         cached = EventCacheService.get_event_detail(event.id)
-        assert cached['name'] == 'Birthday Party'
-        assert cached['client_name'] == 'Jane Smith'
+        assert cached["name"] == "Birthday Party"
+        assert cached["client_name"] == "Jane Smith"
 
         # Invalidate
         EventCacheService.invalidate_event(event.id)
@@ -476,8 +459,8 @@ class TestCacheIntegration:
     @pytest.mark.skip(reason="Cache refresh returns None with LocMemCache - needs investigation")
     def test_event_type_cache_refresh(self, event_type_factory):
         """Test event type cache refresh cycle."""
-        event_type_factory(name='Type A')
-        event_type_factory(name='Type B')
+        event_type_factory(name="Type A")
+        event_type_factory(name="Type B")
 
         # Cache types
         EventCacheService.cache_event_types()
@@ -486,7 +469,7 @@ class TestCacheIntegration:
         assert len(cached1) == 2
 
         # Add new type
-        event_type_factory(name='Type C')
+        event_type_factory(name="Type C")
 
         # Cache still shows old data
         cached2 = EventCacheService.get_cached_event_types()

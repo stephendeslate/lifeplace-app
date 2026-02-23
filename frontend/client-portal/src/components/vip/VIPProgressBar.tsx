@@ -77,25 +77,21 @@ export const VIPProgressBar: React.FC<VIPProgressBarProps> = ({
         aria-label={`${progressPercent}% progress to ${nextTier.name} tier`}
       />
 
-      <Typography
-        variant="caption"
-        color="text.secondary"
-        sx={{ display: 'block', mt: 0.75 }}
-      >
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75 }}>
         {remaining > 0 ? (
           isBookingsProgress ? (
             <>
               <Box component="span" fontWeight={600} color="text.primary">
                 {remaining} more {remaining === 1 ? 'booking' : 'bookings'}
-              </Box>
-              {' '}to reach {nextTier.name}
+              </Box>{' '}
+              to reach {nextTier.name}
             </>
           ) : (
             <>
               <Box component="span" fontWeight={600} color="text.primary">
                 {metricLabel}
-              </Box>
-              {' '}to reach {nextTier.name}
+              </Box>{' '}
+              to reach {nextTier.name}
             </>
           )
         ) : (

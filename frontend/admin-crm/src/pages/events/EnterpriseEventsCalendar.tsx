@@ -57,7 +57,7 @@ import {
   addWeeks,
   subWeeks,
   startOfWeek as startOfWeekDate,
-  endOfWeek as endOfWeekDate
+  endOfWeek as endOfWeekDate,
 } from 'date-fns';
 import {
   getTodayInManila,
@@ -82,7 +82,10 @@ import { ModernPageHeader, type HeaderAction } from '../../components/common/Mod
 import ModernLoadingStates from '../../components/common/ModernLoadingStates';
 import { useCalendarAvailability, useAvailabilityCache } from '../../hooks/useAvailability';
 import { EventForm } from '../../components/events/EventForm';
-import { AvailabilityIndicator, AvailabilityBadge } from '../../components/availability/AvailabilityIndicator';
+import {
+  AvailabilityIndicator,
+  AvailabilityBadge,
+} from '../../components/availability/AvailabilityIndicator';
 import { eventsApi } from '../../apis/events.api';
 
 import type { Event, EventFilters, CreateEventData, EventStatus } from '../../types/events.types';
@@ -110,7 +113,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
-  
+
   // Core calendar state - use Manila timezone for "today"
   const [currentDate, setCurrentDate] = useState(() => getTodayInManila());
   const [view, setView] = useState<CalendarView>('month');
@@ -121,7 +124,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  
+
   // Enterprise calendar settings
   const [settings, setSettings] = useState<EnhancedCalendarSettings>({
     showAvailabilityIndicators: true,
@@ -131,24 +134,19 @@ export const EnterpriseEventsCalendar: React.FC = () => {
     showAvailabilityStats: true,
     autoRefreshInterval: 30000, // 30 seconds
   });
-  
+
   // Selected date for detailed availability view
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [availabilityDetailOpen, setAvailabilityDetailOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  
+
   // Hooks
   const { useActiveEventTypes } = useEventTypes();
   const { data: eventTypes = [] } = useActiveEventTypes();
   const { refreshCalendar, prefetchDateRange } = useAvailabilityCache();
 
-  const {
-    events = [],
-    isLoadingEvents,
-    createEvent,
-    isCreatingEvent,
-  } = useEvents(filters);
-  
+  const { events = [], isLoadingEvents, createEvent, isCreatingEvent } = useEvents(filters);
+
   // Calculate calendar date range for availability checking (Manila timezone)
   const calendarDateRange = useMemo(() => {
     if (view === 'month') {
@@ -169,7 +167,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
       };
     }
   }, [currentDate, view]);
-  
+
   // Availability data
   const {
     isLoading: isLoadingAvailability,
@@ -185,13 +183,13 @@ export const EnterpriseEventsCalendar: React.FC = () => {
       show_conflicts: availabilityFilters.show_conflicts,
       show_buffer_conflicts: availabilityFilters.show_buffer_conflicts,
     },
-    settings.showAvailabilityIndicators
+    settings.showAvailabilityIndicators,
   );
 
   // Convert events to calendar events with parsed dates
   // IMPORTANT: Use parseDateTimeAsManila to interpret API datetimes as PHT
   const calendarEvents: CalendarEvent[] = useMemo(() => {
-    return events.map(event => ({
+    return events.map((event) => ({
       ...event,
       startDate: parseDateTimeAsManila(event.start_date),
       endDate: event.end_date ? parseDateTimeAsManila(event.end_date) : null,
@@ -209,21 +207,24 @@ export const EnterpriseEventsCalendar: React.FC = () => {
 
   // Get events for a specific date
   // IMPORTANT: Use isSameDayInManila to compare dates in PHT context
-  const getEventsForDate = useCallback((date: Date): CalendarEvent[] => {
-    return calendarEvents.filter(event => {
-      if (isSameDayInManila(event.startDate, date)) return true;
-      if (event.endDate && event.startDate <= date && date <= event.endDate) return true;
-      return false;
-    });
-  }, [calendarEvents]);
-  
+  const getEventsForDate = useCallback(
+    (date: Date): CalendarEvent[] => {
+      return calendarEvents.filter((event) => {
+        if (isSameDayInManila(event.startDate, date)) return true;
+        if (event.endDate && event.startDate <= date && date <= event.endDate) return true;
+        return false;
+      });
+    },
+    [calendarEvents],
+  );
+
   // Enhanced calendar grid with availability data
   const enhancedCalendarDates: CalendarDateInfo[] = useMemo(() => {
-    return calendarDates.map(date => {
+    return calendarDates.map((date) => {
       const dateStr = formatDateForApi(date);
       const availability = getDateAvailability(dateStr);
       const dayEvents = getEventsForDate(date);
-      
+
       const defaultAvailability: CalendarDateInfo = {
         date: dateStr,
         status: 'available' as const,
@@ -243,14 +244,16 @@ export const EnterpriseEventsCalendar: React.FC = () => {
         eventCount: dayEvents.length,
       };
 
-      return availability ? {
-        ...availability,
-        isToday: isTodayInManila(date),
-        isCurrentMonth: isSameMonthInManila(date, currentDate),
-        isWeekend: getDayOfWeekInManila(date) === 0 || getDayOfWeekInManila(date) === 6,
-        hasEvents: dayEvents.length > 0,
-        eventCount: dayEvents.length,
-      } : defaultAvailability;
+      return availability
+        ? {
+            ...availability,
+            isToday: isTodayInManila(date),
+            isCurrentMonth: isSameMonthInManila(date, currentDate),
+            isWeekend: getDayOfWeekInManila(date) === 0 || getDayOfWeekInManila(date) === 6,
+            hasEvents: dayEvents.length > 0,
+            eventCount: dayEvents.length,
+          }
+        : defaultAvailability;
     });
   }, [calendarDates, currentDate, getDateAvailability, getEventsForDate]);
 
@@ -267,17 +270,15 @@ export const EnterpriseEventsCalendar: React.FC = () => {
 
   // Initialize breadcrumbs
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Calendar' },
-    ]);
+    setBreadcrumbs([{ label: 'Calendar' }]);
   }, [setBreadcrumbs]);
 
   // Search debouncing
   useEffect(() => {
     const timer = setTimeout(() => {
-      setFilters(prev => ({
+      setFilters((prev) => ({
         ...prev,
-        search: searchValue || undefined
+        search: searchValue || undefined,
       }));
     }, 300);
 
@@ -287,18 +288,18 @@ export const EnterpriseEventsCalendar: React.FC = () => {
   // Auto-refresh availability data
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    
+
     if (settings.enableRealTimeUpdates && settings.autoRefreshInterval > 0) {
       interval = setInterval(() => {
         refetchAvailability();
       }, settings.autoRefreshInterval);
     }
-    
+
     return () => {
       if (interval) clearInterval(interval);
     };
   }, [settings.enableRealTimeUpdates, settings.autoRefreshInterval, refetchAvailability]);
-  
+
   // Prefetch adjacent months for better UX
   useEffect(() => {
     if (view === 'month') {
@@ -336,16 +337,19 @@ export const EnterpriseEventsCalendar: React.FC = () => {
     setSelectedDate(formatDateForApi(today));
     refetchAvailability();
   }, [refetchAvailability]);
-  
+
   // Enhanced view switching
   const handleViewChange = useCallback((newView: CalendarView) => {
     setView(newView);
     setSelectedDate(null);
   }, []);
 
-  const handleEventClick = useCallback((event: Event) => {
-    navigate(`/events/${event.id}`);
-  }, [navigate]);
+  const handleEventClick = useCallback(
+    (event: Event) => {
+      navigate(`/events/${event.id}`);
+    },
+    [navigate],
+  );
 
   const handleMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>, eventItem: Event) => {
     event.stopPropagation();
@@ -357,34 +361,42 @@ export const EnterpriseEventsCalendar: React.FC = () => {
     setMenuAnchor(null);
     setSelectedEvent(null);
   }, []);
-  
+
   // Enhanced filter handlers
   const handleFilterChange = useCallback((key: keyof EventFilters, value: string) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      [key]: value === 'all' ? undefined : value === 'true' ? true : value === 'false' ? false : parseInt(value) || value
+      [key]:
+        value === 'all'
+          ? undefined
+          : value === 'true'
+            ? true
+            : value === 'false'
+              ? false
+              : parseInt(value) || value,
     }));
   }, []);
-  
-  const handleAvailabilityFilterChange = useCallback((key: keyof AvailabilityFilters, value: unknown) => {
-    setAvailabilityFilters(prev => ({
-      ...prev,
-      [key]: value === 'all' ? undefined : value
-    }));
-  }, []);
-  
+
+  const handleAvailabilityFilterChange = useCallback(
+    (key: keyof AvailabilityFilters, value: unknown) => {
+      setAvailabilityFilters((prev) => ({
+        ...prev,
+        [key]: value === 'all' ? undefined : value,
+      }));
+    },
+    [],
+  );
+
   const handleSettingChange = useCallback((key: keyof EnhancedCalendarSettings, value: unknown) => {
-    setSettings(prev => ({
+    setSettings((prev) => ({
       ...prev,
-      [key]: value
+      [key]: value,
     }));
   }, []);
-  
+
   // Enhanced refresh handler
   const handleRefresh = useCallback(async () => {
-    await Promise.all([
-      refetchAvailability(),
-    ]);
+    await Promise.all([refetchAvailability()]);
     await refreshCalendar(calendarDateRange.start, calendarDateRange.end);
   }, [refetchAvailability, refreshCalendar, calendarDateRange]);
 
@@ -427,59 +439,64 @@ export const EnterpriseEventsCalendar: React.FC = () => {
     // Format time in PHT
     return formatInManila(event.startDate, 'HH:mm');
   }, []);
-  
-  const getDateCellStyle = useCallback((dateInfo: CalendarDateInfo) => {
-    const baseStyle = {
-      minHeight: isMobile ? 80 : 120,
-      p: 1,
-      border: 1,
-      borderRadius: 1,
-      cursor: 'pointer',
-      position: 'relative' as const,
-      transition: 'all 0.2s ease-in-out',
-    };
-    
-    // Availability-based styling
-    if (settings.highlightUnavailableDates && !dateInfo.can_book_event) {
+
+  const getDateCellStyle = useCallback(
+    (dateInfo: CalendarDateInfo) => {
+      const baseStyle = {
+        minHeight: isMobile ? 80 : 120,
+        p: 1,
+        border: 1,
+        borderRadius: 1,
+        cursor: 'pointer',
+        position: 'relative' as const,
+        transition: 'all 0.2s ease-in-out',
+      };
+
+      // Availability-based styling
+      if (settings.highlightUnavailableDates && !dateInfo.can_book_event) {
+        return {
+          ...baseStyle,
+          borderColor: theme.palette.error.main,
+          backgroundColor: dateInfo.isCurrentMonth
+            ? alpha(theme.palette.error.main, 0.1)
+            : alpha(theme.palette.error.main, 0.05),
+          opacity: dateInfo.isCurrentMonth ? 1 : 0.7,
+          '&:hover': {
+            backgroundColor: alpha(theme.palette.error.main, 0.2),
+          },
+        };
+      }
+
+      // Standard styling with availability indicators
+      const backgroundColor = dateInfo.isToday
+        ? theme.palette.primary.main
+        : dateInfo.isCurrentMonth
+          ? 'background.paper'
+          : 'grey.50';
+
       return {
         ...baseStyle,
-        borderColor: theme.palette.error.main,
-        backgroundColor: dateInfo.isCurrentMonth
-          ? alpha(theme.palette.error.main, 0.1)
-          : alpha(theme.palette.error.main, 0.05),
-        opacity: dateInfo.isCurrentMonth ? 1 : 0.7,
+        borderColor: dateInfo.hasEvents ? theme.palette.primary.light : 'divider',
+        backgroundColor,
+        opacity: dateInfo.isCurrentMonth ? 1 : 0.6,
         '&:hover': {
-          backgroundColor: alpha(theme.palette.error.main, 0.2),
+          backgroundColor: dateInfo.isToday
+            ? theme.palette.primary.dark
+            : dateInfo.isCurrentMonth
+              ? 'grey.100'
+              : 'grey.200',
+          transform: 'scale(1.02)',
         },
       };
-    }
-    
-    // Standard styling with availability indicators
-    const backgroundColor = dateInfo.isToday
-      ? theme.palette.primary.main
-      : dateInfo.isCurrentMonth
-        ? 'background.paper'
-        : 'grey.50';
-        
-    return {
-      ...baseStyle,
-      borderColor: dateInfo.hasEvents ? theme.palette.primary.light : 'divider',
-      backgroundColor,
-      opacity: dateInfo.isCurrentMonth ? 1 : 0.6,
-      '&:hover': {
-        backgroundColor: dateInfo.isToday
-          ? theme.palette.primary.dark
-          : dateInfo.isCurrentMonth
-            ? 'grey.100'
-            : 'grey.200',
-        transform: 'scale(1.02)',
-      },
-    };
-  }, [isMobile, settings.highlightUnavailableDates, theme]);
+    },
+    [isMobile, settings.highlightUnavailableDates, theme],
+  );
 
   const hasActiveFilters = useMemo(() => {
-    return Object.values(filters).some(value => value !== undefined) ||
-           Object.values(availabilityFilters).some(value => value !== undefined);
+    return (
+      Object.values(filters).some((value) => value !== undefined) ||
+      Object.values(availabilityFilters).some((value) => value !== undefined)
+    );
   }, [filters, availabilityFilters]);
 
   // Enhanced month view renderer
@@ -494,7 +511,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
         <Box sx={{ p: 2 }}>
           {/* Calendar Header */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 2 }}>
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
               <Typography
                 key={day}
                 variant="subtitle2"
@@ -505,15 +522,18 @@ export const EnterpriseEventsCalendar: React.FC = () => {
               </Typography>
             ))}
           </Box>
-          
+
           {/* Calendar Grid */}
           {weeks.map((week, weekIndex) => (
-            <Box key={weekIndex} sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 1 }}>
+            <Box
+              key={weekIndex}
+              sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 1 }}
+            >
               {week.map((dateInfo) => {
                 // IMPORTANT: Use parseDateStringAsManila to interpret date as PHT midnight
                 const date = parseDateStringAsManila(dateInfo.date);
                 const dayEvents = getEventsForDate(date);
-                
+
                 return (
                   <Box
                     key={dateInfo.date}
@@ -521,28 +541,30 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                     onClick={() => handleDateSelect(date)}
                   >
                     {/* Date Header */}
-                    <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+                    <Stack
+                      direction="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      sx={{ mb: 1 }}
+                    >
                       <Typography
                         variant="body2"
                         sx={{
                           fontWeight: dateInfo.isToday ? 'bold' : 'normal',
-                          color: dateInfo.isToday 
-                            ? 'primary.contrastText' 
-                            : dateInfo.isCurrentMonth 
-                              ? 'text.primary' 
+                          color: dateInfo.isToday
+                            ? 'primary.contrastText'
+                            : dateInfo.isCurrentMonth
+                              ? 'text.primary'
                               : 'text.secondary',
                         }}
                       >
                         {formatInManila(date, 'd')}
                       </Typography>
-                      
+
                       {/* Availability Indicator */}
                       {settings.showAvailabilityIndicators && (
                         <Stack direction="row" spacing={0.5} alignItems="center">
-                          <AvailabilityBadge 
-                            availability={dateInfo} 
-                            size="small"
-                          />
+                          <AvailabilityBadge availability={dateInfo} size="small" />
                           {dateInfo.conflicts.length > 0 && (
                             <Badge badgeContent={dateInfo.conflicts.length} color="error" max={9}>
                               <WarningIcon fontSize="small" color="warning" />
@@ -551,12 +573,12 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                         </Stack>
                       )}
                     </Stack>
-                    
+
                     {/* Events */}
                     <Stack spacing={0.5} sx={{ maxHeight: isMobile ? 40 : 80, overflow: 'hidden' }}>
-                      {dayEvents.slice(0, isMobile ? 1 : 3).map(event => (
-                        <Tooltip 
-                          key={event.id} 
+                      {dayEvents.slice(0, isMobile ? 1 : 3).map((event) => (
+                        <Tooltip
+                          key={event.id}
                           title={`${event.name || 'Untitled Event'} - ${event.client_name}`}
                           arrow
                         >
@@ -587,17 +609,17 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                           </Box>
                         </Tooltip>
                       ))}
-                      
+
                       {/* More events indicator */}
                       {dayEvents.length > (isMobile ? 1 : 3) && (
-                        <Typography 
-                          variant="caption" 
+                        <Typography
+                          variant="caption"
                           color="text.secondary"
-                          sx={{ 
+                          sx={{
                             textAlign: 'center',
                             fontStyle: 'italic',
                             cursor: 'pointer',
-                            '&:hover': { color: 'primary.main' }
+                            '&:hover': { color: 'primary.main' },
                           }}
                           onClick={() => setSelectedDate(dateInfo.date)}
                         >
@@ -605,7 +627,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                         </Typography>
                       )}
                     </Stack>
-                    
+
                     {/* Availability Status Bar */}
                     {settings.showAvailabilityIndicators && !dateInfo.can_book_event && (
                       <Box
@@ -637,7 +659,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
         <Box sx={{ p: 2 }}>
           {/* Week Header */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, mb: 2 }}>
-            {enhancedCalendarDates.map(dateInfo => {
+            {enhancedCalendarDates.map((dateInfo) => {
               // IMPORTANT: Use parseDateStringAsManila to interpret date as PHT midnight
               const date = parseDateStringAsManila(dateInfo.date);
               return (
@@ -646,9 +668,9 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                     <Typography variant="caption" color="text.secondary">
                       {formatInManila(date, 'EEE')}
                     </Typography>
-                    <Typography 
-                      variant="h6" 
-                      sx={{ 
+                    <Typography
+                      variant="h6"
+                      sx={{
                         fontWeight: dateInfo.isToday ? 'bold' : 'normal',
                         color: dateInfo.isToday ? 'primary.main' : 'text.primary',
                       }}
@@ -663,14 +685,14 @@ export const EnterpriseEventsCalendar: React.FC = () => {
               );
             })}
           </Box>
-          
+
           {/* Week Grid */}
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1 }}>
-            {enhancedCalendarDates.map(dateInfo => {
+            {enhancedCalendarDates.map((dateInfo) => {
               // IMPORTANT: Use parseDateStringAsManila to interpret date as PHT midnight
               const date = parseDateStringAsManila(dateInfo.date);
               const dayEvents = getEventsForDate(date);
-              
+
               return (
                 <Box
                   key={dateInfo.date}
@@ -680,7 +702,9 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                     border: 1,
                     borderColor: dateInfo.hasEvents ? 'primary.light' : 'divider',
                     borderRadius: 1,
-                    backgroundColor: dateInfo.isToday ? alpha(theme.palette.primary.main, 0.1) : 'background.paper',
+                    backgroundColor: dateInfo.isToday
+                      ? alpha(theme.palette.primary.main, 0.1)
+                      : 'background.paper',
                     position: 'relative',
                     cursor: 'pointer',
                     '&:hover': {
@@ -690,7 +714,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                   onClick={() => handleDateSelect(date)}
                 >
                   <Stack spacing={1}>
-                    {dayEvents.map(event => (
+                    {dayEvents.map((event) => (
                       <Paper
                         key={event.id}
                         elevation={1}
@@ -719,14 +743,14 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                         <Typography variant="caption" sx={{ opacity: 0.8 }}>
                           {event.client_name}
                         </Typography>
-                        
+
                         <IconButton
                           size="small"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleMenuOpen(e, event);
                           }}
-                          sx={{ 
+                          sx={{
                             position: 'absolute',
                             top: 4,
                             right: 4,
@@ -739,12 +763,12 @@ export const EnterpriseEventsCalendar: React.FC = () => {
                         </IconButton>
                       </Paper>
                     ))}
-                    
+
                     {/* Availability info for week view */}
                     {settings.showAvailabilityIndicators && (
                       <Box sx={{ mt: 'auto', pt: 1 }}>
-                        <AvailabilityIndicator 
-                          availability={dateInfo} 
+                        <AvailabilityIndicator
+                          availability={dateInfo}
                           compact={true}
                           interactive={true}
                           onClick={() => setAvailabilityDetailOpen(true)}
@@ -803,9 +827,10 @@ export const EnterpriseEventsCalendar: React.FC = () => {
       {/* Modern Header */}
       <ModernPageHeader
         title="Calendar"
-        subtitle={view === 'month'
-          ? formatInManila(currentDate, 'MMMM yyyy')
-          : `Week of ${format(startOfWeekDate(currentDate), 'MMM d')} - ${format(endOfWeekDate(currentDate), 'MMM d, yyyy')}`
+        subtitle={
+          view === 'month'
+            ? formatInManila(currentDate, 'MMMM yyyy')
+            : `Week of ${format(startOfWeekDate(currentDate), 'MMM d')} - ${format(endOfWeekDate(currentDate), 'MMM d, yyyy')}`
         }
         icon={<EventIcon />}
         primaryAction={primaryAction}
@@ -825,152 +850,162 @@ export const EnterpriseEventsCalendar: React.FC = () => {
 
       {/* Calendar Controls */}
       <ModernCard variant="flat" size="medium" sx={{ mb: 3 }}>
-          <Stack 
-            direction={{ xs: 'column', sm: 'row' }} 
-            spacing={2} 
-            alignItems="center" 
-            justifyContent="space-between"
-          >
-            {/* Navigation Controls */}
-            <Stack direction="row" spacing={1} alignItems="center">
-              <IconButton onClick={handlePrevious}>
-                <ChevronLeftIcon />
-              </IconButton>
-              
-              <Button
-                variant="outlined"
-                onClick={handleToday}
-                startIcon={<TodayIcon />}
-                sx={{ 
-                  minWidth: 100,
-                  backgroundColor: isTodayInManila(currentDate) ? 'primary.light' : 'transparent',
-                }}
-              >
-                Today
-              </Button>
-              
-              <IconButton onClick={handleNext}>
-                <ChevronRightIcon />
-              </IconButton>
-              
-              <Typography variant="h6" sx={{ ml: 2, minWidth: 200 }}>
-                {view === 'month' 
-                  ? formatInManila(currentDate, 'MMMM yyyy')
-                  : `${format(startOfWeekDate(currentDate), 'MMM d')} - ${format(endOfWeekDate(currentDate), 'MMM d, yyyy')}`
-                }
-              </Typography>
-            </Stack>
+        <Stack
+          direction={{ xs: 'column', sm: 'row' }}
+          spacing={2}
+          alignItems="center"
+          justifyContent="space-between"
+        >
+          {/* Navigation Controls */}
+          <Stack direction="row" spacing={1} alignItems="center">
+            <IconButton onClick={handlePrevious}>
+              <ChevronLeftIcon />
+            </IconButton>
 
-            {/* View Controls and Filters */}
-            <Stack direction="row" spacing={1} alignItems="center">
-              {/* Search */}
-              <TextField
-                size="small"
-                placeholder="Search events..."
-                value={searchValue}
-                onChange={(e) => setSearchValue(e.target.value)}
-                InputProps={{
-                  startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />
-                }}
-                sx={{ minWidth: 200 }}
-              />
+            <Button
+              variant="outlined"
+              onClick={handleToday}
+              startIcon={<TodayIcon />}
+              sx={{
+                minWidth: 100,
+                backgroundColor: isTodayInManila(currentDate) ? 'primary.light' : 'transparent',
+              }}
+            >
+              Today
+            </Button>
 
-              {/* Filter Toggle */}
-              <IconButton 
-                onClick={() => setFiltersOpen(!filtersOpen)}
-                color={hasActiveFilters ? 'primary' : 'default'}
-              >
-                <FilterIcon />
-              </IconButton>
+            <IconButton onClick={handleNext}>
+              <ChevronRightIcon />
+            </IconButton>
 
-              {/* View Toggle */}
-              <Stack direction="row" spacing={0}>
-                <IconButton
-                  onClick={() => handleViewChange('month')}
-                  color={view === 'month' ? 'primary' : 'default'}
-                >
-                  <MonthIcon />
-                </IconButton>
-                <IconButton
-                  onClick={() => handleViewChange('week')}
-                  color={view === 'week' ? 'primary' : 'default'}
-                >
-                  <WeekIcon />
-                </IconButton>
-              </Stack>
-            </Stack>
+            <Typography variant="h6" sx={{ ml: 2, minWidth: 200 }}>
+              {view === 'month'
+                ? formatInManila(currentDate, 'MMMM yyyy')
+                : `${format(startOfWeekDate(currentDate), 'MMM d')} - ${format(endOfWeekDate(currentDate), 'MMM d, yyyy')}`}
+            </Typography>
           </Stack>
 
-          {/* Expandable Filters */}
-          {filtersOpen && (
-            <>
-              <Divider sx={{ my: 2 }} />
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
-                <FormControl size="small" sx={{ minWidth: 130 }}>
-                  <InputLabel>Status</InputLabel>
-                  <Select
-                    value={filters.status || 'all'}
-                    label="Status"
-                    onChange={(e) => handleFilterChange('status', e.target.value)}
-                  >
-                    <MenuItem value="all">All Status</MenuItem>
-                    {EVENT_STATUSES.map((status) => (
-                      <MenuItem key={status.value} value={status.value}>
-                        {status.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+          {/* View Controls and Filters */}
+          <Stack direction="row" spacing={1} alignItems="center">
+            {/* Search */}
+            <TextField
+              size="small"
+              placeholder="Search events..."
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon color="action" sx={{ mr: 1 }} />,
+              }}
+              sx={{ minWidth: 200 }}
+            />
 
-                <FormControl size="small" sx={{ minWidth: 150 }}>
-                  <InputLabel>Event Type</InputLabel>
-                  <Select
-                    value={filters.event_type || 'all'}
-                    label="Event Type"
-                    onChange={(e) => handleFilterChange('event_type', String(e.target.value))}
-                  >
-                    <MenuItem value="all">All Types</MenuItem>
-                    {eventTypes.map((type) => (
-                      <MenuItem key={type.id} value={type.id.toString()}>
-                        {type.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+            {/* Filter Toggle */}
+            <IconButton
+              onClick={() => setFiltersOpen(!filtersOpen)}
+              color={hasActiveFilters ? 'primary' : 'default'}
+            >
+              <FilterIcon />
+            </IconButton>
 
-                <FormControl size="small" sx={{ minWidth: 150 }}>
-                  <InputLabel>Availability</InputLabel>
-                  <Select
-                    value={availabilityFilters.show_conflicts !== undefined ? 
-                           (availabilityFilters.show_conflicts ? 'conflicts' : 'available') : 'all'}
-                    label="Availability"
-                    onChange={(e) => handleAvailabilityFilterChange('show_conflicts', 
-                      e.target.value === 'conflicts' ? true : 
-                      e.target.value === 'available' ? false : undefined
-                    )}
-                  >
-                    <MenuItem value="all">All Dates</MenuItem>
-                    <MenuItem value="available">Available Only</MenuItem>
-                    <MenuItem value="conflicts">With Conflicts</MenuItem>
-                  </Select>
-                </FormControl>
-                
-                {hasActiveFilters && (
-                  <Button 
-                    variant="outlined" 
-                    size="small" 
-                    onClick={() => {
-                      setFilters({});
-                      setAvailabilityFilters({});
-                      setSearchValue('');
-                    }}
-                  >
-                    Clear Filters
-                  </Button>
-                )}
-              </Stack>
-            </>
-          )}
+            {/* View Toggle */}
+            <Stack direction="row" spacing={0}>
+              <IconButton
+                onClick={() => handleViewChange('month')}
+                color={view === 'month' ? 'primary' : 'default'}
+              >
+                <MonthIcon />
+              </IconButton>
+              <IconButton
+                onClick={() => handleViewChange('week')}
+                color={view === 'week' ? 'primary' : 'default'}
+              >
+                <WeekIcon />
+              </IconButton>
+            </Stack>
+          </Stack>
+        </Stack>
+
+        {/* Expandable Filters */}
+        {filtersOpen && (
+          <>
+            <Divider sx={{ my: 2 }} />
+            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+              <FormControl size="small" sx={{ minWidth: 130 }}>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={filters.status || 'all'}
+                  label="Status"
+                  onChange={(e) => handleFilterChange('status', e.target.value)}
+                >
+                  <MenuItem value="all">All Status</MenuItem>
+                  {EVENT_STATUSES.map((status) => (
+                    <MenuItem key={status.value} value={status.value}>
+                      {status.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ minWidth: 150 }}>
+                <InputLabel>Event Type</InputLabel>
+                <Select
+                  value={filters.event_type || 'all'}
+                  label="Event Type"
+                  onChange={(e) => handleFilterChange('event_type', String(e.target.value))}
+                >
+                  <MenuItem value="all">All Types</MenuItem>
+                  {eventTypes.map((type) => (
+                    <MenuItem key={type.id} value={type.id.toString()}>
+                      {type.name}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <FormControl size="small" sx={{ minWidth: 150 }}>
+                <InputLabel>Availability</InputLabel>
+                <Select
+                  value={
+                    availabilityFilters.show_conflicts !== undefined
+                      ? availabilityFilters.show_conflicts
+                        ? 'conflicts'
+                        : 'available'
+                      : 'all'
+                  }
+                  label="Availability"
+                  onChange={(e) =>
+                    handleAvailabilityFilterChange(
+                      'show_conflicts',
+                      e.target.value === 'conflicts'
+                        ? true
+                        : e.target.value === 'available'
+                          ? false
+                          : undefined,
+                    )
+                  }
+                >
+                  <MenuItem value="all">All Dates</MenuItem>
+                  <MenuItem value="available">Available Only</MenuItem>
+                  <MenuItem value="conflicts">With Conflicts</MenuItem>
+                </Select>
+              </FormControl>
+
+              {hasActiveFilters && (
+                <Button
+                  variant="outlined"
+                  size="small"
+                  onClick={() => {
+                    setFilters({});
+                    setAvailabilityFilters({});
+                    setSearchValue('');
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              )}
+            </Stack>
+          </>
+        )}
       </ModernCard>
 
       {/* Calendar View */}
@@ -978,71 +1013,74 @@ export const EnterpriseEventsCalendar: React.FC = () => {
 
       {/* Legend */}
       <ModernCard variant="flat" size="medium" sx={{ mt: 3 }}>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
+          <Box>
+            <Typography variant="subtitle2" gutterBottom>
+              Event Status
+            </Typography>
+            <Stack direction="row" spacing={2} flexWrap="wrap">
+              {EVENT_STATUSES.map((status) => (
+                <Chip
+                  key={status.value}
+                  label={status.label}
+                  color={getStatusColor(status.value)}
+                  size="small"
+                  variant="filled"
+                />
+              ))}
+            </Stack>
+          </Box>
+
+          {settings.showAvailabilityIndicators && (
             <Box>
               <Typography variant="subtitle2" gutterBottom>
-                Event Status
+                Availability Status
               </Typography>
               <Stack direction="row" spacing={2} flexWrap="wrap">
-                {EVENT_STATUSES.map((status) => (
-                  <Chip
-                    key={status.value}
-                    label={status.label}
-                    color={getStatusColor(status.value)}
-                    size="small"
-                    variant="filled"
-                  />
-                ))}
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <AvailableIcon color="success" fontSize="small" />
+                  <Typography variant="caption">Available</Typography>
+                </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <WarningIcon color="warning" fontSize="small" />
+                  <Typography variant="caption">Leads Only</Typography>
+                </Stack>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <BlockedIcon color="error" fontSize="small" />
+                  <Typography variant="caption">Unavailable</Typography>
+                </Stack>
               </Stack>
             </Box>
-            
-            {settings.showAvailabilityIndicators && (
-              <Box>
-                <Typography variant="subtitle2" gutterBottom>
-                  Availability Status
-                </Typography>
-                <Stack direction="row" spacing={2} flexWrap="wrap">
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <AvailableIcon color="success" fontSize="small" />
-                    <Typography variant="caption">Available</Typography>
-                  </Stack>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <WarningIcon color="warning" fontSize="small" />
-                    <Typography variant="caption">Leads Only</Typography>
-                  </Stack>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <BlockedIcon color="error" fontSize="small" />
-                    <Typography variant="caption">Unavailable</Typography>
-                  </Stack>
-                </Stack>
-              </Box>
-            )}
-          </Stack>
+          )}
+        </Stack>
       </ModernCard>
 
       {/* Action Menu */}
-      <Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={handleMenuClose}
-      >
-        <MenuItem onClick={() => {
-          if (selectedEvent) navigate(`/events/${selectedEvent.id}`);
-          handleMenuClose();
-        }}>
+      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleMenuClose}>
+        <MenuItem
+          onClick={() => {
+            if (selectedEvent) navigate(`/events/${selectedEvent.id}`);
+            handleMenuClose();
+          }}
+        >
           <EventIcon sx={{ mr: 1 }} />
           View Event
         </MenuItem>
       </Menu>
 
       {/* Create Event Dialog */}
-      <Dialog open={createDialogOpen} onClose={() => setCreateDialogOpen(false)} maxWidth="md" fullWidth>
+      <Dialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>Create New Event</DialogTitle>
         <DialogContent>
           <EventForm
             onSubmit={(data) => {
               createEvent(data as CreateEventData, {
-                onSuccess: () => setCreateDialogOpen(false)
+                onSuccess: () => setCreateDialogOpen(false),
               });
             }}
             onCancel={() => setCreateDialogOpen(false)}
@@ -1060,9 +1098,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
       >
         <DialogTitle>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6">
-              Availability Details
-            </Typography>
+            <Typography variant="h6">Availability Details</Typography>
             <IconButton onClick={() => setAvailabilityDetailOpen(false)}>
               <CloseIcon />
             </IconButton>
@@ -1071,19 +1107,21 @@ export const EnterpriseEventsCalendar: React.FC = () => {
         <DialogContent>
           {selectedDate && (
             <AvailabilityIndicator
-              availability={getDateAvailability(selectedDate) || {
-                date: selectedDate,
-                status: 'available',
-                conflict_level: 'none',
-                confirmed_events_count: 0,
-                lead_events_count: 0,
-                total_events_count: 0,
-                can_book_event: true,
-                can_create_lead: true,
-                conflicts: [],
-                reasons: [],
-                buffer_conflicts: [],
-              }}
+              availability={
+                getDateAvailability(selectedDate) || {
+                  date: selectedDate,
+                  status: 'available',
+                  conflict_level: 'none',
+                  confirmed_events_count: 0,
+                  lead_events_count: 0,
+                  total_events_count: 0,
+                  can_book_event: true,
+                  can_create_lead: true,
+                  conflicts: [],
+                  reasons: [],
+                  buffer_conflicts: [],
+                }
+              }
               showDetails={true}
             />
           )}
@@ -1091,17 +1129,10 @@ export const EnterpriseEventsCalendar: React.FC = () => {
       </Dialog>
 
       {/* Settings Dialog */}
-      <Dialog
-        open={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={settingsOpen} onClose={() => setSettingsOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6">
-              Calendar Settings
-            </Typography>
+            <Typography variant="h6">Calendar Settings</Typography>
             <IconButton onClick={() => setSettingsOpen(false)}>
               <CloseIcon />
             </IconButton>
@@ -1113,12 +1144,14 @@ export const EnterpriseEventsCalendar: React.FC = () => {
               control={
                 <Switch
                   checked={settings.showAvailabilityIndicators}
-                  onChange={(e) => handleSettingChange('showAvailabilityIndicators', e.target.checked)}
+                  onChange={(e) =>
+                    handleSettingChange('showAvailabilityIndicators', e.target.checked)
+                  }
                 />
               }
               label="Show Availability Indicators"
             />
-            
+
             <FormControlLabel
               control={
                 <Switch
@@ -1128,17 +1161,19 @@ export const EnterpriseEventsCalendar: React.FC = () => {
               }
               label="Show Conflict Details"
             />
-            
+
             <FormControlLabel
               control={
                 <Switch
                   checked={settings.highlightUnavailableDates}
-                  onChange={(e) => handleSettingChange('highlightUnavailableDates', e.target.checked)}
+                  onChange={(e) =>
+                    handleSettingChange('highlightUnavailableDates', e.target.checked)
+                  }
                 />
               }
               label="Highlight Unavailable Dates"
             />
-            
+
             <FormControlLabel
               control={
                 <Switch
@@ -1148,7 +1183,7 @@ export const EnterpriseEventsCalendar: React.FC = () => {
               }
               label="Show Availability Statistics"
             />
-            
+
             <FormControlLabel
               control={
                 <Switch

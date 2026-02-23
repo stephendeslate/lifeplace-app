@@ -168,7 +168,7 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
         description: fileDescription,
         is_public: isPublic,
       };
-      
+
       createFile(
         { data, file: uploadFile },
         {
@@ -176,7 +176,7 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
             setUploadDialogOpen(false);
             setUploadFile(null);
           },
-        }
+        },
       );
     }
   };
@@ -210,7 +210,7 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
             setEditDialogOpen(false);
             setSelectedFile(null);
           },
-        }
+        },
       );
     }
   };
@@ -255,11 +255,7 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Upload files related to this event such as contracts, photos, or documents.
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<UploadIcon />}
-          onClick={handleUploadClick}
-        >
+        <Button variant="contained" startIcon={<UploadIcon />} onClick={handleUploadClick}>
           Upload File
         </Button>
       </Paper>
@@ -288,11 +284,7 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
             </Select>
           </FormControl>
         </Stack>
-        <Button
-          variant="contained"
-          startIcon={<UploadIcon />}
-          onClick={handleUploadClick}
-        >
+        <Button variant="contained" startIcon={<UploadIcon />} onClick={handleUploadClick}>
           Upload File
         </Button>
       </Box>
@@ -323,9 +315,20 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
                 </TableCell>
                 <TableCell>
                   <Chip
-                    label={FILE_CATEGORIES.find((c) => c.value === file.category)?.label || file.category}
+                    label={
+                      FILE_CATEGORIES.find((c) => c.value === file.category)?.label || file.category
+                    }
                     size="small"
-                    color={getCategoryColor(file.category) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
+                    color={
+                      getCategoryColor(file.category) as
+                        | 'default'
+                        | 'primary'
+                        | 'secondary'
+                        | 'error'
+                        | 'info'
+                        | 'success'
+                        | 'warning'
+                    }
                   />
                 </TableCell>
                 <TableCell>
@@ -358,25 +361,16 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
                 <TableCell align="right">
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
                     <Tooltip title="View">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleViewClick(file)}
-                      >
+                      <IconButton size="small" onClick={() => handleViewClick(file)}>
                         <PreviewIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Download">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDownloadClick(file)}
-                      >
+                      <IconButton size="small" onClick={() => handleDownloadClick(file)}>
                         <DownloadIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleMenuOpen(e, file)}
-                    >
+                    <IconButton size="small" onClick={(e) => handleMenuOpen(e, file)}>
                       <MoreVertIcon fontSize="small" />
                     </IconButton>
                   </Stack>
@@ -388,11 +382,7 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
       </TableContainer>
 
       {/* Actions Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         <MenuItem onClick={() => selectedFile && handleViewClick(selectedFile)}>
           <ListItemIcon>
             <PreviewIcon fontSize="small" />
@@ -420,16 +410,16 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
       </Menu>
 
       {/* Upload Dialog */}
-      <Dialog open={uploadDialogOpen} onClose={() => setUploadDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={uploadDialogOpen}
+        onClose={() => setUploadDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Upload File</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 2 }}>
-            <Button
-              variant="outlined"
-              component="label"
-              startIcon={<UploadIcon />}
-              fullWidth
-            >
+            <Button variant="outlined" component="label" startIcon={<UploadIcon />} fullWidth>
               {uploadFile ? uploadFile.name : 'Select File'}
               <input
                 type="file"
@@ -468,10 +458,7 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
             </FormControl>
             <FormControlLabel
               control={
-                <Switch
-                  checked={isPublic}
-                  onChange={(e) => setIsPublic(e.target.checked)}
-                />
+                <Switch checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
               }
               label="Make file visible to client"
             />
@@ -490,7 +477,12 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
         <DialogTitle>Edit File Details</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 2 }}>
@@ -524,10 +516,7 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
             </FormControl>
             <FormControlLabel
               control={
-                <Switch
-                  checked={isPublic}
-                  onChange={(e) => setIsPublic(e.target.checked)}
-                />
+                <Switch checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
               }
               label="Make file visible to client"
             />
@@ -535,11 +524,7 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-          <Button
-            onClick={handleEditSubmit}
-            variant="contained"
-            disabled={!fileName || isUpdating}
-          >
+          <Button onClick={handleEditSubmit} variant="contained" disabled={!fileName || isUpdating}>
             {isUpdating ? 'Saving...' : 'Save Changes'}
           </Button>
         </DialogActions>
@@ -562,9 +547,7 @@ export const EventFiles: React.FC<EventFilesProps> = ({ event }) => {
               <Typography variant="body2" color="text.secondary">
                 Public Files
               </Typography>
-              <Typography variant="h6">
-                {files.filter((f) => f.is_public).length}
-              </Typography>
+              <Typography variant="h6">{files.filter((f) => f.is_public).length}</Typography>
             </Box>
             <Box>
               <Typography variant="body2" color="text.secondary">

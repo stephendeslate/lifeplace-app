@@ -74,9 +74,9 @@ export interface ModernCardProps {
  */
 const getSizePadding = (size: CardSize): string => {
   const paddingMap: Record<CardSize, string> = {
-    small: tokens.spacing.space[4],   // 16px
-    medium: tokens.spacing.space[6],  // 24px
-    large: tokens.spacing.space[8],   // 32px
+    small: tokens.spacing.space[4], // 16px
+    medium: tokens.spacing.space[6], // 24px
+    large: tokens.spacing.space[8], // 32px
   };
   return paddingMap[size];
 };
@@ -98,7 +98,8 @@ const getVariantStyles = (variant: CardVariant) => {
     },
     warm: {
       backgroundColor: `${tokens.color.neutral[50]}`,
-      backgroundImage: 'linear-gradient(135deg, rgba(251, 207, 232, 0.1) 0%, rgba(244, 224, 210, 0.15) 100%)',
+      backgroundImage:
+        'linear-gradient(135deg, rgba(251, 207, 232, 0.1) 0%, rgba(244, 224, 210, 0.15) 100%)',
       boxShadow: '0 2px 8px rgba(236, 72, 153, 0.08)',
       border: 'none',
     },

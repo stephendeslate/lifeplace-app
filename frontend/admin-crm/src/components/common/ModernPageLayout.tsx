@@ -2,10 +2,7 @@
 // Reusable layout component with glassmorphic background and consistent structure
 
 import React from 'react';
-import {
-  Box,
-  Container,
-} from '@mui/material';
+import { Box, Container } from '@mui/material';
 import { tokens } from '../../design-system';
 
 interface ModernPageLayoutProps {
@@ -51,12 +48,12 @@ export const ModernPageLayout: React.FC<ModernPageLayoutProps> = ({
   };
 
   return (
-    <Box 
+    <Box
       className={className}
-      sx={{ 
+      sx={{
         minHeight: '100vh',
         position: 'relative',
-        
+
         // Glassmorphic background pattern
         '&::before': {
           content: '""',
@@ -69,14 +66,14 @@ export const ModernPageLayout: React.FC<ModernPageLayoutProps> = ({
           pointerEvents: 'none',
           zIndex: -1,
         },
-        
+
         ...sx,
       }}
     >
       {maxWidth === false ? (
         // Full width layout - no container constraints (for auth pages, etc.)
         <Box
-          sx={{ 
+          sx={{
             py: paddingY || { xs: 2, sm: 3, md: 4 },
             position: 'relative',
             zIndex: 1,
@@ -89,16 +86,18 @@ export const ModernPageLayout: React.FC<ModernPageLayoutProps> = ({
         </Box>
       ) : (
         // Standard container layout
-        <Container 
-          maxWidth={maxWidth} 
+        <Container
+          maxWidth={maxWidth}
           disableGutters={disableGutters}
-          sx={{ 
+          sx={{
             py: paddingY || { xs: 2, sm: 3, md: 4 },
-            px: disableGutters ? 0 : {
-              xs: 'clamp(4px, 1.5vw, 12px)',  // Much tighter: 4px to 12px
-              sm: 'clamp(6px, 2vw, 16px)',    // Much tighter: 6px to 16px  
-              md: 'clamp(8px, 2.5vw, 20px)',  // Much tighter: 8px to 20px
-            },
+            px: disableGutters
+              ? 0
+              : {
+                  xs: 'clamp(4px, 1.5vw, 12px)', // Much tighter: 4px to 12px
+                  sm: 'clamp(6px, 2vw, 16px)', // Much tighter: 6px to 16px
+                  md: 'clamp(8px, 2.5vw, 20px)', // Much tighter: 8px to 20px
+                },
             position: 'relative',
             zIndex: 1,
           }}
@@ -111,13 +110,15 @@ export const ModernPageLayout: React.FC<ModernPageLayoutProps> = ({
 };
 
 // Specialized layout variants for common use cases
-export const ModernSettingsLayout: React.FC<Omit<ModernPageLayoutProps, 'backgroundPattern'>> = (props) => {
+export const ModernSettingsLayout: React.FC<Omit<ModernPageLayoutProps, 'backgroundPattern'>> = (
+  props,
+) => {
   return (
-    <Box 
-      sx={{ 
+    <Box
+      sx={{
         minHeight: '100vh',
         position: 'relative',
-        
+
         // Glassmorphic background pattern - minimal
         '&::before': {
           content: '""',
@@ -135,24 +136,24 @@ export const ModernSettingsLayout: React.FC<Omit<ModernPageLayoutProps, 'backgro
         },
       }}
     >
-      <Container 
-        maxWidth={props.maxWidth || 'xl'} 
+      <Container
+        maxWidth={props.maxWidth || 'xl'}
         disableGutters={props.disableGutters || false}
-        sx={{ 
+        sx={{
           py: {
-            xs: 'clamp(4px, 1vw, 8px)',    // Tight vertical padding
-            sm: 'clamp(6px, 1.5vw, 12px)', 
-            md: 'clamp(8px, 2vw, 16px)',   
+            xs: 'clamp(4px, 1vw, 8px)', // Tight vertical padding
+            sm: 'clamp(6px, 1.5vw, 12px)',
+            md: 'clamp(8px, 2vw, 16px)',
           },
           pl: {
-            xs: 'clamp(2px, 0.8vw, 8px)',   // Extra tight left padding: 2px to 8px
-            sm: 'clamp(4px, 1.2vw, 12px)',  // Extra tight left padding: 4px to 12px  
-            md: 'clamp(6px, 1.5vw, 16px)',  // Extra tight left padding: 6px to 16px
+            xs: 'clamp(2px, 0.8vw, 8px)', // Extra tight left padding: 2px to 8px
+            sm: 'clamp(4px, 1.2vw, 12px)', // Extra tight left padding: 4px to 12px
+            md: 'clamp(6px, 1.5vw, 16px)', // Extra tight left padding: 6px to 16px
           },
           pr: {
-            xs: 'clamp(4px, 1.5vw, 12px)',  // Normal right padding for balance
-            sm: 'clamp(6px, 2vw, 16px)',    
-            md: 'clamp(8px, 2.5vw, 20px)',  
+            xs: 'clamp(4px, 1.5vw, 12px)', // Normal right padding for balance
+            sm: 'clamp(6px, 2vw, 16px)',
+            md: 'clamp(8px, 2.5vw, 20px)',
           },
           position: 'relative',
           zIndex: 1,
@@ -165,6 +166,6 @@ export const ModernSettingsLayout: React.FC<Omit<ModernPageLayoutProps, 'backgro
   );
 };
 
-export const ModernOverviewLayout: React.FC<Omit<ModernPageLayoutProps, 'backgroundPattern'>> = (props) => (
-  <ModernPageLayout {...props} backgroundPattern="vibrant" />
-);
+export const ModernOverviewLayout: React.FC<Omit<ModernPageLayoutProps, 'backgroundPattern'>> = (
+  props,
+) => <ModernPageLayout {...props} backgroundPattern="vibrant" />;

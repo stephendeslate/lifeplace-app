@@ -1,17 +1,17 @@
 // frontend/admin-crm/src/hooks/useLegalDocuments.test.ts
 
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
-import { useLegalDocuments, useLegalDocument } from "./useLegalDocuments";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { useLegalDocuments, useLegalDocument } from './useLegalDocuments';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
-describe("useLegalDocuments", () => {
-  describe("useLegalDocuments (list)", () => {
-    it("fetches all legal documents successfully", async () => {
+describe('useLegalDocuments', () => {
+  describe('useLegalDocuments (list)', () => {
+    it('fetches all legal documents successfully', async () => {
       const { result } = renderHook(() => useLegalDocuments(), {
         wrapper: createTestWrapper(),
       });
@@ -28,10 +28,10 @@ describe("useLegalDocuments", () => {
       expect(result.current.legalDocuments.length).toBeGreaterThan(0);
     });
 
-    it("handles API error gracefully", async () => {
+    it('handles API error gracefully', async () => {
       server.use(
         http.get(`${BASE_URL}/settings/legal/`, () => {
-          return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+          return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
         }),
       );
 
@@ -47,7 +47,7 @@ describe("useLegalDocuments", () => {
       );
     });
 
-    it("provides update mutation", async () => {
+    it('provides update mutation', async () => {
       const { result } = renderHook(() => useLegalDocuments(), {
         wrapper: createTestWrapper(),
       });
@@ -59,11 +59,11 @@ describe("useLegalDocuments", () => {
         { timeout: 5000 },
       );
 
-      expect(result.current.updateLegalDocument).toBeTypeOf("function");
+      expect(result.current.updateLegalDocument).toBeTypeOf('function');
       expect(result.current.isUpdatingDocument).toBe(false);
     });
 
-    it("updates a legal document", async () => {
+    it('updates a legal document', async () => {
       const { result } = renderHook(() => useLegalDocuments(), {
         wrapper: createTestWrapper(),
       });
@@ -77,8 +77,8 @@ describe("useLegalDocuments", () => {
 
       act(() => {
         result.current.updateLegalDocument({
-          documentType: "TERMS_OF_SERVICE",
-          data: { content: "Updated terms content" },
+          documentType: 'TERMS_OF_SERVICE',
+          data: { content: 'Updated terms content' },
         });
       });
 
@@ -91,12 +91,11 @@ describe("useLegalDocuments", () => {
     });
   });
 
-  describe("useLegalDocument (single)", () => {
-    it("fetches single legal document by type", async () => {
-      const { result } = renderHook(
-        () => useLegalDocument("TERMS_OF_SERVICE"),
-        { wrapper: createTestWrapper() },
-      );
+  describe('useLegalDocument (single)', () => {
+    it('fetches single legal document by type', async () => {
+      const { result } = renderHook(() => useLegalDocument('TERMS_OF_SERVICE'), {
+        wrapper: createTestWrapper(),
+      });
 
       await waitFor(
         () => {
@@ -108,7 +107,7 @@ describe("useLegalDocuments", () => {
       expect(result.current.legalDocument).toBeDefined();
     });
 
-    it("does not fetch when documentType is null", async () => {
+    it('does not fetch when documentType is null', async () => {
       const { result } = renderHook(() => useLegalDocument(null), {
         wrapper: createTestWrapper(),
       });

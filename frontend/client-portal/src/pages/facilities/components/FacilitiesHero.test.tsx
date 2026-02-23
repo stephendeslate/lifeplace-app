@@ -14,21 +14,21 @@ describe('FacilitiesHero', () => {
     it('renders the subheading', () => {
       render(<FacilitiesHero />);
       expect(
-        screen.getByText('Discover our beautiful venues and comfortable accommodations')
+        screen.getByText('Discover our beautiful venues and comfortable accommodations'),
       ).toBeInTheDocument();
     });
 
     it('renders the description text', () => {
       render(<FacilitiesHero />);
       expect(
-        screen.getByText(/From intimate ceremonies to grand celebrations/)
+        screen.getByText(/From intimate ceremonies to grand celebrations/),
       ).toBeInTheDocument();
     });
 
     it('renders the complete description', () => {
       render(<FacilitiesHero />);
       expect(
-        screen.getByText(/Our thoughtfully designed venues combine natural beauty/)
+        screen.getByText(/Our thoughtfully designed venues combine natural beauty/),
       ).toBeInTheDocument();
     });
 
@@ -298,7 +298,7 @@ describe('FacilitiesHero', () => {
       render(<FacilitiesHero />);
 
       expect(
-        screen.getByText('Discover our beautiful venues and comfortable accommodations')
+        screen.getByText('Discover our beautiful venues and comfortable accommodations'),
       ).toBeInTheDocument();
     });
 

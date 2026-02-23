@@ -21,12 +21,9 @@ import {
   IconButton,
   Stack,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Remove as RemoveIcon,
-} from '@mui/icons-material';
+import { Add as AddIcon, Remove as RemoveIcon } from '@mui/icons-material';
 import { DraggableList } from '../common/DraggableList';
-import { 
+import {
   type QuestionnaireFormDialogProps,
   type QuestionnaireFormData,
   type QuestionnaireFieldFormData,
@@ -74,10 +71,10 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
 
   // Fetch event types for the dropdown
   const { useActiveEventTypes } = useEventTypes();
-  const { 
-    data: eventTypes = [], 
+  const {
+    data: eventTypes = [],
     isLoading: isLoadingEventTypes,
-    error: eventTypesError 
+    error: eventTypesError,
   } = useActiveEventTypes();
 
   useEffect(() => {
@@ -88,21 +85,22 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
           event_type: editingQuestionnaire.event_type?.toString() || '',
           is_active: editingQuestionnaire.is_active ?? true,
           order: editingQuestionnaire.order?.toString() || '1',
-          fields: editingQuestionnaire.fields?.map((field, index) => ({
-            id: field.id.toString(),
-            name: field.name,
-            type: field.type,
-            required: field.required,
-            order: field.order || index + 1,
-            options: field.options || [],
-            description: field.description || '',
-            placeholder: field.placeholder || '',
-            is_guest_count: field.is_guest_count || false,
-            show_conditions: field.show_conditions || {},
-            max_file_size_mb: field.max_file_size_mb || 10,
-            allowed_file_types: field.allowed_file_types || [],
-            max_files: field.max_files || 1,
-          })) || [],
+          fields:
+            editingQuestionnaire.fields?.map((field, index) => ({
+              id: field.id.toString(),
+              name: field.name,
+              type: field.type,
+              required: field.required,
+              order: field.order || index + 1,
+              options: field.options || [],
+              description: field.description || '',
+              placeholder: field.placeholder || '',
+              is_guest_count: field.is_guest_count || false,
+              show_conditions: field.show_conditions || {},
+              max_file_size_mb: field.max_file_size_mb || 10,
+              allowed_file_types: field.allowed_file_types || [],
+              max_files: field.max_files || 1,
+            })) || [],
         });
       } else {
         setFormData(defaultFormData);
@@ -112,46 +110,50 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
     }
   }, [editingQuestionnaire, open]);
 
-  const handleInputChange = (field: keyof QuestionnaireFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | 
-           { target: { value: unknown } }
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
+  const handleInputChange =
+    (field: keyof QuestionnaireFormData) =>
+    (
+      event:
+        | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        | { target: { value: unknown } },
+    ) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
         ...prev,
-        [field]: '',
+        [field]: value,
       }));
-    }
-  };
 
-  const handleSwitchChange = (field: keyof QuestionnaireFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: '',
+        }));
+      }
+    };
+
+  const handleSwitchChange =
+    (field: keyof QuestionnaireFormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: event.target.checked,
+      }));
+    };
+
+  const handleFieldChange = (
+    index: number,
+    field: keyof QuestionnaireFieldFormData,
+    value: unknown,
   ) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: event.target.checked,
+      fields: prev.fields.map((f, i) => (i === index ? { ...f, [field]: value } : f)),
     }));
-  };
 
-  const handleFieldChange = (index: number, field: keyof QuestionnaireFieldFormData, value: unknown) => {
-    setFormData(prev => ({
-      ...prev,
-      fields: prev.fields.map((f, i) => 
-        i === index ? { ...f, [field]: value } : f
-      ),
-    }));
-    
     // Clear field-specific errors
     const errorKey = `field_${index}_${field}`;
     if (errors[errorKey]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
         [errorKey]: '',
       }));
@@ -159,60 +161,59 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
   };
 
   const handleAddField = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      fields: [...prev.fields, {
-        ...defaultFieldData,
-        id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        order: prev.fields.length + 1,
-      }],
+      fields: [
+        ...prev.fields,
+        {
+          ...defaultFieldData,
+          id: `field-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          order: prev.fields.length + 1,
+        },
+      ],
     }));
   };
 
   const handleRemoveField = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       fields: prev.fields.filter((_, i) => i !== index),
     }));
   };
 
   const handleOptionChange = (fieldIndex: number, optionIndex: number, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      fields: prev.fields.map((field, i) => 
-        i === fieldIndex 
+      fields: prev.fields.map((field, i) =>
+        i === fieldIndex
           ? {
               ...field,
-              options: field.options.map((opt, oi) => 
-                oi === optionIndex ? value : opt
-              )
+              options: field.options.map((opt, oi) => (oi === optionIndex ? value : opt)),
             }
-          : field
+          : field,
       ),
     }));
   };
 
   const handleAddOption = (fieldIndex: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      fields: prev.fields.map((field, i) => 
-        i === fieldIndex 
-          ? { ...field, options: [...field.options, ''] }
-          : field
+      fields: prev.fields.map((field, i) =>
+        i === fieldIndex ? { ...field, options: [...field.options, ''] } : field,
       ),
     }));
   };
 
   const handleRemoveOption = (fieldIndex: number, optionIndex: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      fields: prev.fields.map((field, i) => 
-        i === fieldIndex 
-          ? { 
-              ...field, 
-              options: field.options.filter((_, oi) => oi !== optionIndex)
+      fields: prev.fields.map((field, i) =>
+        i === fieldIndex
+          ? {
+              ...field,
+              options: field.options.filter((_, oi) => oi !== optionIndex),
             }
-          : field
+          : field,
       ),
     }));
   };
@@ -234,7 +235,10 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
         newErrors[`field_${index}_name`] = 'Field name is required';
       }
 
-      if ((field.type === 'select' || field.type === 'multi-select') && field.options.length === 0) {
+      if (
+        (field.type === 'select' || field.type === 'multi-select') &&
+        field.options.length === 0
+      ) {
         newErrors[`field_${index}_options`] = 'Options are required for select fields';
       }
     });
@@ -256,9 +260,10 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
         type: field.type,
         required: field.required,
         order: index + 1,
-        options: (field.type === 'select' || field.type === 'multi-select') 
-          ? field.options.filter(opt => opt.trim()) 
-          : null,
+        options:
+          field.type === 'select' || field.type === 'multi-select'
+            ? field.options.filter((opt) => opt.trim())
+            : null,
       })),
     };
 
@@ -271,7 +276,7 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
     }
   };
 
-  const requiresOptions = (type: QuestionnaireFieldType) => 
+  const requiresOptions = (type: QuestionnaireFieldType) =>
     type === 'select' || type === 'multi-select';
 
   const handleFieldReorder = (reorderedFields: QuestionnaireFieldFormData[]) => {
@@ -280,16 +285,16 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
       ...field,
       order: index + 1,
     }));
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
       fields: fieldsWithUpdatedOrder,
     }));
   };
 
   const renderFieldItem = (field: QuestionnaireFieldFormData) => {
-    const fieldIndex = formData.fields.findIndex(f => f === field);
-    
+    const fieldIndex = formData.fields.findIndex((f) => f === field);
+
     return (
       <Box>
         <Stack spacing={2}>
@@ -332,8 +337,8 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
               />
             </Box>
 
-            <IconButton 
-              size="small" 
+            <IconButton
+              size="small"
               color="error"
               onClick={() => handleRemoveField(fieldIndex)}
               sx={{ alignSelf: 'center' }}
@@ -345,9 +350,7 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
           {requiresOptions(field.type) && (
             <Box>
               <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-                <Typography variant="subtitle2">
-                  Options
-                </Typography>
+                <Typography variant="subtitle2">Options</Typography>
                 <Button
                   size="small"
                   startIcon={<AddIcon />}
@@ -370,7 +373,9 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
                         fullWidth
                         placeholder={`Option ${optionIndex + 1}`}
                         value={option}
-                        onChange={(e) => handleOptionChange(fieldIndex, optionIndex, e.target.value)}
+                        onChange={(e) =>
+                          handleOptionChange(fieldIndex, optionIndex, e.target.value)
+                        }
                       />
                       <IconButton
                         size="small"
@@ -406,7 +411,7 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
         sx: {
           minHeight: '80vh',
           borderRadius: 1,
-        }
+        },
       }}
     >
       {open && (
@@ -467,7 +472,7 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
                     helperText={errors.name}
                     required
                   />
-                  
+
                   <FormControl fullWidth error={!!eventTypesError}>
                     <InputLabel>Event Type (Optional)</InputLabel>
                     <Select
@@ -502,11 +507,12 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
                     )}
                     {eventTypesError && (
                       <Alert severity="warning" sx={{ mt: 1 }}>
-                        Failed to load event types. You can still create the questionnaire without specifying an event type.
+                        Failed to load event types. You can still create the questionnaire without
+                        specifying an event type.
                       </Alert>
                     )}
                   </FormControl>
-                  
+
                   <Box display="flex" gap={2}>
                     <TextField
                       label="Display Order"
@@ -517,7 +523,7 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
                       type="number"
                       sx={{ flex: 1 }}
                     />
-                    
+
                     <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
                       <FormControlLabel
                         control={
@@ -536,9 +542,7 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
               {activeTab === 'fields' && (
                 <Box>
                   <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                    <Typography variant="h6">
-                      Questionnaire Fields
-                    </Typography>
+                    <Typography variant="h6">Questionnaire Fields</Typography>
                     <Button
                       variant="contained"
                       size="small"
@@ -568,7 +572,7 @@ export const QuestionnaireFormDialog: React.FC<QuestionnaireFormDialogProps> = (
               )}
             </Box>
           </DialogContent>
-          
+
           <DialogActions
             sx={{
               p: 3,

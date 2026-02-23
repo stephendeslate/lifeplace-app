@@ -1,9 +1,9 @@
 // lifeplace-app/frontend/client-portal/vite.config.ts
 
-import { reactRouter } from "@react-router/dev/vite";
-import { sentryVitePlugin } from "@sentry/vite-plugin";
-import { defineConfig } from "vite";
-import path from "path";
+import { reactRouter } from '@react-router/dev/vite';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
+import { defineConfig } from 'vite';
+import path from 'path';
 
 export default defineConfig(({ command }) => ({
   plugins: [
@@ -12,13 +12,13 @@ export default defineConfig(({ command }) => ({
       ? [
           sentryVitePlugin({
             org: process.env.SENTRY_ORG,
-            project: "client-portal",
+            project: 'client-portal',
             authToken: process.env.SENTRY_AUTH_TOKEN,
             release: {
               name: process.env.VITE_SENTRY_RELEASE,
             },
             sourcemaps: {
-              filesToDeleteAfterUpload: ["./build/**/*.map"],
+              filesToDeleteAfterUpload: ['./build/**/*.map'],
             },
           }),
         ]
@@ -26,16 +26,16 @@ export default defineConfig(({ command }) => ({
   ],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "@shared": path.resolve(__dirname, "../shared"),
+      '@': path.resolve(__dirname, './src'),
+      '@shared': path.resolve(__dirname, '../shared'),
     },
     // Force all React imports to use the same instance from client-portal's node_modules
-    dedupe: ["react", "react-dom", "react-router-dom", "@tanstack/react-query"],
+    dedupe: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
   },
   build: {
-    sourcemap: "hidden",
-    minify: "esbuild",
-    target: "es2020",
+    sourcemap: 'hidden',
+    minify: 'esbuild',
+    target: 'es2020',
     cssCodeSplit: true,
     // Performance optimizations
     chunkSizeWarningLimit: 800,
@@ -44,17 +44,17 @@ export default defineConfig(({ command }) => ({
   },
   optimizeDeps: {
     include: [
-      "react",
-      "react-dom",
-      "react-router-dom",
-      "@mui/material",
-      "@mui/icons-material",
-      "@tanstack/react-query",
-      "@stripe/react-stripe-js",
-      "@stripe/stripe-js",
-      "axios",
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@mui/material',
+      '@mui/icons-material',
+      '@tanstack/react-query',
+      '@stripe/react-stripe-js',
+      '@stripe/stripe-js',
+      'axios',
     ],
-    exclude: ["@vite/client", "@vite/env"],
+    exclude: ['@vite/client', '@vite/env'],
   },
   server: {
     port: 5174,
@@ -65,12 +65,12 @@ export default defineConfig(({ command }) => ({
   },
   preview: {
     port: 4173,
-    host: "0.0.0.0",
+    host: '0.0.0.0',
   },
   ssr: {
     // Bundle all deps during build so Vite handles CJS→ESM interop for pre-rendering.
     // In dev, only bundle specific CJS packages that break ESM named imports.
-    noExternal: command === "build" ? true : [/lodash/],
+    noExternal: command === 'build' ? true : [/lodash/],
   },
   // Performance monitoring
   define: {

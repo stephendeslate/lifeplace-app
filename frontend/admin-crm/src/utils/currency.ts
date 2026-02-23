@@ -83,7 +83,7 @@ export const formatCurrency = (
     showCode?: boolean;
     minimumFractionDigits?: number;
     maximumFractionDigits?: number;
-  } = {}
+  } = {},
 ): string => {
   const {
     showSymbol = true,
@@ -94,7 +94,7 @@ export const formatCurrency = (
 
   const config = getCurrencyConfig(currencyCode);
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  
+
   if (isNaN(numericAmount)) {
     return `${showSymbol ? config.symbol : ''}0${showCode ? ` ${config.code}` : ''}`;
   }
@@ -115,7 +115,7 @@ export const formatCurrency = (
     }
 
     if (showSymbol && !showCode) {
-      return config.position === 'before' 
+      return config.position === 'before'
         ? `${config.symbol}${formattedAmount}`
         : `${formattedAmount}${config.symbol}`;
     }
@@ -125,19 +125,17 @@ export const formatCurrency = (
     }
 
     // Show both symbol and code
-    const symbolFormatted = config.position === 'before' 
-      ? `${config.symbol}${formattedAmount}`
-      : `${formattedAmount}${config.symbol}`;
-    
-    return `${symbolFormatted} ${config.code}`;
+    const symbolFormatted =
+      config.position === 'before'
+        ? `${config.symbol}${formattedAmount}`
+        : `${formattedAmount}${config.symbol}`;
 
+    return `${symbolFormatted} ${config.code}`;
   } catch (error) {
     console.warn('Currency formatting error:', error);
     // Fallback to simple formatting
     const fallbackFormatted = numericAmount.toFixed(maxFractionDigits);
-    return showSymbol 
-      ? `${config.symbol}${fallbackFormatted}`
-      : fallbackFormatted;
+    return showSymbol ? `${config.symbol}${fallbackFormatted}` : fallbackFormatted;
   }
 };
 
@@ -146,7 +144,7 @@ export const formatCurrency = (
  */
 export const formatCurrencyForInput = (
   amount: string | number,
-  currencyCode: string = DEFAULT_CURRENCY
+  currencyCode: string = DEFAULT_CURRENCY,
 ): string => {
   return formatCurrency(amount, currencyCode, {
     showSymbol: false,
@@ -159,12 +157,12 @@ export const formatCurrencyForInput = (
  */
 export const parseCurrencyAmount = (
   currencyString: string,
-  currencyCode: string = DEFAULT_CURRENCY
+  currencyCode: string = DEFAULT_CURRENCY,
 ): number => {
   if (!currencyString) return 0;
-  
+
   const config = getCurrencyConfig(currencyCode);
-  
+
   // Remove currency symbols and codes, keep only numbers, decimals, and minus sign
   const cleanString = currencyString
     .replace(new RegExp(config.symbol, 'g'), '')
@@ -188,7 +186,7 @@ export const isValidCurrencyAmount = (amount: string | number): boolean => {
  * Get currency options for select dropdowns
  */
 export const getCurrencyOptions = () => {
-  return Object.values(SUPPORTED_CURRENCIES).map(config => ({
+  return Object.values(SUPPORTED_CURRENCIES).map((config) => ({
     value: config.code,
     label: `${config.name} (${config.symbol})`,
     symbol: config.symbol,
@@ -202,7 +200,7 @@ export const getCurrencyOptions = () => {
 export const formatCurrencyRange = (
   min: string | number,
   max: string | number,
-  currencyCode: string = DEFAULT_CURRENCY
+  currencyCode: string = DEFAULT_CURRENCY,
 ): string => {
   const minFormatted = formatCurrency(min, currencyCode);
   const maxFormatted = formatCurrency(max, currencyCode);
@@ -217,10 +215,10 @@ export const convertCurrency = (
   amount: string | number,
   fromCurrency: string,
   toCurrency: string,
-  exchangeRate?: number
+  exchangeRate?: number,
 ): number => {
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  
+
   if (fromCurrency === toCurrency) {
     return numericAmount;
   }
@@ -247,25 +245,29 @@ export const getCurrencyInputAdornment = (currencyCode: string = DEFAULT_CURRENC
  */
 export const formatCurrencyCompact = (
   amount: string | number,
-  currencyCode: string = DEFAULT_CURRENCY
+  currencyCode: string = DEFAULT_CURRENCY,
 ): string => {
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  
+
   if (isNaN(numericAmount)) {
     return formatCurrency(0, currencyCode);
   }
 
   // For large amounts, show compact format (e.g., ₱1.2M instead of ₱1,200,000)
   if (numericAmount >= 1000000) {
-    return formatCurrency(numericAmount / 1000000, currencyCode, {
-      maximumFractionDigits: 1,
-    }) + 'M';
+    return (
+      formatCurrency(numericAmount / 1000000, currencyCode, {
+        maximumFractionDigits: 1,
+      }) + 'M'
+    );
   }
 
   if (numericAmount >= 1000) {
-    return formatCurrency(numericAmount / 1000, currencyCode, {
-      maximumFractionDigits: 1,
-    }) + 'K';
+    return (
+      formatCurrency(numericAmount / 1000, currencyCode, {
+        maximumFractionDigits: 1,
+      }) + 'K'
+    );
   }
 
   return formatCurrency(numericAmount, currencyCode);

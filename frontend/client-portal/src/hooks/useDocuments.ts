@@ -22,11 +22,10 @@ import { CATEGORY_TO_TYPE, getFileExtension } from '../types/documents.types';
 const transformEventFileToDocument = (
   file: EventFile,
   eventId: number,
-  eventName: string
+  eventName: string,
 ): DocumentItem => {
   // Determine category from file_type or default to OTHER
-  const category: DocumentCategory =
-    (file.file_type?.toUpperCase() as DocumentCategory) || 'OTHER';
+  const category: DocumentCategory = (file.file_type?.toUpperCase() as DocumentCategory) || 'OTHER';
 
   // Map category to document type
   const type: DocumentType = CATEGORY_TO_TYPE[category] || 'OTHER';
@@ -96,7 +95,7 @@ export const useDocuments = (options: UseDocumentsOptions = {}) => {
 
   // Fetch documents for all events
   const { data: allEventDocuments = {}, isLoading: documentsLoading } = useQuery({
-    queryKey: ['all-event-documents', events.map(e => e.id)],
+    queryKey: ['all-event-documents', events.map((e) => e.id)],
     queryFn: async () => {
       if (events.length === 0) return {};
 
@@ -109,10 +108,11 @@ export const useDocuments = (options: UseDocumentsOptions = {}) => {
             const docs = await eventsApi.getEventDocuments(event.id);
             results[event.id] = docs;
           } catch (error) {
-            if (import.meta.env.DEV) console.error(`Failed to fetch documents for event ${event.id}:`, error);
+            if (import.meta.env.DEV)
+              console.error(`Failed to fetch documents for event ${event.id}:`, error);
             results[event.id] = [];
           }
-        })
+        }),
       );
 
       return results;
@@ -128,7 +128,7 @@ export const useDocuments = (options: UseDocumentsOptions = {}) => {
     // Add event files
     Object.entries(allEventDocuments).forEach(([eventIdStr, files]) => {
       const eventId = parseInt(eventIdStr, 10);
-      const event = events.find(e => e.id === eventId);
+      const event = events.find((e) => e.id === eventId);
       if (!event || !files) return;
 
       files.forEach((file) => {
@@ -155,26 +155,27 @@ export const useDocuments = (options: UseDocumentsOptions = {}) => {
 
     // Filter by event
     if (filters?.eventId) {
-      result = result.filter(doc => doc.eventId === filters.eventId);
+      result = result.filter((doc) => doc.eventId === filters.eventId);
     }
 
     // Filter by types
     if (filters?.types && filters.types.length > 0) {
-      result = result.filter(doc => filters.types!.includes(doc.type));
+      result = result.filter((doc) => filters.types!.includes(doc.type));
     }
 
     // Filter by categories
     if (filters?.categories && filters.categories.length > 0) {
-      result = result.filter(doc => filters.categories!.includes(doc.category));
+      result = result.filter((doc) => filters.categories!.includes(doc.category));
     }
 
     // Filter by search
     if (filters?.search) {
       const searchLower = filters.search.toLowerCase();
-      result = result.filter(doc =>
-        doc.name.toLowerCase().includes(searchLower) ||
-        doc.eventName.toLowerCase().includes(searchLower) ||
-        doc.description?.toLowerCase().includes(searchLower)
+      result = result.filter(
+        (doc) =>
+          doc.name.toLowerCase().includes(searchLower) ||
+          doc.eventName.toLowerCase().includes(searchLower) ||
+          doc.description?.toLowerCase().includes(searchLower),
       );
     }
 
@@ -187,9 +188,7 @@ export const useDocuments = (options: UseDocumentsOptions = {}) => {
 
     switch (sortBy) {
       case 'date':
-        sorted.sort((a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
+        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         break;
       case 'name':
         sorted.sort((a, b) => a.name.localeCompare(b.name));
@@ -209,14 +208,14 @@ export const useDocuments = (options: UseDocumentsOptions = {}) => {
   const eventOptions = useMemo((): DocumentEventOption[] => {
     const eventCounts = new Map<number, number>();
 
-    allDocuments.forEach(doc => {
+    allDocuments.forEach((doc) => {
       const count = eventCounts.get(doc.eventId) || 0;
       eventCounts.set(doc.eventId, count + 1);
     });
 
     return events
-      .filter(event => eventCounts.has(event.id))
-      .map(event => ({
+      .filter((event) => eventCounts.has(event.id))
+      .map((event) => ({
         id: event.id,
         name: event.name,
         documentCount: eventCounts.get(event.id) || 0,
@@ -234,7 +233,7 @@ export const useDocuments = (options: UseDocumentsOptions = {}) => {
       OTHER: 0,
     };
 
-    allDocuments.forEach(doc => {
+    allDocuments.forEach((doc) => {
       counts[doc.type]++;
     });
 

@@ -213,7 +213,12 @@ const getVariantStyles = (variant: ButtonVariant) => {
 const StyledButton = styled(ButtonBase, {
   shouldForwardProp: (prop) =>
     !['variant', 'size', 'fullWidth', 'loading'].includes(prop as string),
-})<StyledButtonProps>(({ variant = 'primary', size = 'medium', fullWidth = false, loading = false }) => {
+})<StyledButtonProps>(({
+  variant = 'primary',
+  size = 'medium',
+  fullWidth = false,
+  loading = false,
+}) => {
   const sizeStyles = getSizeStyles(size);
   const variantStyles = getVariantStyles(variant);
 
@@ -340,7 +345,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       className,
       ...props
     },
-    ref
+    ref,
   ) => {
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
       if (loading || disabled) {
@@ -370,9 +375,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {startIcon && !loading && <IconWrapper>{startIcon}</IconWrapper>}
 
-        <span style={{ visibility: loading ? 'hidden' : 'visible' }}>
-          {children}
-        </span>
+        <span style={{ visibility: loading ? 'hidden' : 'visible' }}>{children}</span>
 
         {endIcon && !loading && <IconWrapper>{endIcon}</IconWrapper>}
 
@@ -387,7 +390,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         )}
       </StyledButton>
     );
-  }
+  },
 );
 
 Button.displayName = 'Button';

@@ -15,7 +15,13 @@ import {
   Typography,
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import type { Event, CreateEventData, UpdateEventData, EventFormData, EventStatus } from '../../types/events.types';
+import type {
+  Event,
+  CreateEventData,
+  UpdateEventData,
+  EventFormData,
+  EventStatus,
+} from '../../types/events.types';
 import { EVENT_STATUSES } from '../../types/events.types';
 import { useClients } from '../../hooks/useClients';
 import { useEventTypes } from '../../hooks/useEvents';
@@ -78,7 +84,11 @@ const getInitialFormData = (event?: Event | null): EventFormData => {
   let eventTypeId = '';
   if (typeof event.event_type === 'number') {
     eventTypeId = event.event_type.toString();
-  } else if (typeof event.event_type === 'object' && event.event_type !== null && 'id' in event.event_type) {
+  } else if (
+    typeof event.event_type === 'object' &&
+    event.event_type !== null &&
+    'id' in event.event_type
+  ) {
     eventTypeId = (event.event_type as { id: number }).id.toString();
   }
 
@@ -86,7 +96,11 @@ const getInitialFormData = (event?: Event | null): EventFormData => {
   let workflowTemplateId = '';
   if (typeof event.workflow_template === 'number') {
     workflowTemplateId = event.workflow_template.toString();
-  } else if (typeof event.workflow_template === 'object' && event.workflow_template !== null && 'id' in event.workflow_template) {
+  } else if (
+    typeof event.workflow_template === 'object' &&
+    event.workflow_template !== null &&
+    'id' in event.workflow_template
+  ) {
     workflowTemplateId = (event.workflow_template as { id: number }).id.toString();
   }
 
@@ -151,14 +165,14 @@ export const EventForm: React.FC<EventFormProps> = ({
   };
 
   const handleChange = (field: keyof EventFormData, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
 
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
         [field]: '',
       }));
@@ -190,7 +204,7 @@ export const EventForm: React.FC<EventFormProps> = ({
     onSubmit(submitData);
   };
 
-  const selectedClient = clients.find(c => c.id.toString() === formData.client);
+  const selectedClient = clients.find((c) => c.id.toString() === formData.client);
 
   return (
     <Box component="form" onSubmit={handleSubmit}>
@@ -199,7 +213,9 @@ export const EventForm: React.FC<EventFormProps> = ({
         <FormControl fullWidth error={!!errors.client}>
           <Autocomplete
             options={clients}
-            getOptionLabel={(option) => `${option.first_name} ${option.last_name} (${option.email})`}
+            getOptionLabel={(option) =>
+              `${option.first_name} ${option.last_name} (${option.email})`
+            }
             value={selectedClient || null}
             onChange={(_, newValue) => {
               handleChange('client', newValue?.id.toString() || '');
@@ -215,7 +231,9 @@ export const EventForm: React.FC<EventFormProps> = ({
             renderOption={(props, option) => (
               <Box component="li" {...props}>
                 <Box>
-                  <Box>{option.first_name} {option.last_name}</Box>
+                  <Box>
+                    {option.first_name} {option.last_name}
+                  </Box>
                   <Box component="span" sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
                     {option.email}
                   </Box>
@@ -269,7 +287,8 @@ export const EventForm: React.FC<EventFormProps> = ({
             </Select>
             <Box sx={{ mt: 1 }}>
               <Typography variant="caption" color="text.secondary">
-                💡 Manual workflow assignment for admin-created events. Booking flows automatically assign workflows for client bookings.
+                💡 Manual workflow assignment for admin-created events. Booking flows automatically
+                assign workflows for client bookings.
               </Typography>
             </Box>
           </FormControl>
@@ -391,7 +410,7 @@ export const EventForm: React.FC<EventFormProps> = ({
             error={!!errors.total_price}
             helperText={errors.total_price}
             InputProps={{
-              inputProps: { min: 0, step: '0.01' }
+              inputProps: { min: 0, step: '0.01' },
             }}
           />
 
@@ -403,7 +422,7 @@ export const EventForm: React.FC<EventFormProps> = ({
             onChange={(e) => handleChange('num_participants', e.target.value)}
             placeholder="Total expected guests"
             InputProps={{
-              inputProps: { min: 0 }
+              inputProps: { min: 0 },
             }}
           />
         </Box>

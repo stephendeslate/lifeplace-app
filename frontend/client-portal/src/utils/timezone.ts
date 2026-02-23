@@ -44,11 +44,11 @@ export function parseAsPhilippinesTime(dateString: string): Date {
 export function formatPhilippinesTime(
   date: string | Date,
   includeTimezone: boolean = true,
-  formatString: string = 'MMMM d, yyyy \'at\' h:mm a'
+  formatString: string = "MMMM d, yyyy 'at' h:mm a",
 ): string {
   const dateObj = typeof date === 'string' ? parseAsPhilippinesTime(date) : date;
   const formatted = formatInTimeZone(dateObj, BUSINESS_TIMEZONE, formatString);
-  
+
   if (includeTimezone) {
     return `${formatted} ${BUSINESS_TIMEZONE_DISPLAY}`;
   }
@@ -76,14 +76,16 @@ export function formatBookingTime(date: string | Date): {
 } {
   return {
     primary: formatPhilippinesTime(date),
-    notice: `All event times are in ${BUSINESS_TIMEZONE_FULL} (${BUSINESS_TIMEZONE_DISPLAY})`
+    notice: `All event times are in ${BUSINESS_TIMEZONE_FULL} (${BUSINESS_TIMEZONE_DISPLAY})`,
   };
 }
 
 /**
  * Get timezone notice text for display
  */
-export function getTimezoneNotice(context: 'booking' | 'confirmation' | 'general' = 'general'): string {
+export function getTimezoneNotice(
+  context: 'booking' | 'confirmation' | 'general' = 'general',
+): string {
   switch (context) {
     case 'booking':
       return `Select your preferred date and time.`;
@@ -128,12 +130,12 @@ export function isWithinBusinessHours(date: Date | string): boolean {
   const philippinesTime = toZonedTime(dateObj, BUSINESS_TIMEZONE);
   const hours = philippinesTime.getHours();
   const dayOfWeek = philippinesTime.getDay();
-  
+
   // Check if weekend (0 = Sunday, 6 = Saturday)
   if (dayOfWeek === 0 || dayOfWeek === 6) {
     return false;
   }
-  
+
   // Check if within business hours (9 AM - 6 PM)
   return hours >= 9 && hours < 18;
 }
@@ -145,17 +147,17 @@ export function getNextBusinessDay(): Date {
   const now = new Date();
   const philippinesNow = toZonedTime(now, BUSINESS_TIMEZONE);
   const nextDay = new Date(philippinesNow);
-  
+
   // Move to next day
   nextDay.setDate(nextDay.getDate() + 1);
-  
+
   // Skip weekends
   while (nextDay.getDay() === 0 || nextDay.getDay() === 6) {
     nextDay.setDate(nextDay.getDate() + 1);
   }
-  
+
   // Set to 9 AM Philippines time
   nextDay.setHours(9, 0, 0, 0);
-  
+
   return nextDay;
 }

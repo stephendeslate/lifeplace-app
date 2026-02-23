@@ -70,8 +70,7 @@ export const useCommunications = () => {
   // Preview Template Mutation
   const usePreviewTemplate = () => {
     return useMutation({
-      mutationFn: (data: PreviewCommunicationData) => 
-        communicationsApi.previewTemplate(data),
+      mutationFn: (data: PreviewCommunicationData) => communicationsApi.previewTemplate(data),
       onError: (error: unknown) => {
         const message = ErrorHandler.extractMessage(error);
         showError('Preview Failed', message);
@@ -82,14 +81,13 @@ export const useCommunications = () => {
   // Send Manual Communication Mutation
   const useSendManual = () => {
     return useMutation({
-      mutationFn: (data: SendCommunicationData) => 
-        communicationsApi.sendManual(data),
+      mutationFn: (data: SendCommunicationData) => communicationsApi.sendManual(data),
       onSuccess: (data) => {
         showSuccess(
           'Message Sent',
-          `Your ${data.channel.toLowerCase()} has been sent successfully.`
+          `Your ${data.channel.toLowerCase()} has been sent successfully.`,
         );
-        
+
         // Invalidate records to show new communication
         queryClient.invalidateQueries({ queryKey: ['communication-records'] });
       },
@@ -127,14 +125,15 @@ export const useCommunications = () => {
         queryClient.setQueryData(['communication-records'], (oldData: unknown) => {
           if (!oldData) return oldData;
 
-          return (oldData as Array<Record<string, unknown>>).map((record: Record<string, unknown>) => 
-            record.id === recordId 
-              ? { 
-                  ...record, 
-                  is_opened: true, 
-                  opened_at: data.opened_at || new Date().toISOString() 
-                }
-              : record
+          return (oldData as Array<Record<string, unknown>>).map(
+            (record: Record<string, unknown>) =>
+              record.id === recordId
+                ? {
+                    ...record,
+                    is_opened: true,
+                    opened_at: data.opened_at || new Date().toISOString(),
+                  }
+                : record,
           );
         });
 
@@ -144,7 +143,7 @@ export const useCommunications = () => {
           return {
             ...oldData,
             is_opened: true,
-            opened_at: data.opened_at || new Date().toISOString()
+            opened_at: data.opened_at || new Date().toISOString(),
           };
         });
 
@@ -169,14 +168,15 @@ export const useCommunications = () => {
         queryClient.setQueryData(['communication-records'], (oldData: unknown) => {
           if (!oldData) return oldData;
 
-          return (oldData as Array<Record<string, unknown>>).map((record: Record<string, unknown>) =>
-            record.id === recordId
-              ? {
-                  ...record,
-                  is_opened: false,
-                  opened_at: null
-                }
-              : record
+          return (oldData as Array<Record<string, unknown>>).map(
+            (record: Record<string, unknown>) =>
+              record.id === recordId
+                ? {
+                    ...record,
+                    is_opened: false,
+                    opened_at: null,
+                  }
+                : record,
           );
         });
 
@@ -186,7 +186,7 @@ export const useCommunications = () => {
           return {
             ...oldData,
             is_opened: false,
-            opened_at: null
+            opened_at: null,
           };
         });
 

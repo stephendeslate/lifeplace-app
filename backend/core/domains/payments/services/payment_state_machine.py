@@ -1,12 +1,10 @@
 # backend/core/domains/payments/services/payment_state_machine.py
 
 import logging
-from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple
+
 from django.db import transaction
 from django.utils import timezone
-from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +16,14 @@ class PaymentState(Enum):
     Designed to replace the current PENDING/COMPLETED/FAILED chaos
     with a proper state machine that tracks payment lifecycle.
     """
-    CREATED = 'CREATED'          # Payment record created, not yet processed
-    PENDING = 'PENDING'          # Awaiting processing or user action
-    PROCESSING = 'PROCESSING'    # Currently being processed by gateway
-    COMPLETED = 'COMPLETED'      # Successfully completed
-    FAILED = 'FAILED'           # Processing failed, can be retried
-    CANCELLED = 'CANCELLED'      # Cancelled by user or system
-    REFUNDED = 'REFUNDED'       # Completed payment that was refunded
+
+    CREATED = "CREATED"  # Payment record created, not yet processed
+    PENDING = "PENDING"  # Awaiting processing or user action
+    PROCESSING = "PROCESSING"  # Currently being processed by gateway
+    COMPLETED = "COMPLETED"  # Successfully completed
+    FAILED = "FAILED"  # Processing failed, can be retried
+    CANCELLED = "CANCELLED"  # Cancelled by user or system
+    REFUNDED = "REFUNDED"  # Completed payment that was refunded
 
     @classmethod
     def choices(cls):
@@ -40,8 +39,15 @@ class PaymentStateTransition:
     Represents a state transition with metadata.
     Used for logging and rollback capability.
     """
-    def __init__(self, from_state: PaymentState, to_state: PaymentState,
-                 reason: str, triggered_by: str = 'system', metadata: Optional[Dict] = None):
+
+    def __init__(
+        self,
+        from_state: PaymentState,
+        to_state: PaymentState,
+        reason: str,
+        triggered_by: str = "system",
+        metadata: dict | None = None,
+    ):
         self.from_state = from_state
         self.to_state = to_state
         self.reason = reason
@@ -55,8 +61,10 @@ class PaymentStateTransition:
 
 class PaymentStateValidationError(Exception):
     """Raised when an invalid state transition is attempted"""
-    def __init__(self, message: str, current_state: PaymentState,
-                 attempted_state: PaymentState, valid_states: Set[PaymentState]):
+
+    def __init__(
+        self, message: str, current_state: PaymentState, attempted_state: PaymentState, valid_states: set[PaymentState]
+    ):
         self.current_state = current_state
         self.attempted_state = attempted_state
         self.valid_states = valid_states
@@ -79,30 +87,30 @@ class PaymentStateMachine:
 
     # Define valid state transitions
     # This matrix prevents invalid state changes and ensures business rules
-    STATE_TRANSITIONS: Dict[PaymentState, Set[PaymentState]] = {
+    STATE_TRANSITIONS: dict[PaymentState, set[PaymentState]] = {
         PaymentState.CREATED: {
-            PaymentState.PENDING,      # Ready for processing
-            PaymentState.CANCELLED,    # Cancelled before processing
+            PaymentState.PENDING,  # Ready for processing
+            PaymentState.CANCELLED,  # Cancelled before processing
         },
         PaymentState.PENDING: {
-            PaymentState.PROCESSING,   # Gateway processing started
-            PaymentState.COMPLETED,    # Direct completion (manual payments)
-            PaymentState.FAILED,       # Validation failure before processing
-            PaymentState.CANCELLED,    # User cancellation
+            PaymentState.PROCESSING,  # Gateway processing started
+            PaymentState.COMPLETED,  # Direct completion (manual payments)
+            PaymentState.FAILED,  # Validation failure before processing
+            PaymentState.CANCELLED,  # User cancellation
         },
         PaymentState.PROCESSING: {
-            PaymentState.COMPLETED,    # Successful gateway processing
-            PaymentState.FAILED,       # Gateway processing failed
+            PaymentState.COMPLETED,  # Successful gateway processing
+            PaymentState.FAILED,  # Gateway processing failed
         },
         PaymentState.COMPLETED: {
-            PaymentState.REFUNDED,     # Only completed payments can be refunded
+            PaymentState.REFUNDED,  # Only completed payments can be refunded
         },
         PaymentState.FAILED: {
-            PaymentState.PENDING,      # Allow retry
-            PaymentState.CANCELLED,    # Give up on failed payment
+            PaymentState.PENDING,  # Allow retry
+            PaymentState.CANCELLED,  # Give up on failed payment
         },
         PaymentState.CANCELLED: set(),  # Terminal state
-        PaymentState.REFUNDED: set(),   # Terminal state
+        PaymentState.REFUNDED: set(),  # Terminal state
     }
 
     # States that are considered "final" - no further processing expected
@@ -140,13 +148,13 @@ class PaymentStateMachine:
                 f"Valid transitions from {from_state.value}: {[s.value for s in valid_states]}",
                 current_state=from_state,
                 attempted_state=to_state,
-                valid_states=valid_states
+                valid_states=valid_states,
             )
 
         return True
 
     @classmethod
-    def get_valid_transitions(cls, from_state: PaymentState) -> Set[PaymentState]:
+    def get_valid_transitions(cls, from_state: PaymentState) -> set[PaymentState]:
         """Get all valid state transitions from the given state"""
         return cls.STATE_TRANSITIONS.get(from_state, set())
 
@@ -176,9 +184,9 @@ class PaymentStateMachine:
         return state == PaymentState.PROCESSING
 
     @classmethod
-    def transition_payment_state(cls, payment, to_state: PaymentState,
-                                reason: str, triggered_by: str = 'system',
-                                metadata: Optional[Dict] = None) -> PaymentStateTransition:
+    def transition_payment_state(
+        cls, payment, to_state: PaymentState, reason: str, triggered_by: str = "system", metadata: dict | None = None
+    ) -> PaymentStateTransition:
         """
         Atomically transition a payment to a new state.
 
@@ -206,17 +214,12 @@ class PaymentStateMachine:
 
         # Create transition record
         transition = PaymentStateTransition(
-            from_state=current_state,
-            to_state=to_state,
-            reason=reason,
-            triggered_by=triggered_by,
-            metadata=metadata
+            from_state=current_state, to_state=to_state, reason=reason, triggered_by=triggered_by, metadata=metadata
         )
 
         try:
             with transaction.atomic():
                 # Update payment state
-                old_status = payment.status
                 payment.status = to_state.value
 
                 # Update state-specific fields
@@ -224,7 +227,7 @@ class PaymentStateMachine:
                     payment.paid_on = timezone.now().date()
 
                 # Save the payment
-                payment.save(update_fields=['status', 'paid_on', 'updated_at'])
+                payment.save(update_fields=["status", "paid_on", "updated_at"])
 
                 # Log the state transition
                 cls._log_state_transition(payment, transition)
@@ -235,13 +238,13 @@ class PaymentStateMachine:
                 logger.info(
                     f"Payment {payment.payment_number} transitioned: {transition}",
                     extra={
-                        'payment_id': payment.id,
-                        'payment_number': payment.payment_number,
-                        'from_state': current_state.value,
-                        'to_state': to_state.value,
-                        'reason': reason,
-                        'triggered_by': triggered_by
-                    }
+                        "payment_id": payment.id,
+                        "payment_number": payment.payment_number,
+                        "from_state": current_state.value,
+                        "to_state": to_state.value,
+                        "reason": reason,
+                        "triggered_by": triggered_by,
+                    },
                 )
 
                 return transition
@@ -250,12 +253,8 @@ class PaymentStateMachine:
             logger.error(
                 f"Failed to transition payment {payment.payment_number} "
                 f"from {current_state.value} to {to_state.value}: {e}",
-                extra={
-                    'payment_id': payment.id,
-                    'payment_number': payment.payment_number,
-                    'error': str(e)
-                },
-                exc_info=True
+                extra={"payment_id": payment.id, "payment_number": payment.payment_number, "error": str(e)},
+                exc_info=True,
             )
             raise
 
@@ -267,9 +266,9 @@ class PaymentStateMachine:
         except ValueError:
             # Handle legacy states that don't match enum
             status_mapping = {
-                'PENDING': PaymentState.PENDING,
-                'COMPLETED': PaymentState.COMPLETED,
-                'FAILED': PaymentState.FAILED,
+                "PENDING": PaymentState.PENDING,
+                "COMPLETED": PaymentState.COMPLETED,
+                "FAILED": PaymentState.FAILED,
             }
             return status_mapping.get(payment.status, PaymentState.CREATED)
 
@@ -292,13 +291,10 @@ class PaymentStateMachine:
                 reason=transition.reason,
                 triggered_by=transition.triggered_by,
                 metadata=transition.metadata,
-                timestamp=transition.timestamp
+                timestamp=transition.timestamp,
             )
         except Exception as e:
-            logger.error(
-                f"Failed to log state transition for payment {payment.payment_number}: {e}",
-                exc_info=True
-            )
+            logger.error(f"Failed to log state transition for payment {payment.payment_number}: {e}", exc_info=True)
             # Don't fail the transition if logging fails
 
     @classmethod
@@ -321,8 +317,7 @@ class PaymentStateMachine:
             logger.debug("PaymentEventPublisher not available, skipping event publication")
         except Exception as e:
             logger.error(
-                f"Failed to publish state change event for payment {payment.payment_number}: {e}",
-                exc_info=True
+                f"Failed to publish state change event for payment {payment.payment_number}: {e}", exc_info=True
             )
             # Don't fail the transition if event publishing fails
 
@@ -343,11 +338,14 @@ class PaymentStateMachine:
 
             if to_previous_state:
                 # Get the most recent previous state
-                previous_transition = PaymentStateHistory.objects.filter(
-                    payment=payment
-                ).exclude(
-                    to_state=payment.status  # Exclude current state
-                ).order_by('-timestamp').first()
+                previous_transition = (
+                    PaymentStateHistory.objects.filter(payment=payment)
+                    .exclude(
+                        to_state=payment.status  # Exclude current state
+                    )
+                    .order_by("-timestamp")
+                    .first()
+                )
 
                 if previous_transition:
                     target_state = PaymentState(previous_transition.from_state)
@@ -355,27 +353,20 @@ class PaymentStateMachine:
                         payment=payment,
                         to_state=target_state,
                         reason=f"Rollback from failed {payment.status} state",
-                        triggered_by='system_rollback'
+                        triggered_by="system_rollback",
                     )
 
-                    logger.info(
-                        f"Rolled back payment {payment.payment_number} to {target_state.value}"
-                    )
+                    logger.info(f"Rolled back payment {payment.payment_number} to {target_state.value}")
                     return target_state
                 else:
-                    logger.warning(
-                        f"No previous state found for payment {payment.payment_number} rollback"
-                    )
+                    logger.warning(f"No previous state found for payment {payment.payment_number} rollback")
 
         except Exception as e:
-            logger.error(
-                f"Failed to rollback payment {payment.payment_number}: {e}",
-                exc_info=True
-            )
+            logger.error(f"Failed to rollback payment {payment.payment_number}: {e}", exc_info=True)
             raise
 
     @classmethod
-    def get_payment_state_history(cls, payment) -> List[Dict]:
+    def get_payment_state_history(cls, payment) -> list[dict]:
         """
         Get complete state transition history for a payment.
 
@@ -385,18 +376,16 @@ class PaymentStateMachine:
             # Import here to avoid circular imports
             from ..models import PaymentStateHistory
 
-            history = PaymentStateHistory.objects.filter(
-                payment=payment
-            ).order_by('timestamp')
+            history = PaymentStateHistory.objects.filter(payment=payment).order_by("timestamp")
 
             return [
                 {
-                    'from_state': h.from_state,
-                    'to_state': h.to_state,
-                    'reason': h.reason,
-                    'triggered_by': h.triggered_by,
-                    'timestamp': h.timestamp,
-                    'metadata': h.metadata
+                    "from_state": h.from_state,
+                    "to_state": h.to_state,
+                    "reason": h.reason,
+                    "triggered_by": h.triggered_by,
+                    "timestamp": h.timestamp,
+                    "metadata": h.metadata,
                 }
                 for h in history
             ]
@@ -405,8 +394,5 @@ class PaymentStateMachine:
             # PaymentStateHistory not yet implemented
             return []
         except Exception as e:
-            logger.error(
-                f"Failed to get state history for payment {payment.payment_number}: {e}",
-                exc_info=True
-            )
+            logger.error(f"Failed to get state history for payment {payment.payment_number}: {e}", exc_info=True)
             return []

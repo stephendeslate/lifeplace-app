@@ -1,64 +1,63 @@
 // Booking Flows Settings Page - Standardized Version
 // Migrated to use the unified settings system
 
-import React from "react";
-import { useNavigate } from "react-router-dom";
-import { RouteSharp as BookingFlowIcon } from "@mui/icons-material";
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { RouteSharp as BookingFlowIcon } from '@mui/icons-material';
 import {
   PermissionAwareSettingsPage,
   type SettingsPageConfig,
   type SettingsTableColumn,
-} from "../../../components/common/settings";
-import { useBookingFlows } from "../../../hooks/useBookingFlows";
-import { useSettingsPagination } from "../../../hooks/useSettingsPagination";
-import { useEventTypes } from "../../../hooks/useEvents";
+} from '../../../components/common/settings';
+import { useBookingFlows } from '../../../hooks/useBookingFlows';
+import { useSettingsPagination } from '../../../hooks/useSettingsPagination';
+import { useEventTypes } from '../../../hooks/useEvents';
 import type {
   BookingFlow,
   CreateBookingFlowData,
   UpdateBookingFlowData,
-} from "../../../types/bookingflows.types";
-import type { ModernFormSection } from "../../../components/common/ModernForm";
+} from '../../../types/bookingflows.types';
+import type { ModernFormSection } from '../../../components/common/ModernForm';
 
 // Table columns configuration
 const columns: SettingsTableColumn<BookingFlow>[] = [
   {
-    key: "name",
-    label: "Flow Name",
+    key: 'name',
+    label: 'Flow Name',
     sortable: true,
     searchable: true,
   },
   {
-    key: "event_type_name",
-    label: "Event Type",
+    key: 'event_type_name',
+    label: 'Event Type',
     render: (value) => {
-      const eventTypeName = value as BookingFlow["event_type_name"];
-      return eventTypeName || "Any Event Type";
+      const eventTypeName = value as BookingFlow['event_type_name'];
+      return eventTypeName || 'Any Event Type';
     },
   },
   {
-    key: "total_steps",
-    label: "Steps",
-    align: "center",
+    key: 'total_steps',
+    label: 'Steps',
+    align: 'center',
     render: (value) => String(value || 0),
   },
   {
-    key: "enabled_steps_count",
-    label: "Enabled Steps",
-    align: "center",
+    key: 'enabled_steps_count',
+    label: 'Enabled Steps',
+    align: 'center',
     render: (value) => String(value || 0),
   },
   {
-    key: "is_active",
-    label: "Status",
-    align: "center",
-    render: (value) => (value ? "Active" : "Inactive"),
+    key: 'is_active',
+    label: 'Status',
+    align: 'center',
+    render: (value) => (value ? 'Active' : 'Inactive'),
   },
   {
-    key: "updated_at",
-    label: "Last Modified",
+    key: 'updated_at',
+    label: 'Last Modified',
     sortable: true,
-    render: (value) =>
-      value ? new Date(String(value)).toLocaleDateString() : "-",
+    render: (value) => (value ? new Date(String(value)).toLocaleDateString() : '-'),
   },
 ];
 
@@ -67,74 +66,74 @@ const createFormSections = (
   eventTypes: Array<{ id: number; name: string }>,
 ): ModernFormSection[] => [
   {
-    title: "Basic Information",
+    title: 'Basic Information',
     fields: [
       {
-        name: "name",
-        label: "Flow Name",
-        type: "text",
+        name: 'name',
+        label: 'Flow Name',
+        type: 'text',
         required: true,
-        placeholder: "e.g., Wedding Booking Flow",
-        helperText: "A descriptive name for this booking flow",
+        placeholder: 'e.g., Wedding Booking Flow',
+        helperText: 'A descriptive name for this booking flow',
       },
       {
-        name: "description",
-        label: "Description",
-        type: "textarea",
+        name: 'description',
+        label: 'Description',
+        type: 'textarea',
         multiline: true,
         rows: 3,
-        placeholder: "Describe the purpose of this booking flow...",
-        helperText: "Optional description for internal reference",
+        placeholder: 'Describe the purpose of this booking flow...',
+        helperText: 'Optional description for internal reference',
       },
       {
-        name: "event_type",
-        label: "Event Type",
-        type: "select",
-        helperText: "Leave empty to use for any event type",
+        name: 'event_type',
+        label: 'Event Type',
+        type: 'select',
+        helperText: 'Leave empty to use for any event type',
         options: [
-          { value: "", label: "Any Event Type" },
+          { value: '', label: 'Any Event Type' },
           ...eventTypes.map((et) => ({ value: et.id, label: et.name })),
         ],
       },
     ],
   },
   {
-    title: "Flow Settings",
+    title: 'Flow Settings',
     fields: [
       {
-        name: "allow_guest_booking",
-        label: "Allow Guest Booking",
-        type: "switch",
-        helperText: "Allow bookings without requiring account creation",
+        name: 'allow_guest_booking',
+        label: 'Allow Guest Booking',
+        type: 'switch',
+        helperText: 'Allow bookings without requiring account creation',
       },
       {
-        name: "require_account_creation",
-        label: "Require Account Creation",
-        type: "switch",
-        helperText: "Require users to create an account during booking",
+        name: 'require_account_creation',
+        label: 'Require Account Creation',
+        type: 'switch',
+        helperText: 'Require users to create an account during booking',
       },
       {
-        name: "auto_approve_bookings",
-        label: "Auto Approve Bookings",
-        type: "switch",
-        helperText: "Automatically approve bookings without manual review",
+        name: 'auto_approve_bookings',
+        label: 'Auto Approve Bookings',
+        type: 'switch',
+        helperText: 'Automatically approve bookings without manual review',
       },
       {
-        name: "enable_progress_saving",
-        label: "Enable Progress Saving",
-        type: "switch",
-        helperText: "Allow users to save their progress and return later",
+        name: 'enable_progress_saving',
+        label: 'Enable Progress Saving',
+        type: 'switch',
+        helperText: 'Allow users to save their progress and return later',
       },
     ],
   },
   {
-    title: "Status",
+    title: 'Status',
     fields: [
       {
-        name: "is_active",
-        label: "Active",
-        type: "switch",
-        helperText: "Active flows are available for client bookings",
+        name: 'is_active',
+        label: 'Active',
+        type: 'switch',
+        helperText: 'Active flows are available for client bookings',
       },
     ],
   },
@@ -143,10 +142,10 @@ const createFormSections = (
 // Default values for new booking flows
 const defaultBookingFlow: BookingFlow = {
   id: 0,
-  name: "",
-  description: "",
+  name: '',
+  description: '',
   event_type: null,
-  event_type_name: "",
+  event_type_name: '',
   workflow_template: null,
   confirmation_email_template: null,
   reminder_email_template: null,
@@ -162,14 +161,14 @@ const defaultBookingFlow: BookingFlow = {
   allowed_payment_gateways: [],
   default_payment_gateway: null,
   require_immediate_payment: false,
-  redirect_url: "",
-  success_message: "",
+  redirect_url: '',
+  success_message: '',
   is_test_mode: false,
-  conversion_tracking_code: "",
+  conversion_tracking_code: '',
   total_steps: 0,
   enabled_steps_count: 0,
-  created_at: "",
-  updated_at: "",
+  created_at: '',
+  updated_at: '',
 };
 
 export const BookingFlows = () => {
@@ -203,34 +202,32 @@ export const BookingFlows = () => {
   // Settings page configuration
   const config: SettingsPageConfig<BookingFlow> = {
     page: {
-      title: "Booking Flows",
-      subtitle: "Manage multi-step booking flows for different event types",
+      title: 'Booking Flows',
+      subtitle: 'Manage multi-step booking flows for different event types',
       icon: React.createElement(BookingFlowIcon),
       breadcrumbs: [
-        { label: "Settings", href: "/settings" },
-        { label: "Booking", href: "/settings/booking" },
-        { label: "Booking Flows" },
+        { label: 'Settings', href: '/settings' },
+        { label: 'Booking', href: '/settings/booking' },
+        { label: 'Booking Flows' },
       ],
     },
 
     table: {
       columns,
-      searchFields: ["name", "description"],
-      defaultSort: { key: "name", order: "asc" },
+      searchFields: ['name', 'description'],
+      defaultSort: { key: 'name', order: 'asc' },
       emptyState: {
         icon: React.createElement(BookingFlowIcon),
-        title: "No Booking Flows Found",
-        description:
-          "Create your first booking flow to customize the client booking experience.",
+        title: 'No Booking Flows Found',
+        description: 'Create your first booking flow to customize the client booking experience.',
       },
     },
 
     form: {
-      title: "Booking Flow",
-      subtitle:
-        "Configure booking flow settings. Steps can be managed after creation.",
+      title: 'Booking Flow',
+      subtitle: 'Configure booking flow settings. Steps can be managed after creation.',
       sections: createFormSections(eventTypes),
-      maxWidth: "lg",
+      maxWidth: 'lg',
     },
 
     features: {
@@ -309,28 +306,28 @@ export const BookingFlows = () => {
   // Custom table actions for quick navigation
   const customTableActions = [
     {
-      label: "Manage Steps",
+      label: 'Manage Steps',
       icon: React.createElement(BookingFlowIcon),
       onClick: (bookingFlow: BookingFlow) => {
         navigate(`/settings/booking/booking-flow/${bookingFlow.id}`, {
           state: { activeTab: 1 },
         });
       },
-      color: "primary" as const,
+      color: 'primary' as const,
     },
     {
-      label: "Configure",
+      label: 'Configure',
       icon: React.createElement(BookingFlowIcon),
       onClick: (bookingFlow: BookingFlow) => {
         navigate(`/settings/booking/booking-flow/${bookingFlow.id}`);
       },
-      color: "default" as const,
+      color: 'default' as const,
     },
   ];
 
   // Fetch fresh booking flow data before editing to ensure we have the latest values
   const handleFetchItem = async (id: string | number): Promise<BookingFlow> => {
-    const { bookingFlowsApi } = await import("../../../apis/bookingflows.api");
+    const { bookingFlowsApi } = await import('../../../apis/bookingflows.api');
     // getBookingFlow returns BookingFlowDetail which extends BookingFlow
     return bookingFlowsApi.getBookingFlow(Number(id));
   };
@@ -338,7 +335,7 @@ export const BookingFlows = () => {
   return (
     <PermissionAwareSettingsPage
       config={config}
-      requiredPermissions={["can_manage_booking_flows"]}
+      requiredPermissions={['can_manage_booking_flows']}
       data={bookingFlows}
       defaultValues={defaultBookingFlow}
       isLoading={isLoadingFlows}

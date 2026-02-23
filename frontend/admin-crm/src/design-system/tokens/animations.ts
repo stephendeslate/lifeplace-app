@@ -5,17 +5,17 @@ export const animationTokens = {
   // Easing functions for natural motion
   easing: {
     // Standard Material Design curves
-    standard: 'cubic-bezier(0.4, 0, 0.2, 1)',      // Default easing
-    decelerate: 'cubic-bezier(0, 0, 0.2, 1)',      // Elements entering screen
-    accelerate: 'cubic-bezier(0.4, 0, 1, 1)',      // Elements leaving screen
-    sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',         // Sharp/snappy animations
-    
+    standard: 'cubic-bezier(0.4, 0, 0.2, 1)', // Default easing
+    decelerate: 'cubic-bezier(0, 0, 0.2, 1)', // Elements entering screen
+    accelerate: 'cubic-bezier(0.4, 0, 1, 1)', // Elements leaving screen
+    sharp: 'cubic-bezier(0.4, 0, 0.6, 1)', // Sharp/snappy animations
+
     // Custom curves for specific effects
-    bounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',  // Playful bounce
-    gentle: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',    // Gentle ease
-    smooth: 'cubic-bezier(0.25, 0.1, 0.25, 1)',        // Very smooth
+    bounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)', // Playful bounce
+    gentle: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Gentle ease
+    smooth: 'cubic-bezier(0.25, 0.1, 0.25, 1)', // Very smooth
     elastic: 'cubic-bezier(0.175, 0.885, 0.32, 1.275)', // Elastic effect
-    
+
     // iOS-inspired curves
     iosEnter: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
     iosExit: 'cubic-bezier(0.55, 0.055, 0.675, 0.19)',
@@ -23,13 +23,13 @@ export const animationTokens = {
 
   // Duration tokens for consistent timing
   duration: {
-    fastest: 100,     // Micro-interactions (hover effects)
-    faster: 150,      // Quick transitions
-    fast: 200,        // Standard interactions
-    normal: 300,      // Default duration
-    slow: 400,        // Deliberate transitions
-    slower: 500,      // Complex animations
-    slowest: 750,     // Page transitions
+    fastest: 100, // Micro-interactions (hover effects)
+    faster: 150, // Quick transitions
+    fast: 200, // Standard interactions
+    normal: 300, // Default duration
+    slow: 400, // Deliberate transitions
+    slower: 500, // Complex animations
+    slowest: 750, // Page transitions
   },
 
   // Delay tokens for staggered animations
@@ -49,127 +49,127 @@ export const animationTokens = {
     fadeIn: {
       keyframes: {
         from: { opacity: 0 },
-        to: { opacity: 1 }
+        to: { opacity: 1 },
       },
       duration: 300,
       easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      fillMode: 'both'
+      fillMode: 'both',
     },
 
     fadeOut: {
       keyframes: {
         from: { opacity: 1 },
-        to: { opacity: 0 }
+        to: { opacity: 0 },
       },
       duration: 200,
       easing: 'cubic-bezier(0.4, 0, 1, 1)',
-      fillMode: 'both'
+      fillMode: 'both',
     },
 
     fadeInUp: {
       keyframes: {
-        from: { 
+        from: {
           opacity: 0,
-          transform: 'translateY(24px)'
+          transform: 'translateY(24px)',
         },
-        to: { 
+        to: {
           opacity: 1,
-          transform: 'translateY(0)'
-        }
+          transform: 'translateY(0)',
+        },
       },
       duration: 400,
       easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      fillMode: 'both'
+      fillMode: 'both',
     },
 
     fadeInDown: {
       keyframes: {
-        from: { 
+        from: {
           opacity: 0,
-          transform: 'translateY(-24px)'
+          transform: 'translateY(-24px)',
         },
-        to: { 
+        to: {
           opacity: 1,
-          transform: 'translateY(0)'
-        }
+          transform: 'translateY(0)',
+        },
       },
       duration: 400,
       easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      fillMode: 'both'
+      fillMode: 'both',
     },
 
     // Slide animations
     slideInLeft: {
       keyframes: {
         from: { transform: 'translateX(-100%)' },
-        to: { transform: 'translateX(0)' }
+        to: { transform: 'translateX(0)' },
       },
       duration: 300,
       easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      fillMode: 'both'
+      fillMode: 'both',
     },
 
     slideInRight: {
       keyframes: {
         from: { transform: 'translateX(100%)' },
-        to: { transform: 'translateX(0)' }
+        to: { transform: 'translateX(0)' },
       },
       duration: 300,
       easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      fillMode: 'both'
+      fillMode: 'both',
     },
 
     slideOutLeft: {
       keyframes: {
         from: { transform: 'translateX(0)' },
-        to: { transform: 'translateX(-100%)' }
+        to: { transform: 'translateX(-100%)' },
       },
       duration: 300,
       easing: 'cubic-bezier(0.4, 0, 1, 1)',
-      fillMode: 'both'
+      fillMode: 'both',
     },
 
     slideOutRight: {
       keyframes: {
         from: { transform: 'translateX(0)' },
-        to: { transform: 'translateX(100%)' }
+        to: { transform: 'translateX(100%)' },
       },
       duration: 300,
       easing: 'cubic-bezier(0.4, 0, 1, 1)',
-      fillMode: 'both'
+      fillMode: 'both',
     },
 
-    // Scale animations  
+    // Scale animations
     scaleIn: {
       keyframes: {
-        from: { 
+        from: {
           opacity: 0,
-          transform: 'scale(0.8)'
+          transform: 'scale(0.8)',
         },
-        to: { 
+        to: {
           opacity: 1,
-          transform: 'scale(1)'
-        }
+          transform: 'scale(1)',
+        },
       },
       duration: 200,
       easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      fillMode: 'both'
+      fillMode: 'both',
     },
 
     scaleOut: {
       keyframes: {
-        from: { 
+        from: {
           opacity: 1,
-          transform: 'scale(1)'
+          transform: 'scale(1)',
         },
-        to: { 
+        to: {
           opacity: 0,
-          transform: 'scale(0.8)'
-        }
+          transform: 'scale(0.8)',
+        },
       },
       duration: 150,
       easing: 'cubic-bezier(0.4, 0, 1, 1)',
-      fillMode: 'both'
+      fillMode: 'both',
     },
 
     // Bounce effect for playful interactions
@@ -177,11 +177,11 @@ export const animationTokens = {
       keyframes: {
         '0%': { transform: 'scale(1)' },
         '50%': { transform: 'scale(1.05)' },
-        '100%': { transform: 'scale(1)' }
+        '100%': { transform: 'scale(1)' },
       },
       duration: 200,
       easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
-      fillMode: 'both'
+      fillMode: 'both',
     },
 
     // Pulse effect for attention
@@ -189,11 +189,11 @@ export const animationTokens = {
       keyframes: {
         '0%': { transform: 'scale(1)', opacity: 1 },
         '50%': { transform: 'scale(1.05)', opacity: 0.7 },
-        '100%': { transform: 'scale(1)', opacity: 1 }
+        '100%': { transform: 'scale(1)', opacity: 1 },
       },
       duration: 1000,
       easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      iterationCount: 'infinite'
+      iterationCount: 'infinite',
     },
 
     // Shake effect for errors
@@ -201,39 +201,39 @@ export const animationTokens = {
       keyframes: {
         '0%, 100%': { transform: 'translateX(0)' },
         '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-4px)' },
-        '20%, 40%, 60%, 80%': { transform: 'translateX(4px)' }
+        '20%, 40%, 60%, 80%': { transform: 'translateX(4px)' },
       },
       duration: 500,
       easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      fillMode: 'both'
+      fillMode: 'both',
     },
 
     // Rotate animations
     spin: {
       keyframes: {
         from: { transform: 'rotate(0deg)' },
-        to: { transform: 'rotate(360deg)' }
+        to: { transform: 'rotate(360deg)' },
       },
       duration: 1000,
       easing: 'linear',
-      iterationCount: 'infinite'
+      iterationCount: 'infinite',
     },
 
     // Glass morphing effect
     glassMorph: {
       keyframes: {
-        '0%': { 
+        '0%': {
           backdropFilter: 'blur(0px)',
-          background: 'rgba(255, 255, 255, 0)'
+          background: 'rgba(255, 255, 255, 0)',
         },
-        '100%': { 
+        '100%': {
           backdropFilter: 'blur(20px)',
-          background: 'rgba(255, 255, 255, 0.25)'
-        }
+          background: 'rgba(255, 255, 255, 0.25)',
+        },
       },
       duration: 400,
       easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-      fillMode: 'both'
+      fillMode: 'both',
     },
   },
 
@@ -247,20 +247,25 @@ export const animationTokens = {
     // Property-specific transitions
     opacity: 'opacity 200ms cubic-bezier(0.4, 0, 0.2, 1)',
     transform: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-    colors: 'color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+    colors:
+      'color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1)',
     shadow: 'box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1)',
     border: 'border 150ms cubic-bezier(0.4, 0, 0.2, 1)',
 
     // Component-specific transitions
     button: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
     card: 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-    modal: 'opacity 200ms cubic-bezier(0.4, 0, 0.2, 1), transform 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    modal:
+      'opacity 200ms cubic-bezier(0.4, 0, 0.2, 1), transform 200ms cubic-bezier(0.4, 0, 0.2, 1)',
     drawer: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-    tooltip: 'opacity 150ms cubic-bezier(0.4, 0, 0.2, 1), transform 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+    tooltip:
+      'opacity 150ms cubic-bezier(0.4, 0, 0.2, 1), transform 150ms cubic-bezier(0.4, 0, 0.2, 1)',
 
     // Glass-specific transitions
-    glass: 'backdrop-filter 300ms cubic-bezier(0.4, 0, 0.2, 1), background 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-    glassHover: 'backdrop-filter 200ms cubic-bezier(0.4, 0, 0.2, 1), background 200ms cubic-bezier(0.4, 0, 0.2, 1), transform 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+    glass:
+      'backdrop-filter 300ms cubic-bezier(0.4, 0, 0.2, 1), background 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+    glassHover:
+      'backdrop-filter 200ms cubic-bezier(0.4, 0, 0.2, 1), background 200ms cubic-bezier(0.4, 0, 0.2, 1), transform 200ms cubic-bezier(0.4, 0, 0.2, 1)',
   },
 } as const;
 
@@ -281,13 +286,13 @@ export const staggerAnimations = {
   // Create stagger style for nth-child
   createStaggerStyle: (totalItems: number, baseDelay: number = 50) => {
     const styles: Record<string, unknown> = {};
-    
+
     for (let i = 1; i <= totalItems; i++) {
       styles[`&:nth-child(${i})`] = {
         animationDelay: `${(i - 1) * baseDelay}ms`,
       };
     }
-    
+
     return styles;
   },
 };
@@ -339,12 +344,12 @@ export const createTransition = (
   property: string = 'all',
   duration: Duration = 'normal',
   easing: EasingFunction = 'standard',
-  delay: number = 0
+  delay: number = 0,
 ): string => {
   const durationMs = getDuration(duration);
   const easingFunction = getEasing(easing);
   const delayString = delay > 0 ? ` ${delay}ms` : '';
-  
+
   return `${property} ${durationMs}ms ${easingFunction}${delayString}`;
 };
 
@@ -360,10 +365,10 @@ export const createAnimation = (
   pattern: AnimationPattern,
   customDuration?: number,
   customEasing?: EasingFunction,
-  customDelay?: number
+  customDelay?: number,
 ) => {
   const basePattern = animationTokens.patterns[pattern];
-  
+
   return {
     animation: `${pattern} ${customDuration || basePattern.duration}ms ${
       customEasing ? getEasing(customEasing) : basePattern.easing

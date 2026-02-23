@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/sales/QuoteDetailsDialog.tsx
 
-import React from "react";
+import React from 'react';
 import {
   Box,
   Dialog,
@@ -20,7 +20,7 @@ import {
   TableRow,
   Paper,
   Alert,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Receipt as QuoteIcon,
   Event as EventIcon,
@@ -29,12 +29,12 @@ import {
   Close as RejectedIcon,
   Schedule as PendingIcon,
   Send as SentIcon,
-} from "@mui/icons-material";
-import { format, isPast } from "date-fns";
-import type { EventQuote } from "../../types/sales.types";
-import { formatCurrency } from "../../utils/currency";
-import { useCurrencySettings } from "../../hooks/useCurrency";
-import { QuoteActivityTimeline } from "./QuoteActivityTimeline";
+} from '@mui/icons-material';
+import { format, isPast } from 'date-fns';
+import type { EventQuote } from '../../types/sales.types';
+import { formatCurrency } from '../../utils/currency';
+import { useCurrencySettings } from '../../hooks/useCurrency';
+import { QuoteActivityTimeline } from './QuoteActivityTimeline';
 
 interface QuoteDetailsDialogProps {
   open: boolean;
@@ -42,68 +42,50 @@ interface QuoteDetailsDialogProps {
   quote: EventQuote | null;
 }
 
-export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
-  open,
-  onClose,
-  quote,
-}) => {
+export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({ open, onClose, quote }) => {
   const { settings: currencySettings } = useCurrencySettings();
 
   if (!quote) {
     return null;
   }
 
-  const formatQuoteAmount = (
-    amount: string | number,
-    quoteCurrency?: string,
-  ) => {
-    const currency =
-      quoteCurrency || currencySettings?.defaultCurrency || "PHP";
+  const formatQuoteAmount = (amount: string | number, quoteCurrency?: string) => {
+    const currency = quoteCurrency || currencySettings?.defaultCurrency || 'PHP';
     return formatCurrency(amount, currency, {
-      showSymbol: currencySettings?.displayFormat !== "code",
+      showSymbol: currencySettings?.displayFormat !== 'code',
       showCode:
-        currencySettings?.displayFormat === "code" ||
-        currencySettings?.displayFormat === "both",
-      minimumFractionDigits:
-        currencySettings?.decimalPlaces ?? (currency === "PHP" ? 0 : 2),
-      maximumFractionDigits:
-        currencySettings?.decimalPlaces ?? (currency === "PHP" ? 0 : 2),
+        currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
     });
   };
 
   const getStatusColor = (
     status: string,
-  ):
-    | "default"
-    | "primary"
-    | "secondary"
-    | "error"
-    | "info"
-    | "success"
-    | "warning" => {
+  ): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (status) {
-      case "DRAFT":
-        return "default";
-      case "SENT":
-        return "info";
-      case "ACCEPTED":
-        return "success";
-      case "REJECTED":
-        return "error";
-      case "EXPIRED":
-        return "warning";
+      case 'DRAFT':
+        return 'default';
+      case 'SENT':
+        return 'info';
+      case 'ACCEPTED':
+        return 'success';
+      case 'REJECTED':
+        return 'error';
+      case 'EXPIRED':
+        return 'warning';
       default:
-        return "default";
+        return 'default';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "ACCEPTED":
+      case 'ACCEPTED':
         return <AcceptedIcon fontSize="small" />;
-      case "REJECTED":
+      case 'REJECTED':
         return <RejectedIcon fontSize="small" />;
-      case "SENT":
+      case 'SENT':
         return <SentIcon fontSize="small" />;
       default:
         return <PendingIcon fontSize="small" />;
@@ -111,18 +93,14 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
   };
 
   const isExpired =
-    quote.valid_until &&
-    isPast(new Date(quote.valid_until)) &&
-    quote.status !== "ACCEPTED";
+    quote.valid_until && isPast(new Date(quote.valid_until)) && quote.status !== 'ACCEPTED';
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Box display="flex" alignItems="center" gap={1}>
           <QuoteIcon />
-          <Typography variant="h6">
-            Quote Details - Version {quote.version}
-          </Typography>
+          <Typography variant="h6">Quote Details - Version {quote.version}</Typography>
         </Box>
       </DialogTitle>
       <DialogContent>
@@ -130,22 +108,19 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
           {/* Status Alert */}
           {isExpired && (
             <Alert severity="warning">
-              This quote expired on{" "}
-              {format(new Date(quote.valid_until!), "MMM dd, yyyy")}.
+              This quote expired on {format(new Date(quote.valid_until!), 'MMM dd, yyyy')}.
             </Alert>
           )}
 
-          {quote.status === "ACCEPTED" && quote.accepted_at && (
+          {quote.status === 'ACCEPTED' && quote.accepted_at && (
             <Alert severity="success">
-              Quote was accepted on{" "}
-              {format(new Date(quote.accepted_at), "MMM dd, yyyy")}.
+              Quote was accepted on {format(new Date(quote.accepted_at), 'MMM dd, yyyy')}.
             </Alert>
           )}
 
-          {quote.status === "REJECTED" && quote.rejected_at && (
+          {quote.status === 'REJECTED' && quote.rejected_at && (
             <Alert severity="error">
-              Quote was rejected on{" "}
-              {format(new Date(quote.rejected_at), "MMM dd, yyyy")}.
+              Quote was rejected on {format(new Date(quote.rejected_at), 'MMM dd, yyyy')}.
               {quote.rejection_reason && (
                 <>
                   <br />
@@ -161,23 +136,15 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
               Basic Information
             </Typography>
             <Stack spacing={1}>
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-              >
+              <Box display="flex" justifyContent="space-between" alignItems="center">
                 <Typography variant="body2" color="text.secondary">
                   Status:
                 </Typography>
                 <Box display="flex" alignItems="center" gap={1}>
                   {getStatusIcon(quote.status)}
                   <Chip
-                    label={
-                      isExpired
-                        ? "EXPIRED"
-                        : quote.status_display || quote.status
-                    }
-                    color={isExpired ? "warning" : getStatusColor(quote.status)}
+                    label={isExpired ? 'EXPIRED' : quote.status_display || quote.status}
+                    color={isExpired ? 'warning' : getStatusColor(quote.status)}
                     size="small"
                   />
                 </Box>
@@ -201,18 +168,15 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
                   Created:
                 </Typography>
                 <Typography variant="body2">
-                  {format(new Date(quote.created_at), "MMM dd, yyyy")}
+                  {format(new Date(quote.created_at), 'MMM dd, yyyy')}
                 </Typography>
               </Box>
               <Box display="flex" justifyContent="space-between">
                 <Typography variant="body2" color="text.secondary">
                   Valid Until:
                 </Typography>
-                <Typography
-                  variant="body2"
-                  color={isExpired ? "error" : "text.primary"}
-                >
-                  {format(new Date(quote.valid_until), "MMM dd, yyyy")}
+                <Typography variant="body2" color={isExpired ? 'error' : 'text.primary'}>
+                  {format(new Date(quote.valid_until), 'MMM dd, yyyy')}
                 </Typography>
               </Box>
               {quote.sent_at && (
@@ -221,7 +185,7 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
                     Sent:
                   </Typography>
                   <Typography variant="body2">
-                    {format(new Date(quote.sent_at), "MMM dd, yyyy")}
+                    {format(new Date(quote.sent_at), 'MMM dd, yyyy')}
                   </Typography>
                 </Box>
               )}
@@ -251,9 +215,7 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
                   <Typography variant="body2" color="text.secondary">
                     Client:
                   </Typography>
-                  <Typography variant="body2">
-                    {quote.event_details.client_name}
-                  </Typography>
+                  <Typography variant="body2">{quote.event_details.client_name}</Typography>
                 </Box>
               )}
             </Stack>
@@ -271,51 +233,44 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
                 <Typography variant="body2" color="text.secondary">
                   Subtotal:
                 </Typography>
-                <Typography variant="body2">
-                  {formatQuoteAmount(quote.subtotal)}
-                </Typography>
+                <Typography variant="body2">{formatQuoteAmount(quote.subtotal)}</Typography>
               </Box>
-              {quote.discount_amount &&
-                parseFloat(quote.discount_amount) > 0 && (
-                  <Box display="flex" justifyContent="space-between">
-                    <Typography variant="body2" color="success.main">
-                      Discount:
-                    </Typography>
-                    <Typography variant="body2" color="success.main">
-                      -{formatQuoteAmount(quote.discount_amount)}
-                    </Typography>
-                  </Box>
-                )}
-              {quote.vip_discount_amount &&
-                parseFloat(quote.vip_discount_amount) > 0 && (
-                  <Box display="flex" justifyContent="space-between">
-                    <Typography variant="body2" color="secondary.main">
-                      VIP Discount:
-                    </Typography>
-                    <Typography variant="body2" color="secondary.main">
-                      -{formatQuoteAmount(quote.vip_discount_amount)}
-                    </Typography>
-                  </Box>
-                )}
-              {quote.service_charge_amount &&
-                parseFloat(quote.service_charge_amount) > 0 && (
-                  <Box display="flex" justifyContent="space-between">
-                    <Typography variant="body2" color="text.secondary">
-                      Service Charge:
-                    </Typography>
-                    <Typography variant="body2">
-                      {formatQuoteAmount(quote.service_charge_amount)}
-                    </Typography>
-                  </Box>
-                )}
+              {quote.discount_amount && parseFloat(quote.discount_amount) > 0 && (
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="success.main">
+                    Discount:
+                  </Typography>
+                  <Typography variant="body2" color="success.main">
+                    -{formatQuoteAmount(quote.discount_amount)}
+                  </Typography>
+                </Box>
+              )}
+              {quote.vip_discount_amount && parseFloat(quote.vip_discount_amount) > 0 && (
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="secondary.main">
+                    VIP Discount:
+                  </Typography>
+                  <Typography variant="body2" color="secondary.main">
+                    -{formatQuoteAmount(quote.vip_discount_amount)}
+                  </Typography>
+                </Box>
+              )}
+              {quote.service_charge_amount && parseFloat(quote.service_charge_amount) > 0 && (
+                <Box display="flex" justifyContent="space-between">
+                  <Typography variant="body2" color="text.secondary">
+                    Service Charge:
+                  </Typography>
+                  <Typography variant="body2">
+                    {formatQuoteAmount(quote.service_charge_amount)}
+                  </Typography>
+                </Box>
+              )}
               {quote.tax_amount && parseFloat(quote.tax_amount) > 0 && (
                 <Box display="flex" justifyContent="space-between">
                   <Typography variant="body2" color="text.secondary">
                     Tax:
                   </Typography>
-                  <Typography variant="body2">
-                    {formatQuoteAmount(quote.tax_amount)}
-                  </Typography>
+                  <Typography variant="body2">{formatQuoteAmount(quote.tax_amount)}</Typography>
                 </Box>
               )}
               <Divider />
@@ -353,12 +308,8 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
                         <TableRow key={index}>
                           <TableCell>{item.description}</TableCell>
                           <TableCell align="right">{item.quantity}</TableCell>
-                          <TableCell align="right">
-                            {formatQuoteAmount(item.unit_price)}
-                          </TableCell>
-                          <TableCell align="right">
-                            {formatQuoteAmount(item.total)}
-                          </TableCell>
+                          <TableCell align="right">{formatQuoteAmount(item.unit_price)}</TableCell>
+                          <TableCell align="right">{formatQuoteAmount(item.total)}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -381,9 +332,7 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
                     <Typography variant="body2" color="text.secondary">
                       Template:
                     </Typography>
-                    <Typography variant="body2">
-                      {quote.template_details.name}
-                    </Typography>
+                    <Typography variant="body2">{quote.template_details.name}</Typography>
                   </Box>
                 </Stack>
               </Box>
@@ -398,7 +347,7 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
                 <Typography variant="h6" gutterBottom>
                   Notes
                 </Typography>
-                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
                   {quote.notes}
                 </Typography>
               </Box>
@@ -413,7 +362,7 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
                 <Typography variant="h6" gutterBottom>
                   Client Message
                 </Typography>
-                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
                   {quote.client_message}
                 </Typography>
               </Box>
@@ -428,7 +377,7 @@ export const QuoteDetailsDialog: React.FC<QuoteDetailsDialogProps> = ({
                 <Typography variant="h6" gutterBottom>
                   Terms and Conditions
                 </Typography>
-                <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
                   {quote.terms_and_conditions}
                 </Typography>
               </Box>

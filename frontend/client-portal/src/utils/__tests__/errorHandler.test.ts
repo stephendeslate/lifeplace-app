@@ -83,7 +83,9 @@ describe('ErrorHandler', () => {
     });
 
     it('returns generic message for unknown error', () => {
-      expect(ErrorHandler.extractMessage({})).toBe('An unexpected error occurred. Please try again.');
+      expect(ErrorHandler.extractMessage({})).toBe(
+        'An unexpected error occurred. Please try again.',
+      );
     });
 
     it('returns Error message for standard Error', () => {
@@ -92,11 +94,15 @@ describe('ErrorHandler', () => {
     });
 
     it('returns generic message for null', () => {
-      expect(ErrorHandler.extractMessage(null)).toBe('An unexpected error occurred. Please try again.');
+      expect(ErrorHandler.extractMessage(null)).toBe(
+        'An unexpected error occurred. Please try again.',
+      );
     });
 
     it('returns generic message for undefined', () => {
-      expect(ErrorHandler.extractMessage(undefined)).toBe('An unexpected error occurred. Please try again.');
+      expect(ErrorHandler.extractMessage(undefined)).toBe(
+        'An unexpected error occurred. Please try again.',
+      );
     });
   });
 

@@ -5,9 +5,7 @@ import React from 'react';
 
 export const useDateUnavailableModal = () => {
   const [isOpen, setIsOpen] = React.useState(false);
-  const [unavailableDate, setUnavailableDate] = React.useState<string | null>(
-    null
-  );
+  const [unavailableDate, setUnavailableDate] = React.useState<string | null>(null);
 
   const showModal = React.useCallback((date: string) => {
     setUnavailableDate(date);

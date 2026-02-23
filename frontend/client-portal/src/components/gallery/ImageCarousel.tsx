@@ -1,10 +1,10 @@
-import React, { useRef, useState, useCallback, useEffect } from "react";
-import { Box, IconButton } from "@mui/material";
-import ChevronLeft from "@mui/icons-material/ChevronLeft";
-import ChevronRight from "@mui/icons-material/ChevronRight";
-import { tokens } from "../../design-system/tokens";
-import { OptimizedImage } from "../common/OptimizedImage";
-import type { GalleryImage } from "../../types/gallery.types";
+import React, { useRef, useState, useCallback, useEffect } from 'react';
+import { Box, IconButton } from '@mui/material';
+import ChevronLeft from '@mui/icons-material/ChevronLeft';
+import ChevronRight from '@mui/icons-material/ChevronRight';
+import { tokens } from '../../design-system/tokens';
+import { OptimizedImage } from '../common/OptimizedImage';
+import type { GalleryImage } from '../../types/gallery.types';
 
 type ResponsiveHeight = Record<string, string>;
 
@@ -16,19 +16,19 @@ interface ImageCarouselProps {
   autoPlay?: boolean;
   autoPlayInterval?: number;
   onImageClick?: (index: number) => void;
-  overlay?: "none" | "gradient";
+  overlay?: 'none' | 'gradient';
   children?: React.ReactNode;
 }
 
 export const ImageCarousel: React.FC<ImageCarouselProps> = ({
   images,
-  height = { xs: "300px", md: "450px" },
+  height = { xs: '300px', md: '450px' },
   showThumbnails = false,
   showArrows = true,
   autoPlay = false,
   autoPlayInterval = 5000,
   onImageClick,
-  overlay = "none",
+  overlay = 'none',
   children,
 }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -39,7 +39,7 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
     const scrollWidth = scrollRef.current.offsetWidth;
     scrollRef.current.scrollTo({
       left: scrollWidth * index,
-      behavior: "smooth",
+      behavior: 'smooth',
     });
     setCurrentIndex(index);
   }, []);
@@ -71,36 +71,36 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
   if (images.length === 0) return null;
 
   const arrowStyles = {
-    position: "absolute" as const,
-    top: "50%",
-    transform: "translateY(-50%)",
+    position: 'absolute' as const,
+    top: '50%',
+    transform: 'translateY(-50%)',
     zIndex: tokens.spacing.zIndex.base + 2,
-    color: "#FFFFFF",
+    color: '#FFFFFF',
     ...tokens.color.glass.subtle,
     borderRadius: tokens.spacing.radius.full,
     width: 40,
     height: 40,
     transition: tokens.animation.transition.smooth,
-    "&:hover": {
+    '&:hover': {
       ...tokens.color.glass.dark,
-      transform: "translateY(-50%) scale(1.1)",
+      transform: 'translateY(-50%) scale(1.1)',
     },
   };
 
   return (
-    <Box sx={{ position: "relative" }}>
+    <Box sx={{ position: 'relative' }}>
       <Box
         ref={scrollRef}
         onScroll={handleScroll}
         sx={{
-          display: "flex",
-          overflowX: "auto",
-          scrollSnapType: "x mandatory",
-          WebkitOverflowScrolling: "touch",
-          scrollbarWidth: "none",
-          "&::-webkit-scrollbar": { display: "none" },
+          display: 'flex',
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          '&::-webkit-scrollbar': { display: 'none' },
           borderRadius: tokens.spacing.radius.image,
-          overflow: "hidden",
+          overflow: 'hidden',
           height,
         }}
       >
@@ -109,12 +109,12 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
             key={`${image.src}-${index}`}
             onClick={() => onImageClick?.(index)}
             sx={{
-              scrollSnapAlign: "start",
+              scrollSnapAlign: 'start',
               flexShrink: 0,
-              width: "100%",
-              height: "100%",
-              position: "relative",
-              cursor: onImageClick ? "pointer" : "default",
+              width: '100%',
+              height: '100%',
+              position: 'relative',
+              cursor: onImageClick ? 'pointer' : 'default',
             }}
           >
             <OptimizedImage
@@ -128,16 +128,16 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
         ))}
       </Box>
 
-      {overlay === "gradient" && (
+      {overlay === 'gradient' && (
         <Box
           sx={{
-            position: "absolute",
+            position: 'absolute',
             top: 0,
             left: 0,
-            width: "100%",
-            height: "100%",
+            width: '100%',
+            height: '100%',
             background: tokens.color.overlays.gradientDark,
-            pointerEvents: "none",
+            pointerEvents: 'none',
             borderRadius: tokens.spacing.radius.image,
             zIndex: tokens.spacing.zIndex.base + 1,
           }}
@@ -147,18 +147,18 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
       {children && (
         <Box
           sx={{
-            position: "absolute",
+            position: 'absolute',
             top: 0,
             left: 0,
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
             zIndex: tokens.spacing.zIndex.base + 3,
-            pointerEvents: "none",
-            "& > *": { pointerEvents: "auto" },
+            pointerEvents: 'none',
+            '& > *': { pointerEvents: 'auto' },
           }}
         >
           {children}
@@ -187,11 +187,11 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
       {images.length > 1 && (
         <Box
           sx={{
-            position: "absolute",
+            position: 'absolute',
             bottom: 12,
-            left: "50%",
-            transform: "translateX(-50%)",
-            display: "flex",
+            left: '50%',
+            transform: 'translateX(-50%)',
+            display: 'flex',
             gap: 1,
             zIndex: tokens.spacing.zIndex.base + 2,
           }}
@@ -204,11 +204,8 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
                 width: index === currentIndex ? 24 : 8,
                 height: 8,
                 borderRadius: tokens.spacing.radius.full,
-                backgroundColor:
-                  index === currentIndex
-                    ? "#FFFFFF"
-                    : "rgba(255, 255, 255, 0.5)",
-                cursor: "pointer",
+                backgroundColor: index === currentIndex ? '#FFFFFF' : 'rgba(255, 255, 255, 0.5)',
+                cursor: 'pointer',
                 transition: tokens.animation.transition.fast,
               }}
             />
@@ -219,12 +216,12 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
       {showThumbnails && images.length > 1 && (
         <Box
           sx={{
-            display: "flex",
+            display: 'flex',
             gap: 1,
             mt: 1.5,
-            overflowX: "auto",
-            scrollbarWidth: "none",
-            "&::-webkit-scrollbar": { display: "none" },
+            overflowX: 'auto',
+            scrollbarWidth: 'none',
+            '&::-webkit-scrollbar': { display: 'none' },
             pb: 0.5,
           }}
         >
@@ -237,15 +234,15 @@ export const ImageCarousel: React.FC<ImageCarouselProps> = ({
                 width: 64,
                 height: 48,
                 borderRadius: tokens.spacing.radius.sm,
-                overflow: "hidden",
-                cursor: "pointer",
+                overflow: 'hidden',
+                cursor: 'pointer',
                 opacity: index === currentIndex ? 1 : 0.6,
                 border:
                   index === currentIndex
                     ? `2px solid ${tokens.color.base.sage[500]}`
-                    : "2px solid transparent",
+                    : '2px solid transparent',
                 transition: tokens.animation.transition.fast,
-                "&:hover": {
+                '&:hover': {
                   opacity: 1,
                 },
               }}

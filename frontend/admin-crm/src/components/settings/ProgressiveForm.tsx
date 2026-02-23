@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Button,
@@ -21,7 +21,7 @@ import {
   Fade,
   alpha,
   useTheme,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Save as SaveIcon,
   Check as CheckIcon,
@@ -31,12 +31,12 @@ import {
   Preview as PreviewIcon,
   Undo as UndoIcon,
   Redo as RedoIcon,
-} from "@mui/icons-material";
+} from '@mui/icons-material';
 import type {
   ProgressiveFormProps,
   AutoSaveState,
   SettingsFormSection,
-} from "../../types/enhanced-settings.types";
+} from '../../types/enhanced-settings.types';
 
 export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
   sections,
@@ -44,14 +44,12 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
   autoSave = false,
   preview = false,
   completionTracking = true,
-  variant = "accordion",
+  variant = 'accordion',
 }) => {
   const theme = useTheme();
   const [activeStep, setActiveStep] = useState(0);
   const [activeTab, setActiveTab] = useState(0);
-  const [expandedSections, setExpandedSections] = useState<string[]>([
-    sections[0]?.id,
-  ]);
+  const [expandedSections, setExpandedSections] = useState<string[]>([sections[0]?.id]);
   const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [history] = useState<Array<Record<string, unknown>>>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -111,16 +109,13 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) =>
-      prev.includes(sectionId)
-        ? prev.filter((id) => id !== sectionId)
-        : [...prev, sectionId],
+      prev.includes(sectionId) ? prev.filter((id) => id !== sectionId) : [...prev, sectionId],
     );
   };
 
   const renderSection = (section: SettingsFormSection) => {
     const isExpanded = expandedSections.includes(section.id);
-    const hasErrors =
-      section.validationErrors && section.validationErrors.length > 0;
+    const hasErrors = section.validationErrors && section.validationErrors.length > 0;
 
     return (
       <Accordion
@@ -130,29 +125,22 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
         sx={{
           mb: 2,
           border: `1px solid ${alpha(theme.palette.divider, 0.2)}`,
-          "&:before": { display: "none" },
+          '&:before': { display: 'none' },
           borderRadius: 2,
-          overflow: "hidden",
-          transition: "background-color 0.2s",
+          overflow: 'hidden',
+          transition: 'background-color 0.2s',
         }}
       >
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
           sx={{
-            bgcolor: isExpanded
-              ? alpha(theme.palette.primary.main, 0.05)
-              : "background.paper",
-            "&:hover": {
+            bgcolor: isExpanded ? alpha(theme.palette.primary.main, 0.05) : 'background.paper',
+            '&:hover': {
               bgcolor: alpha(theme.palette.primary.main, 0.08),
             },
           }}
         >
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="space-between"
-            width="100%"
-          >
+          <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
             <Box display="flex" alignItems="center" gap={2}>
               <Typography variant="h6" fontWeight={600}>
                 {section.title}
@@ -194,9 +182,7 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
             </Alert>
           )}
 
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            {section.fields}
-          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>{section.fields}</Box>
 
           {hasErrors && (
             <Box mt={2}>
@@ -217,9 +203,7 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
       {sections.map((section, index) => (
         <Step key={section.id}>
           <StepLabel
-            error={
-              section.validationErrors && section.validationErrors.length > 0
-            }
+            error={section.validationErrors && section.validationErrors.length > 0}
             optional={
               section.description && (
                 <Typography variant="caption">{section.description}</Typography>
@@ -230,7 +214,7 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
           </StepLabel>
           <StepContent>
             <Box sx={{ mb: 2 }}>{section.fields}</Box>
-            <Box sx={{ display: "flex", gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1 }}>
               <Button
                 variant="contained"
                 onClick={() => setActiveStep(index + 1)}
@@ -238,10 +222,7 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
               >
                 Continue
               </Button>
-              <Button
-                disabled={index === 0}
-                onClick={() => setActiveStep(index - 1)}
-              >
+              <Button disabled={index === 0} onClick={() => setActiveStep(index - 1)}>
                 Back
               </Button>
             </Box>
@@ -258,7 +239,7 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
         onChange={(_, value) => setActiveTab(value)}
         sx={{
           borderBottom: 1,
-          borderColor: "divider",
+          borderColor: 'divider',
           mb: 3,
         }}
       >
@@ -268,13 +249,10 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
             label={
               <Box display="flex" alignItems="center" gap={1}>
                 {section.title}
-                {section.isComplete && (
-                  <CheckIcon fontSize="small" color="success" />
+                {section.isComplete && <CheckIcon fontSize="small" color="success" />}
+                {section.validationErrors && section.validationErrors.length > 0 && (
+                  <WarningIcon fontSize="small" color="error" />
                 )}
-                {section.validationErrors &&
-                  section.validationErrors.length > 0 && (
-                    <WarningIcon fontSize="small" color="error" />
-                  )}
               </Box>
             }
           />
@@ -299,9 +277,9 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
       {/* Toolbar */}
       <Box
         sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           mb: 3,
           p: 2,
           bgcolor: alpha(theme.palette.primary.main, 0.05),
@@ -317,10 +295,7 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
                 size={40}
                 thickness={4}
                 sx={{
-                  color:
-                    calculateCompletion() === 100
-                      ? "success.main"
-                      : "primary.main",
+                  color: calculateCompletion() === 100 ? 'success.main' : 'primary.main',
                 }}
               />
               <Typography variant="body2" fontWeight={600}>
@@ -341,13 +316,13 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
                 }
                 label={
                   autoSaveState.isSaving
-                    ? "Saving..."
+                    ? 'Saving...'
                     : autoSaveState.lastSaved
                       ? `Saved ${new Date(autoSaveState.lastSaved).toLocaleTimeString()}`
-                      : "Auto-save enabled"
+                      : 'Auto-save enabled'
                 }
                 size="small"
-                color={autoSaveState.isSaving ? "warning" : "success"}
+                color={autoSaveState.isSaving ? 'warning' : 'success'}
                 variant="outlined"
               />
             </Fade>
@@ -356,11 +331,7 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
 
         <Box display="flex" gap={1}>
           <Tooltip title="Undo">
-            <IconButton
-              onClick={handleUndo}
-              disabled={historyIndex <= 0}
-              size="small"
-            >
+            <IconButton onClick={handleUndo} disabled={historyIndex <= 0} size="small">
               <UndoIcon />
             </IconButton>
           </Tooltip>
@@ -379,7 +350,7 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
             <Tooltip title="Preview Changes">
               <IconButton
                 onClick={() => setPreviewMode(!previewMode)}
-                color={previewMode ? "primary" : "default"}
+                color={previewMode ? 'primary' : 'default'}
                 size="small"
               >
                 <PreviewIcon />
@@ -391,9 +362,9 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
 
       {/* Form Content */}
       <Box sx={{ mb: 4 }}>
-        {variant === "accordion" && sections.map(renderSection)}
-        {variant === "stepped" && renderSteppedForm()}
-        {variant === "tabs" && renderTabbedForm()}
+        {variant === 'accordion' && sections.map(renderSection)}
+        {variant === 'stepped' && renderSteppedForm()}
+        {variant === 'tabs' && renderTabbedForm()}
       </Box>
 
       {/* Submit Button */}
@@ -406,20 +377,14 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
         <Button
           type="submit"
           variant="contained"
-          startIcon={
-            autoSaveState.isSaving ? (
-              <CircularProgress size={20} />
-            ) : (
-              <SaveIcon />
-            )
-          }
+          startIcon={autoSaveState.isSaving ? <CircularProgress size={20} /> : <SaveIcon />}
           disabled={autoSaveState.isSaving}
           size="large"
           sx={{
             minWidth: 160,
           }}
         >
-          {autoSaveState.isSaving ? "Saving..." : "Save All Changes"}
+          {autoSaveState.isSaving ? 'Saving...' : 'Save All Changes'}
         </Button>
       </Box>
 
@@ -428,12 +393,12 @@ export const ProgressiveForm: React.FC<ProgressiveFormProps> = ({
         open={showSaveNotification}
         autoHideDuration={3000}
         onClose={() => setShowSaveNotification(false)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >
         <Alert
           onClose={() => setShowSaveNotification(false)}
           severity="success"
-          sx={{ width: "100%" }}
+          sx={{ width: '100%' }}
         >
           Settings saved successfully!
         </Alert>

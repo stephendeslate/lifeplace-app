@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/apis/communications.api.ts
 
-import api from "../utils/api";
+import api from '../utils/api';
 import type {
   CommunicationTemplate,
   CommunicationRecord,
@@ -12,11 +12,8 @@ import type {
   AnalyticsData,
   VariableSchemas,
   CommunicationFilters,
-} from "../types/communications.types";
-import type {
-  PaginatedResponse,
-  PaginationParams,
-} from "../types/common.types";
+} from '../types/communications.types';
+import type { PaginatedResponse, PaginationParams } from '../types/common.types';
 
 export interface CommunicationTemplateQueryParams extends PaginationParams {
   search?: string;
@@ -48,13 +45,12 @@ export const communicationsApi = {
     params?: CommunicationTemplateQueryParams,
   ): Promise<PaginatedResponse<CommunicationTemplate>> => {
     const searchParams = new URLSearchParams();
-    if (params?.search) searchParams.append("search", params.search);
-    if (params?.category) searchParams.append("category", params.category);
-    if (params?.channel) searchParams.append("channel", params.channel);
-    if (params?.page) searchParams.append("page", params.page.toString());
-    if (params?.page_size)
-      searchParams.append("page_size", params.page_size.toString());
-    if (params?.ordering) searchParams.append("ordering", params.ordering);
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.category) searchParams.append('category', params.category);
+    if (params?.channel) searchParams.append('channel', params.channel);
+    if (params?.page) searchParams.append('page', params.page.toString());
+    if (params?.page_size) searchParams.append('page_size', params.page_size.toString());
+    if (params?.ordering) searchParams.append('ordering', params.ordering);
 
     const response = await api.get<PaginatedResponse<CommunicationTemplate>>(
       `/communications/templates/?${searchParams.toString()}`,
@@ -63,26 +59,16 @@ export const communicationsApi = {
   },
 
   getTemplate: async (id: number): Promise<CommunicationTemplate> => {
-    const response = await api.get<CommunicationTemplate>(
-      `/communications/templates/${id}/`,
-    );
+    const response = await api.get<CommunicationTemplate>(`/communications/templates/${id}/`);
     return response.data;
   },
 
-  createTemplate: async (
-    data: CreateTemplateData,
-  ): Promise<CommunicationTemplate> => {
-    const response = await api.post<CommunicationTemplate>(
-      "/communications/templates/",
-      data,
-    );
+  createTemplate: async (data: CreateTemplateData): Promise<CommunicationTemplate> => {
+    const response = await api.post<CommunicationTemplate>('/communications/templates/', data);
     return response.data;
   },
 
-  updateTemplate: async (
-    id: number,
-    data: UpdateTemplateData,
-  ): Promise<CommunicationTemplate> => {
+  updateTemplate: async (id: number, data: UpdateTemplateData): Promise<CommunicationTemplate> => {
     const response = await api.patch<CommunicationTemplate>(
       `/communications/templates/${id}/`,
       data,
@@ -106,9 +92,7 @@ export const communicationsApi = {
   },
 
   getVariableSchemas: async (): Promise<VariableSchemas> => {
-    const response = await api.get<VariableSchemas>(
-      "/communications/templates/variable_schemas/",
-    );
+    const response = await api.get<VariableSchemas>('/communications/templates/variable_schemas/');
     return response.data;
   },
 
@@ -124,38 +108,27 @@ export const communicationsApi = {
   },
 
   // Records
-  getRecords: async (
-    filters?: CommunicationFilters,
-  ): Promise<CommunicationRecord[]> => {
+  getRecords: async (filters?: CommunicationFilters): Promise<CommunicationRecord[]> => {
     const params = new URLSearchParams();
-    if (filters?.client_id)
-      params.append("client_id", filters.client_id.toString());
-    if (filters?.event_id)
-      params.append("event_id", filters.event_id.toString());
-    if (filters?.template_name)
-      params.append("template_name", filters.template_name);
-    if (filters?.status) params.append("status", filters.status);
-    if (filters?.channel) params.append("channel", filters.channel);
+    if (filters?.client_id) params.append('client_id', filters.client_id.toString());
+    if (filters?.event_id) params.append('event_id', filters.event_id.toString());
+    if (filters?.template_name) params.append('template_name', filters.template_name);
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.channel) params.append('channel', filters.channel);
 
-    const response = await api.get(
-      `/communications/records/?${params.toString()}`,
-    );
-    const data = response.data as
-      | { results?: CommunicationRecord[] }
-      | CommunicationRecord[];
+    const response = await api.get(`/communications/records/?${params.toString()}`);
+    const data = response.data as { results?: CommunicationRecord[] } | CommunicationRecord[];
     return (Array.isArray(data) ? data : data.results) || [];
   },
 
   getRecord: async (id: string): Promise<CommunicationRecord> => {
-    const response = await api.get<CommunicationRecord>(
-      `/communications/records/${id}/`,
-    );
+    const response = await api.get<CommunicationRecord>(`/communications/records/${id}/`);
     return response.data;
   },
 
   sendManual: async (data: ManualSendData): Promise<CommunicationRecord> => {
     const response = await api.post<CommunicationRecord>(
-      "/communications/records/send_manual/",
+      '/communications/records/send_manual/',
       data,
     );
     return response.data;
@@ -167,17 +140,14 @@ export const communicationsApi = {
     const response = await api.post<{
       sent_count: number;
       records: CommunicationRecord[];
-    }>("/communications/records/send_bulk/", data);
+    }>('/communications/records/send_bulk/', data);
     return response.data;
   },
 
-  getAnalytics: async (
-    templateName?: string,
-    days: number = 30,
-  ): Promise<AnalyticsData> => {
+  getAnalytics: async (templateName?: string, days: number = 30): Promise<AnalyticsData> => {
     const params = new URLSearchParams();
-    if (templateName) params.append("template_name", templateName);
-    params.append("days", days.toString());
+    if (templateName) params.append('template_name', templateName);
+    params.append('days', days.toString());
 
     const response = await api.get<AnalyticsData>(
       `/communications/records/analytics/?${params.toString()}`,
@@ -192,26 +162,21 @@ export const communicationsApi = {
     category?: string;
   }): Promise<{ updated_count: number }> => {
     const response = await api.post<{ updated_count: number }>(
-      "/communications/records/mark_all_as_read/",
+      '/communications/records/mark_all_as_read/',
       filters || {},
     );
     return response.data;
   },
 
   // Template history
-  getTemplateHistory: async (
-    templateId: number,
-  ): Promise<TemplateHistoryEntry[]> => {
+  getTemplateHistory: async (templateId: number): Promise<TemplateHistoryEntry[]> => {
     const response = await api.get<TemplateHistoryEntry[]>(
       `/communications/templates/${templateId}/history/`,
     );
     return response.data;
   },
 
-  rollbackTemplate: async (
-    templateId: number,
-    version: number,
-  ): Promise<CommunicationTemplate> => {
+  rollbackTemplate: async (templateId: number, version: number): Promise<CommunicationTemplate> => {
     const response = await api.post<CommunicationTemplate>(
       `/communications/templates/${templateId}/rollback/`,
       { version },
@@ -232,12 +197,9 @@ export const communicationsApi = {
   },
 
   // Template usage statistics
-  getTemplateStats: async (
-    templateId: number,
-    days: number = 30,
-  ): Promise<TemplateStats> => {
+  getTemplateStats: async (templateId: number, days: number = 30): Promise<TemplateStats> => {
     const params = new URLSearchParams();
-    params.append("days", days.toString());
+    params.append('days', days.toString());
     const response = await api.get<TemplateStats>(
       `/communications/templates/${templateId}/stats/?${params.toString()}`,
     );
@@ -276,7 +238,7 @@ export interface TemplateHistoryEntry {
   include_event_context: boolean;
   subject_template: string | null;
   body_template: string;
-  reason: "CREATE" | "UPDATE" | "ROLLBACK" | "SYSTEM";
+  reason: 'CREATE' | 'UPDATE' | 'ROLLBACK' | 'SYSTEM';
   notes: string;
   changed_by: {
     id: number;

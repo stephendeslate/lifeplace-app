@@ -3,12 +3,7 @@
 // Replaces 100+ lines of duplicate TextField styling
 
 import React from 'react';
-import {
-  TextField,
-  InputAdornment,
-  IconButton,
-  type TextFieldProps,
-} from '@mui/material';
+import { TextField, InputAdornment, IconButton, type TextFieldProps } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { tokens } from '../../design-system';
 import { createTransition } from '../../design-system/utils/animations';

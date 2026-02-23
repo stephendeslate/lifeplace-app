@@ -18,9 +18,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
-import {
-  Save as SaveIcon,
-} from '@mui/icons-material';
+import { Save as SaveIcon } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { addDays, format } from 'date-fns';
 import { useActiveQuoteTemplates, useCreateEventQuote } from '../../hooks/useSales';
@@ -71,27 +69,25 @@ export const QuoteCreateDialog: React.FC<QuoteCreateDialogProps> = ({
     }
   }, [open]);
 
-  const handleInputChange = (field: keyof QuoteFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = event.target.value;
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    // Clear error for this field
-    if (errors[field]) {
-      setErrors((prev) => ({
+  const handleInputChange =
+    (field: keyof QuoteFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
         ...prev,
-        [field]: undefined,
+        [field]: value,
       }));
-    }
-  };
 
-  const handleSelectChange = (field: keyof QuoteFormData) => (
-    event: SelectChangeEvent<string>
-  ) => {
+      // Clear error for this field
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: undefined,
+        }));
+      }
+    };
+
+  const handleSelectChange = (field: keyof QuoteFormData) => (event: SelectChangeEvent<string>) => {
     setFormData((prev) => ({
       ...prev,
       [field]: event.target.value as string,
@@ -159,21 +155,19 @@ export const QuoteCreateDialog: React.FC<QuoteCreateDialogProps> = ({
   const isLoading = createQuoteMutation.isPending;
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={handleClose}
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { minHeight: 400 }
+        sx: { minHeight: 400 },
       }}
     >
       {open && (
         <>
-          <DialogTitle>
-            Create Quote for {event.name || `Event #${event.id}`}
-          </DialogTitle>
-      
+          <DialogTitle>Create Quote for {event.name || `Event #${event.id}`}</DialogTitle>
+
           <DialogContent>
             <Box component="form" noValidate sx={{ mt: 1 }}>
               <Stack spacing={3}>
@@ -270,21 +264,19 @@ export const QuoteCreateDialog: React.FC<QuoteCreateDialogProps> = ({
 
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    💡 <strong>Tip:</strong> After creating the quote, you can add line items, adjust pricing, and send it to the client.
+                    💡 <strong>Tip:</strong> After creating the quote, you can add line items,
+                    adjust pricing, and send it to the client.
                   </Typography>
                 </Box>
               </Stack>
             </Box>
           </DialogContent>
-          
+
           <DialogActions sx={{ p: 3 }}>
-            <Button 
-              onClick={handleClose}
-              disabled={isLoading}
-            >
+            <Button onClick={handleClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmit}
               variant="contained"
               disabled={isLoading}

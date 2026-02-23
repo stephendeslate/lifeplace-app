@@ -1,28 +1,11 @@
 // frontend/admin-crm/src/components/availability/AvailabilityIndicator.tsx
 
 import React from 'react';
-import {
-  Box,
-  Chip,
-  Tooltip,
-  Typography,
-  Stack,
-  Paper,
-  useTheme,
-  alpha,
-} from '@mui/material';
-import {
-  CheckCircle,
-  Schedule,
-  Block,
-  Info,
-  Event as EventIcon,
-} from '@mui/icons-material';
+import { Box, Chip, Tooltip, Typography, Stack, Paper, useTheme, alpha } from '@mui/material';
+import { CheckCircle, Schedule, Block, Info, Event as EventIcon } from '@mui/icons-material';
 import { format, parseISO } from 'date-fns';
 
-import type { 
-  DateAvailabilityInfo 
-} from '../../types/availability.types';
+import type { DateAvailabilityInfo } from '../../types/availability.types';
 import { AvailabilityUtils } from '../../utils/availability.utils';
 
 interface AvailabilityIndicatorProps {
@@ -78,7 +61,10 @@ export const AvailabilityIndicator: React.FC<AvailabilityIndicatorProps> = ({
         </Typography>
         {availability.conflicts.slice(0, 3).map((conflict, index) => (
           <Box key={index} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <EventIcon fontSize="small" color={conflict.status === 'CONFIRMED' ? 'error' : 'warning'} />
+            <EventIcon
+              fontSize="small"
+              color={conflict.status === 'CONFIRMED' ? 'error' : 'warning'}
+            />
             <Box>
               <Typography variant="body2" fontWeight="medium">
                 {conflict.event_name}
@@ -185,10 +171,12 @@ export const AvailabilityIndicator: React.FC<AvailabilityIndicatorProps> = ({
             backgroundColor: indicator.color,
             border: availability.can_book_event ? 'none' : `2px solid ${theme.palette.error.main}`,
             cursor: interactive ? 'pointer' : 'default',
-            '&:hover': interactive ? {
-              transform: 'scale(1.2)',
-              transition: 'transform 0.2s',
-            } : {},
+            '&:hover': interactive
+              ? {
+                  transform: 'scale(1.2)',
+                  transition: 'transform 0.2s',
+                }
+              : {},
           }}
           onClick={onClick}
         />
@@ -234,10 +222,12 @@ export const AvailabilityIndicator: React.FC<AvailabilityIndicatorProps> = ({
         sx={{
           p: 2,
           cursor: interactive ? 'pointer' : 'default',
-          '&:hover': interactive ? {
-            elevation: 2,
-            backgroundColor: alpha(theme.palette.primary.main, 0.02),
-          } : {},
+          '&:hover': interactive
+            ? {
+                elevation: 2,
+                backgroundColor: alpha(theme.palette.primary.main, 0.02),
+              }
+            : {},
         }}
         onClick={onClick}
       >
@@ -288,9 +278,7 @@ export const AvailabilityBadge: React.FC<AvailabilityBadgeProps> = ({
           ...sizeMap[size],
           borderRadius: '50%',
           backgroundColor: indicator.color,
-          border: availability.can_book_event 
-            ? 'none' 
-            : `1px solid ${theme.palette.error.main}`,
+          border: availability.can_book_event ? 'none' : `1px solid ${theme.palette.error.main}`,
           flexShrink: 0,
         }}
       />
@@ -302,9 +290,7 @@ interface AvailabilityStatsProps {
   availability: DateAvailabilityInfo[];
 }
 
-export const AvailabilityStats: React.FC<AvailabilityStatsProps> = ({
-  availability,
-}) => {
+export const AvailabilityStats: React.FC<AvailabilityStatsProps> = ({ availability }) => {
   const stats = AvailabilityUtils.generateAvailabilitySummary(availability);
 
   return (

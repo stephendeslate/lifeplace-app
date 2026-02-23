@@ -191,35 +191,37 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
           standalone_base_price: venue.standalone_base_price?.toString() || '',
           standalone_included_hours: venue.standalone_included_hours?.toString() || '',
           standalone_excess_hour_price: venue.standalone_excess_hour_price?.toString() || '',
-          operating_rules: rules ? {
-            default_check_in_time: rules.default_check_in_time || '14:00',
-            default_checkout_time: rules.default_checkout_time || '12:00',
-            checkout_next_day: rules.checkout_next_day ?? false,
-            minimum_program_hours: rules.minimum_program_hours || '1',
-            maximum_program_hours: rules.maximum_program_hours || '8',
-            default_program_hours: rules.default_program_hours || '3',
-            is_fixed_duration: rules.is_fixed_duration ?? false,
-            ingress_hours: rules.ingress_hours || '1',
-            egress_hours: rules.egress_hours || '1',
-            allow_custom_ingress: rules.allow_custom_ingress ?? false,
-            allow_custom_egress: rules.allow_custom_egress ?? false,
-            min_ingress_hours: rules.min_ingress_hours || '0.5',
-            max_ingress_hours: rules.max_ingress_hours || '6',
-            min_egress_hours: rules.min_egress_hours || '0.5',
-            max_egress_hours: rules.max_egress_hours || '3',
-            earliest_start_time: rules.earliest_start_time || '06:00',
-            latest_end_time: rules.latest_end_time || '22:00',
-            hard_cutoff_time: rules.hard_cutoff_time || '02:00',
-            hard_cutoff_next_day: rules.hard_cutoff_next_day ?? true,
-            early_access_minutes: rules.early_access_minutes?.toString() || '60',
-            early_checkin_allowed: rules.early_checkin_allowed ?? false,
-            early_checkin_fee_per_hour: rules.early_checkin_fee_per_hour || '300',
-            earliest_checkin_time: rules.earliest_checkin_time || '10:00',
-            late_checkout_allowed: rules.late_checkout_allowed ?? false,
-            late_checkout_fee_per_hour: rules.late_checkout_fee_per_hour || '300',
-            late_checkout_max_hours: rules.late_checkout_max_hours?.toString() || '4',
-            latest_checkout_time: rules.latest_checkout_time || '16:00',
-          } : defaultOperatingRules,
+          operating_rules: rules
+            ? {
+                default_check_in_time: rules.default_check_in_time || '14:00',
+                default_checkout_time: rules.default_checkout_time || '12:00',
+                checkout_next_day: rules.checkout_next_day ?? false,
+                minimum_program_hours: rules.minimum_program_hours || '1',
+                maximum_program_hours: rules.maximum_program_hours || '8',
+                default_program_hours: rules.default_program_hours || '3',
+                is_fixed_duration: rules.is_fixed_duration ?? false,
+                ingress_hours: rules.ingress_hours || '1',
+                egress_hours: rules.egress_hours || '1',
+                allow_custom_ingress: rules.allow_custom_ingress ?? false,
+                allow_custom_egress: rules.allow_custom_egress ?? false,
+                min_ingress_hours: rules.min_ingress_hours || '0.5',
+                max_ingress_hours: rules.max_ingress_hours || '6',
+                min_egress_hours: rules.min_egress_hours || '0.5',
+                max_egress_hours: rules.max_egress_hours || '3',
+                earliest_start_time: rules.earliest_start_time || '06:00',
+                latest_end_time: rules.latest_end_time || '22:00',
+                hard_cutoff_time: rules.hard_cutoff_time || '02:00',
+                hard_cutoff_next_day: rules.hard_cutoff_next_day ?? true,
+                early_access_minutes: rules.early_access_minutes?.toString() || '60',
+                early_checkin_allowed: rules.early_checkin_allowed ?? false,
+                early_checkin_fee_per_hour: rules.early_checkin_fee_per_hour || '300',
+                earliest_checkin_time: rules.earliest_checkin_time || '10:00',
+                late_checkout_allowed: rules.late_checkout_allowed ?? false,
+                late_checkout_fee_per_hour: rules.late_checkout_fee_per_hour || '300',
+                late_checkout_max_hours: rules.late_checkout_max_hours?.toString() || '4',
+                latest_checkout_time: rules.latest_checkout_time || '16:00',
+              }
+            : defaultOperatingRules,
         });
       } else {
         setFormData(defaultFormData);
@@ -235,70 +237,66 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
     }
   }, [open]);
 
-  const handleInputChange = (field: keyof VenueFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
-
-  const handleRulesChange = (field: keyof OperatingRulesFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      operating_rules: {
-        ...prev.operating_rules,
+  const handleInputChange =
+    (field: keyof VenueFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
+        ...prev,
         [field]: value,
-      },
-    }));
-  };
+      }));
+      if (errors[field]) {
+        setErrors((prev) => ({ ...prev, [field]: '' }));
+      }
+    };
 
-  const handleSwitchChange = (field: keyof VenueFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.checked,
-    }));
-  };
+  const handleRulesChange =
+    (field: keyof OperatingRulesFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
+        ...prev,
+        operating_rules: {
+          ...prev.operating_rules,
+          [field]: value,
+        },
+      }));
+    };
 
-  const handleRulesSwitchChange = (field: keyof OperatingRulesFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      operating_rules: {
-        ...prev.operating_rules,
+  const handleSwitchChange =
+    (field: keyof VenueFormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
         [field]: event.target.checked,
-      },
-    }));
-  };
+      }));
+    };
+
+  const handleRulesSwitchChange =
+    (field: keyof OperatingRulesFormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        operating_rules: {
+          ...prev.operating_rules,
+          [field]: event.target.checked,
+        },
+      }));
+    };
 
   const toggleSection = (section: string) => {
-    setExpandedSections(prev =>
-      prev.includes(section)
-        ? prev.filter(s => s !== section)
-        : [...prev, section]
+    setExpandedSections((prev) =>
+      prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section],
     );
   };
 
   const handleFeaturedImageChange = (file: File | null) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       featured_image: file,
     }));
   };
 
   const handleGalleryImagesChange = (files: (File | string)[]) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       gallery_images: files,
     }));
@@ -355,11 +353,17 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
       hard_cutoff_next_day: rules.hard_cutoff_next_day,
       early_access_minutes: parseInt(rules.early_access_minutes) || 60,
       early_checkin_allowed: rules.early_checkin_allowed,
-      early_checkin_fee_per_hour: rules.early_checkin_allowed ? rules.early_checkin_fee_per_hour : null,
+      early_checkin_fee_per_hour: rules.early_checkin_allowed
+        ? rules.early_checkin_fee_per_hour
+        : null,
       earliest_checkin_time: rules.early_checkin_allowed ? rules.earliest_checkin_time : null,
       late_checkout_allowed: rules.late_checkout_allowed,
-      late_checkout_fee_per_hour: rules.late_checkout_allowed ? rules.late_checkout_fee_per_hour : null,
-      late_checkout_max_hours: rules.late_checkout_allowed ? parseInt(rules.late_checkout_max_hours) : undefined,
+      late_checkout_fee_per_hour: rules.late_checkout_allowed
+        ? rules.late_checkout_fee_per_hour
+        : null,
+      late_checkout_max_hours: rules.late_checkout_allowed
+        ? parseInt(rules.late_checkout_max_hours)
+        : undefined,
       latest_checkout_time: rules.late_checkout_allowed ? rules.latest_checkout_time : null,
     };
 
@@ -425,7 +429,9 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
       is_overnight: formData.is_overnight,
       minimum_capacity: parseInt(formData.minimum_capacity) || 1,
       maximum_capacity: parseInt(formData.maximum_capacity),
-      recommended_capacity: formData.recommended_capacity ? parseInt(formData.recommended_capacity) : null,
+      recommended_capacity: formData.recommended_capacity
+        ? parseInt(formData.recommended_capacity)
+        : null,
       is_active: formData.is_active,
       is_bookable: formData.is_bookable,
       is_featured: formData.is_featured,
@@ -433,15 +439,22 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
       sort_order: parseInt(formData.sort_order) || 0,
       // Standalone pricing
       is_rentable_standalone: formData.is_rentable_standalone,
-      standalone_base_price: formData.standalone_base_price ? parseFloat(formData.standalone_base_price) : null,
-      standalone_included_hours: formData.standalone_included_hours ? parseFloat(formData.standalone_included_hours) : null,
-      standalone_excess_hour_price: formData.standalone_excess_hour_price ? parseFloat(formData.standalone_excess_hour_price) : null,
+      standalone_base_price: formData.standalone_base_price
+        ? parseFloat(formData.standalone_base_price)
+        : null,
+      standalone_included_hours: formData.standalone_included_hours
+        ? parseFloat(formData.standalone_included_hours)
+        : null,
+      standalone_excess_hour_price: formData.standalone_excess_hour_price
+        ? parseFloat(formData.standalone_excess_hour_price)
+        : null,
       operating_rules: operatingRulesData,
     };
 
     // Check if we have any files to upload or if we're editing (to handle image removals)
-    const hasFiles = formData.featured_image instanceof File ||
-      formData.gallery_images.some(item => item instanceof File);
+    const hasFiles =
+      formData.featured_image instanceof File ||
+      formData.gallery_images.some((item) => item instanceof File);
 
     // Always use FormData when editing to ensure image changes (including removals) are processed
     const shouldUseFormData = hasFiles || !!editingVenue;
@@ -456,16 +469,12 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
     }
   };
 
-  const actions = createDialogActions(
-    handleClose,
-    handleSubmit,
-    {
-      cancelLabel: 'Cancel',
-      confirmLabel: editingVenue ? 'Update Venue' : 'Create Venue',
-      isLoading,
-      confirmDisabled: isLoading,
-    }
-  );
+  const actions = createDialogActions(handleClose, handleSubmit, {
+    cancelLabel: 'Cancel',
+    confirmLabel: editingVenue ? 'Update Venue' : 'Create Venue',
+    isLoading,
+    confirmDisabled: isLoading,
+  });
 
   return (
     <ModernDialog
@@ -505,7 +514,9 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
                     value={formData.code}
                     onChange={handleInputChange('code')}
                     error={!!errors.code}
-                    helperText={errors.code || 'Uppercase letters, numbers, and underscores (e.g., CABANA_3)'}
+                    helperText={
+                      errors.code || 'Uppercase letters, numbers, and underscores (e.g., CABANA_3)'
+                    }
                     required
                   />
                 </Box>
@@ -529,7 +540,9 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
 
                 <Divider />
 
-                <Typography variant="subtitle2" color="text.secondary">Capacity</Typography>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Capacity
+                </Typography>
                 <Box display="flex" gap={2}>
                   <TextField
                     label="Minimum"
@@ -631,7 +644,7 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
                   onChange={handleFeaturedImageChange}
                   helperText="Main image shown in listings and cards. Recommended: 800x600px"
                   maxSizeMB={5}
-                  aspectRatio={4/3}
+                  aspectRatio={4 / 3}
                   previewHeight={180}
                 />
 
@@ -658,7 +671,8 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
             <AccordionDetails>
               <Stack spacing={2}>
                 <Alert severity="info" sx={{ mb: 1 }}>
-                  Enable standalone pricing to allow this venue to be rented independently or included in custom package bundles.
+                  Enable standalone pricing to allow this venue to be rented independently or
+                  included in custom package bundles.
                 </Alert>
 
                 <FormControlLabel
@@ -729,7 +743,9 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
                   These rules define the default timing behavior for events at this venue.
                 </Alert>
 
-                <Typography variant="subtitle2" color="text.secondary">Default Times</Typography>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Default Times
+                </Typography>
                 <Box display="flex" gap={2}>
                   <TextField
                     label="Check-in Time"
@@ -761,7 +777,9 @@ export const VenueFormDialog: React.FC<VenueFormDialogProps> = ({
 
                 <Divider />
 
-                <Typography variant="subtitle2" color="text.secondary">Program Duration</Typography>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Program Duration
+                </Typography>
                 <Box display="flex" gap={2}>
                   <TextField
                     label="Minimum Hours"

@@ -64,7 +64,9 @@ interface KeyboardShortcutsProviderProps {
   children: React.ReactNode;
 }
 
-export const KeyboardShortcutsProvider: React.FC<KeyboardShortcutsProviderProps> = ({ children }) => {
+export const KeyboardShortcutsProvider: React.FC<KeyboardShortcutsProviderProps> = ({
+  children,
+}) => {
   const theme = useTheme();
   const [shortcuts, setShortcuts] = useState<KeyboardShortcut[]>([]);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
@@ -122,7 +124,9 @@ export const KeyboardShortcutsProvider: React.FC<KeyboardShortcutsProviderProps>
       description: 'Open notifications',
       keys: ['n'],
       action: () => {
-        const notificationButton = document.querySelector('[aria-label*="notification"]') as HTMLElement;
+        const notificationButton = document.querySelector(
+          '[aria-label*="notification"]',
+        ) as HTMLElement;
         if (notificationButton) notificationButton.click();
       },
       icon: <NotificationsIcon fontSize="small" />,
@@ -146,7 +150,9 @@ export const KeyboardShortcutsProvider: React.FC<KeyboardShortcutsProviderProps>
       description: 'Create new item',
       keys: ['c'],
       action: () => {
-        const newButton = document.querySelector('[aria-label*="new"], [aria-label*="create"], [aria-label*="add"]') as HTMLElement;
+        const newButton = document.querySelector(
+          '[aria-label*="new"], [aria-label*="create"], [aria-label*="add"]',
+        ) as HTMLElement;
         if (newButton) newButton.click();
       },
       icon: <AddIcon fontSize="small" />,
@@ -158,7 +164,9 @@ export const KeyboardShortcutsProvider: React.FC<KeyboardShortcutsProviderProps>
       description: 'Save current form',
       keys: ['Meta', 's'],
       action: () => {
-        const saveButton = document.querySelector('[type="submit"], [aria-label*="save"]') as HTMLElement;
+        const saveButton = document.querySelector(
+          '[type="submit"], [aria-label*="save"]',
+        ) as HTMLElement;
         if (saveButton) {
           saveButton.click();
         }
@@ -188,7 +196,9 @@ export const KeyboardShortcutsProvider: React.FC<KeyboardShortcutsProviderProps>
       description: 'Go forward/next',
       keys: ['Meta', 'ArrowRight'],
       action: () => {
-        const nextButton = document.querySelector('[aria-label*="next"], [aria-label*="forward"]') as HTMLElement;
+        const nextButton = document.querySelector(
+          '[aria-label*="next"], [aria-label*="forward"]',
+        ) as HTMLElement;
         if (nextButton) nextButton.click();
       },
       icon: <ForwardIcon fontSize="small" />,
@@ -202,29 +212,33 @@ export const KeyboardShortcutsProvider: React.FC<KeyboardShortcutsProviderProps>
   }, []);
 
   const addShortcut = useCallback((shortcut: KeyboardShortcut) => {
-    setShortcuts(prev => [...prev.filter(s => s.id !== shortcut.id), shortcut]);
+    setShortcuts((prev) => [...prev.filter((s) => s.id !== shortcut.id), shortcut]);
   }, []);
 
   const removeShortcut = useCallback((id: string) => {
-    setShortcuts(prev => prev.filter(s => s.id !== id));
+    setShortcuts((prev) => prev.filter((s) => s.id !== id));
   }, []);
 
-  const executeShortcut = useCallback((keys: string[]): boolean => {
-    const shortcut = shortcuts.find(s => 
-      s.enabled && 
-      s.keys.length === keys.length && 
-      s.keys.every((key, index) => key === keys[index])
-    );
+  const executeShortcut = useCallback(
+    (keys: string[]): boolean => {
+      const shortcut = shortcuts.find(
+        (s) =>
+          s.enabled &&
+          s.keys.length === keys.length &&
+          s.keys.every((key, index) => key === keys[index]),
+      );
 
-    if (shortcut) {
-      shortcut.action();
-      return true;
-    }
-    return false;
-  }, [shortcuts]);
+      if (shortcut) {
+        shortcut.action();
+        return true;
+      }
+      return false;
+    },
+    [shortcuts],
+  );
 
   const toggleHelp = useCallback(() => {
-    setIsHelpOpen(prev => !prev);
+    setIsHelpOpen((prev) => !prev);
   }, []);
 
   // Keyboard event handling
@@ -241,25 +255,25 @@ export const KeyboardShortcutsProvider: React.FC<KeyboardShortcutsProviderProps>
 
       const key = event.key;
       const newPressedKeys = new Set(pressedKeys);
-      
+
       // Handle modifier keys
       if (event.metaKey) newPressedKeys.add('Meta');
       if (event.ctrlKey) newPressedKeys.add('Control');
       if (event.altKey) newPressedKeys.add('Alt');
       if (event.shiftKey) newPressedKeys.add('Shift');
-      
+
       // Add the main key
       newPressedKeys.add(key);
       setPressedKeys(newPressedKeys);
 
       // Build key sequence for sequential shortcuts (like 'g' then 'h')
       const currentSequence = [...keySequence];
-      
+
       // Reset sequence after timeout or if it gets too long
       if (currentSequence.length > 3) {
         currentSequence.length = 0;
       }
-      
+
       // For letter keys, add to sequence
       if (key.length === 1 && /[a-zA-Z?]/.test(key)) {
         currentSequence.push(key.toLowerCase());
@@ -297,13 +311,13 @@ export const KeyboardShortcutsProvider: React.FC<KeyboardShortcutsProviderProps>
 
     const handleKeyUp = (event: KeyboardEvent) => {
       const newPressedKeys = new Set(pressedKeys);
-      
+
       // Remove modifier keys
       if (!event.metaKey) newPressedKeys.delete('Meta');
       if (!event.ctrlKey) newPressedKeys.delete('Control');
       if (!event.altKey) newPressedKeys.delete('Alt');
       if (!event.shiftKey) newPressedKeys.delete('Shift');
-      
+
       // Remove the main key
       newPressedKeys.delete(event.key);
       setPressedKeys(newPressedKeys);
@@ -325,42 +339,47 @@ export const KeyboardShortcutsProvider: React.FC<KeyboardShortcutsProviderProps>
   }, [pressedKeys, keySequence, executeShortcut]);
 
   // Group shortcuts by category
-  const groupedShortcuts = shortcuts.reduce((acc, shortcut) => {
-    if (!shortcut.enabled) return acc;
-    if (!acc[shortcut.category]) {
-      acc[shortcut.category] = [];
-    }
-    acc[shortcut.category].push(shortcut);
-    return acc;
-  }, {} as Record<string, KeyboardShortcut[]>);
+  const groupedShortcuts = shortcuts.reduce(
+    (acc, shortcut) => {
+      if (!shortcut.enabled) return acc;
+      if (!acc[shortcut.category]) {
+        acc[shortcut.category] = [];
+      }
+      acc[shortcut.category].push(shortcut);
+      return acc;
+    },
+    {} as Record<string, KeyboardShortcut[]>,
+  );
 
   const formatKeys = (keys: string[]) => {
-    return keys.map(key => {
-      switch (key) {
-        case 'Meta':
-          return '⌘';
-        case 'Control':
-          return 'Ctrl';
-        case 'Alt':
-          return '⌥';
-        case 'Shift':
-          return '⇧';
-        case 'ArrowUp':
-          return '↑';
-        case 'ArrowDown':
-          return '↓';
-        case 'ArrowLeft':
-          return '←';
-        case 'ArrowRight':
-          return '→';
-        case 'Escape':
-          return 'Esc';
-        case ' ':
-          return 'Space';
-        default:
-          return key;
-      }
-    }).join(' + ');
+    return keys
+      .map((key) => {
+        switch (key) {
+          case 'Meta':
+            return '⌘';
+          case 'Control':
+            return 'Ctrl';
+          case 'Alt':
+            return '⌥';
+          case 'Shift':
+            return '⇧';
+          case 'ArrowUp':
+            return '↑';
+          case 'ArrowDown':
+            return '↓';
+          case 'ArrowLeft':
+            return '←';
+          case 'ArrowRight':
+            return '→';
+          case 'Escape':
+            return 'Esc';
+          case ' ':
+            return 'Space';
+          default:
+            return key;
+        }
+      })
+      .join(' + ');
   };
 
   const contextValue: KeyboardShortcutsContextType = {
@@ -375,7 +394,7 @@ export const KeyboardShortcutsProvider: React.FC<KeyboardShortcutsProviderProps>
   return (
     <KeyboardShortcutsContext.Provider value={contextValue}>
       {children}
-      
+
       {/* Keyboard Shortcuts Help Dialog */}
       <Dialog
         open={isHelpOpen}
@@ -403,24 +422,26 @@ export const KeyboardShortcutsProvider: React.FC<KeyboardShortcutsProviderProps>
               overflow: 'hidden',
             }}
           >
-            <DialogTitle sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              pb: 2,
-              borderBottom: `1px solid ${alpha('#fff', 0.1)}`,
-            }}>
+            <DialogTitle
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                pb: 2,
+                borderBottom: `1px solid ${alpha('#fff', 0.1)}`,
+              }}
+            >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <KeyboardIcon color="primary" />
                 <Typography variant="h5" sx={{ fontWeight: 600 }}>
                   Keyboard Shortcuts
                 </Typography>
               </Box>
-              <IconButton 
+              <IconButton
                 onClick={() => setIsHelpOpen(false)}
                 sx={{
                   backgroundColor: alpha('#fff', 0.1),
-                  '&:hover': { backgroundColor: alpha('#fff', 0.2) }
+                  '&:hover': { backgroundColor: alpha('#fff', 0.2) },
                 }}
               >
                 <CloseIcon />
@@ -429,104 +450,123 @@ export const KeyboardShortcutsProvider: React.FC<KeyboardShortcutsProviderProps>
 
             <DialogContent sx={{ p: 3 }}>
               <Stack spacing={3}>
-                {Object.entries(groupedShortcuts).map(([category, categoryShortcuts], categoryIndex) => (
-                  <AnimatedElement key={category} animation="slideUp" delay={categoryIndex * 100}>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
-                        {category}
-                      </Typography>
-                      <Stack spacing={2}>
-                        {categoryShortcuts.map((shortcut, index) => (
-                          <AnimatedElement key={shortcut.id} animation="slideRight" delay={index * 50}>
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                p: 2,
-                                backgroundColor: alpha('#fff', 0.05),
-                                backdropFilter: 'blur(10px)',
-                                border: `1px solid ${alpha('#fff', 0.1)}`,
-                                borderRadius: 2,
-                                '&:hover': {
-                                  backgroundColor: alpha('#fff', 0.1),
-                                },
-                                transition: 'all 0.2s ease',
-                              }}
+                {Object.entries(groupedShortcuts).map(
+                  ([category, categoryShortcuts], categoryIndex) => (
+                    <AnimatedElement key={category} animation="slideUp" delay={categoryIndex * 100}>
+                      <Box>
+                        <Typography
+                          variant="h6"
+                          sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}
+                        >
+                          {category}
+                        </Typography>
+                        <Stack spacing={2}>
+                          {categoryShortcuts.map((shortcut, index) => (
+                            <AnimatedElement
+                              key={shortcut.id}
+                              animation="slideRight"
+                              delay={index * 50}
                             >
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}>
-                                {shortcut.icon && (
-                                  <Box sx={{ 
-                                    color: theme.palette.primary.main,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                  }}>
-                                    {shortcut.icon}
-                                  </Box>
-                                )}
-                                <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                  {shortcut.description}
-                                </Typography>
-                              </Box>
-                              <Box sx={{ display: 'flex', gap: 1 }}>
-                                {shortcut.keys.map((keyGroup, keyIndex) => {
-                                  // Handle sequential keys (like ['g', 'h'])
-                                  if (Array.isArray(keyGroup)) {
-                                    return (
-                                      <Box key={keyIndex} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                        {keyGroup.map((key, subIndex) => (
-                                          <React.Fragment key={subIndex}>
-                                            <Chip
-                                              label={formatKeys([key])}
-                                              size="small"
-                                              sx={{
-                                                backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                                                color: theme.palette.primary.main,
-                                                fontFamily: 'monospace',
-                                                fontWeight: 600,
-                                                minWidth: 32,
-                                                height: 24,
-                                              }}
-                                            />
-                                            {subIndex < keyGroup.length - 1 && (
-                                              <Typography variant="caption" sx={{ mx: 0.5 }}>
-                                                then
-                                              </Typography>
-                                            )}
-                                          </React.Fragment>
-                                        ))}
-                                      </Box>
-                                    );
-                                  }
-
-                                  // Handle single key or combination
-                                  return (
-                                    <Chip
-                                      key={keyIndex}
-                                      label={formatKeys(shortcut.keys)}
-                                      size="small"
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  p: 2,
+                                  backgroundColor: alpha('#fff', 0.05),
+                                  backdropFilter: 'blur(10px)',
+                                  border: `1px solid ${alpha('#fff', 0.1)}`,
+                                  borderRadius: 2,
+                                  '&:hover': {
+                                    backgroundColor: alpha('#fff', 0.1),
+                                  },
+                                  transition: 'all 0.2s ease',
+                                }}
+                              >
+                                <Box
+                                  sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1 }}
+                                >
+                                  {shortcut.icon && (
+                                    <Box
                                       sx={{
-                                        backgroundColor: alpha(theme.palette.primary.main, 0.1),
                                         color: theme.palette.primary.main,
-                                        fontFamily: 'monospace',
-                                        fontWeight: 600,
-                                        minWidth: 32,
-                                        height: 24,
+                                        display: 'flex',
+                                        alignItems: 'center',
                                       }}
-                                    />
-                                  );
-                                })}
+                                    >
+                                      {shortcut.icon}
+                                    </Box>
+                                  )}
+                                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                    {shortcut.description}
+                                  </Typography>
+                                </Box>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  {shortcut.keys.map((keyGroup, keyIndex) => {
+                                    // Handle sequential keys (like ['g', 'h'])
+                                    if (Array.isArray(keyGroup)) {
+                                      return (
+                                        <Box
+                                          key={keyIndex}
+                                          sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                                        >
+                                          {keyGroup.map((key, subIndex) => (
+                                            <React.Fragment key={subIndex}>
+                                              <Chip
+                                                label={formatKeys([key])}
+                                                size="small"
+                                                sx={{
+                                                  backgroundColor: alpha(
+                                                    theme.palette.primary.main,
+                                                    0.1,
+                                                  ),
+                                                  color: theme.palette.primary.main,
+                                                  fontFamily: 'monospace',
+                                                  fontWeight: 600,
+                                                  minWidth: 32,
+                                                  height: 24,
+                                                }}
+                                              />
+                                              {subIndex < keyGroup.length - 1 && (
+                                                <Typography variant="caption" sx={{ mx: 0.5 }}>
+                                                  then
+                                                </Typography>
+                                              )}
+                                            </React.Fragment>
+                                          ))}
+                                        </Box>
+                                      );
+                                    }
+
+                                    // Handle single key or combination
+                                    return (
+                                      <Chip
+                                        key={keyIndex}
+                                        label={formatKeys(shortcut.keys)}
+                                        size="small"
+                                        sx={{
+                                          backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                                          color: theme.palette.primary.main,
+                                          fontFamily: 'monospace',
+                                          fontWeight: 600,
+                                          minWidth: 32,
+                                          height: 24,
+                                        }}
+                                      />
+                                    );
+                                  })}
+                                </Box>
                               </Box>
-                            </Box>
-                          </AnimatedElement>
-                        ))}
-                      </Stack>
-                    </Box>
-                    {categoryIndex < Object.keys(groupedShortcuts).length - 1 && (
-                      <Divider sx={{ borderColor: alpha('#fff', 0.1), mt: 2 }} />
-                    )}
-                  </AnimatedElement>
-                ))}
+                            </AnimatedElement>
+                          ))}
+                        </Stack>
+                      </Box>
+                      {categoryIndex < Object.keys(groupedShortcuts).length - 1 && (
+                        <Divider sx={{ borderColor: alpha('#fff', 0.1), mt: 2 }} />
+                      )}
+                    </AnimatedElement>
+                  ),
+                )}
               </Stack>
 
               {/* Tip */}
@@ -542,8 +582,10 @@ export const KeyboardShortcutsProvider: React.FC<KeyboardShortcutsProviderProps>
                   }}
                 >
                   <Typography variant="body2" color="text.secondary">
-                    <strong>Tip:</strong> Press <Chip label="?" size="small" sx={{ mx: 0.5, fontFamily: 'monospace' }} /> 
-                    anytime to open this help dialog. Shortcuts are disabled when typing in input fields.
+                    <strong>Tip:</strong> Press{' '}
+                    <Chip label="?" size="small" sx={{ mx: 0.5, fontFamily: 'monospace' }} />
+                    anytime to open this help dialog. Shortcuts are disabled when typing in input
+                    fields.
                   </Typography>
                 </Box>
               </AnimatedElement>

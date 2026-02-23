@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/components/communications/TemplateList.tsx
 
-import React, { useState } from "react";
-import { Box, Chip, Typography, Tooltip } from "@mui/material";
+import React, { useState } from 'react';
+import { Box, Chip, Typography, Tooltip } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -11,24 +11,18 @@ import {
   Message as MessageIcon,
   SearchOff as SearchOffIcon,
   FilterList as FilterIcon,
-} from "@mui/icons-material";
-import { useCommunications } from "../../hooks/useCommunications";
-import type {
-  CommunicationTemplate,
-  CommunicationFilters,
-} from "../../types/communications.types";
+} from '@mui/icons-material';
+import { useCommunications } from '../../hooks/useCommunications';
+import type { CommunicationTemplate, CommunicationFilters } from '../../types/communications.types';
 import {
   ModernEmptyState,
   ModernLoadingStates,
   ModernTable,
   ModernDialog,
   createDeleteActions,
-} from "../common";
-import type {
-  ModernTableColumn,
-  ModernTableAction,
-} from "../common/ModernTable";
-import { tokens } from "../../design-system";
+} from '../common';
+import type { ModernTableColumn, ModernTableAction } from '../common/ModernTable';
+import { tokens } from '../../design-system';
 
 interface TemplateListProps {
   searchQuery?: string;
@@ -37,18 +31,16 @@ interface TemplateListProps {
 }
 
 export const TemplateList: React.FC<TemplateListProps> = ({
-  searchQuery = "",
+  searchQuery = '',
   onEditClick,
   onPreviewClick,
 }) => {
   const [filters, setFilters] = useState<CommunicationFilters>({});
-  const [selectedTemplate, setSelectedTemplate] =
-    useState<CommunicationTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<CommunicationTemplate | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [templateToDelete, setTemplateToDelete] =
-    useState<CommunicationTemplate | null>(null);
-  const [sortBy, setSortBy] = useState<string>("");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [templateToDelete, setTemplateToDelete] = useState<CommunicationTemplate | null>(null);
+  const [sortBy, setSortBy] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   const { useTemplates, useDeleteTemplate } = useCommunications();
 
@@ -111,33 +103,33 @@ export const TemplateList: React.FC<TemplateListProps> = ({
   };
 
   const getChannelIcon = (channel: string) => {
-    return channel === "EMAIL" ? <EmailIcon /> : <SmsIcon />;
+    return channel === 'EMAIL' ? <EmailIcon /> : <SmsIcon />;
   };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case "SYSTEM":
-        return "primary";
-      case "AUTO":
-        return "secondary";
-      case "MANUAL":
-        return "default";
+      case 'SYSTEM':
+        return 'primary';
+      case 'AUTO':
+        return 'secondary';
+      case 'MANUAL':
+        return 'default';
       default:
-        return "default";
+        return 'default';
     }
   };
 
   const handleSort = (column: string) => {
-    const isAsc = sortBy === column && sortOrder === "asc";
-    setSortOrder(isAsc ? "desc" : "asc");
+    const isAsc = sortBy === column && sortOrder === 'asc';
+    setSortOrder(isAsc ? 'desc' : 'asc');
     setSortBy(column);
   };
 
   // Define table columns for ModernTable
   const columns: ModernTableColumn[] = [
     {
-      key: "name",
-      label: "Template Name",
+      key: 'name',
+      label: 'Template Name',
       sortable: true,
       render: (_, row) => {
         const template = row as unknown as CommunicationTemplate;
@@ -165,7 +157,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
                   variant="filled"
                   sx={{
                     height: 20,
-                    fontSize: "0.75rem",
+                    fontSize: '0.75rem',
                     fontWeight: 500,
                   }}
                 />
@@ -176,14 +168,14 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       },
     },
     {
-      key: "channel",
-      label: "Channel",
+      key: 'channel',
+      label: 'Channel',
       render: (value, _) => (
         <Chip
           label={String(value)}
           size="small"
           variant="outlined"
-          color={value === "EMAIL" ? "primary" : "secondary"}
+          color={value === 'EMAIL' ? 'primary' : 'secondary'}
           sx={{
             fontWeight: 500,
             borderWidth: 1.5,
@@ -192,19 +184,14 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       ),
     },
     {
-      key: "category",
-      label: "Category",
-      hideBelow: "md",
+      key: 'category',
+      label: 'Category',
+      hideBelow: 'md',
       render: (value, _) => (
         <Chip
           label={String(value)}
           size="small"
-          color={
-            getCategoryColor(String(value)) as
-              | "primary"
-              | "secondary"
-              | "default"
-          }
+          color={getCategoryColor(String(value)) as 'primary' | 'secondary' | 'default'}
           variant="outlined"
           sx={{
             fontWeight: 500,
@@ -214,9 +201,9 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       ),
     },
     {
-      key: "subject_template",
-      label: "Subject/Content",
-      hideBelow: "lg",
+      key: 'subject_template',
+      label: 'Subject/Content',
+      hideBelow: 'lg',
       render: (value, _) => (
         <Box>
           {value ? (
@@ -226,9 +213,9 @@ export const TemplateList: React.FC<TemplateListProps> = ({
                 color="text.primary"
                 sx={{
                   maxWidth: 220,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                   fontWeight: 500,
                 }}
               >
@@ -236,11 +223,7 @@ export const TemplateList: React.FC<TemplateListProps> = ({
               </Typography>
             </Tooltip>
           ) : (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              fontStyle="italic"
-            >
+            <Typography variant="body2" color="text.secondary" fontStyle="italic">
               No subject
             </Typography>
           )}
@@ -248,10 +231,10 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       ),
     },
     {
-      key: "updated_at",
-      label: "Last Updated",
+      key: 'updated_at',
+      label: 'Last Updated',
       sortable: true,
-      hideBelow: "lg",
+      hideBelow: 'lg',
       render: (value, _) => (
         <Box>
           <Typography variant="body2" color="text.secondary" fontWeight="500">
@@ -268,23 +251,22 @@ export const TemplateList: React.FC<TemplateListProps> = ({
   // Define table actions for ModernTable
   const actions: ModernTableAction[] = [
     {
-      label: "Preview Template",
+      label: 'Preview Template',
       icon: <PreviewIcon fontSize="small" />,
       onClick: (row) => onPreviewClick(row as unknown as CommunicationTemplate),
-      color: "secondary",
+      color: 'secondary',
     },
     {
-      label: "Edit Template",
+      label: 'Edit Template',
       icon: <EditIcon fontSize="small" />,
       onClick: (row) => onEditClick(row as unknown as CommunicationTemplate),
-      color: "primary",
+      color: 'primary',
     },
     {
-      label: "Delete Template",
+      label: 'Delete Template',
       icon: <DeleteIcon fontSize="small" />,
-      onClick: (row) =>
-        handleDeleteClick(row as unknown as CommunicationTemplate),
-      color: "error",
+      onClick: (row) => handleDeleteClick(row as unknown as CommunicationTemplate),
+      color: 'error',
       show: (row) => {
         const template = row as unknown as CommunicationTemplate;
         return template && !template.is_system;
@@ -302,8 +284,8 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       title="No Communication Templates Yet"
       description="Communication templates help you send consistent, professional messages to your clients. Use the Create Template button above to get started with automated communications."
       tip={{
-        text: "You can create templates for email communications, SMS messages, and automated workflows. System templates for admin invitations are created automatically.",
-        type: "info",
+        text: 'You can create templates for email communications, SMS messages, and automated workflows. System templates for admin invitations are created automatically.',
+        type: 'info',
       }}
       size="large"
       color="primary"
@@ -316,10 +298,10 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       title="No Templates Match Your Filters"
       description="Try adjusting your search criteria or clearing filters to see more templates."
       primaryAction={{
-        label: "Clear All Filters",
+        label: 'Clear All Filters',
         onClick: handleClearFilters,
         icon: <FilterIcon />,
-        color: "secondary",
+        color: 'secondary',
       }}
       size="medium"
       color="secondary"
@@ -327,18 +309,14 @@ export const TemplateList: React.FC<TemplateListProps> = ({
   );
 
   if (isLoading) {
-    return (
-      <ModernLoadingStates.ModernTableSkeleton rows={5} columns={6} hasHeader />
-    );
+    return <ModernLoadingStates.ModernTableSkeleton rows={5} columns={6} hasHeader />;
   }
 
   // Show appropriate empty state
   if (!templates || templates.length === 0) {
     return (
       <Box>
-        {hasActiveFilters || searchQuery
-          ? renderNoResultsState()
-          : renderNoTemplatesState()}
+        {hasActiveFilters || searchQuery ? renderNoResultsState() : renderNoTemplatesState()}
       </Box>
     );
   }
@@ -349,34 +327,26 @@ export const TemplateList: React.FC<TemplateListProps> = ({
       {(searchQuery || hasActiveFilters) && (
         <Box sx={{ mb: 3 }}>
           <Typography variant="body2" color="text.secondary">
-            {searchQuery ? `Search results for "${searchQuery}" - ` : ""}
+            {searchQuery ? `Search results for "${searchQuery}" - ` : ''}
             {filteredTemplatesCount} template
-            {filteredTemplatesCount !== 1 ? "s" : ""} found
-            {hasActiveFilters && " with current filters"}
+            {filteredTemplatesCount !== 1 ? 's' : ''} found
+            {hasActiveFilters && ' with current filters'}
           </Typography>
         </Box>
       )}
 
       {/* Modern Table with Embedded Filters */}
       <ModernTable
-        columns={
-          columns as unknown as ModernTableColumn<Record<string, unknown>>[]
-        }
+        columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
         data={(templates || []) as unknown as Record<string, unknown>[]}
-        actions={
-          actions as unknown as ModernTableAction<Record<string, unknown>>[]
-        }
-        onRowClick={(row) =>
-          onEditClick(row as unknown as CommunicationTemplate)
-        }
+        actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
+        onRowClick={(row) => onEditClick(row as unknown as CommunicationTemplate)}
         sortBy={sortBy}
         sortOrder={sortOrder}
         onSort={handleSort}
         loading={isLoading}
         emptyState={
-          hasActiveFilters || searchQuery
-            ? renderNoResultsState()
-            : renderNoTemplatesState()
+          hasActiveFilters || searchQuery ? renderNoResultsState() : renderNoTemplatesState()
         }
       />
 
@@ -387,16 +357,11 @@ export const TemplateList: React.FC<TemplateListProps> = ({
         title="Delete Communication Template"
         maxWidth="sm"
         fullWidth
-        actions={createDeleteActions(
-          handleDeleteCancel,
-          handleDeleteConfirm,
-          isDeleting,
-        )}
+        actions={createDeleteActions(handleDeleteCancel, handleDeleteConfirm, isDeleting)}
       >
-        <Typography sx={{ fontSize: "1rem", lineHeight: 1.6 }}>
-          Are you sure you want to delete{" "}
-          <strong>"{templateToDelete?.name}"</strong>? This action cannot be
-          undone.
+        <Typography sx={{ fontSize: '1rem', lineHeight: 1.6 }}>
+          Are you sure you want to delete <strong>"{templateToDelete?.name}"</strong>? This action
+          cannot be undone.
         </Typography>
       </ModernDialog>
     </Box>

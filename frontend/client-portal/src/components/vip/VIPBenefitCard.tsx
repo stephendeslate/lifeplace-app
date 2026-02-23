@@ -16,7 +16,10 @@ import {
 import type { VIPBenefit, VIPBenefitType } from '../../types/vip.types';
 
 // Icon mapping for benefit types
-const BENEFIT_ICONS: Record<VIPBenefitType, React.ComponentType<{ fontSize?: 'small' | 'medium' | 'large' }>> = {
+const BENEFIT_ICONS: Record<
+  VIPBenefitType,
+  React.ComponentType<{ fontSize?: 'small' | 'medium' | 'large' }>
+> = {
   PERCENTAGE_DISCOUNT: PercentIcon,
   FIXED_DISCOUNT: MoneyIcon,
   FREE_HOURS: HoursIcon,
@@ -48,10 +51,7 @@ interface VIPBenefitCardProps {
   compact?: boolean;
 }
 
-export const VIPBenefitCard: React.FC<VIPBenefitCardProps> = ({
-  benefit,
-  compact = false,
-}) => {
+export const VIPBenefitCard: React.FC<VIPBenefitCardProps> = ({ benefit, compact = false }) => {
   const Icon = BENEFIT_ICONS[benefit.benefit_type] || DefaultIcon;
   const color = BENEFIT_COLORS[benefit.benefit_type] || '#6B7280';
   const isAutomatic = benefit.application_mode === 'AUTOMATIC';
@@ -101,9 +101,7 @@ export const VIPBenefitCard: React.FC<VIPBenefitCardProps> = ({
             height: 22,
             fontSize: '0.7rem',
             fontWeight: 500,
-            backgroundColor: isAutomatic
-              ? alpha('#10B981', 0.1)
-              : alpha('#3B82F6', 0.1),
+            backgroundColor: isAutomatic ? alpha('#10B981', 0.1) : alpha('#3B82F6', 0.1),
             color: isAutomatic ? '#10B981' : '#3B82F6',
             flexShrink: 0,
           }}
@@ -161,9 +159,7 @@ export const VIPBenefitCard: React.FC<VIPBenefitCardProps> = ({
                   height: 22,
                   fontSize: '0.7rem',
                   fontWeight: 500,
-                  backgroundColor: isAutomatic
-                    ? alpha('#10B981', 0.1)
-                    : alpha('#3B82F6', 0.1),
+                  backgroundColor: isAutomatic ? alpha('#10B981', 0.1) : alpha('#3B82F6', 0.1),
                   color: isAutomatic ? '#10B981' : '#3B82F6',
                   flexShrink: 0,
                 }}

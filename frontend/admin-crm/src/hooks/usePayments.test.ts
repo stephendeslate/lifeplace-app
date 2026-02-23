@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import {
   usePaymentGateways,
   useGatewayHealth,
@@ -16,13 +16,13 @@ import {
   useRefunds,
   useSendInvoice,
   usePaymentSettings,
-} from "./usePayments";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+} from './usePayments';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-describe("Payment Gateways", () => {
-  it("fetches payment gateways", async () => {
+describe('Payment Gateways', () => {
+  it('fetches payment gateways', async () => {
     const { result } = renderHook(() => usePaymentGateways(), {
       wrapper: createTestWrapper(),
     });
@@ -38,7 +38,7 @@ describe("Payment Gateways", () => {
     expect(result.current.data!.length).toBeGreaterThan(0);
   });
 
-  it("fetches gateway health", async () => {
+  it('fetches gateway health', async () => {
     const { result } = renderHook(() => useGatewayHealth(), {
       wrapper: createTestWrapper(),
     });
@@ -53,14 +53,14 @@ describe("Payment Gateways", () => {
     expect(result.current.data).toBeDefined();
   });
 
-  it("creates a payment gateway", async () => {
+  it('creates a payment gateway', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useCreatePaymentGateway(), { wrapper });
 
     act(() => {
       result.current.mutate({
-        name: "New Gateway",
-        code: "new_gateway",
+        name: 'New Gateway',
+        code: 'new_gateway',
         config: {},
       } as never);
     });
@@ -74,14 +74,14 @@ describe("Payment Gateways", () => {
     );
   });
 
-  it("updates a payment gateway", async () => {
+  it('updates a payment gateway', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useUpdatePaymentGateway(), { wrapper });
 
     act(() => {
       result.current.mutate({
         id: 1,
-        data: { name: "Updated Gateway" },
+        data: { name: 'Updated Gateway' },
       } as never);
     });
 
@@ -94,7 +94,7 @@ describe("Payment Gateways", () => {
     );
   });
 
-  it("deletes a payment gateway", async () => {
+  it('deletes a payment gateway', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useDeletePaymentGateway(), { wrapper });
 
@@ -111,13 +111,10 @@ describe("Payment Gateways", () => {
     );
   });
 
-  it("handles create error", async () => {
+  it('handles create error', async () => {
     server.use(
-      http.post("http://localhost:8000/api/payments/gateways/", () => {
-        return HttpResponse.json(
-          { detail: "Validation error" },
-          { status: 400 },
-        );
+      http.post('http://localhost:8000/api/payments/gateways/', () => {
+        return HttpResponse.json({ detail: 'Validation error' }, { status: 400 });
       }),
     );
 
@@ -125,7 +122,7 @@ describe("Payment Gateways", () => {
     const { result } = renderHook(() => useCreatePaymentGateway(), { wrapper });
 
     act(() => {
-      result.current.mutate({ name: "Bad" } as never);
+      result.current.mutate({ name: 'Bad' } as never);
     });
 
     await waitFor(
@@ -137,8 +134,8 @@ describe("Payment Gateways", () => {
   });
 });
 
-describe("Tax Rates", () => {
-  it("fetches tax rates", async () => {
+describe('Tax Rates', () => {
+  it('fetches tax rates', async () => {
     const { result } = renderHook(() => useTaxRates(), {
       wrapper: createTestWrapper(),
     });
@@ -154,15 +151,15 @@ describe("Tax Rates", () => {
     expect(result.current.data!.length).toBeGreaterThan(0);
   });
 
-  it("creates a tax rate", async () => {
+  it('creates a tax rate', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useCreateTaxRate(), { wrapper });
 
     act(() => {
       result.current.mutate({
-        name: "New Tax",
-        rate: "0.10",
-        region: "PH",
+        name: 'New Tax',
+        rate: '0.10',
+        region: 'PH',
       } as never);
     });
 
@@ -175,14 +172,14 @@ describe("Tax Rates", () => {
     );
   });
 
-  it("updates a tax rate", async () => {
+  it('updates a tax rate', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useUpdateTaxRate(), { wrapper });
 
     act(() => {
       result.current.mutate({
         id: 1,
-        data: { name: "Updated Tax" },
+        data: { name: 'Updated Tax' },
       } as never);
     });
 
@@ -195,7 +192,7 @@ describe("Tax Rates", () => {
     );
   });
 
-  it("deletes a tax rate", async () => {
+  it('deletes a tax rate', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useDeleteTaxRate(), { wrapper });
 
@@ -213,8 +210,8 @@ describe("Tax Rates", () => {
   });
 });
 
-describe("Payments", () => {
-  it("fetches payments", async () => {
+describe('Payments', () => {
+  it('fetches payments', async () => {
     const { result } = renderHook(() => usePayments(), {
       wrapper: createTestWrapper(),
     });
@@ -230,10 +227,10 @@ describe("Payments", () => {
     expect(Array.isArray(result.current.payments)).toBe(true);
   });
 
-  it("handles API error", async () => {
+  it('handles API error', async () => {
     server.use(
-      http.get("http://localhost:8000/api/payments/payments/", () => {
-        return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+      http.get('http://localhost:8000/api/payments/payments/', () => {
+        return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
       }),
     );
 
@@ -250,8 +247,8 @@ describe("Payments", () => {
   });
 });
 
-describe("Invoices", () => {
-  it("fetches invoices", async () => {
+describe('Invoices', () => {
+  it('fetches invoices', async () => {
     const { result } = renderHook(() => useInvoices(), {
       wrapper: createTestWrapper(),
     });
@@ -267,7 +264,7 @@ describe("Invoices", () => {
     expect(Array.isArray(result.current.invoices)).toBe(true);
   });
 
-  it("sends an invoice", async () => {
+  it('sends an invoice', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useSendInvoice(), { wrapper });
 
@@ -285,8 +282,8 @@ describe("Invoices", () => {
   });
 });
 
-describe("Payment Plans", () => {
-  it("fetches payment plans", async () => {
+describe('Payment Plans', () => {
+  it('fetches payment plans', async () => {
     const { result } = renderHook(() => usePaymentPlans(), {
       wrapper: createTestWrapper(),
     });
@@ -303,8 +300,8 @@ describe("Payment Plans", () => {
   });
 });
 
-describe("Refunds", () => {
-  it("fetches refunds", async () => {
+describe('Refunds', () => {
+  it('fetches refunds', async () => {
     const { result } = renderHook(() => useRefunds(), {
       wrapper: createTestWrapper(),
     });
@@ -321,8 +318,8 @@ describe("Refunds", () => {
   });
 });
 
-describe("Payment Settings", () => {
-  it("fetches payment settings", async () => {
+describe('Payment Settings', () => {
+  it('fetches payment settings', async () => {
     const { result } = renderHook(() => usePaymentSettings(), {
       wrapper: createTestWrapper(),
     });

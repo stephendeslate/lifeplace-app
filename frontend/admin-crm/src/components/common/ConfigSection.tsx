@@ -3,18 +3,8 @@
 // Replaces 50+ repeated section patterns
 
 import React, { useState } from 'react';
-import {
-  Box,
-  Typography,
-  Collapse,
-  IconButton,
-  type SxProps,
-  type Theme,
-} from '@mui/material';
-import {
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon,
-} from '@mui/icons-material';
+import { Box, Typography, Collapse, IconButton, type SxProps, type Theme } from '@mui/material';
+import { ExpandMore as ExpandMoreIcon, ExpandLess as ExpandLessIcon } from '@mui/icons-material';
 import { tokens } from '../../design-system';
 
 interface ConfigSectionProps {
@@ -78,13 +68,15 @@ export const ConfigSection: React.FC<ConfigSectionProps> = ({
 
   return (
     <Box
-      sx={{
-        borderRadius: tokens.spacing.radius.lg,
-        p: 3,
-        border: variantStyles.border,
-        bgcolor: variantStyles.bgcolor,
-        ...sx,
-      } as SxProps<Theme>}
+      sx={
+        {
+          borderRadius: tokens.spacing.radius.lg,
+          p: 3,
+          border: variantStyles.border,
+          bgcolor: variantStyles.bgcolor,
+          ...sx,
+        } as SxProps<Theme>
+      }
     >
       {/* Header */}
       <Box

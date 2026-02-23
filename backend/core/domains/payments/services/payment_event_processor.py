@@ -1,9 +1,9 @@
 # backend/core/domains/payments/services/payment_event_processor.py
 
 import logging
-from typing import Dict, List, Any, Optional
+from typing import Any
+
 from django.utils import timezone
-from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -34,8 +34,8 @@ class PaymentEventProcessor:
         Returns:
             bool: True if processing successful
         """
-        from .payment_event_store_service import PaymentEventStoreService
         from ..models import PaymentEventStore
+        from .payment_event_store_service import PaymentEventStoreService
 
         try:
             # Get the stored event
@@ -58,30 +58,23 @@ class PaymentEventProcessor:
             else:
                 # Add error for retry
                 PaymentEventStoreService.add_event_processing_error(
-                    event_id,
-                    "Event processing failed",
-                    {"processor": "PaymentEventProcessor"}
+                    event_id, "Event processing failed", {"processor": "PaymentEventProcessor"}
                 )
                 logger.warning(f"Event processing failed for {event_id}")
 
             return success
 
         except Exception as e:
-            logger.error(
-                f"Error processing payment event {event_id}: {e}",
-                exc_info=True
-            )
+            logger.error(f"Error processing payment event {event_id}: {e}", exc_info=True)
 
             # Log the error for retry
             PaymentEventStoreService.add_event_processing_error(
-                event_id,
-                str(e),
-                {"exception_type": e.__class__.__name__, "processor": "PaymentEventProcessor"}
+                event_id, str(e), {"exception_type": e.__class__.__name__, "processor": "PaymentEventProcessor"}
             )
             return False
 
     @classmethod
-    def process_payment_completed(cls, event_data: Dict[str, Any]) -> bool:
+    def process_payment_completed(cls, event_data: dict[str, Any]) -> bool:
         """
         Process payment completion event.
 
@@ -92,12 +85,13 @@ class PaymentEventProcessor:
         - Analytics updates
         """
         try:
-            payment_id = event_data.get('payment_id')
+            payment_id = event_data.get("payment_id")
             if not payment_id:
                 logger.error("Payment ID missing from completion event")
                 return False
 
             from ..models import Payment
+
             payment = Payment.objects.get(id=payment_id)
 
             # Generate receipt if not already generated
@@ -120,7 +114,7 @@ class PaymentEventProcessor:
             cls._trigger_workflow_advancement(payment)
 
             # Update analytics
-            cls._update_payment_analytics(payment, 'COMPLETED')
+            cls._update_payment_analytics(payment, "COMPLETED")
 
             return True
 
@@ -129,7 +123,7 @@ class PaymentEventProcessor:
             return False
 
     @classmethod
-    def process_payment_failed(cls, event_data: Dict[str, Any]) -> bool:
+    def process_payment_failed(cls, event_data: dict[str, Any]) -> bool:
         """
         Process payment failure event.
 
@@ -139,19 +133,20 @@ class PaymentEventProcessor:
         - Retry scheduling
         """
         try:
-            payment_id = event_data.get('payment_id')
+            payment_id = event_data.get("payment_id")
             if not payment_id:
                 logger.error("Payment ID missing from failure event")
                 return False
 
             from ..models import Payment
+
             payment = Payment.objects.get(id=payment_id)
 
             # Send failure notification
             cls._send_failure_notification(payment)
 
             # Update analytics
-            cls._update_payment_analytics(payment, 'FAILED')
+            cls._update_payment_analytics(payment, "FAILED")
 
             # Schedule retry if applicable
             cls._schedule_payment_retry(payment)
@@ -163,24 +158,25 @@ class PaymentEventProcessor:
             return False
 
     @classmethod
-    def process_payment_cancelled(cls, event_data: Dict[str, Any]) -> bool:
+    def process_payment_cancelled(cls, event_data: dict[str, Any]) -> bool:
         """
         Process payment cancellation event.
         """
         try:
-            payment_id = event_data.get('payment_id')
+            payment_id = event_data.get("payment_id")
             if not payment_id:
                 logger.error("Payment ID missing from cancellation event")
                 return False
 
             from ..models import Payment
+
             payment = Payment.objects.get(id=payment_id)
 
             # Send cancellation notification
             cls._send_cancellation_notification(payment)
 
             # Update analytics
-            cls._update_payment_analytics(payment, 'CANCELLED')
+            cls._update_payment_analytics(payment, "CANCELLED")
 
             return True
 
@@ -189,17 +185,18 @@ class PaymentEventProcessor:
             return False
 
     @classmethod
-    def process_payment_refunded(cls, event_data: Dict[str, Any]) -> bool:
+    def process_payment_refunded(cls, event_data: dict[str, Any]) -> bool:
         """
         Process payment refund event.
         """
         try:
-            payment_id = event_data.get('payment_id')
+            payment_id = event_data.get("payment_id")
             if not payment_id:
                 logger.error("Payment ID missing from refund event")
                 return False
 
             from ..models import Payment
+
             payment = Payment.objects.get(id=payment_id)
 
             # Update event payment status
@@ -209,7 +206,7 @@ class PaymentEventProcessor:
             cls._send_refund_notification(payment)
 
             # Update analytics
-            cls._update_payment_analytics(payment, 'REFUNDED')
+            cls._update_payment_analytics(payment, "REFUNDED")
 
             return True
 
@@ -250,15 +247,15 @@ class PaymentEventProcessor:
         event_type = stored_event.event_type
         event_data = stored_event.event_data
 
-        if event_type == 'PaymentCompletedEvent':
+        if event_type == "PaymentCompletedEvent":
             return cls.process_payment_completed(event_data)
-        elif event_type == 'PaymentFailedEvent':
+        elif event_type == "PaymentFailedEvent":
             return cls.process_payment_failed(event_data)
-        elif event_type == 'PaymentCancelledEvent':
+        elif event_type == "PaymentCancelledEvent":
             return cls.process_payment_cancelled(event_data)
-        elif event_type == 'PaymentRefundedEvent':
+        elif event_type == "PaymentRefundedEvent":
             return cls.process_payment_refunded(event_data)
-        elif event_type == 'PaymentStateChangedEvent':
+        elif event_type == "PaymentStateChangedEvent":
             # Generic state change - minimal processing
             return cls._process_generic_state_change(event_data)
         else:
@@ -266,14 +263,15 @@ class PaymentEventProcessor:
             return True  # Don't retry unknown event types
 
     @classmethod
-    def _process_generic_state_change(cls, event_data: Dict[str, Any]) -> bool:
+    def _process_generic_state_change(cls, event_data: dict[str, Any]) -> bool:
         """Process generic payment state changes"""
         try:
-            payment_id = event_data.get('payment_id')
+            payment_id = event_data.get("payment_id")
             if not payment_id:
                 return False
 
             from ..models import Payment
+
             payment = Payment.objects.get(id=payment_id)
 
             # Update event payment status
@@ -281,7 +279,7 @@ class PaymentEventProcessor:
 
             # Add to event timeline (already handled by event handlers)
             # Update analytics for any state change
-            cls._update_payment_analytics(payment, event_data.get('to_state', 'UNKNOWN'))
+            cls._update_payment_analytics(payment, event_data.get("to_state", "UNKNOWN"))
 
             return True
 
@@ -293,35 +291,35 @@ class PaymentEventProcessor:
     def _trigger_workflow_advancement(cls, payment):
         """Trigger workflow advancement for completed payments"""
         try:
-            if hasattr(payment.event, 'workflow_template') and payment.event.workflow_template:
-                from core.domains.workflows.models import WorkflowTrigger
+            if hasattr(payment.event, "workflow_template") and payment.event.workflow_template:
                 from core.domains.workflows.engine import WorkflowEngine
+                from core.domains.workflows.models import WorkflowTrigger
 
                 # Create workflow trigger record
                 WorkflowTrigger.objects.create(
                     event=payment.event,
                     stage=payment.event.current_stage,
-                    trigger_type='PAYMENT_RECEIVED',
+                    trigger_type="PAYMENT_RECEIVED",
                     details=f"Payment of {payment.format_amount_with_currency()} received",
                     result_data={
-                        'payment_id': payment.id,
-                        'payment_number': payment.payment_number,
-                        'amount': str(payment.amount),
-                        'currency': payment.currency
-                    }
+                        "payment_id": payment.id,
+                        "payment_number": payment.payment_number,
+                        "amount": str(payment.amount),
+                        "currency": payment.currency,
+                    },
                 )
 
                 # Use WorkflowEngine to properly progress the workflow
                 # This ensures proper stage ordering and validation
                 WorkflowEngine.progress_workflow(
                     event=payment.event,
-                    trigger_type='PAYMENT_RECEIVED',
+                    trigger_type="PAYMENT_RECEIVED",
                     data={
-                        'payment_id': payment.id,
-                        'payment_number': payment.payment_number,
-                        'amount': str(payment.amount),
-                        'currency': payment.currency
-                    }
+                        "payment_id": payment.id,
+                        "payment_number": payment.payment_number,
+                        "amount": str(payment.amount),
+                        "currency": payment.currency,
+                    },
                 )
 
                 logger.debug(f"Triggered workflow advancement for payment {payment.payment_number}")
@@ -338,11 +336,11 @@ class PaymentEventProcessor:
 
             PaymentAnalyticsService.record_payment_event(
                 payment_id=payment.id,
-                event_type=f'PAYMENT_{status}',
+                event_type=f"PAYMENT_{status}",
                 amount=payment.amount,
                 currency=payment.currency,
                 client_id=payment.event.client_id,
-                event_id=payment.event_id
+                event_id=payment.event_id,
             )
 
         except ImportError:
@@ -359,11 +357,11 @@ class PaymentEventProcessor:
 
             PaymentNotification.objects.create(
                 payment=payment,
-                notification_type='PAYMENT_FAILED',
+                notification_type="PAYMENT_FAILED",
                 sent_at=timezone.now(),
                 sent_to=payment.event.client.email,
                 is_successful=True,
-                reference=f"payment_{payment.id}_failed"
+                reference=f"payment_{payment.id}_failed",
             )
 
         except Exception as e:
@@ -377,11 +375,11 @@ class PaymentEventProcessor:
 
             PaymentNotification.objects.create(
                 payment=payment,
-                notification_type='PAYMENT_CANCELLED',
+                notification_type="PAYMENT_CANCELLED",
                 sent_at=timezone.now(),
                 sent_to=payment.event.client.email,
                 is_successful=True,
-                reference=f"payment_{payment.id}_cancelled"
+                reference=f"payment_{payment.id}_cancelled",
             )
 
         except Exception as e:
@@ -395,11 +393,11 @@ class PaymentEventProcessor:
 
             PaymentNotification.objects.create(
                 payment=payment,
-                notification_type='PAYMENT_REFUNDED',
+                notification_type="PAYMENT_REFUNDED",
                 sent_at=timezone.now(),
                 sent_to=payment.event.client.email,
                 is_successful=True,
-                reference=f"payment_{payment.id}_refunded"
+                reference=f"payment_{payment.id}_refunded",
             )
 
         except Exception as e:
@@ -411,9 +409,9 @@ class PaymentEventProcessor:
         try:
             from ..models import PaymentSettings
 
-            settings = PaymentSettings.get_default_settings()
+            PaymentSettings.get_default_settings()
 
-            if payment.can_transition_to('PENDING'):
+            if payment.can_transition_to("PENDING"):
                 # Schedule retry based on settings
                 logger.info(f"Payment {payment.payment_number} eligible for retry")
                 # Implementation would depend on Celery task scheduling
@@ -465,4 +463,5 @@ class PaymentEventProcessorCeleryTasks:
         This should be scheduled as a periodic task.
         """
         from .payment_event_store_service import PaymentEventStoreService
+
         return PaymentEventStoreService.cleanup_old_events(retention_days)

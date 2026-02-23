@@ -57,9 +57,10 @@ function computeMilestones(event: EventDetail): Milestone[] {
   let contractStatus: MilestoneStatus = 'na';
   if (hasContracts) {
     // Check if all contracts are signed
-    const allContractsSigned = contracts.length > 0
-      ? contracts.every(c => c.status === 'SIGNED')
-      : event.contract_status === 'SIGNED';
+    const allContractsSigned =
+      contracts.length > 0
+        ? contracts.every((c) => c.status === 'SIGNED')
+        : event.contract_status === 'SIGNED';
     // Or use pending_signature_required as the definitive check
     const contractSigned = allContractsSigned || event.pending_signature_required === false;
 
@@ -86,10 +87,7 @@ function computeMilestones(event: EventDetail): Milestone[] {
   } else if (event.payment_status === 'PARTIAL') {
     // Partially paid = current/in progress
     paymentStatus = 'current';
-  } else if (
-    (contractStatus === 'completed' || contractStatus === 'na') &&
-    bookingComplete
-  ) {
+  } else if ((contractStatus === 'completed' || contractStatus === 'na') && bookingComplete) {
     // If contract is done (or N/A) and payment not started, it's the current step
     paymentStatus = 'current';
   }
@@ -125,10 +123,7 @@ function computeMilestones(event: EventDetail): Milestone[] {
 // COMPONENT
 // =============================================================================
 
-export const EventMilestones: React.FC<EventMilestonesProps> = ({
-  event,
-  compact = false,
-}) => {
+export const EventMilestones: React.FC<EventMilestonesProps> = ({ event, compact = false }) => {
   const theme = useTheme();
   const milestones = useMemo(() => computeMilestones(event), [event]);
 
@@ -140,7 +135,9 @@ export const EventMilestones: React.FC<EventMilestonesProps> = ({
   const getIconForStatus = (status: MilestoneStatus) => {
     switch (status) {
       case 'completed':
-        return <CompletedIcon sx={{ color: theme.palette.success.main, fontSize: compact ? 16 : 22 }} />;
+        return (
+          <CompletedIcon sx={{ color: theme.palette.success.main, fontSize: compact ? 16 : 22 }} />
+        );
       case 'current':
         return (
           <Box

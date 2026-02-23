@@ -51,14 +51,12 @@ interface EventInvoicesProps {
   event: Event;
 }
 
-
-
 const getInvoiceStatusStyles = (status: InvoiceStatus, dueDate?: string) => {
   // Check if overdue first
   if (status === 'ISSUED' && dueDate && isPast(new Date(dueDate))) {
     return {
       backgroundColor: tokens.color.eventStatus.overdue.bg,
-      color: tokens.color.eventStatus.overdue.text
+      color: tokens.color.eventStatus.overdue.text,
     };
   }
 
@@ -66,28 +64,28 @@ const getInvoiceStatusStyles = (status: InvoiceStatus, dueDate?: string) => {
     case 'DRAFT':
       return {
         backgroundColor: tokens.color.eventStatus.draft.bg,
-        color: tokens.color.eventStatus.draft.text
+        color: tokens.color.eventStatus.draft.text,
       };
     case 'ISSUED':
       return {
         backgroundColor: tokens.color.eventStatus.sent.bg,
-        color: tokens.color.eventStatus.sent.text
+        color: tokens.color.eventStatus.sent.text,
       };
     case 'PAID':
       return {
         backgroundColor: tokens.color.eventStatus.paid.bg,
-        color: tokens.color.eventStatus.paid.text
+        color: tokens.color.eventStatus.paid.text,
       };
     case 'VOID':
     case 'CANCELLED':
       return {
         backgroundColor: tokens.color.eventStatus.cancelled.bg,
-        color: tokens.color.eventStatus.cancelled.text
+        color: tokens.color.eventStatus.cancelled.text,
       };
     default:
       return {
         backgroundColor: tokens.color.eventStatus.draft.bg,
-        color: tokens.color.eventStatus.draft.text
+        color: tokens.color.eventStatus.draft.text,
       };
   }
 };
@@ -107,13 +105,8 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const { settings: currencySettings } = useCurrencySettings();
 
-  const {
-    invoices,
-    isLoadingInvoices,
-    deleteInvoice,
-    isDeletingInvoice,
-    refetchInvoices,
-  } = useInvoices({ event_id: event.id });
+  const { invoices, isLoadingInvoices, deleteInvoice, isDeletingInvoice, refetchInvoices } =
+    useInvoices({ event_id: event.id });
 
   const downloadPdfMutation = useDownloadInvoicePdf();
   const sendInvoiceMutation = useSendInvoice();
@@ -172,7 +165,8 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
     const currency = invoiceCurrency || currencySettings?.defaultCurrency || 'PHP';
     return formatCurrency(amount, currency, {
       showSymbol: currencySettings?.displayFormat !== 'code',
-      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      showCode:
+        currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
       minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
       maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
     });
@@ -182,22 +176,25 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
   const calculatePaymentProgress = (invoice: Invoice) => {
     const total = parseFloat(invoice.total_amount || '1');
     // Calculate paid amount from related payments
-    const paid = invoice.related_payments?.reduce((sum, payment) => {
-      if (payment.status === 'COMPLETED') {
-        return sum + parseFloat(payment.amount);
-      }
-      return sum;
-    }, 0) || 0;
+    const paid =
+      invoice.related_payments?.reduce((sum, payment) => {
+        if (payment.status === 'COMPLETED') {
+          return sum + parseFloat(payment.amount);
+        }
+        return sum;
+      }, 0) || 0;
     return (paid / total) * 100;
   };
 
   const calculatePaidAmount = (invoice: Invoice) => {
-    return invoice.related_payments?.reduce((sum, payment) => {
-      if (payment.status === 'COMPLETED') {
-        return sum + parseFloat(payment.amount);
-      }
-      return sum;
-    }, 0) || 0;
+    return (
+      invoice.related_payments?.reduce((sum, payment) => {
+        if (payment.status === 'COMPLETED') {
+          return sum + parseFloat(payment.amount);
+        }
+        return sum;
+      }, 0) || 0
+    );
   };
 
   if (isLoadingInvoices) {
@@ -218,11 +215,7 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Create your first invoice for this event to track payments.
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreateInvoice}
-        >
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreateInvoice}>
           Create Invoice
         </Button>
       </Paper>
@@ -234,11 +227,7 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h6">Event Invoices</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreateInvoice}
-        >
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreateInvoice}>
           Create Invoice
         </Button>
       </Box>
@@ -262,7 +251,7 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
               const progress = calculatePaymentProgress(invoice);
               const paidAmount = calculatePaidAmount(invoice);
               const statusLabel = getStatusLabel(invoice.status, invoice.due_date);
-              const daysOverdue = invoice.due_date 
+              const daysOverdue = invoice.due_date
                 ? differenceInDays(new Date(), new Date(invoice.due_date))
                 : 0;
 
@@ -319,7 +308,11 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
                     {invoice.due_date ? (
                       <Typography
                         variant="body2"
-                        color={isPast(new Date(invoice.due_date)) && invoice.status !== 'PAID' ? 'error' : 'text.primary'}
+                        color={
+                          isPast(new Date(invoice.due_date)) && invoice.status !== 'PAID'
+                            ? 'error'
+                            : 'text.primary'
+                        }
                       >
                         {format(new Date(invoice.due_date), 'MMM dd, yyyy')}
                       </Typography>
@@ -327,23 +320,15 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
                       '-'
                     )}
                   </TableCell>
-                  <TableCell>
-                    {format(new Date(invoice.created_at), 'MMM dd, yyyy')}
-                  </TableCell>
+                  <TableCell>{format(new Date(invoice.created_at), 'MMM dd, yyyy')}</TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
                       <Tooltip title="View">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewInvoice(invoice)}
-                        >
+                        <IconButton size="small" onClick={() => handleViewInvoice(invoice)}>
                           <ViewIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuOpen(e, invoice)}
-                      >
+                      <IconButton size="small" onClick={(e) => handleMenuOpen(e, invoice)}>
                         <MoreVertIcon fontSize="small" />
                       </IconButton>
                     </Stack>
@@ -356,11 +341,7 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
       </TableContainer>
 
       {/* Actions Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         {selectedInvoice?.status === 'DRAFT' && (
           <MenuItem onClick={() => selectedInvoice && handleEditInvoice(selectedInvoice)}>
             <ListItemIcon>
@@ -422,7 +403,7 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
                 <Typography variant="h6">
                   {formatInvoiceAmount(
                     invoices.reduce((sum, inv) => sum + parseFloat(inv.total_amount || '0'), 0),
-                    invoices[0]?.currency
+                    invoices[0]?.currency,
                   )}
                 </Typography>
               </Box>
@@ -433,7 +414,7 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
                 <Typography variant="h6" color="success.main">
                   {formatInvoiceAmount(
                     invoices.reduce((sum, inv) => sum + calculatePaidAmount(inv), 0),
-                    invoices[0]?.currency
+                    invoices[0]?.currency,
                   )}
                 </Typography>
               </Box>
@@ -446,9 +427,9 @@ export const EventInvoices: React.FC<EventInvoicesProps> = ({ event }) => {
                     invoices.reduce(
                       (sum, inv) =>
                         sum + (parseFloat(inv.total_amount || '0') - calculatePaidAmount(inv)),
-                      0
+                      0,
                     ),
-                    invoices[0]?.currency
+                    invoices[0]?.currency,
                   )}
                 </Typography>
               </Box>

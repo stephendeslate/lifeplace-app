@@ -77,11 +77,7 @@ export const DateUnavailableModal: React.FC<DateUnavailableModalProps> = ({
 
       <DialogContent>
         {/* Primary message */}
-        <Alert
-          severity="warning"
-          icon={<CalendarIcon />}
-          sx={{ mb: 3 }}
-        >
+        <Alert severity="warning" icon={<CalendarIcon />} sx={{ mb: 3 }}>
           <Typography variant="body1">
             {message ||
               `Unfortunately, ${formatDateForDisplay(unavailableDate)} is no longer available. Another customer completed their booking for this date just before you.`}
@@ -89,11 +85,7 @@ export const DateUnavailableModal: React.FC<DateUnavailableModalProps> = ({
         </Alert>
 
         {/* Reassurance about payment */}
-        <Alert
-          severity="info"
-          icon={<NoChargeIcon />}
-          sx={{ mb: 3 }}
-        >
+        <Alert severity="info" icon={<NoChargeIcon />} sx={{ mb: 3 }}>
           <Typography variant="body1" fontWeight={500}>
             Your card has NOT been charged.
           </Typography>
@@ -108,18 +100,14 @@ export const DateUnavailableModal: React.FC<DateUnavailableModalProps> = ({
             What happens next?
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            You can select a different date and continue with your booking.
-            Your other booking information has been saved.
+            You can select a different date and continue with your booking. Your other booking
+            information has been saved.
           </Typography>
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
-        <Button
-          onClick={onClose}
-          variant="outlined"
-          color="inherit"
-        >
+        <Button onClick={onClose} variant="outlined" color="inherit">
           Close
         </Button>
         <Button

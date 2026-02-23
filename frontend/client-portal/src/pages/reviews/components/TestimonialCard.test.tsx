@@ -172,7 +172,8 @@ describe('TestimonialCard', () => {
       const longReview: Testimonial = {
         id: '5',
         name: 'Test User',
-        review: 'This is an extremely long review that goes on and on about how amazing the venue is. It includes multiple sentences and detailed descriptions about the facilities, the staff, the ambiance, and the overall experience. The review continues to elaborate on various aspects of the event and venue.',
+        review:
+          'This is an extremely long review that goes on and on about how amazing the venue is. It includes multiple sentences and detailed descriptions about the facilities, the staff, the ambiance, and the overall experience. The review continues to elaborate on various aspects of the event and venue.',
       };
       render(<TestimonialCard testimonial={longReview} />);
       expect(screen.getByText(/This is an extremely long review/i)).toBeInTheDocument();
@@ -202,7 +203,7 @@ describe('TestimonialCard', () => {
       const specialReview: Testimonial = {
         id: '8',
         name: 'Test User',
-        review: 'The venue is 5-star! We couldn\'t have asked for more & everyone loved it.',
+        review: "The venue is 5-star! We couldn't have asked for more & everyone loved it.",
       };
       render(<TestimonialCard testimonial={specialReview} />);
       expect(screen.getByText(/The venue is 5-star!/i)).toBeInTheDocument();

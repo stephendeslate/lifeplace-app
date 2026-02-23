@@ -27,9 +27,10 @@ const transformQuoteToTask = (quote: EventQuote): Task => ({
   domain: 'quotes',
   type: quote.status === 'DRAFT' ? 'Draft Quote' : 'Awaiting Response',
   title: quote.event_details?.name || `Quote #${quote.id}`,
-  description: quote.status === 'DRAFT'
-    ? 'Quote needs to be finalized and sent'
-    : 'Quote has been sent, awaiting client response',
+  description:
+    quote.status === 'DRAFT'
+      ? 'Quote needs to be finalized and sent'
+      : 'Quote has been sent, awaiting client response',
   priority: calculatePriority(quote.created_at),
   createdAt: quote.created_at,
   entityId: quote.id,
@@ -48,9 +49,10 @@ const transformContractToTask = (contract: EventContract): Task => {
     domain: 'contracts',
     type: contract.status === 'SENT' ? 'Awaiting Signature' : 'Partially Signed',
     title: eventDetails?.name || `Contract #${contract.id}`,
-    description: contract.status === 'SENT'
-      ? 'Contract has been sent, awaiting client signature'
-      : `Contract needs ${contract.missing_signatures?.join(', ') || 'more'} signature(s)`,
+    description:
+      contract.status === 'SENT'
+        ? 'Contract has been sent, awaiting client signature'
+        : `Contract needs ${contract.missing_signatures?.join(', ') || 'more'} signature(s)`,
     priority: calculatePriority(contract.created_at),
     createdAt: contract.created_at,
     entityId: contract.id,
@@ -68,9 +70,10 @@ const transformPaymentToTask = (payment: Payment): Task => ({
   domain: 'payments',
   type: payment.status === 'PENDING' ? 'Pending Payment' : 'Failed Payment',
   title: `${payment.payment_number} - ${payment.event_details?.name || 'Unknown Event'}`,
-  description: payment.status === 'PENDING'
-    ? `Payment of ${payment.amount} ${payment.currency} is pending`
-    : `Payment failed - requires attention`,
+  description:
+    payment.status === 'PENDING'
+      ? `Payment of ${payment.amount} ${payment.currency} is pending`
+      : `Payment failed - requires attention`,
   priority: payment.status === 'FAILED' ? 'high' : calculatePriority(payment.created_at),
   createdAt: payment.created_at,
   entityId: payment.id,
@@ -87,9 +90,10 @@ const transformCommunicationToTask = (record: CommunicationRecord): Task => ({
   domain: 'communications',
   type: record.delivery_status === 'PENDING' ? 'Pending Message' : 'Failed Message',
   title: record.subject || record.template_name,
-  description: record.delivery_status === 'PENDING'
-    ? `Message to ${record.recipient} is pending delivery`
-    : `Message to ${record.recipient} failed - may need retry`,
+  description:
+    record.delivery_status === 'PENDING'
+      ? `Message to ${record.recipient} is pending delivery`
+      : `Message to ${record.recipient} failed - may need retry`,
   priority: record.delivery_status === 'FAILED' ? 'high' : calculatePriority(record.created_at),
   createdAt: record.created_at,
   entityId: record.id,
@@ -105,8 +109,12 @@ const transformSupportToTask = (inquiry: SupportInquiry): Task => ({
   type: inquiry.priority === 'urgent' ? 'Urgent Inquiry' : 'Support Inquiry',
   title: inquiry.subject,
   description: `${inquiry.category_display} - ${inquiry.client_name}`,
-  priority: inquiry.priority === 'urgent' || inquiry.priority === 'high' ? 'high' :
-            inquiry.priority === 'normal' ? 'medium' : 'low',
+  priority:
+    inquiry.priority === 'urgent' || inquiry.priority === 'high'
+      ? 'high'
+      : inquiry.priority === 'normal'
+        ? 'medium'
+        : 'low',
   createdAt: inquiry.created_at,
   entityId: inquiry.id,
   eventId: inquiry.event || undefined,
@@ -122,16 +130,22 @@ export const useTasks = () => {
 
   // Fetch contracts (SENT and PARTIALLY_SIGNED statuses)
   // Poll every 30s to detect signature changes made from client-portal
-  const { data: sentContracts = [] } = useEventContracts({ status: 'SENT' }, { refetchInterval: 30000 });
-  const { data: partiallySignedContracts = [] } = useEventContracts({ status: 'PARTIALLY_SIGNED' }, { refetchInterval: 30000 });
+  const { data: sentContracts = [] } = useEventContracts(
+    { status: 'SENT' },
+    { refetchInterval: 30000 },
+  );
+  const { data: partiallySignedContracts = [] } = useEventContracts(
+    { status: 'PARTIALLY_SIGNED' },
+    { refetchInterval: 30000 },
+  );
 
   // Fetch payments (PENDING and FAILED statuses)
   const { payments: allPayments = [], isLoadingPayments } = usePayments({});
 
   // Filter payments to actionable ones
-  const actionablePayments = useMemo(() =>
-    allPayments.filter(p => p.status === 'PENDING' || p.status === 'FAILED'),
-    [allPayments]
+  const actionablePayments = useMemo(
+    () => allPayments.filter((p) => p.status === 'PENDING' || p.status === 'FAILED'),
+    [allPayments],
   );
 
   // Fetch communications (PENDING and FAILED statuses)
@@ -147,30 +161,26 @@ export const useTasks = () => {
   // Transform and combine tasks
   const tasksByDomain = useMemo<TasksByDomain>(() => {
     // Filter out expired quotes before transformation
-    const activeQuotes = [...draftQuotes, ...sentQuotes].filter(
-      quote => !quote.is_expired
-    );
+    const activeQuotes = [...draftQuotes, ...sentQuotes].filter((quote) => !quote.is_expired);
     const quotes = activeQuotes
       .map(transformQuoteToTask)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     // Filter out expired contracts before transformation
     const activeContracts = [...sentContracts, ...partiallySignedContracts].filter(
-      contract => !contract.is_expired
+      (contract) => !contract.is_expired,
     );
     const contracts = activeContracts
       .map(transformContractToTask)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     // Payments are NOT filtered - overdue payments still need attention
-    const payments = actionablePayments
-      .map(transformPaymentToTask)
-      .sort((a, b) => {
-        // Failed payments first
-        if (a.status === 'FAILED' && b.status !== 'FAILED') return -1;
-        if (b.status === 'FAILED' && a.status !== 'FAILED') return 1;
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
+    const payments = actionablePayments.map(transformPaymentToTask).sort((a, b) => {
+      // Failed payments first
+      if (a.status === 'FAILED' && b.status !== 'FAILED') return -1;
+      if (b.status === 'FAILED' && a.status !== 'FAILED') return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
     const communications = [
       ...failedRecords.map(transformCommunicationToTask),
@@ -192,39 +202,56 @@ export const useTasks = () => {
       });
 
     return { quotes, contracts, payments, communications, support };
-  }, [draftQuotes, sentQuotes, sentContracts, partiallySignedContracts, actionablePayments, pendingRecords, failedRecords, activeSupportInquiries, waitingSupportInquiries]);
+  }, [
+    draftQuotes,
+    sentQuotes,
+    sentContracts,
+    partiallySignedContracts,
+    actionablePayments,
+    pendingRecords,
+    failedRecords,
+    activeSupportInquiries,
+    waitingSupportInquiries,
+  ]);
 
   // Calculate counts
-  const counts = useMemo<TaskCounts>(() => ({
-    quotes: tasksByDomain.quotes.length,
-    contracts: tasksByDomain.contracts.length,
-    payments: tasksByDomain.payments.length,
-    communications: tasksByDomain.communications.length,
-    support: tasksByDomain.support.length,
-    total:
-      tasksByDomain.quotes.length +
-      tasksByDomain.contracts.length +
-      tasksByDomain.payments.length +
-      tasksByDomain.communications.length +
-      tasksByDomain.support.length,
-  }), [tasksByDomain]);
+  const counts = useMemo<TaskCounts>(
+    () => ({
+      quotes: tasksByDomain.quotes.length,
+      contracts: tasksByDomain.contracts.length,
+      payments: tasksByDomain.payments.length,
+      communications: tasksByDomain.communications.length,
+      support: tasksByDomain.support.length,
+      total:
+        tasksByDomain.quotes.length +
+        tasksByDomain.contracts.length +
+        tasksByDomain.payments.length +
+        tasksByDomain.communications.length +
+        tasksByDomain.support.length,
+    }),
+    [tasksByDomain],
+  );
 
   // All tasks flattened
-  const allTasks = useMemo(() => [
-    ...tasksByDomain.quotes,
-    ...tasksByDomain.contracts,
-    ...tasksByDomain.payments,
-    ...tasksByDomain.communications,
-    ...tasksByDomain.support,
-  ].sort((a, b) => {
-    // Sort by priority first (high > medium > low)
-    const priorityOrder = { high: 0, medium: 1, low: 2 };
-    if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
-      return priorityOrder[a.priority] - priorityOrder[b.priority];
-    }
-    // Then by date
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  }), [tasksByDomain]);
+  const allTasks = useMemo(
+    () =>
+      [
+        ...tasksByDomain.quotes,
+        ...tasksByDomain.contracts,
+        ...tasksByDomain.payments,
+        ...tasksByDomain.communications,
+        ...tasksByDomain.support,
+      ].sort((a, b) => {
+        // Sort by priority first (high > medium > low)
+        const priorityOrder = { high: 0, medium: 1, low: 2 };
+        if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
+          return priorityOrder[a.priority] - priorityOrder[b.priority];
+        }
+        // Then by date
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }),
+    [tasksByDomain],
+  );
 
   // Loading state
   const isLoading = isLoadingPayments;

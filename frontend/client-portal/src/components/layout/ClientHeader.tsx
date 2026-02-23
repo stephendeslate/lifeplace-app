@@ -18,11 +18,7 @@ import {
   alpha,
   Tooltip,
 } from '@mui/material';
-import {
-  Menu as MenuIcon,
-  ExitToApp,
-  Person,
-} from '@mui/icons-material';
+import { Menu as MenuIcon, ExitToApp, Person } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { NotificationCenter } from '../notifications';
@@ -33,15 +29,13 @@ interface ClientHeaderProps {
   sidebarOpen: boolean;
 }
 
-export const ClientHeader: React.FC<ClientHeaderProps> = ({ 
-  onMenuClick
-}) => {
+export const ClientHeader: React.FC<ClientHeaderProps> = ({ onMenuClick }) => {
   const theme = useTheme();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [logoError, setLogoError] = useState(false);
-  
+
   const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -156,7 +150,6 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
             <NotificationCenter />
           </AnimatedElement>
 
-
           {/* Profile Menu */}
           <AnimatedElement animation="fadeIn" delay={400}>
             <Tooltip title="Account">
@@ -218,7 +211,7 @@ export const ClientHeader: React.FC<ClientHeaderProps> = ({
               {user?.email}
             </Typography>
           </Box>
-          
+
           <Divider />
 
           {/* Profile */}

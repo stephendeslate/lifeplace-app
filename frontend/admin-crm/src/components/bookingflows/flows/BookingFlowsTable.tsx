@@ -1,14 +1,14 @@
 // frontend/admin-crm/src/components/bookingflows/flows/BookingFlowsTable.tsx
 
-import React from "react";
-import { Chip, Typography, Box, Tooltip, LinearProgress } from "@mui/material";
+import React from 'react';
+import { Chip, Typography, Box, Tooltip, LinearProgress } from '@mui/material';
 // Modern Design System imports
 import {
   ModernTable,
   ModernEmptyState,
   type ModernTableColumn,
   type ModernTableAction,
-} from "../../common";
+} from '../../common';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -24,16 +24,13 @@ import {
   Schedule as TimeIcon,
   CheckCircle as ActiveIcon,
   RadioButtonUnchecked as InactiveIcon,
-} from "@mui/icons-material";
-import type {
-  BookingFlowTableProps,
-  BookingFlow,
-} from "../../../types/bookingflows.types";
+} from '@mui/icons-material';
+import type { BookingFlowTableProps, BookingFlow } from '../../../types/bookingflows.types';
 import {
   getEventTypeDisplayName,
   hasSpecificEventType,
   getEventTypeChipColor,
-} from "../../../utils/bookingFlowUtils";
+} from '../../../utils/bookingFlowUtils';
 
 export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
   bookingFlows,
@@ -46,22 +43,16 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
   const getStatusChip = (flow: BookingFlow) => {
     if (flow.is_test_mode) {
       return (
-        <Chip
-          label="Test Mode"
-          size="small"
-          color="warning"
-          variant="filled"
-          icon={<TestIcon />}
-        />
+        <Chip label="Test Mode" size="small" color="warning" variant="filled" icon={<TestIcon />} />
       );
     }
 
     return (
       <Chip
-        label={flow.is_active ? "Active" : "Inactive"}
+        label={flow.is_active ? 'Active' : 'Inactive'}
         size="small"
-        color={flow.is_active ? "success" : "default"}
-        variant={flow.is_active ? "filled" : "outlined"}
+        color={flow.is_active ? 'success' : 'default'}
+        variant={flow.is_active ? 'filled' : 'outlined'}
         icon={flow.is_active ? <ActiveIcon /> : <InactiveIcon />}
       />
     );
@@ -80,7 +71,7 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
         variant="outlined"
         color={chipColor}
         sx={{
-          fontStyle: isSpecific ? "normal" : "italic",
+          fontStyle: isSpecific ? 'normal' : 'italic',
           opacity: isSpecific ? 1 : 0.8,
         }}
       />
@@ -90,21 +81,16 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
   const getStepsInfo = (flow: BookingFlow) => {
     const isAllEnabled = flow.total_steps === flow.enabled_steps_count;
     const completionPercentage =
-      flow.total_steps > 0
-        ? Math.round((flow.enabled_steps_count / flow.total_steps) * 100)
-        : 0;
+      flow.total_steps > 0 ? Math.round((flow.enabled_steps_count / flow.total_steps) * 100) : 0;
 
     return (
       <Box>
         <Box display="flex" alignItems="center" gap={0.5} mb={0.5}>
-          <StepsIcon
-            fontSize="small"
-            color={isAllEnabled ? "primary" : "action"}
-          />
+          <StepsIcon fontSize="small" color={isAllEnabled ? 'primary' : 'action'} />
           <Typography
             variant="body2"
             fontWeight="medium"
-            color={isAllEnabled ? "primary" : "text.secondary"}
+            color={isAllEnabled ? 'primary' : 'text.secondary'}
           >
             {flow.enabled_steps_count}/{flow.total_steps}
           </Typography>
@@ -116,10 +102,10 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
             sx={{
               height: 4,
               borderRadius: 2,
-              backgroundColor: "grey.200",
-              "& .MuiLinearProgress-bar": {
+              backgroundColor: 'grey.200',
+              '& .MuiLinearProgress-bar': {
                 borderRadius: 2,
-                backgroundColor: isAllEnabled ? "success.main" : "primary.main",
+                backgroundColor: isAllEnabled ? 'success.main' : 'primary.main',
               },
             }}
           />
@@ -188,8 +174,8 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
 
   const columns: ModernTableColumn<BookingFlow>[] = [
     {
-      key: "name",
-      label: "Name & Details",
+      key: 'name',
+      label: 'Name & Details',
       sortable: true,
       render: (_, flow) => (
         <Box display="flex" alignItems="center" gap={1}>
@@ -208,9 +194,9 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
                 display="block"
                 sx={{
                   maxWidth: 250,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {flow.description}
@@ -221,28 +207,25 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
       ),
     },
     {
-      key: "event_type",
-      label: "Event Type",
-      hideBelow: "lg",
+      key: 'event_type',
+      label: 'Event Type',
+      hideBelow: 'lg',
       render: (_, flow) => getEventTypeChip(flow),
     },
     {
-      key: "steps",
-      label: "Steps Configuration",
-      align: "center",
-      hideBelow: "lg",
+      key: 'steps',
+      label: 'Steps Configuration',
+      align: 'center',
+      hideBelow: 'lg',
       render: (_, flow) => (
-        <Tooltip
-          title={`${flow.enabled_steps_count} of ${flow.total_steps} steps enabled`}
-          arrow
-        >
+        <Tooltip title={`${flow.enabled_steps_count} of ${flow.total_steps} steps enabled`} arrow>
           <Box>{getStepsInfo(flow)}</Box>
         </Tooltip>
       ),
     },
     {
-      key: "status",
-      label: "Status & Features",
+      key: 'status',
+      label: 'Status & Features',
       render: (_, flow) => (
         <Box display="flex" flexDirection="column" gap={0.5}>
           {getStatusChip(flow)}
@@ -261,15 +244,15 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
       ),
     },
     {
-      key: "booking_window",
-      label: "Booking Window",
-      hideBelow: "md",
+      key: 'booking_window',
+      label: 'Booking Window',
+      hideBelow: 'md',
       render: (_, flow) => getBookingWindow(flow),
     },
     {
-      key: "updated_at",
-      label: "Last Updated",
-      hideBelow: "md",
+      key: 'updated_at',
+      label: 'Last Updated',
+      hideBelow: 'md',
       render: (_, flow) => (
         <Box>
           <Typography variant="body2" color="text.secondary">
@@ -285,36 +268,36 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
 
   const actions: ModernTableAction<BookingFlow>[] = [
     {
-      label: "Edit Flow",
+      label: 'Edit Flow',
       icon: <EditIcon />,
       onClick: (flow) => onEdit(flow),
-      color: "primary",
+      color: 'primary',
     },
     {
-      label: "Preview Flow",
+      label: 'Preview Flow',
       icon: <PreviewIcon />,
       onClick: (flow) => onPreview(flow),
-      color: "default",
+      color: 'default',
     },
     {
-      label: "Duplicate Flow",
+      label: 'Duplicate Flow',
       icon: <DuplicateIcon />,
       onClick: (flow) => onDuplicate(flow),
-      color: "default",
+      color: 'default',
     },
     {
-      label: "View Analytics",
+      label: 'View Analytics',
       icon: <AnalyticsIcon />,
       onClick: (_flow) => {
         // TODO: Navigate to analytics - should be handled by parent component
       },
-      color: "default",
+      color: 'default',
     },
     {
-      label: "Delete Flow",
+      label: 'Delete Flow',
       icon: <DeleteIcon />,
       onClick: (flow) => onDelete(flow.id),
-      color: "error",
+      color: 'error',
     },
   ];
 
@@ -330,13 +313,9 @@ export const BookingFlowsTable: React.FC<BookingFlowTableProps> = ({
 
   return (
     <ModernTable
-      columns={
-        columns as unknown as ModernTableColumn<Record<string, unknown>>[]
-      }
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
       data={bookingFlows as unknown as Record<string, unknown>[]}
-      actions={
-        actions as unknown as ModernTableAction<Record<string, unknown>>[]
-      }
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
       onRowClick={(row) => onEdit(row as unknown as BookingFlow)}
       loading={isLoading}
       emptyState={emptyState}

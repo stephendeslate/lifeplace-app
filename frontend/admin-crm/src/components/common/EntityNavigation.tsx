@@ -54,25 +54,39 @@ interface EntityNavigationProps {
 const getEntityIcon = (type: string) => {
   const iconProps = { fontSize: 'medium' as const };
   switch (type) {
-    case 'client': return <PersonIcon {...iconProps} />;
-    case 'event': return <EventIcon {...iconProps} />;
-    case 'payment': return <PaymentIcon {...iconProps} />;
-    case 'contract': return <ContractIcon {...iconProps} />;
-    case 'invoice': return <InvoiceIcon {...iconProps} />;
-    case 'quote': return <QuoteIcon {...iconProps} />;
-    default: return <BusinessIcon {...iconProps} />;
+    case 'client':
+      return <PersonIcon {...iconProps} />;
+    case 'event':
+      return <EventIcon {...iconProps} />;
+    case 'payment':
+      return <PaymentIcon {...iconProps} />;
+    case 'contract':
+      return <ContractIcon {...iconProps} />;
+    case 'invoice':
+      return <InvoiceIcon {...iconProps} />;
+    case 'quote':
+      return <QuoteIcon {...iconProps} />;
+    default:
+      return <BusinessIcon {...iconProps} />;
   }
 };
 
 const getEntityPath = (entity: EntityReference): string => {
   switch (entity.type) {
-    case 'client': return `/clients/${entity.id}`;
-    case 'event': return `/events/${entity.id}`;
-    case 'payment': return `/payments/${entity.id}`;
-    case 'contract': return `/contracts/${entity.id}`;
-    case 'invoice': return `/payments/${entity.id}`; // Invoices are managed through payments
-    case 'quote': return `/tasks`; // Quotes redirect to tasks page
-    default: return '#';
+    case 'client':
+      return `/clients/${entity.id}`;
+    case 'event':
+      return `/events/${entity.id}`;
+    case 'payment':
+      return `/payments/${entity.id}`;
+    case 'contract':
+      return `/contracts/${entity.id}`;
+    case 'invoice':
+      return `/payments/${entity.id}`; // Invoices are managed through payments
+    case 'quote':
+      return `/tasks`; // Quotes redirect to tasks page
+    default:
+      return '#';
   }
 };
 
@@ -82,7 +96,7 @@ const EntityCard: React.FC<{
   onClick?: (entity: EntityReference) => void;
 }> = ({ entity, layout, onClick }) => {
   const navigate = useNavigate();
-  
+
   const handleClick = () => {
     if (onClick) {
       onClick(entity);
@@ -118,9 +132,7 @@ const EntityCard: React.FC<{
               {entity.name.charAt(0)}
             </Avatar>
           ) : (
-            <Box sx={{ color: 'primary.main' }}>
-              {getEntityIcon(entity.type)}
-            </Box>
+            <Box sx={{ color: 'primary.main' }}>{getEntityIcon(entity.type)}</Box>
           )}
           <Box>
             <Typography variant="body2" fontWeight="medium">
@@ -133,7 +145,7 @@ const EntityCard: React.FC<{
             )}
           </Box>
         </Box>
-        
+
         <Box display="flex" alignItems="center" gap={1}>
           {entity.badges?.map((badge, index) => (
             <Badge key={index} badgeContent={badge.count} color="error">
@@ -141,7 +153,16 @@ const EntityCard: React.FC<{
                 label={badge.label}
                 size="small"
                 variant="outlined"
-                color={(badge.color as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning') || 'default'}
+                color={
+                  (badge.color as
+                    | 'default'
+                    | 'primary'
+                    | 'secondary'
+                    | 'error'
+                    | 'info'
+                    | 'success'
+                    | 'warning') || 'default'
+                }
               />
             </Badge>
           ))}
@@ -163,9 +184,9 @@ const EntityCard: React.FC<{
 
   if (layout === 'list') {
     return (
-      <Card 
-        variant="outlined" 
-        sx={{ 
+      <Card
+        variant="outlined"
+        sx={{
           cursor: 'pointer',
           '&:hover': { boxShadow: 2 },
           transition: 'box-shadow 0.2s',
@@ -176,15 +197,11 @@ const EntityCard: React.FC<{
           <Box display="flex" alignItems="start" justifyContent="space-between">
             <Box display="flex" gap={2} flex={1}>
               {entity.avatar ? (
-                <Avatar src={entity.avatar}>
-                  {entity.name.charAt(0)}
-                </Avatar>
+                <Avatar src={entity.avatar}>{entity.name.charAt(0)}</Avatar>
               ) : (
-                <Avatar sx={{ bgcolor: 'primary.light' }}>
-                  {getEntityIcon(entity.type)}
-                </Avatar>
+                <Avatar sx={{ bgcolor: 'primary.light' }}>{getEntityIcon(entity.type)}</Avatar>
               )}
-              
+
               <Box flex={1}>
                 <Box display="flex" alignItems="center" gap={1} mb={0.5}>
                   <Typography variant="subtitle1" fontWeight="medium">
@@ -199,13 +216,13 @@ const EntityCard: React.FC<{
                     />
                   )}
                 </Box>
-                
+
                 {entity.subtitle && (
                   <Typography variant="body2" color="text.secondary" mb={1}>
                     {entity.subtitle}
                   </Typography>
                 )}
-                
+
                 {entity.badges && entity.badges.length > 0 && (
                   <Stack direction="row" spacing={1} flexWrap="wrap">
                     {entity.badges.map((badge, index) => (
@@ -214,7 +231,16 @@ const EntityCard: React.FC<{
                           label={badge.label}
                           size="small"
                           variant="outlined"
-                          color={(badge.color as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning') || 'default'}
+                          color={
+                            (badge.color as
+                              | 'default'
+                              | 'primary'
+                              | 'secondary'
+                              | 'error'
+                              | 'info'
+                              | 'success'
+                              | 'warning') || 'default'
+                          }
                         />
                       </Badge>
                     ))}
@@ -224,21 +250,23 @@ const EntityCard: React.FC<{
                 {entity.metadata && Object.keys(entity.metadata).length > 0 && (
                   <Box mt={1}>
                     <Stack direction="row" spacing={2} flexWrap="wrap">
-                      {Object.entries(entity.metadata).slice(0, 3).map(([key, value]) => (
-                        <Box key={key} display="flex" alignItems="center" gap={0.5}>
-                          {key === 'email' && <EmailIcon fontSize="small" color="action" />}
-                          {key === 'phone' && <PhoneIcon fontSize="small" color="action" />}
-                          <Typography variant="caption" color="text.secondary">
-                            {String(value)}
-                          </Typography>
-                        </Box>
-                      ))}
+                      {Object.entries(entity.metadata)
+                        .slice(0, 3)
+                        .map(([key, value]) => (
+                          <Box key={key} display="flex" alignItems="center" gap={0.5}>
+                            {key === 'email' && <EmailIcon fontSize="small" color="action" />}
+                            {key === 'phone' && <PhoneIcon fontSize="small" color="action" />}
+                            <Typography variant="caption" color="text.secondary">
+                              {String(value)}
+                            </Typography>
+                          </Box>
+                        ))}
                     </Stack>
                   </Box>
                 )}
               </Box>
             </Box>
-            
+
             <IconButton size="small" onClick={handleLaunch}>
               <ArrowForwardIcon />
             </IconButton>
@@ -250,9 +278,9 @@ const EntityCard: React.FC<{
 
   // Grid layout (default)
   return (
-    <Card 
-      variant="outlined" 
-      sx={{ 
+    <Card
+      variant="outlined"
+      sx={{
         height: '100%',
         cursor: 'pointer',
         '&:hover': { boxShadow: 2 },
@@ -272,12 +300,12 @@ const EntityCard: React.FC<{
                 {getEntityIcon(entity.type)}
               </Avatar>
             )}
-            
+
             <IconButton size="small" onClick={handleLaunch}>
               <LaunchIcon fontSize="small" />
             </IconButton>
           </Box>
-          
+
           <Box>
             <Typography variant="h6" fontWeight="medium" noWrap>
               {entity.name}
@@ -288,7 +316,7 @@ const EntityCard: React.FC<{
               </Typography>
             )}
           </Box>
-          
+
           <Box display="flex" flexWrap="wrap" gap={0.5} mt="auto">
             {entity.status && (
               <Chip
@@ -304,7 +332,16 @@ const EntityCard: React.FC<{
                   label={badge.label}
                   size="small"
                   variant="outlined"
-                  color={(badge.color as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning') || 'default'}
+                  color={
+                    (badge.color as
+                      | 'default'
+                      | 'primary'
+                      | 'secondary'
+                      | 'error'
+                      | 'info'
+                      | 'success'
+                      | 'warning') || 'default'
+                  }
                 />
               </Badge>
             ))}
@@ -326,7 +363,7 @@ export const EntityNavigation: React.FC<EntityNavigationProps> = ({
 }) => {
   const visibleEntities = entities.slice(0, maxVisible);
   const remainingCount = Math.max(0, entities.length - maxVisible);
-  
+
   const handleViewAll = () => {
     if (onViewAll && entities.length > 0) {
       onViewAll(entities[0].type);
@@ -371,8 +408,8 @@ export const EntityNavigation: React.FC<EntityNavigationProps> = ({
         )}
 
         {layout === 'grid' ? (
-          <Box 
-            display="grid" 
+          <Box
+            display="grid"
             gridTemplateColumns={{ xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(3, 1fr)' }}
             gap={2}
           >
@@ -400,11 +437,7 @@ export const EntityNavigation: React.FC<EntityNavigationProps> = ({
 
         {showViewAll && remainingCount > 0 && (
           <Box textAlign="center" mt={2}>
-            <Button
-              variant="outlined"
-              onClick={handleViewAll}
-              startIcon={<ArrowForwardIcon />}
-            >
+            <Button variant="outlined" onClick={handleViewAll} startIcon={<ArrowForwardIcon />}>
               View {remainingCount} More
             </Button>
           </Box>
@@ -472,13 +505,17 @@ export const createEventReference = (event: EventData): EntityReference => ({
   name: event.name,
   subtitle: event.event_type_name || 'No Event Type',
   status: event.status,
-  statusColor: event.status === 'CONFIRMED' ? 'success' : event.status === 'COMPLETED' ? 'default' : 'primary',
+  statusColor:
+    event.status === 'CONFIRMED' ? 'success' : event.status === 'COMPLETED' ? 'default' : 'primary',
   metadata: {
     client: event.client_name || 'Unknown Client',
     date: new Date(event.start_date).toLocaleDateString(),
     value: event.total_price ? formatCurrency(event.total_price, 'PHP') : null,
   },
-  badges: (event.total_amount_due && parseFloat(String(event.total_amount_due)) > 0) ? [{ label: 'Payment Due', color: 'warning' }] : [],
+  badges:
+    event.total_amount_due && parseFloat(String(event.total_amount_due)) > 0
+      ? [{ label: 'Payment Due', color: 'warning' }]
+      : [],
 });
 
 export const createPaymentReference = (payment: PaymentData): EntityReference => ({
@@ -487,7 +524,8 @@ export const createPaymentReference = (payment: PaymentData): EntityReference =>
   name: `Payment ${payment.payment_number}`,
   subtitle: payment.event_details?.name,
   status: payment.status,
-  statusColor: payment.status === 'COMPLETED' ? 'success' : payment.status === 'FAILED' ? 'error' : 'warning',
+  statusColor:
+    payment.status === 'COMPLETED' ? 'success' : payment.status === 'FAILED' ? 'error' : 'warning',
   metadata: {
     amount: formatCurrency(payment.amount, 'PHP'),
     due: new Date(payment.due_date).toLocaleDateString(),

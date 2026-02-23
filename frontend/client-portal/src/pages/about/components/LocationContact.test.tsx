@@ -20,7 +20,7 @@ describe('LocationContact', () => {
     it('renders the section description', () => {
       render(<LocationContact onNavigateToBooking={mockNavigateToBooking} />);
       expect(
-        screen.getByText(/We're located near Tagaytay, easily accessible from Metro Manila/)
+        screen.getByText(/We're located near Tagaytay, easily accessible from Metro Manila/),
       ).toBeInTheDocument();
     });
 
@@ -34,7 +34,7 @@ describe('LocationContact', () => {
       render(<LocationContact onNavigateToBooking={mockNavigateToBooking} />);
       expect(screen.getByText('Phone')).toBeInTheDocument();
       expect(
-        screen.getByText('(046) 889 0844 / (0962) 275 3145 / +639935260943')
+        screen.getByText('(046) 889 0844 / (0962) 275 3145 / +639935260943'),
       ).toBeInTheDocument();
     });
 
@@ -186,7 +186,7 @@ describe('LocationContact', () => {
       expect(windowOpenSpy).toHaveBeenCalledTimes(1);
       expect(windowOpenSpy).toHaveBeenCalledWith(
         expect.stringContaining('google.com/maps'),
-        '_blank'
+        '_blank',
       );
 
       windowOpenSpy.mockRestore();
@@ -413,7 +413,9 @@ describe('LocationContact', () => {
 
     it('renders all three social media icons', () => {
       const { container } = render(<LocationContact onNavigateToBooking={mockNavigateToBooking} />);
-      const socialLinks = container.querySelectorAll('a[href*="facebook.com"], a[href*="instagram.com"], a[href*="tiktok.com"]');
+      const socialLinks = container.querySelectorAll(
+        'a[href*="facebook.com"], a[href*="instagram.com"], a[href*="tiktok.com"]',
+      );
 
       expect(socialLinks.length).toBe(3);
     });
@@ -447,7 +449,9 @@ describe('LocationContact', () => {
 
   describe('Error Handling', () => {
     it('renders without crashing', () => {
-      expect(() => render(<LocationContact onNavigateToBooking={mockNavigateToBooking} />)).not.toThrow();
+      expect(() =>
+        render(<LocationContact onNavigateToBooking={mockNavigateToBooking} />),
+      ).not.toThrow();
     });
 
     it('handles missing onNavigateToBooking prop gracefully', () => {
@@ -476,7 +480,7 @@ describe('LocationContact', () => {
     it('displays correct phone numbers', () => {
       render(<LocationContact onNavigateToBooking={mockNavigateToBooking} />);
       expect(
-        screen.getByText('(046) 889 0844 / (0962) 275 3145 / +639935260943')
+        screen.getByText('(046) 889 0844 / (0962) 275 3145 / +639935260943'),
       ).toBeInTheDocument();
     });
 
@@ -489,8 +493,8 @@ describe('LocationContact', () => {
       render(<LocationContact onNavigateToBooking={mockNavigateToBooking} />);
       expect(
         screen.getByText(
-          /We're located near Tagaytay, easily accessible from Metro Manila. Come visit us or get in touch to start planning your event./
-        )
+          /We're located near Tagaytay, easily accessible from Metro Manila. Come visit us or get in touch to start planning your event./,
+        ),
       ).toBeInTheDocument();
     });
   });

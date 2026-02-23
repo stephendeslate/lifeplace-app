@@ -32,10 +32,7 @@ import { useCreateContractTemplate, useUpdateContractTemplate } from '../../hook
 import { useTemplateVariables } from '../../hooks/useTemplateVariables';
 import { TemplateContentEditor, TemplateVariableInserter } from '../shared';
 import type { TemplateContentEditorHandle, TemplateEditorMode } from '../../types/templates.types';
-import type {
-  ContractTemplate,
-  CreateContractTemplateData,
-} from '../../types/contracts.types';
+import type { ContractTemplate, CreateContractTemplateData } from '../../types/contracts.types';
 
 interface ContractTemplateFormProps {
   template?: ContractTemplate;
@@ -98,9 +95,9 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
   }, [template]);
 
   const handleInputChange = (field: keyof CreateContractTemplateData, value: unknown) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: '' }));
     }
   };
 
@@ -135,10 +132,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
     };
 
     if (isEditing && template) {
-      updateTemplateMutation.mutate(
-        { id: template.id, data: submitData },
-        { onSuccess: onSave }
-      );
+      updateTemplateMutation.mutate({ id: template.id, data: submitData }, { onSuccess: onSave });
     } else {
       createTemplateMutation.mutate(submitData, { onSuccess: onSave });
     }
@@ -156,7 +150,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
           <Typography variant="subtitle1" gutterBottom fontWeight="medium">
             Basic Information
           </Typography>
-          
+
           <Stack spacing={2}>
             <TextField
               label="Template Name"
@@ -250,7 +244,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                   <SignatureIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
                   Signature Requirements
                 </Typography>
-                
+
                 <Stack spacing={2}>
                   <FormControlLabel
                     control={
@@ -268,7 +262,9 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                         control={
                           <Switch
                             checked={formData.requires_company_signature}
-                            onChange={(e) => handleInputChange('requires_company_signature', e.target.checked)}
+                            onChange={(e) =>
+                              handleInputChange('requires_company_signature', e.target.checked)
+                            }
                           />
                         }
                         label="Requires Company Signature"
@@ -278,7 +274,9 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                         control={
                           <Switch
                             checked={formData.requires_witness}
-                            onChange={(e) => handleInputChange('requires_witness', e.target.checked)}
+                            onChange={(e) =>
+                              handleInputChange('requires_witness', e.target.checked)
+                            }
                           />
                         }
                         label={
@@ -299,7 +297,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                   <AmendmentIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
                   Amendment Settings
                 </Typography>
-                
+
                 <Stack spacing={2}>
                   <FormControlLabel
                     control={
@@ -316,7 +314,9 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
                       control={
                         <Switch
                           checked={formData.amendment_requires_signature}
-                          onChange={(e) => handleInputChange('amendment_requires_signature', e.target.checked)}
+                          onChange={(e) =>
+                            handleInputChange('amendment_requires_signature', e.target.checked)
+                          }
                         />
                       }
                       label="Amendment Requires Signature"
@@ -330,11 +330,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
 
         {/* Form Actions */}
         <Box display="flex" justifyContent="flex-end" gap={2} pt={2}>
-          <Button
-            onClick={onCancel}
-            disabled={isLoading}
-            startIcon={<CancelIcon />}
-          >
+          <Button onClick={onCancel} disabled={isLoading} startIcon={<CancelIcon />}>
             Cancel
           </Button>
           <Button
@@ -349,9 +345,7 @@ export const ContractTemplateForm: React.FC<ContractTemplateFormProps> = ({
 
         {/* Error Display */}
         {Object.keys(errors).length > 0 && (
-          <Alert severity="error">
-            Please correct the errors above before saving.
-          </Alert>
+          <Alert severity="error">Please correct the errors above before saving.</Alert>
         )}
       </Stack>
     </Box>

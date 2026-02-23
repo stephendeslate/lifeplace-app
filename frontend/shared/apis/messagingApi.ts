@@ -67,7 +67,7 @@ messagingApi.interceptors.response.use(
       window.location.href = '/login';
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 // ============================================================================
@@ -117,9 +117,7 @@ export const threadsApi = {
    */
   async getThreads(filters: ThreadFilters = {}): Promise<ThreadListResponse> {
     const queryParams = buildQueryParams(filters as Record<string, unknown>);
-    const response = await messagingApi.get<ThreadListResponse>(
-      `/threads/${queryParams}`
-    );
+    const response = await messagingApi.get<ThreadListResponse>(`/threads/${queryParams}`);
     return response.data;
   },
 
@@ -127,9 +125,7 @@ export const threadsApi = {
    * Get a specific thread with all messages
    */
   async getThread(threadId: string): Promise<MessageThreadDetail> {
-    const response = await messagingApi.get<MessageThreadDetail>(
-      `/threads/${threadId}/`
-    );
+    const response = await messagingApi.get<MessageThreadDetail>(`/threads/${threadId}/`);
     return response.data;
   },
 
@@ -137,24 +133,15 @@ export const threadsApi = {
    * Create a new message thread
    */
   async createThread(data: CreateThreadRequest): Promise<MessageThreadDetail> {
-    const response = await messagingApi.post<MessageThreadDetail>(
-      '/threads/',
-      data
-    );
+    const response = await messagingApi.post<MessageThreadDetail>('/threads/', data);
     return response.data;
   },
 
   /**
    * Update an existing thread (admin only)
    */
-  async updateThread(
-    threadId: string,
-    data: UpdateThreadRequest
-  ): Promise<MessageThreadDetail> {
-    const response = await messagingApi.patch<MessageThreadDetail>(
-      `/threads/${threadId}/`,
-      data
-    );
+  async updateThread(threadId: string, data: UpdateThreadRequest): Promise<MessageThreadDetail> {
+    const response = await messagingApi.patch<MessageThreadDetail>(`/threads/${threadId}/`, data);
     return response.data;
   },
 
@@ -168,13 +155,10 @@ export const threadsApi = {
   /**
    * Get messages for a specific thread with pagination
    */
-  async getThreadMessages(
-    threadId: string,
-    filters: MessageFilters = {}
-  ): Promise<Message[]> {
+  async getThreadMessages(threadId: string, filters: MessageFilters = {}): Promise<Message[]> {
     const queryParams = buildQueryParams(filters as Record<string, unknown>);
     const response = await messagingApi.get<Message[]>(
-      `/threads/${threadId}/messages/${queryParams}`
+      `/threads/${threadId}/messages/${queryParams}`,
     );
     return response.data;
   },
@@ -184,7 +168,7 @@ export const threadsApi = {
    */
   async markThreadAsRead(threadId: string): Promise<MarkAsReadResponse> {
     const response = await messagingApi.post<MarkAsReadResponse>(
-      `/threads/${threadId}/mark_as_read/`
+      `/threads/${threadId}/mark_as_read/`,
     );
     return response.data;
   },
@@ -192,13 +176,10 @@ export const threadsApi = {
   /**
    * Assign a thread to an admin user
    */
-  async assignThread(
-    threadId: string,
-    data: AssignThreadRequest
-  ): Promise<MessageThreadDetail> {
+  async assignThread(threadId: string, data: AssignThreadRequest): Promise<MessageThreadDetail> {
     const response = await messagingApi.patch<MessageThreadDetail>(
       `/threads/${threadId}/assign/`,
-      data
+      data,
     );
     return response.data;
   },
@@ -214,9 +195,7 @@ export const messagesApi = {
    */
   async getMessages(filters: MessageFilters = {}): Promise<MessageListResponse> {
     const queryParams = buildQueryParams(filters as Record<string, unknown>);
-    const response = await messagingApi.get<MessageListResponse>(
-      `/messages/${queryParams}`
-    );
+    const response = await messagingApi.get<MessageListResponse>(`/messages/${queryParams}`);
     return response.data;
   },
 
@@ -224,9 +203,7 @@ export const messagesApi = {
    * Get a specific message
    */
   async getMessage(messageId: string): Promise<Message> {
-    const response = await messagingApi.get<Message>(
-      `/messages/${messageId}/`
-    );
+    const response = await messagingApi.get<Message>(`/messages/${messageId}/`);
     return response.data;
   },
 
@@ -239,22 +216,15 @@ export const messagesApi = {
     if (attachment_files && attachment_files.length > 0) {
       // Use FormData for file uploads
       const formData = createFormData(messageData, attachment_files);
-      const response = await messagingApi.post<Message>(
-        '/messages/',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      const response = await messagingApi.post<Message>('/messages/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data;
     } else {
       // Regular JSON request
-      const response = await messagingApi.post<Message>(
-        '/messages/',
-        messageData
-      );
+      const response = await messagingApi.post<Message>('/messages/', messageData);
       return response.data;
     }
   },
@@ -263,10 +233,7 @@ export const messagesApi = {
    * Update a message (sender only)
    */
   async updateMessage(messageId: string, content: string): Promise<Message> {
-    const response = await messagingApi.patch<Message>(
-      `/messages/${messageId}/`,
-      { content }
-    );
+    const response = await messagingApi.patch<Message>(`/messages/${messageId}/`, { content });
     return response.data;
   },
 
@@ -282,7 +249,7 @@ export const messagesApi = {
    */
   async markMessageAsRead(messageId: string): Promise<MarkAsReadResponse> {
     const response = await messagingApi.post<MarkAsReadResponse>(
-      `/messages/${messageId}/mark_as_read/`
+      `/messages/${messageId}/mark_as_read/`,
     );
     return response.data;
   },
@@ -293,7 +260,7 @@ export const messagesApi = {
   async bulkMarkAsRead(data: BulkMarkAsReadRequest): Promise<BulkMarkAsReadResponse> {
     const response = await messagingApi.post<BulkMarkAsReadResponse>(
       '/messages/bulk_mark_as_read/',
-      data
+      data,
     );
     return response.data;
   },
@@ -309,9 +276,7 @@ export const adminApi = {
    */
   async getAllThreads(filters: ThreadFilters = {}): Promise<ThreadListResponse> {
     const queryParams = buildQueryParams(filters as Record<string, unknown>);
-    const response = await messagingApi.get<ThreadListResponse>(
-      `/admin/threads/${queryParams}`
-    );
+    const response = await messagingApi.get<ThreadListResponse>(`/admin/threads/${queryParams}`);
     return response.data;
   },
 
@@ -321,7 +286,7 @@ export const adminApi = {
   async bulkAssignThreads(data: BulkAssignThreadsRequest): Promise<BulkAssignResponse> {
     const response = await messagingApi.post<BulkAssignResponse>(
       '/admin/threads/bulk_assign/',
-      data
+      data,
     );
     return response.data;
   },
@@ -330,11 +295,11 @@ export const adminApi = {
    * Bulk update thread status
    */
   async bulkUpdateThreadStatus(
-    data: BulkUpdateThreadStatusRequest
+    data: BulkUpdateThreadStatusRequest,
   ): Promise<BulkStatusUpdateResponse> {
     const response = await messagingApi.post<BulkStatusUpdateResponse>(
       '/admin/threads/bulk_update_status/',
-      data
+      data,
     );
     return response.data;
   },
@@ -343,9 +308,7 @@ export const adminApi = {
    * Get messaging statistics for admin dashboard
    */
   async getMessagingStats(): Promise<MessagingStats> {
-    const response = await messagingApi.get<MessagingStats>(
-      '/admin/threads/stats/'
-    );
+    const response = await messagingApi.get<MessagingStats>('/admin/threads/stats/');
     return response.data;
   },
 };
@@ -382,10 +345,7 @@ export const fileUploadApi = {
   /**
    * Upload files with progress tracking
    */
-  async uploadFiles(
-    files: File[],
-    onProgress?: (progress: number) => void
-  ): Promise<string[]> {
+  async uploadFiles(files: File[], onProgress?: (progress: number) => void): Promise<string[]> {
     const formData = new FormData();
     files.forEach((file) => {
       formData.append('files', file);
@@ -397,9 +357,7 @@ export const fileUploadApi = {
       },
       onUploadProgress: (progressEvent: { loaded: number; total?: number }) => {
         if (onProgress && progressEvent.total) {
-          const progress = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           onProgress(progress);
         }
       },
@@ -420,7 +378,10 @@ export const apiErrorHandler = {
    * Extract error message from API response
    */
   getErrorMessage(error: unknown): string {
-    const errorWithResponse = error as { response?: { data?: { message?: string; detail?: string } | string }; message?: string };
+    const errorWithResponse = error as {
+      response?: { data?: { message?: string; detail?: string } | string };
+      message?: string;
+    };
 
     if (errorWithResponse.response?.data) {
       const data = errorWithResponse.response.data;

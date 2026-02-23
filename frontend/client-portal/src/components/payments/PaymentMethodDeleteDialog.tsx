@@ -113,7 +113,8 @@ const PaymentMethodDeleteDialog: React.FC<PaymentMethodDeleteDialogProps> = ({
   }
 
   const requiredConfirmationText = getConfirmationText(paymentMethod);
-  const isConfirmationValid = !showConfirmationField || confirmationText.trim() === requiredConfirmationText;
+  const isConfirmationValid =
+    !showConfirmationField || confirmationText.trim() === requiredConfirmationText;
 
   return (
     <Dialog
@@ -126,7 +127,7 @@ const PaymentMethodDeleteDialog: React.FC<PaymentMethodDeleteDialogProps> = ({
           backgroundColor: alpha(theme.palette.background.paper, 0.95),
           backdropFilter: 'blur(10px)',
           border: `1px solid ${alpha('#fff', 0.1)}`,
-        }
+        },
       }}
     >
       <DialogTitle>
@@ -193,9 +194,10 @@ const PaymentMethodDeleteDialog: React.FC<PaymentMethodDeleteDialogProps> = ({
                 )}
                 {paymentMethod.expiry_date && (
                   <Typography variant="caption" color="text.secondary">
-                    Expires: {new Date(paymentMethod.expiry_date).toLocaleDateString('en-US', {
+                    Expires:{' '}
+                    {new Date(paymentMethod.expiry_date).toLocaleDateString('en-US', {
                       month: '2-digit',
-                      year: '2-digit'
+                      year: '2-digit',
                     })}
                   </Typography>
                 )}
@@ -231,7 +233,8 @@ const PaymentMethodDeleteDialog: React.FC<PaymentMethodDeleteDialogProps> = ({
                 This is your default payment method
               </Typography>
               <Typography variant="caption">
-                Deleting this will remove your default payment method. You'll need to set another method as default if you have other payment methods saved.
+                Deleting this will remove your default payment method. You'll need to set another
+                method as default if you have other payment methods saved.
               </Typography>
             </Alert>
           )}
@@ -252,7 +255,8 @@ const PaymentMethodDeleteDialog: React.FC<PaymentMethodDeleteDialogProps> = ({
                 This is your only saved payment method
               </Typography>
               <Typography variant="caption">
-                After deleting this method, you'll need to enter payment details manually for future transactions.
+                After deleting this method, you'll need to enter payment details manually for future
+                transactions.
               </Typography>
             </Alert>
           )}
@@ -290,7 +294,7 @@ const PaymentMethodDeleteDialog: React.FC<PaymentMethodDeleteDialogProps> = ({
                 helperText={
                   confirmationText.length > 0 && !isConfirmationValid
                     ? "Text doesn't match. Please type exactly as shown above."
-                    : "Type the text above exactly to confirm deletion"
+                    : 'Type the text above exactly to confirm deletion'
                 }
                 sx={{
                   '& .MuiOutlinedInput-root': {

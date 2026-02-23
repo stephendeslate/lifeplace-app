@@ -1,20 +1,22 @@
 # backend/core/domains/workflows/engine.py
 import logging
 
-from core.domains.events.models import Event, EventTimeline
-from core.domains.workflows.models import WorkflowStage, EventWorkflowOverride
-from core.domains.workflows.tasks import schedule_stage_actions, schedule_before_event_action
 from django.db import transaction
 from django.utils import timezone
 
+from core.domains.events.models import EventTimeline
+from core.domains.workflows.models import EventWorkflowOverride, WorkflowStage
+from core.domains.workflows.tasks import schedule_before_event_action, schedule_stage_actions
+
 logger = logging.getLogger(__name__)
+
 
 class WorkflowEngine:
     """
     Central engine for managing workflow transitions and executing
     stage-specific actions for events.
     """
-    
+
     @classmethod
     def assign_initial_workflow(cls, event):
         """Assign the initial workflow stage to a new event with context-aware selection"""
@@ -26,35 +28,36 @@ class WorkflowEngine:
             first_stage = None
 
             # For quote requests, try to find a quote-specific LEAD stage
-            if event.completion_type == 'quote':
+            if event.completion_type == "quote":
                 # Look for quote-specific stage (marked in metadata)
-                first_stage = event.workflow_template.stages.filter(
-                    stage='LEAD',
-                    metadata__flow_type='quote'
-                ).order_by('order').first()
+                first_stage = (
+                    event.workflow_template.stages.filter(stage="LEAD", metadata__flow_type="quote")
+                    .order_by("order")
+                    .first()
+                )
 
                 if first_stage:
                     logger.info(f"Found quote-specific LEAD stage '{first_stage.name}' for event {event.id}")
 
             # Fallback: Find the first LEAD stage (for payment or if no quote stage exists)
             if not first_stage:
-                first_stage = event.workflow_template.stages.filter(
-                    stage='LEAD'
-                ).order_by('order').first()
+                first_stage = event.workflow_template.stages.filter(stage="LEAD").order_by("order").first()
 
-                if first_stage and event.completion_type == 'quote':
-                    logger.info(f"No quote-specific stage found, using default LEAD stage '{first_stage.name}' for event {event.id}")
+                if first_stage and event.completion_type == "quote":
+                    logger.info(
+                        f"No quote-specific stage found, using default LEAD stage '{first_stage.name}' for event {event.id}"
+                    )
 
             if first_stage:
                 event.current_stage = first_stage
-                event.save(update_fields=['current_stage'])
+                event.save(update_fields=["current_stage"])
 
                 # Log the stage assignment
                 EventTimeline.objects.create(
                     event=event,
-                    action_type='STAGE_CHANGE',
+                    action_type="STAGE_CHANGE",
                     description=f"Initial workflow stage: {first_stage.name}",
-                    is_public=True
+                    is_public=True,
                 )
 
                 # Execute stage actions
@@ -62,19 +65,25 @@ class WorkflowEngine:
 
                 # Execute automation for any stages with trigger_on_event_created
                 # These run in addition to the first stage's automation
-                stages_with_event_trigger = event.workflow_template.stages.filter(
-                    trigger_on_event_created=True
-                ).exclude(id=first_stage.id).order_by('stage', 'order')
+                stages_with_event_trigger = (
+                    event.workflow_template.stages.filter(trigger_on_event_created=True)
+                    .exclude(id=first_stage.id)
+                    .order_by("stage", "order")
+                )
 
                 for triggered_stage in stages_with_event_trigger:
-                    logger.info(f"Executing trigger_on_event_created automation for stage '{triggered_stage.name}' on event {event.id}")
+                    logger.info(
+                        f"Executing trigger_on_event_created automation for stage '{triggered_stage.name}' on event {event.id}"
+                    )
                     if triggered_stage.is_automated:
                         triggered_stage._execute_automation(event)
 
-                logger.info(f"Assigned initial workflow stage '{first_stage.name}' to event {event.id} (completion_type: {event.completion_type})")
+                logger.info(
+                    f"Assigned initial workflow stage '{first_stage.name}' to event {event.id} (completion_type: {event.completion_type})"
+                )
         except Exception as e:
-            logger.error(f"Error assigning initial workflow: {str(e)}")
-    
+            logger.error(f"Error assigning initial workflow: {e!s}")
+
     @classmethod
     def progress_workflow(cls, event, trigger_type=None, data=None):
         """
@@ -111,25 +120,22 @@ class WorkflowEngine:
             # Log the skip and try to progress to the following stage
             EventTimeline.objects.create(
                 event=event,
-                action_type='STAGE_CHANGE',
+                action_type="STAGE_CHANGE",
                 description=f"Skipped stage '{next_stage.name}' (workflow override)",
-                action_data={
-                    'skipped_stage': next_stage.id,
-                    'override_type': 'SKIP'
-                },
-                is_public=False
+                action_data={"skipped_stage": next_stage.id, "override_type": "SKIP"},
+                is_public=False,
             )
             # Recursively try next stage
             event.current_stage = next_stage
-            event.save(update_fields=['current_stage'])
+            event.save(update_fields=["current_stage"])
             return cls.progress_workflow(event, trigger_type, data)
 
         with transaction.atomic():
             # Check for Lead Stage Auto-Stop: when transitioning from LEAD to PRODUCTION
             is_cross_category_to_production = (
-                current_stage.stage == 'LEAD' and
-                next_stage.stage == 'PRODUCTION' and
-                event.workflow_template.lead_stage_auto_stop
+                current_stage.stage == "LEAD"
+                and next_stage.stage == "PRODUCTION"
+                and event.workflow_template.lead_stage_auto_stop
             )
 
             if is_cross_category_to_production:
@@ -138,7 +144,7 @@ class WorkflowEngine:
 
             # Update event stage
             event.current_stage = next_stage
-            event.save(update_fields=['current_stage'])
+            event.save(update_fields=["current_stage"])
 
             # Log the stage transition
             transition_description = f"Moved from '{current_stage.name}' to '{next_stage.name}'"
@@ -147,14 +153,14 @@ class WorkflowEngine:
 
             EventTimeline.objects.create(
                 event=event,
-                action_type='STAGE_CHANGE',
+                action_type="STAGE_CHANGE",
                 description=transition_description,
                 action_data={
-                    'previous_stage': current_stage.id,
-                    'trigger_type': trigger_type,
-                    'lead_auto_stop': is_cross_category_to_production
+                    "previous_stage": current_stage.id,
+                    "trigger_type": trigger_type,
+                    "lead_auto_stop": is_cross_category_to_production,
                 },
-                is_public=True
+                is_public=True,
             )
 
             # Execute stage actions (respecting overrides)
@@ -166,29 +172,19 @@ class WorkflowEngine:
     @classmethod
     def _is_stage_skipped(cls, event, stage):
         """Check if a stage should be skipped for this event due to override"""
-        return EventWorkflowOverride.objects.filter(
-            event=event,
-            stage=stage,
-            override_type='SKIP'
-        ).exists()
+        return EventWorkflowOverride.objects.filter(event=event, stage=stage, override_type="SKIP").exists()
 
     @classmethod
     def _is_automation_disabled(cls, event, stage):
         """Check if automation is disabled for this stage for this event"""
         return EventWorkflowOverride.objects.filter(
-            event=event,
-            stage=stage,
-            override_type__in=['SKIP', 'DISABLE_AUTOMATION']
+            event=event, stage=stage, override_type__in=["SKIP", "DISABLE_AUTOMATION"]
         ).exists()
 
     @classmethod
     def _get_custom_trigger_time(cls, event, stage):
         """Get custom trigger time if overridden for this event"""
-        override = EventWorkflowOverride.objects.filter(
-            event=event,
-            stage=stage,
-            override_type='CUSTOM_TIMING'
-        ).first()
+        override = EventWorkflowOverride.objects.filter(event=event, stage=stage, override_type="CUSTOM_TIMING").first()
         return override.custom_trigger_time if override else None
 
     @classmethod
@@ -201,9 +197,7 @@ class WorkflowEngine:
         """
         # Find all LEAD stages that come after the current stage
         remaining_lead_stages = WorkflowStage.objects.filter(
-            template=event.workflow_template,
-            stage='LEAD',
-            order__gt=current_lead_stage.order
+            template=event.workflow_template, stage="LEAD", order__gt=current_lead_stage.order
         )
 
         skipped_stages = []
@@ -213,31 +207,26 @@ class WorkflowEngine:
                 event=event,
                 stage=stage,
                 defaults={
-                    'override_type': 'SKIP',
-                    'reason': 'Lead Stage Auto-Stop: Event transitioned to PRODUCTION',
-                    'executed': True,
-                    'executed_at': timezone.now()
-                }
+                    "override_type": "SKIP",
+                    "reason": "Lead Stage Auto-Stop: Event transitioned to PRODUCTION",
+                    "executed": True,
+                    "executed_at": timezone.now(),
+                },
             )
             if created:
                 skipped_stages.append(stage.name)
-                logger.info(
-                    f"Lead Auto-Stop: Skipped stage '{stage.name}' for event {event.id}"
-                )
+                logger.info(f"Lead Auto-Stop: Skipped stage '{stage.name}' for event {event.id}")
 
         if skipped_stages:
             # Log the auto-stop action
             EventTimeline.objects.create(
                 event=event,
-                action_type='SYSTEM_UPDATE',
+                action_type="SYSTEM_UPDATE",
                 description=f"Lead Stage Auto-Stop: Skipped {len(skipped_stages)} remaining LEAD stage(s)",
-                action_data={
-                    'skipped_stages': skipped_stages,
-                    'action': 'lead_stage_auto_stop'
-                },
-                is_public=False
+                action_data={"skipped_stages": skipped_stages, "action": "lead_stage_auto_stop"},
+                is_public=False,
             )
-    
+
     @classmethod
     def _get_eligible_next_stages(cls, event, trigger_type=None, data=None):
         """
@@ -259,14 +248,15 @@ class WorkflowEngine:
                 """Find a stage with the trigger and execute its automation"""
                 # First check current stage
                 if getattr(current_stage, trigger_field, False):
-                    logger.info(f"Current stage '{current_stage.name}' triggered by {trigger_type} - executing automation")
+                    logger.info(
+                        f"Current stage '{current_stage.name}' triggered by {trigger_type} - executing automation"
+                    )
                     current_stage._execute_automation(event)
                     return True
 
                 # Search for any stage in this workflow with the trigger
                 triggered_stage = WorkflowStage.objects.filter(
-                    template=event.workflow_template,
-                    **{trigger_field: True}
+                    template=event.workflow_template, **{trigger_field: True}
                 ).first()
 
                 if triggered_stage:
@@ -276,46 +266,45 @@ class WorkflowEngine:
 
                 return False
 
-            if trigger_type == 'PAYMENT_RECEIVED':
-                find_and_execute_triggered_stage('trigger_on_payment_received')
+            if trigger_type == "PAYMENT_RECEIVED":
+                find_and_execute_triggered_stage("trigger_on_payment_received")
                 # For CONFIRMED events, continue to progression logic below
                 # For non-confirmed events, stay on current stage
-                if event.status != 'CONFIRMED':
+                if event.status != "CONFIRMED":
                     return []
 
-            if trigger_type == 'QUOTE_ACCEPTED':
-                if find_and_execute_triggered_stage('trigger_on_quote_accepted'):
+            if trigger_type == "QUOTE_ACCEPTED":
+                if find_and_execute_triggered_stage("trigger_on_quote_accepted"):
                     return []  # Stay on current stage
 
-            if trigger_type == 'CONTRACT_SIGNED':
-                if find_and_execute_triggered_stage('trigger_on_contract_signed'):
+            if trigger_type == "CONTRACT_SIGNED":
+                if find_and_execute_triggered_stage("trigger_on_contract_signed"):
                     return []  # Stay on current stage
 
-            if trigger_type == 'QUOTE_SENT':
-                if find_and_execute_triggered_stage('trigger_on_quote_sent'):
+            if trigger_type == "QUOTE_SENT":
+                if find_and_execute_triggered_stage("trigger_on_quote_sent"):
                     return []  # Stay on current stage
 
         # For CONFIRMED events in LEAD stage, skip to PRODUCTION
         # This handles direct-payment bookings that skip quote review
-        if current_stage.stage == 'LEAD' and event.status == 'CONFIRMED':
-            next_stages = WorkflowStage.objects.filter(
-                template=event.workflow_template,
-                stage='PRODUCTION'
-            ).order_by('order')
+        if current_stage.stage == "LEAD" and event.status == "CONFIRMED":
+            next_stages = WorkflowStage.objects.filter(template=event.workflow_template, stage="PRODUCTION").order_by(
+                "order"
+            )
 
             if next_stages.exists():
                 next_stage = next_stages.first()
                 if next_stage.check_advancement_criteria(event):
-                    logger.info(f"CONFIRMED event {event.id} skipping remaining LEAD stages, moving to PRODUCTION '{next_stage.name}'")
+                    logger.info(
+                        f"CONFIRMED event {event.id} skipping remaining LEAD stages, moving to PRODUCTION '{next_stage.name}'"
+                    )
                     return [next_stage]
 
         # Normal sequential flow: next stage in the same category
         next_order = current_stage.order + 1
 
         next_stages = WorkflowStage.objects.filter(
-            template=event.workflow_template,
-            stage=current_stage.stage,
-            order=next_order
+            template=event.workflow_template, stage=current_stage.stage, order=next_order
         )
 
         # If we found a next stage in the same category, check if eligible
@@ -329,15 +318,14 @@ class WorkflowEngine:
                 return []  # Blocked by progression criteria
 
         # Cross-category progression: LEAD -> PRODUCTION -> POST_PRODUCTION
-        if current_stage.stage == 'LEAD':
+        if current_stage.stage == "LEAD":
             # Move from LEAD to PRODUCTION when:
             # 1. Event status is CONFIRMED, or
             # 2. Payment is received (for paid bookings)
-            if trigger_type == 'STATUS_CHANGE' and event.status == 'CONFIRMED':
+            if trigger_type == "STATUS_CHANGE" and event.status == "CONFIRMED":
                 next_stages = WorkflowStage.objects.filter(
-                    template=event.workflow_template,
-                    stage='PRODUCTION'
-                ).order_by('order')
+                    template=event.workflow_template, stage="PRODUCTION"
+                ).order_by("order")
 
                 if next_stages.exists():
                     next_stage = next_stages.first()
@@ -345,12 +333,11 @@ class WorkflowEngine:
                         return [next_stage]
                     return []
 
-            elif trigger_type == 'PAYMENT_RECEIVED':
+            elif trigger_type == "PAYMENT_RECEIVED":
                 # Payment received - move to first PRODUCTION stage
                 next_stages = WorkflowStage.objects.filter(
-                    template=event.workflow_template,
-                    stage='PRODUCTION'
-                ).order_by('order')
+                    template=event.workflow_template, stage="PRODUCTION"
+                ).order_by("order")
 
                 if next_stages.exists():
                     next_stage = next_stages.first()
@@ -360,19 +347,18 @@ class WorkflowEngine:
                         logger.info(f"Event {event.id} cannot progress to PRODUCTION - criteria not met")
                         return []
 
-        elif current_stage.stage == 'PRODUCTION' and trigger_type == 'STATUS_CHANGE' and event.status == 'COMPLETED':
+        elif current_stage.stage == "PRODUCTION" and trigger_type == "STATUS_CHANGE" and event.status == "COMPLETED":
             # Move from PRODUCTION to POST_PRODUCTION when event is completed
             next_stages = WorkflowStage.objects.filter(
-                template=event.workflow_template,
-                stage='POST_PRODUCTION'
-            ).order_by('order')
+                template=event.workflow_template, stage="POST_PRODUCTION"
+            ).order_by("order")
 
             if next_stages.exists():
                 return [next_stages.first()]
 
         # No eligible next stages found
         return []
-    
+
     @classmethod
     def execute_stage_actions(cls, event, stage):
         """
@@ -392,10 +378,7 @@ class WorkflowEngine:
         """
         # Check if automation is disabled for this event
         if cls._is_automation_disabled(event, stage):
-            logger.info(
-                f"Automation disabled for stage '{stage.name}' on event {event.id} "
-                f"(per-event override)"
-            )
+            logger.info(f"Automation disabled for stage '{stage.name}' on event {event.id} (per-event override)")
             return
 
         if stage.is_automated:
@@ -415,12 +398,10 @@ class WorkflowEngine:
                 _event_id = event.id
                 _stage_id = stage.id
 
-                if trigger_upper.startswith('AFTER_'):
+                if trigger_upper.startswith("AFTER_"):
                     # Delay after stage start (existing behavior)
-                    transaction.on_commit(
-                        lambda eid=_event_id, sid=_stage_id: schedule_stage_actions.delay(eid, sid)
-                    )
-                elif '_DAYS_BEFORE_EVENT' in trigger_upper or '_BEFORE_EVENT' in trigger_upper:
+                    transaction.on_commit(lambda eid=_event_id, sid=_stage_id: schedule_stage_actions.delay(eid, sid))
+                elif "_DAYS_BEFORE_EVENT" in trigger_upper or "_BEFORE_EVENT" in trigger_upper:
                     # Schedule to execute X days before event start_date
                     transaction.on_commit(
                         lambda eid=_event_id, sid=_stage_id: schedule_before_event_action.delay(eid, sid)

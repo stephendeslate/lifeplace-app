@@ -1,17 +1,9 @@
 // frontend/admin-crm/src/components/common/settings/SettingsFormDialog.tsx
 
 import { useState, useEffect, useCallback } from 'react';
+import { Box, Alert, Typography, Divider } from '@mui/material';
+import { Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import {
-  Box,
-  Alert,
-  Typography,
-  Divider,
-} from '@mui/material';
-import {
-  Save as SaveIcon,
-  Cancel as CancelIcon,
-} from '@mui/icons-material';
-import { 
   ModernDialog,
   ModernForm,
   createDeleteActions,
@@ -23,31 +15,31 @@ export interface SettingsFormDialogProps<T = Record<string, unknown>> {
   // Dialog state
   open: boolean;
   onClose: () => void;
-  
+
   // Form configuration
   title: string;
   subtitle?: string;
   sections: ModernFormSection[];
-  
+
   // Data
   item?: T | null; // Item to edit (null/undefined for create)
   defaultValues: T;
-  
+
   // Actions
   onSubmit: (data: T) => Promise<void>;
   onDelete?: (item: T) => Promise<void>;
-  
+
   // Validation
   validate?: (data: T) => Record<string, string>;
-  
+
   // UI Configuration
   maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   showDelete?: boolean;
-  
+
   // Loading states
   isSubmitting?: boolean;
   isDeleting?: boolean;
-  
+
   // Custom actions
   customActions?: ModernDialogAction[];
 }
@@ -89,20 +81,23 @@ export const SettingsFormDialog = <T extends Record<string, unknown>>({
     }
   }, [open, item, defaultValues]);
 
-  const handleFormChange = useCallback((name: string, value: unknown) => {
-    setFormValues(prev => ({
-      ...prev,
-      [name]: value,
-    }));
-
-    // Clear field error when user starts changing the value
-    if (errors[name]) {
-      setErrors(prev => ({
+  const handleFormChange = useCallback(
+    (name: string, value: unknown) => {
+      setFormValues((prev) => ({
         ...prev,
-        [name]: '',
+        [name]: value,
       }));
-    }
-  }, [errors]);
+
+      // Clear field error when user starts changing the value
+      if (errors[name]) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: '',
+        }));
+      }
+    },
+    [errors],
+  );
 
   const handleSubmit = async () => {
     try {
@@ -122,15 +117,15 @@ export const SettingsFormDialog = <T extends Record<string, unknown>>({
 
       // Submit the form
       await onSubmit(formValues);
-      
+
       // Close dialog on success
       onClose();
     } catch (error) {
       console.error('Form submission error:', error);
       setSubmitError(
-        error instanceof Error 
-          ? error.message 
-          : 'An error occurred while saving. Please try again.'
+        error instanceof Error
+          ? error.message
+          : 'An error occurred while saving. Please try again.',
       );
     }
   };
@@ -145,9 +140,9 @@ export const SettingsFormDialog = <T extends Record<string, unknown>>({
     } catch (error) {
       console.error('Delete error:', error);
       setSubmitError(
-        error instanceof Error 
-          ? error.message 
-          : 'An error occurred while deleting. Please try again.'
+        error instanceof Error
+          ? error.message
+          : 'An error occurred while deleting. Please try again.',
       );
     }
   };
@@ -162,17 +157,15 @@ export const SettingsFormDialog = <T extends Record<string, unknown>>({
       disabled: isLoading,
       startIcon: <CancelIcon />,
     },
-    
+
     // Custom actions
     ...customActions,
-    
+
     // Delete action (if enabled and editing)
-    ...(showDelete && isEditing && onDelete ? createDeleteActions(
-      onClose,
-      handleDelete,
-      isDeleting
-    ) : []),
-    
+    ...(showDelete && isEditing && onDelete
+      ? createDeleteActions(onClose, handleDelete, isDeleting)
+      : []),
+
     // Save action
     {
       label: isEditing ? 'Save Changes' : `Create ${title}`,
@@ -199,11 +192,7 @@ export const SettingsFormDialog = <T extends Record<string, unknown>>({
       <Box>
         {subtitle && (
           <>
-            <Typography 
-              variant="body2" 
-              color="text.secondary"
-              sx={{ mb: 3 }}
-            >
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
               {subtitle}
             </Typography>
             <Divider sx={{ mb: 3 }} />
@@ -211,22 +200,18 @@ export const SettingsFormDialog = <T extends Record<string, unknown>>({
         )}
 
         {submitError && (
-          <Alert 
-            severity="error" 
-            sx={{ mb: 3 }}
-            onClose={() => setSubmitError('')}
-          >
+          <Alert severity="error" sx={{ mb: 3 }} onClose={() => setSubmitError('')}>
             {submitError}
           </Alert>
         )}
 
         <ModernForm
-          sections={sections.map(section => ({
+          sections={sections.map((section) => ({
             ...section,
-            fields: section.fields.map(field => ({
+            fields: section.fields.map((field) => ({
               ...field,
-              error: errors[field.name] || field.error
-            }))
+              error: errors[field.name] || field.error,
+            })),
           }))}
           values={formValues}
           onChange={handleFormChange}

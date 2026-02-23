@@ -77,7 +77,9 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const getStatusColor = (status: EventQuote['status']): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
+  const getStatusColor = (
+    status: EventQuote['status'],
+  ): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (status) {
       case 'SENT':
         return 'info';
@@ -161,21 +163,36 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
         sx={{
           border: '1px solid',
           borderColor: 'divider',
-          backgroundColor: quote.status === 'ACCEPTED' ? alpha(theme.palette.success.main, 0.05) :
-                          quote.status === 'REJECTED' ? alpha(theme.palette.error.main, 0.05) :
-                          quote.status === 'EXPIRED' ? alpha(theme.palette.warning.main, 0.05) :
-                          'background.paper',
+          backgroundColor:
+            quote.status === 'ACCEPTED'
+              ? alpha(theme.palette.success.main, 0.05)
+              : quote.status === 'REJECTED'
+                ? alpha(theme.palette.error.main, 0.05)
+                : quote.status === 'EXPIRED'
+                  ? alpha(theme.palette.warning.main, 0.05)
+                  : 'background.paper',
         }}
       >
         <CardContent>
           <Stack spacing={2}>
             {/* Header */}
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={2}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="flex-start"
+              flexWrap="wrap"
+              gap={2}
+            >
               <Box>
                 <Typography variant="h6" component="h3" gutterBottom>
                   Quote #{quote.id}
                   {quote.version > 1 && (
-                    <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                    <Typography
+                      component="span"
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ ml: 1 }}
+                    >
                       (v{quote.version})
                     </Typography>
                   )}
@@ -184,7 +201,8 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
                   Created: {formatInTimeZone(quote.created_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                   {quote.sent_at && (
                     <>
-                      {' • '}Sent: {formatInTimeZone(quote.sent_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
+                      {' • '}Sent:{' '}
+                      {formatInTimeZone(quote.sent_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                     </>
                   )}
                 </Typography>
@@ -220,7 +238,8 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
             {/* Expiry Warning */}
             {quote.status === 'SENT' && isExpired() && (
               <Alert severity="error" icon={<WarningIcon fontSize="inherit" />}>
-                This quote has expired and can no longer be accepted. Please contact us for a new quote.
+                This quote has expired and can no longer be accepted. Please contact us for a new
+                quote.
               </Alert>
             )}
 
@@ -230,8 +249,7 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
                   ? 'This quote expires today! Please accept or reject it soon.'
                   : getDaysUntilExpiry() === 1
                     ? 'This quote expires tomorrow! Please accept or reject it soon.'
-                    : `This quote expires in ${getDaysUntilExpiry()} days. Please accept or reject it before it expires.`
-                }
+                    : `This quote expires in ${getDaysUntilExpiry()} days. Please accept or reject it before it expires.`}
               </Alert>
             )}
 
@@ -241,9 +259,7 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
                 <Typography variant="body2" color="text.secondary" gutterBottom>
                   Message:
                 </Typography>
-                <Typography variant="body2">
-                  {quote.client_message}
-                </Typography>
+                <Typography variant="body2">{quote.client_message}</Typography>
               </Paper>
             )}
 
@@ -299,7 +315,8 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
                       <Stack direction="row" justifyContent="space-between" alignItems="center">
                         <Typography variant="caption" color="text.secondary">
                           Qty: {item.quantity} × {formatAmount(item.unit_price)}
-                          {parseFloat(item.tax_rate) > 0 && ` (Tax: ${(parseFloat(item.tax_rate) * 100).toFixed(1)}%)`}
+                          {parseFloat(item.tax_rate) > 0 &&
+                            ` (Tax: ${(parseFloat(item.tax_rate) * 100).toFixed(1)}%)`}
                         </Typography>
                       </Stack>
                     }
@@ -337,11 +354,13 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
                             </Typography>
                           </Stack>
                         }
-                        secondary={option.description && (
-                          <Typography variant="caption" color="text.secondary">
-                            {option.description}
-                          </Typography>
-                        )}
+                        secondary={
+                          option.description && (
+                            <Typography variant="caption" color="text.secondary">
+                              {option.description}
+                            </Typography>
+                          )
+                        }
                       />
                     </ListItem>
                   ))}
@@ -394,18 +413,12 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
       </Card>
 
       {/* Reject Dialog */}
-      <Dialog
-        open={rejectDialogOpen}
-        onClose={handleRejectDialogClose}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          Reject Quote #{quote.id}
-        </DialogTitle>
+      <Dialog open={rejectDialogOpen} onClose={handleRejectDialogClose} maxWidth="sm" fullWidth>
+        <DialogTitle>Reject Quote #{quote.id}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" paragraph>
-            Please provide a reason for rejecting this quote. This feedback helps us improve our services.
+            Please provide a reason for rejecting this quote. This feedback helps us improve our
+            services.
           </Typography>
           <TextField
             label="Rejection Reason"
@@ -420,9 +433,7 @@ const QuoteCard: React.FC<QuoteCardProps> = ({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleRejectDialogClose}>
-            Cancel
-          </Button>
+          <Button onClick={handleRejectDialogClose}>Cancel</Button>
           <Button
             onClick={handleRejectSubmit}
             variant="contained"
@@ -441,14 +452,8 @@ const EventQuotes: React.FC<EventQuotesProps> = ({ eventId }) => {
   const { data: quotes, isLoading, error } = useEventQuotes(eventId);
   const { formatAmount } = useCurrencySettings();
 
-  const {
-    acceptQuote,
-    rejectQuote,
-    downloadPdf,
-    isAccepting,
-    isRejecting,
-    isDownloading,
-  } = useQuoteActions();
+  const { acceptQuote, rejectQuote, downloadPdf, isAccepting, isRejecting, isDownloading } =
+    useQuoteActions();
 
   const handleAcceptQuote = async (quoteId: number) => {
     try {

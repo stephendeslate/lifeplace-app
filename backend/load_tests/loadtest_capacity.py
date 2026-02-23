@@ -26,17 +26,16 @@ IMPORTANT:
     - Set credentials in .env (see .env.example)
 """
 
-import os
 import json
 import logging
+import os
 from datetime import datetime
 
-from locust import HttpUser, task, between, events, LoadTestShape
-
 from config import config
-from utils import TokenManager, RateLimitTracker, think_time
-from load_booking_flow import BookingFlowBehavior
 from load_admin_dashboard import AdminDashboardBehavior
+from load_booking_flow import BookingFlowBehavior
+from locust import HttpUser, LoadTestShape, between, events, task
+from utils import RateLimitTracker, TokenManager, think_time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -54,6 +53,7 @@ STAGE_COUNT = int(os.getenv("LOAD_TEST_STAGES", "5"))
 # =============================================================================
 # USER CLASSES
 # =============================================================================
+
 
 class BookingFlowLoadUser(HttpUser):
     """
@@ -118,12 +118,7 @@ class ClientPortalLoadUser(HttpUser):
         ]
 
         for path in endpoints:
-            with self.client.get(
-                path,
-                headers=headers,
-                catch_response=True,
-                name=f"{path} [client]"
-            ) as response:
+            with self.client.get(path, headers=headers, catch_response=True, name=f"{path} [client]") as response:
                 if response.status_code == 200:
                     response.success()
                 elif response.status_code == 429:
@@ -169,6 +164,7 @@ class AdminDashboardLoadUser(HttpUser):
 # LOAD SHAPE: Staged ramp-up
 # =============================================================================
 
+
 class CapacityTestShape(LoadTestShape):
     """
     Ramps users in stages to find the capacity ceiling.
@@ -203,6 +199,7 @@ class CapacityTestShape(LoadTestShape):
 # =============================================================================
 # REPORTING
 # =============================================================================
+
 
 @events.test_stop.add_listener
 def on_test_stop(environment, **kwargs):
@@ -256,7 +253,8 @@ def on_test_stop(environment, **kwargs):
     admin_total_reqs = sum(e.num_requests for e in admin_endpoints.values())
     admin_avg_rt = (
         sum(e.avg_response_time * e.num_requests for e in admin_endpoints.values()) / admin_total_reqs
-        if admin_total_reqs > 0 else 0
+        if admin_total_reqs > 0
+        else 0
     )
     admin_p95 = max(
         (e.get_response_time_percentile(0.95) or 0 for e in admin_endpoints.values()),
@@ -269,28 +267,22 @@ def on_test_stop(environment, **kwargs):
     client_total_failures = sum(e.num_failures for e in client_endpoints.values())
 
     # --- Check for rate limiting ---
-    rate_limited = any(
-        "Rate limited" in str(entry.num_failures)
-        for entry in stats.entries.values()
-    )
-    rate_limit_429s = sum(
-        1 for key, entry in stats.entries.items()
-        if entry.num_failures > 0
-    )
+    any("Rate limited" in str(entry.num_failures) for entry in stats.entries.values())
+    sum(1 for key, entry in stats.entries.items() if entry.num_failures > 0)
 
     # --- Console report ---
     print("\n" + "=" * 70)
     print("  LIFEPLACE CAPACITY TEST RESULTS")
     print("=" * 70)
 
-    print(f"\n  Configuration:")
+    print("\n  Configuration:")
     print(f"    Peak concurrent users:  {MAX_USERS}")
     print(f"    Ramp-up stages:         {STAGE_COUNT} x {RAMP_DURATION // STAGE_COUNT}s")
     print(f"    Total duration:         {RAMP_DURATION}s")
     print(f"    Target:                 {config.base_url}")
 
     print(f"\n  {'─' * 66}")
-    print(f"  Overall Performance")
+    print("  Overall Performance")
     print(f"  {'─' * 66}")
     print(f"    Total requests:         {total_requests:,}")
     print(f"    Failed requests:        {total_failures:,}")
@@ -303,7 +295,7 @@ def on_test_stop(environment, **kwargs):
     print(f"    Min / Max:              {min_rt:.0f}ms / {max_rt:.0f}ms")
 
     print(f"\n  {'─' * 66}")
-    print(f"  Booking Flow (revenue-critical path, 60% of users)")
+    print("  Booking Flow (revenue-critical path, 60% of users)")
     print(f"  {'─' * 66}")
     print(f"    Flows started:          {booking_flows_started}")
     print(f"    Flows completed (e2e):  {booking_flows_completed}")
@@ -312,7 +304,7 @@ def on_test_stop(environment, **kwargs):
     print(f"    Throughput:             {booking_rps:.1f} req/s")
 
     print(f"\n  {'─' * 66}")
-    print(f"  Admin Dashboard (14 analytics queries per load, 20% of users)")
+    print("  Admin Dashboard (14 analytics queries per load, 20% of users)")
     print(f"  {'─' * 66}")
     print(f"    Full dashboard loads:   {admin_dashboard_loads}")
     print(f"    Total endpoint hits:    {admin_total_reqs:,}")
@@ -320,14 +312,14 @@ def on_test_stop(environment, **kwargs):
     print(f"    P95 response time:      {admin_p95:.0f}ms")
 
     print(f"\n  {'─' * 66}")
-    print(f"  Client Portal (20% of users)")
+    print("  Client Portal (20% of users)")
     print(f"  {'─' * 66}")
     print(f"    Total requests:         {client_total_reqs:,}")
     print(f"    Failed requests:        {client_total_failures:,}")
 
     # --- Resume-ready summary ---
     print(f"\n{'=' * 70}")
-    print(f"  RESUME-READY METRICS")
+    print("  RESUME-READY METRICS")
     print(f"{'=' * 70}")
 
     if error_rate < 5.0:

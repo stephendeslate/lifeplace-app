@@ -1,3 +1,8 @@
+# =============================================================================
+# Dependencies are also declared in pyproject.toml [project.dependencies].
+# This file is kept for pip/uv compatibility in Docker and CI.
+# To regenerate: uv pip compile pyproject.toml -o requirements.txt
+# =============================================================================
 aiohappyeyeballs==2.6.1
 aiohttp==3.12.15
 aiosignal==1.4.0
@@ -121,6 +126,13 @@ freezegun==1.4.0
 responses==0.25.6
 
 # Linting and Code Quality (Section 14.3)
-ruff==0.1.9
+ruff==0.15.2
 bandit[toml]==1.7.7
 pre-commit==3.6.0
+
+# Type Checking
+mypy==1.15.0
+django-stubs==5.2.0
+djangorestframework-stubs==3.15.2
+types-requests==2.32.0.20241016
+types-python-dateutil==2.9.0.20241206

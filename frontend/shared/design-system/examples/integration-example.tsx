@@ -46,25 +46,19 @@ export const AdminExample: React.FC = () => {
             <Typography variant="body2" color="text.secondary">
               Professional glassmorphism with subtle intensity for data focus
             </Typography>
-            
+
             <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
-              <PrimaryButton size="small">
-                View Details
-              </PrimaryButton>
-              <SecondaryButton size="small">
-                Export Data
-              </SecondaryButton>
+              <PrimaryButton size="small">View Details</PrimaryButton>
+              <SecondaryButton size="small">Export Data</SecondaryButton>
             </Stack>
           </GlassCard>
 
           <InteractiveGlassCard intensity="medium">
             <Box sx={flex.between}>
-              <Typography variant="h6">
-                Interactive Card with Hover Effects
-              </Typography>
-              <AccessibleButton 
-                color="primary" 
-                glass 
+              <Typography variant="h6">Interactive Card with Hover Effects</Typography>
+              <AccessibleButton
+                color="primary"
+                glass
                 keyboardShortcut="Ctrl+E"
                 description="Edit this dashboard section"
               >
@@ -78,10 +72,7 @@ export const AdminExample: React.FC = () => {
         <GlassCard>
           <Stack direction="row" spacing={2} alignItems="center">
             <Typography>Current Theme: {darkMode ? 'Dark' : 'Light'}</Typography>
-            <AccessibleButton 
-              onClick={() => setDarkMode(!darkMode)}
-              variant="outlined"
-            >
+            <AccessibleButton onClick={() => setDarkMode(!darkMode)} variant="outlined">
               Toggle Theme
             </AccessibleButton>
           </Stack>
@@ -105,13 +96,14 @@ export const ClientExample: React.FC = () => {
         </Typography>
 
         {/* Nature-inspired welcome section */}
-        <ColoredGlassCard 
-          color="primary" 
+        <ColoredGlassCard
+          color="primary"
           intensity="medium"
-          sx={{ 
-            mb: 4, 
+          sx={{
+            mb: 4,
             textAlign: 'center',
-            background: 'linear-gradient(135deg, rgba(45, 80, 22, 0.1) 0%, rgba(90, 124, 71, 0.05) 100%)'
+            background:
+              'linear-gradient(135deg, rgba(45, 80, 22, 0.1) 0%, rgba(90, 124, 71, 0.05) 100%)',
           }}
         >
           <Typography variant="h4" gutterBottom>
@@ -120,7 +112,7 @@ export const ClientExample: React.FC = () => {
           <Typography variant="body1" sx={{ mb: 3 }}>
             Experience the beauty of nature-inspired event planning with our organic design
           </Typography>
-          
+
           <Stack direction="row" spacing={2} justifyContent="center">
             <PrimaryButton size="large" rounded>
               Start Planning
@@ -132,12 +124,14 @@ export const ClientExample: React.FC = () => {
         </ColoredGlassCard>
 
         {/* Feature cards with organic feel */}
-        <Box sx={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: 3,
-          mb: 4,
-        }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+            gap: 3,
+            mb: 4,
+          }}
+        >
           <InteractiveGlassCard elevated>
             <Typography variant="h6" gutterBottom>
               Venue Selection
@@ -145,8 +139,8 @@ export const ClientExample: React.FC = () => {
             <Typography variant="body2" sx={{ mb: 2 }}>
               Choose from our curated collection of stunning venues
             </Typography>
-            <AccessibleButton 
-              color="success" 
+            <AccessibleButton
+              color="success"
               fullWidth
               description="Browse available venues for your event"
             >
@@ -161,8 +155,8 @@ export const ClientExample: React.FC = () => {
             <Typography variant="body2" sx={{ mb: 2 }}>
               Discover delicious catering options for every taste
             </Typography>
-            <AccessibleButton 
-              color="warning" 
+            <AccessibleButton
+              color="warning"
               fullWidth
               description="View catering menu and options"
             >
@@ -176,22 +170,20 @@ export const ClientExample: React.FC = () => {
           <Typography variant="h5" gutterBottom>
             Your Booking Progress
           </Typography>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            gap: 2,
-            [mediaQuery.down('sm')]: {
-              flexDirection: 'column',
-            }
-          }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 2,
+              [mediaQuery.down('sm')]: {
+                flexDirection: 'column',
+              },
+            }}
+          >
             <Typography variant="body1" sx={{ flex: 1 }}>
               You're 60% complete with your event planning
             </Typography>
-            <AccessibleButton 
-              color="primary" 
-              loading={false}
-              loadingText="Saving progress..."
-            >
+            <AccessibleButton color="primary" loading={false} loadingText="Saving progress...">
               Continue Planning
             </AccessibleButton>
           </Box>
@@ -199,7 +191,7 @@ export const ClientExample: React.FC = () => {
 
         {/* Theme toggle */}
         <Box sx={{ mt: 4, textAlign: 'center' }}>
-          <AccessibleButton 
+          <AccessibleButton
             onClick={() => setDarkMode(!darkMode)}
             variant="text"
             description="Switch between light and dark theme modes"
@@ -215,13 +207,15 @@ export const ClientExample: React.FC = () => {
 // Responsive Design Example
 export const ResponsiveExample: React.FC = () => {
   return (
-    <Box sx={{
-      // Using design system responsive utilities
-      ...createContainer('xl'),
-      py: { xs: 2, sm: 4, lg: 6 }, // Responsive padding
-    }}>
-      <Typography 
-        variant="h2" 
+    <Box
+      sx={{
+        // Using design system responsive utilities
+        ...createContainer('xl'),
+        py: { xs: 2, sm: 4, lg: 6 }, // Responsive padding
+      }}
+    >
+      <Typography
+        variant="h2"
         sx={{
           fontSize: {
             xs: designTokens.typography.fontSize['2xl'],
@@ -236,21 +230,21 @@ export const ResponsiveExample: React.FC = () => {
       </Typography>
 
       {/* Responsive grid */}
-      <Box sx={{
-        display: 'grid',
-        gridTemplateColumns: {
-          xs: '1fr',
-          sm: 'repeat(2, 1fr)',
-          lg: 'repeat(3, 1fr)',
-        },
-        gap: designTokens.spacing.space[4],
-      }}>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, 1fr)',
+            lg: 'repeat(3, 1fr)',
+          },
+          gap: designTokens.spacing.space[4],
+        }}
+      >
         {[1, 2, 3].map((item) => (
           <GlassCard key={item} intensity="medium">
             <Typography variant="h6">Card {item}</Typography>
-            <Typography variant="body2">
-              Responsive card that adapts to screen size
-            </Typography>
+            <Typography variant="body2">Responsive card that adapts to screen size</Typography>
           </GlassCard>
         ))}
       </Box>
@@ -275,11 +269,8 @@ export const PerformanceExample: React.FC = () => {
         <Typography variant="body2" sx={{ mb: 2 }}>
           This example shows performance best practices
         </Typography>
-        
-        <AccessibleButton 
-          onClick={handleClick}
-          color="primary"
-        >
+
+        <AccessibleButton onClick={handleClick} color="primary">
           Optimized Button
         </AccessibleButton>
       </GlassCard>
@@ -301,7 +292,7 @@ export const AccessibilityExample: React.FC = () => {
       <Typography variant="h5" gutterBottom>
         Accessibility Features
       </Typography>
-      
+
       <Stack spacing={2}>
         <AccessibleButton
           color="primary"
@@ -324,8 +315,8 @@ export const AccessibilityExample: React.FC = () => {
         </AccessibleButton>
 
         <Typography variant="caption" color="text.secondary">
-          These buttons include enhanced accessibility features:
-          keyboard shortcuts, screen reader support, and loading states.
+          These buttons include enhanced accessibility features: keyboard shortcuts, screen reader
+          support, and loading states.
         </Typography>
       </Stack>
     </GlassCard>

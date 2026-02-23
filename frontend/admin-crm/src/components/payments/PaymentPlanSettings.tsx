@@ -103,7 +103,6 @@ interface PaymentPlanFormData {
   date_hold_extension_days: string;
 }
 
-
 export const PaymentPlanSettings: React.FC = () => {
   const { data: paymentSettings, isLoading: isLoadingSettings } = usePaymentSettings();
   const { mutate: updateSettings, isPending: isUpdating } = useUpdatePaymentSettings();
@@ -217,7 +216,10 @@ export const PaymentPlanSettings: React.FC = () => {
         default_installment_frequency: paymentSettings.default_installment_frequency || 'MONTHLY',
         // Deposit settings
         deposit_type: paymentSettings.deposit_type || 'PERCENTAGE',
-        default_deposit_percentage: safeStringValue(paymentSettings.default_deposit_percentage, '50'),
+        default_deposit_percentage: safeStringValue(
+          paymentSettings.default_deposit_percentage,
+          '50',
+        ),
         deposit_fixed_amount: safeStringValue(paymentSettings.deposit_fixed_amount, '0'),
         deposit_is_refundable: paymentSettings.deposit_is_refundable ?? false,
         deposit_is_deductible: paymentSettings.deposit_is_deductible ?? true,
@@ -233,14 +235,23 @@ export const PaymentPlanSettings: React.FC = () => {
         security_deposit_is_refundable: paymentSettings.security_deposit_is_refundable ?? true,
         security_deposit_description: paymentSettings.security_deposit_description || '',
         // Cancellation settings
-        cancellation_admin_fee_percentage: safeStringValue(paymentSettings.cancellation_admin_fee_percentage, '0'),
+        cancellation_admin_fee_percentage: safeStringValue(
+          paymentSettings.cancellation_admin_fee_percentage,
+          '0',
+        ),
         // Payment schedule settings
         downpayment_percentage: safeStringValue(paymentSettings.downpayment_percentage, '30'),
         downpayment_due_days: safeStringValue(paymentSettings.downpayment_due_days, '7'),
         balance_due_type: paymentSettings.balance_due_type || 'DAYS_BEFORE',
         // Auto retry settings
-        auto_payment_retry_attempts: safeStringValue(paymentSettings.auto_payment_retry_attempts, '3'),
-        auto_payment_retry_delay_days: safeStringValue(paymentSettings.auto_payment_retry_delay_days, '7'),
+        auto_payment_retry_attempts: safeStringValue(
+          paymentSettings.auto_payment_retry_attempts,
+          '3',
+        ),
+        auto_payment_retry_delay_days: safeStringValue(
+          paymentSettings.auto_payment_retry_delay_days,
+          '7',
+        ),
         // Refund Policy
         allow_refunds: paymentSettings.allow_refunds ?? true,
         refund_deadline_hours: safeStringValue(paymentSettings.refund_deadline_hours, '48'),
@@ -248,7 +259,8 @@ export const PaymentPlanSettings: React.FC = () => {
         refund_policy_text: paymentSettings.refund_policy_text || '',
         // Date Blocking Policy
         date_blocking_policy: paymentSettings.date_blocking_policy || 'IMMEDIATE',
-        downpayment_due_reference: paymentSettings.downpayment_due_reference || 'DAYS_AFTER_BOOKING',
+        downpayment_due_reference:
+          paymentSettings.downpayment_due_reference || 'DAYS_AFTER_BOOKING',
         downpayment_deadline_days: safeStringValue(paymentSettings.downpayment_deadline_days, '7'),
         // Child/Youth Pricing
         child_pricing_enabled: paymentSettings.child_pricing_enabled ?? false,
@@ -259,15 +271,30 @@ export const PaymentPlanSettings: React.FC = () => {
         // Rescheduling Fee Settings
         rescheduling_fee_enabled: paymentSettings.rescheduling_fee_enabled ?? false,
         rescheduling_fee_type: paymentSettings.rescheduling_fee_type || 'PERCENTAGE',
-        rescheduling_fee_percentage: safeStringValue(paymentSettings.rescheduling_fee_percentage, '10'),
-        rescheduling_fee_fixed_amount: safeStringValue(paymentSettings.rescheduling_fee_fixed_amount, '0'),
-        rescheduling_grace_period_hours: safeStringValue(paymentSettings.rescheduling_grace_period_hours, '24'),
+        rescheduling_fee_percentage: safeStringValue(
+          paymentSettings.rescheduling_fee_percentage,
+          '10',
+        ),
+        rescheduling_fee_fixed_amount: safeStringValue(
+          paymentSettings.rescheduling_fee_fixed_amount,
+          '0',
+        ),
+        rescheduling_grace_period_hours: safeStringValue(
+          paymentSettings.rescheduling_grace_period_hours,
+          '24',
+        ),
         // Late Checkout Fee Settings
         late_checkout_fee_enabled: paymentSettings.late_checkout_fee_enabled ?? false,
         late_checkout_fee_type: paymentSettings.late_checkout_fee_type || 'HOURLY',
         late_checkout_fee_amount: safeStringValue(paymentSettings.late_checkout_fee_amount, '300'),
-        late_checkout_fee_percentage: safeStringValue(paymentSettings.late_checkout_fee_percentage, '10'),
-        late_checkout_grace_minutes: safeStringValue(paymentSettings.late_checkout_grace_minutes, '15'),
+        late_checkout_fee_percentage: safeStringValue(
+          paymentSettings.late_checkout_fee_percentage,
+          '10',
+        ),
+        late_checkout_grace_minutes: safeStringValue(
+          paymentSettings.late_checkout_grace_minutes,
+          '15',
+        ),
         late_checkout_max_hours: safeStringValue(paymentSettings.late_checkout_max_hours, '4'),
         // Date Holding Settings
         date_hold_enabled: paymentSettings.date_hold_enabled ?? true,
@@ -289,7 +316,8 @@ export const PaymentPlanSettings: React.FC = () => {
       // Deposit settings
       deposit_type: data.deposit_type,
       default_deposit_percentage: parseFloat(data.default_deposit_percentage),
-      deposit_fixed_amount: data.deposit_type === 'FIXED' ? parseFloat(data.deposit_fixed_amount) : null,
+      deposit_fixed_amount:
+        data.deposit_type === 'FIXED' ? parseFloat(data.deposit_fixed_amount) : null,
       deposit_is_refundable: data.deposit_is_refundable,
       deposit_is_deductible: data.deposit_is_deductible,
       deposit_waived_on_full_payment: data.deposit_waived_on_full_payment,
@@ -331,7 +359,10 @@ export const PaymentPlanSettings: React.FC = () => {
       rescheduling_fee_enabled: data.rescheduling_fee_enabled,
       rescheduling_fee_type: data.rescheduling_fee_type,
       rescheduling_fee_percentage: parseFloat(data.rescheduling_fee_percentage),
-      rescheduling_fee_fixed_amount: data.rescheduling_fee_type === 'FIXED' ? parseFloat(data.rescheduling_fee_fixed_amount) : null,
+      rescheduling_fee_fixed_amount:
+        data.rescheduling_fee_type === 'FIXED'
+          ? parseFloat(data.rescheduling_fee_fixed_amount)
+          : null,
       rescheduling_grace_period_hours: parseInt(data.rescheduling_grace_period_hours, 10),
       // Late Checkout Fee Settings
       late_checkout_fee_enabled: data.late_checkout_fee_enabled,
@@ -361,10 +392,17 @@ export const PaymentPlanSettings: React.FC = () => {
       label: 'Child',
     };
     const currentTiers = childPricingTiers || [];
-    reset({ ...control._formValues, child_pricing_tiers: [...currentTiers, newTier] }, { keepDirty: true });
+    reset(
+      { ...control._formValues, child_pricing_tiers: [...currentTiers, newTier] },
+      { keepDirty: true },
+    );
   };
 
-  const handleUpdateChildTier = (index: number, field: keyof ChildPricingTier, value: string | number) => {
+  const handleUpdateChildTier = (
+    index: number,
+    field: keyof ChildPricingTier,
+    value: string | number,
+  ) => {
     const tiers = [...(childPricingTiers || [])];
     tiers[index] = { ...tiers[index], [field]: value };
     reset({ ...control._formValues, child_pricing_tiers: tiers }, { keepDirty: true });
@@ -386,7 +424,8 @@ export const PaymentPlanSettings: React.FC = () => {
               Payment Plan Configuration
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Configure global payment settings including payment plans, refund policies, and gateway defaults
+              Configure global payment settings including payment plans, refund policies, and
+              gateway defaults
             </Typography>
           </Box>
         </Box>
@@ -422,7 +461,10 @@ export const PaymentPlanSettings: React.FC = () => {
                     label="Days Before Event When Balance Is Due"
                     type="number"
                     error={!!errors.balance_due_days}
-                    helperText={errors.balance_due_days?.message || 'Number of days before the event/service date when the remaining balance becomes due'}
+                    helperText={
+                      errors.balance_due_days?.message ||
+                      'Number of days before the event/service date when the remaining balance becomes due'
+                    }
                     InputProps={{
                       endAdornment: <InputAdornment position="end">days</InputAdornment>,
                     }}
@@ -460,7 +502,10 @@ export const PaymentPlanSettings: React.FC = () => {
                     label="Grace Period Days"
                     type="number"
                     error={!!errors.grace_period_days}
-                    helperText={errors.grace_period_days?.message || 'Number of days after due date before late fees apply'}
+                    helperText={
+                      errors.grace_period_days?.message ||
+                      'Number of days after due date before late fees apply'
+                    }
                     InputProps={{
                       endAdornment: <InputAdornment position="end">days</InputAdornment>,
                     }}
@@ -473,13 +518,7 @@ export const PaymentPlanSettings: React.FC = () => {
                 control={control}
                 render={({ field }) => (
                   <FormControlLabel
-                    control={
-                      <Switch
-                        {...field}
-                        checked={field.value}
-                        color="warning"
-                      />
-                    }
+                    control={<Switch {...field} checked={field.value} color="warning" />}
                     label="Enable Late Fees"
                   />
                 )}
@@ -509,7 +548,9 @@ export const PaymentPlanSettings: React.FC = () => {
                       name="default_late_fee_amount"
                       control={control}
                       rules={{
-                        required: lateFeeEnabled ? 'Late fee amount is required when enabled' : false,
+                        required: lateFeeEnabled
+                          ? 'Late fee amount is required when enabled'
+                          : false,
                         min: { value: 0, message: 'Cannot be negative' },
                       }}
                       render={({ field }) => (
@@ -519,9 +560,16 @@ export const PaymentPlanSettings: React.FC = () => {
                           label="Late Fee Amount"
                           type="number"
                           error={!!errors.default_late_fee_amount}
-                          helperText={errors.default_late_fee_amount?.message || 'Fixed late fee amount applied to overdue payments'}
+                          helperText={
+                            errors.default_late_fee_amount?.message ||
+                            'Fixed late fee amount applied to overdue payments'
+                          }
                           InputProps={{
-                            startAdornment: <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>,
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                {currencyConfig.symbol}
+                              </InputAdornment>
+                            ),
                           }}
                         />
                       )}
@@ -531,7 +579,9 @@ export const PaymentPlanSettings: React.FC = () => {
                       name="late_fee_percentage"
                       control={control}
                       rules={{
-                        required: lateFeeEnabled ? 'Late fee percentage is required when enabled' : false,
+                        required: lateFeeEnabled
+                          ? 'Late fee percentage is required when enabled'
+                          : false,
                         min: { value: 0, message: 'Cannot be negative' },
                         max: { value: 100, message: 'Cannot exceed 100%' },
                       }}
@@ -542,7 +592,10 @@ export const PaymentPlanSettings: React.FC = () => {
                           label="Late Fee Percentage"
                           type="number"
                           error={!!errors.late_fee_percentage}
-                          helperText={errors.late_fee_percentage?.message || 'Percentage of invoice amount applied as late fee'}
+                          helperText={
+                            errors.late_fee_percentage?.message ||
+                            'Percentage of invoice amount applied as late fee'
+                          }
                           InputProps={{
                             endAdornment: <InputAdornment position="end">%</InputAdornment>,
                           }}
@@ -584,7 +637,10 @@ export const PaymentPlanSettings: React.FC = () => {
                       label="Default Number of Installments"
                       type="number"
                       error={!!errors.default_installments}
-                      helperText={errors.default_installments?.message || 'Default number of payment installments'}
+                      helperText={
+                        errors.default_installments?.message ||
+                        'Default number of payment installments'
+                      }
                     />
                   )}
                 />
@@ -600,7 +656,10 @@ export const PaymentPlanSettings: React.FC = () => {
                       select
                       label="Default Installment Frequency"
                       error={!!errors.default_installment_frequency}
-                      helperText={errors.default_installment_frequency?.message || 'How often installments are due'}
+                      helperText={
+                        errors.default_installment_frequency?.message ||
+                        'How often installments are due'
+                      }
                     >
                       {PAYMENT_FREQUENCIES.map((freq) => (
                         <MenuItem key={freq.value} value={freq.value}>
@@ -660,7 +719,10 @@ export const PaymentPlanSettings: React.FC = () => {
                       label="Deposit Percentage"
                       type="number"
                       error={!!errors.default_deposit_percentage}
-                      helperText={errors.default_deposit_percentage?.message || 'Percentage of total contract price required as deposit'}
+                      helperText={
+                        errors.default_deposit_percentage?.message ||
+                        'Percentage of total contract price required as deposit'
+                      }
                       InputProps={{
                         endAdornment: <InputAdornment position="end">%</InputAdornment>,
                       }}
@@ -682,9 +744,13 @@ export const PaymentPlanSettings: React.FC = () => {
                       label="Fixed Deposit Amount"
                       type="number"
                       error={!!errors.deposit_fixed_amount}
-                      helperText={errors.deposit_fixed_amount?.message || 'Fixed reservation deposit amount'}
+                      helperText={
+                        errors.deposit_fixed_amount?.message || 'Fixed reservation deposit amount'
+                      }
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>,
+                        startAdornment: (
+                          <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>
+                        ),
                       }}
                     />
                   )}
@@ -697,13 +763,7 @@ export const PaymentPlanSettings: React.FC = () => {
                   control={control}
                   render={({ field }) => (
                     <FormControlLabel
-                      control={
-                        <Switch
-                          {...field}
-                          checked={field.value}
-                          color="success"
-                        />
-                      }
+                      control={<Switch {...field} checked={field.value} color="success" />}
                       label="Deposit is Refundable"
                     />
                   )}
@@ -714,13 +774,7 @@ export const PaymentPlanSettings: React.FC = () => {
                   control={control}
                   render={({ field }) => (
                     <FormControlLabel
-                      control={
-                        <Switch
-                          {...field}
-                          checked={field.value}
-                          color="success"
-                        />
-                      }
+                      control={<Switch {...field} checked={field.value} color="success" />}
                       label="Deposit is Deductible from Total"
                     />
                   )}
@@ -731,13 +785,7 @@ export const PaymentPlanSettings: React.FC = () => {
                   control={control}
                   render={({ field }) => (
                     <FormControlLabel
-                      control={
-                        <Switch
-                          {...field}
-                          checked={field.value}
-                          color="success"
-                        />
-                      }
+                      control={<Switch {...field} checked={field.value} color="success" />}
                       label="Waive Deposit on Full Payment"
                     />
                   )}
@@ -775,7 +823,10 @@ export const PaymentPlanSettings: React.FC = () => {
                       label="Downpayment Percentage"
                       type="number"
                       error={!!errors.downpayment_percentage}
-                      helperText={errors.downpayment_percentage?.message || 'Percentage of total required as downpayment to block the date'}
+                      helperText={
+                        errors.downpayment_percentage?.message ||
+                        'Percentage of total required as downpayment to block the date'
+                      }
                       InputProps={{
                         endAdornment: <InputAdornment position="end">%</InputAdornment>,
                       }}
@@ -797,7 +848,10 @@ export const PaymentPlanSettings: React.FC = () => {
                       label="Downpayment Due Within"
                       type="number"
                       error={!!errors.downpayment_due_days}
-                      helperText={errors.downpayment_due_days?.message || 'Days after booking to pay downpayment'}
+                      helperText={
+                        errors.downpayment_due_days?.message ||
+                        'Days after booking to pay downpayment'
+                      }
                       InputProps={{
                         endAdornment: <InputAdornment position="end">days</InputAdornment>,
                       }}
@@ -839,9 +893,11 @@ export const PaymentPlanSettings: React.FC = () => {
               </Box>
 
               <Alert severity="info" sx={{ mb: 2 }}>
-                <strong>IMMEDIATE:</strong> Date is blocked as soon as a booking is confirmed (traditional behavior).
+                <strong>IMMEDIATE:</strong> Date is blocked as soon as a booking is confirmed
+                (traditional behavior).
                 <br />
-                <strong>ON_DOWNPAYMENT:</strong> Date is only blocked when downpayment is received. Multiple clients can book the same date until one pays (first-to-pay wins).
+                <strong>ON_DOWNPAYMENT:</strong> Date is only blocked when downpayment is received.
+                Multiple clients can book the same date until one pays (first-to-pay wins).
               </Alert>
 
               <Controller
@@ -923,13 +979,7 @@ export const PaymentPlanSettings: React.FC = () => {
                 control={control}
                 render={({ field }) => (
                   <FormControlLabel
-                    control={
-                      <Switch
-                        {...field}
-                        checked={field.value}
-                        color="info"
-                      />
-                    }
+                    control={<Switch {...field} checked={field.value} color="info" />}
                     label="Enable Service Charge"
                   />
                 )}
@@ -940,7 +990,9 @@ export const PaymentPlanSettings: React.FC = () => {
                   name="service_charge_percentage"
                   control={control}
                   rules={{
-                    required: serviceChargeEnabled ? 'Service charge percentage is required' : false,
+                    required: serviceChargeEnabled
+                      ? 'Service charge percentage is required'
+                      : false,
                     min: { value: 0, message: 'Cannot be negative' },
                     max: { value: 100, message: 'Cannot exceed 100%' },
                   }}
@@ -951,11 +1003,14 @@ export const PaymentPlanSettings: React.FC = () => {
                       label="Service Charge Percentage"
                       type="number"
                       error={!!errors.service_charge_percentage}
-                      helperText={errors.service_charge_percentage?.message || 'Percentage applied to (subtotal - discount)'}
+                      helperText={
+                        errors.service_charge_percentage?.message ||
+                        'Percentage applied to (subtotal - discount)'
+                      }
                       InputProps={{
                         endAdornment: <InputAdornment position="end">%</InputAdornment>,
                       }}
-                                          />
+                    />
                   )}
                 />
               )}
@@ -980,13 +1035,7 @@ export const PaymentPlanSettings: React.FC = () => {
                 control={control}
                 render={({ field }) => (
                   <FormControlLabel
-                    control={
-                      <Switch
-                        {...field}
-                        checked={field.value}
-                        color="warning"
-                      />
-                    }
+                    control={<Switch {...field} checked={field.value} color="warning" />}
                     label="Enable Rescheduling Fee"
                   />
                 )}
@@ -1004,7 +1053,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         select
                         label="Rescheduling Fee Type"
                         helperText="Choose whether fee is a percentage or fixed amount"
-                                              >
+                      >
                         <MenuItem value="PERCENTAGE">Percentage of Contract</MenuItem>
                         <MenuItem value="FIXED">Fixed Amount</MenuItem>
                       </TextField>
@@ -1027,11 +1076,14 @@ export const PaymentPlanSettings: React.FC = () => {
                           label="Rescheduling Fee Percentage"
                           type="number"
                           error={!!errors.rescheduling_fee_percentage}
-                          helperText={errors.rescheduling_fee_percentage?.message || 'Percentage of contract total charged for rescheduling'}
+                          helperText={
+                            errors.rescheduling_fee_percentage?.message ||
+                            'Percentage of contract total charged for rescheduling'
+                          }
                           InputProps={{
                             endAdornment: <InputAdornment position="end">%</InputAdornment>,
                           }}
-                                                  />
+                        />
                       )}
                     />
                   ) : (
@@ -1049,11 +1101,18 @@ export const PaymentPlanSettings: React.FC = () => {
                           label="Fixed Rescheduling Fee"
                           type="number"
                           error={!!errors.rescheduling_fee_fixed_amount}
-                          helperText={errors.rescheduling_fee_fixed_amount?.message || 'Fixed amount charged for rescheduling'}
+                          helperText={
+                            errors.rescheduling_fee_fixed_amount?.message ||
+                            'Fixed amount charged for rescheduling'
+                          }
                           InputProps={{
-                            startAdornment: <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>,
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                {currencyConfig.symbol}
+                              </InputAdornment>
+                            ),
                           }}
-                                                  />
+                        />
                       )}
                     />
                   )}
@@ -1075,7 +1134,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         InputProps={{
                           endAdornment: <InputAdornment position="end">hours</InputAdornment>,
                         }}
-                                              />
+                      />
                     )}
                   />
                 </>
@@ -1101,13 +1160,7 @@ export const PaymentPlanSettings: React.FC = () => {
                 control={control}
                 render={({ field }) => (
                   <FormControlLabel
-                    control={
-                      <Switch
-                        {...field}
-                        checked={field.value}
-                        color="error"
-                      />
-                    }
+                    control={<Switch {...field} checked={field.value} color="error" />}
                     label="Enable Late Checkout Fee"
                   />
                 )}
@@ -1125,7 +1178,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         select
                         label="Late Checkout Fee Type"
                         helperText="Choose how the late checkout fee is calculated"
-                                              >
+                      >
                         <MenuItem value="FIXED">Fixed Amount</MenuItem>
                         <MenuItem value="HOURLY">Per Hour</MenuItem>
                         <MenuItem value="PERCENTAGE">Percentage of Contract</MenuItem>
@@ -1149,11 +1202,14 @@ export const PaymentPlanSettings: React.FC = () => {
                           label="Late Checkout Fee Percentage"
                           type="number"
                           error={!!errors.late_checkout_fee_percentage}
-                          helperText={errors.late_checkout_fee_percentage?.message || 'Percentage of contract for late checkout'}
+                          helperText={
+                            errors.late_checkout_fee_percentage?.message ||
+                            'Percentage of contract for late checkout'
+                          }
                           InputProps={{
                             endAdornment: <InputAdornment position="end">%</InputAdornment>,
                           }}
-                                                  />
+                        />
                       )}
                     />
                   ) : (
@@ -1168,14 +1224,27 @@ export const PaymentPlanSettings: React.FC = () => {
                         <TextField
                           {...field}
                           fullWidth
-                          label={lateCheckoutFeeType === 'HOURLY' ? 'Fee Per Hour' : 'Fixed Late Checkout Fee'}
+                          label={
+                            lateCheckoutFeeType === 'HOURLY'
+                              ? 'Fee Per Hour'
+                              : 'Fixed Late Checkout Fee'
+                          }
                           type="number"
                           error={!!errors.late_checkout_fee_amount}
-                          helperText={errors.late_checkout_fee_amount?.message || (lateCheckoutFeeType === 'HOURLY' ? 'Amount charged per hour of late checkout' : 'Fixed amount for late checkout')}
+                          helperText={
+                            errors.late_checkout_fee_amount?.message ||
+                            (lateCheckoutFeeType === 'HOURLY'
+                              ? 'Amount charged per hour of late checkout'
+                              : 'Fixed amount for late checkout')
+                          }
                           InputProps={{
-                            startAdornment: <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>,
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                {currencyConfig.symbol}
+                              </InputAdornment>
+                            ),
                           }}
-                                                  />
+                        />
                       )}
                     />
                   )}
@@ -1198,7 +1267,7 @@ export const PaymentPlanSettings: React.FC = () => {
                           InputProps={{
                             endAdornment: <InputAdornment position="end">min</InputAdornment>,
                           }}
-                                                  />
+                        />
                       )}
                     />
 
@@ -1219,7 +1288,7 @@ export const PaymentPlanSettings: React.FC = () => {
                           InputProps={{
                             endAdornment: <InputAdornment position="end">hours</InputAdornment>,
                           }}
-                                                  />
+                        />
                       )}
                     />
                   </Box>
@@ -1242,8 +1311,9 @@ export const PaymentPlanSettings: React.FC = () => {
               </Box>
 
               <Alert severity="info" sx={{ mb: 2 }}>
-                <strong>Date Holds:</strong> Allow clients to temporarily reserve a date while completing their booking.
-                The hold automatically expires if payment isn&apos;t received within the specified duration.
+                <strong>Date Holds:</strong> Allow clients to temporarily reserve a date while
+                completing their booking. The hold automatically expires if payment isn&apos;t
+                received within the specified duration.
               </Alert>
 
               <Controller
@@ -1251,13 +1321,7 @@ export const PaymentPlanSettings: React.FC = () => {
                 control={control}
                 render={({ field }) => (
                   <FormControlLabel
-                    control={
-                      <Switch
-                        {...field}
-                        checked={field.value}
-                        color="secondary"
-                      />
-                    }
+                    control={<Switch {...field} checked={field.value} color="secondary" />}
                     label="Enable Date Holding"
                   />
                 )}
@@ -1283,7 +1347,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         InputProps={{
                           endAdornment: <InputAdornment position="end">days</InputAdornment>,
                         }}
-                                              />
+                      />
                     )}
                   />
 
@@ -1303,7 +1367,7 @@ export const PaymentPlanSettings: React.FC = () => {
                           label="Maximum Extensions Allowed"
                           type="number"
                           helperText="How many times client can extend the hold"
-                                                  />
+                        />
                       )}
                     />
 
@@ -1325,7 +1389,7 @@ export const PaymentPlanSettings: React.FC = () => {
                           InputProps={{
                             endAdornment: <InputAdornment position="end">days</InputAdornment>,
                           }}
-                                                  />
+                        />
                       )}
                     />
                   </Box>
@@ -1352,13 +1416,7 @@ export const PaymentPlanSettings: React.FC = () => {
                 control={control}
                 render={({ field }) => (
                   <FormControlLabel
-                    control={
-                      <Switch
-                        {...field}
-                        checked={field.value}
-                        color="success"
-                      />
-                    }
+                    control={<Switch {...field} checked={field.value} color="success" />}
                     label="Enable Child/Youth Pricing"
                   />
                 )}
@@ -1366,7 +1424,9 @@ export const PaymentPlanSettings: React.FC = () => {
 
               {childPricingEnabled && (
                 <>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box
+                    sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                  >
                     <Typography variant="subtitle2">Pricing Tiers</Typography>
                     <Button
                       startIcon={<AddIcon />}
@@ -1403,7 +1463,9 @@ export const PaymentPlanSettings: React.FC = () => {
                         label="Min Age"
                         type="number"
                         value={tier.min_age}
-                        onChange={(e) => handleUpdateChildTier(index, 'min_age', parseInt(e.target.value, 10) || 0)}
+                        onChange={(e) =>
+                          handleUpdateChildTier(index, 'min_age', parseInt(e.target.value, 10) || 0)
+                        }
                         size="small"
                         sx={{ flex: 1 }}
                         InputProps={{
@@ -1414,7 +1476,9 @@ export const PaymentPlanSettings: React.FC = () => {
                         label="Max Age"
                         type="number"
                         value={tier.max_age}
-                        onChange={(e) => handleUpdateChildTier(index, 'max_age', parseInt(e.target.value, 10) || 0)}
+                        onChange={(e) =>
+                          handleUpdateChildTier(index, 'max_age', parseInt(e.target.value, 10) || 0)
+                        }
                         size="small"
                         sx={{ flex: 1 }}
                         InputProps={{
@@ -1425,7 +1489,13 @@ export const PaymentPlanSettings: React.FC = () => {
                         label="Discount"
                         type="number"
                         value={tier.discount_percentage}
-                        onChange={(e) => handleUpdateChildTier(index, 'discount_percentage', parseInt(e.target.value, 10) || 0)}
+                        onChange={(e) =>
+                          handleUpdateChildTier(
+                            index,
+                            'discount_percentage',
+                            parseInt(e.target.value, 10) || 0,
+                          )
+                        }
                         size="small"
                         sx={{ flex: 1 }}
                         InputProps={{
@@ -1444,7 +1514,11 @@ export const PaymentPlanSettings: React.FC = () => {
                   ))}
 
                   {(childPricingTiers || []).length === 0 && (
-                    <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 2 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ textAlign: 'center', py: 2 }}
+                    >
                       No pricing tiers configured. Click &quot;Add Tier&quot; to create one.
                     </Typography>
                   )}
@@ -1471,13 +1545,7 @@ export const PaymentPlanSettings: React.FC = () => {
                 control={control}
                 render={({ field }) => (
                   <FormControlLabel
-                    control={
-                      <Switch
-                        {...field}
-                        checked={field.value}
-                        color="info"
-                      />
-                    }
+                    control={<Switch {...field} checked={field.value} color="info" />}
                     label="Enable Security Deposit"
                   />
                 )}
@@ -1489,7 +1557,9 @@ export const PaymentPlanSettings: React.FC = () => {
                     name="security_deposit_amount"
                     control={control}
                     rules={{
-                      required: securityDepositEnabled ? 'Security deposit amount is required' : false,
+                      required: securityDepositEnabled
+                        ? 'Security deposit amount is required'
+                        : false,
                       min: { value: 0, message: 'Cannot be negative' },
                     }}
                     render={({ field }) => (
@@ -1499,11 +1569,18 @@ export const PaymentPlanSettings: React.FC = () => {
                         label="Security Deposit Amount"
                         type="number"
                         error={!!errors.security_deposit_amount}
-                        helperText={errors.security_deposit_amount?.message || 'Fixed security deposit amount collected on check-in'}
+                        helperText={
+                          errors.security_deposit_amount?.message ||
+                          'Fixed security deposit amount collected on check-in'
+                        }
                         InputProps={{
-                          startAdornment: <InputAdornment position="start">{currencyConfig.symbol}</InputAdornment>,
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              {currencyConfig.symbol}
+                            </InputAdornment>
+                          ),
                         }}
-                                              />
+                      />
                     )}
                   />
 
@@ -1541,7 +1618,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         label="Security Deposit Description"
                         placeholder="e.g., Collected upon check-in, refunded after inspection"
                         helperText="Optional description shown in contracts"
-                                              />
+                      />
                     )}
                   />
                 </>
@@ -1576,11 +1653,14 @@ export const PaymentPlanSettings: React.FC = () => {
                     label="Cancellation Admin Fee"
                     type="number"
                     error={!!errors.cancellation_admin_fee_percentage}
-                    helperText={errors.cancellation_admin_fee_percentage?.message || 'Percentage of payment deducted as admin fee on client cancellation'}
+                    helperText={
+                      errors.cancellation_admin_fee_percentage?.message ||
+                      'Percentage of payment deducted as admin fee on client cancellation'
+                    }
                     InputProps={{
                       endAdornment: <InputAdornment position="end">%</InputAdornment>,
                     }}
-                                      />
+                  />
                 )}
               />
             </Stack>
@@ -1615,8 +1695,11 @@ export const PaymentPlanSettings: React.FC = () => {
                       label="Auto Payment Retry Attempts"
                       type="number"
                       error={!!errors.auto_payment_retry_attempts}
-                      helperText={errors.auto_payment_retry_attempts?.message || 'Number of times to retry failed automatic payments'}
-                                          />
+                      helperText={
+                        errors.auto_payment_retry_attempts?.message ||
+                        'Number of times to retry failed automatic payments'
+                      }
+                    />
                   )}
                 />
 
@@ -1635,11 +1718,14 @@ export const PaymentPlanSettings: React.FC = () => {
                       label="Retry Delay"
                       type="number"
                       error={!!errors.auto_payment_retry_delay_days}
-                      helperText={errors.auto_payment_retry_delay_days?.message || 'Days to wait between retry attempts'}
+                      helperText={
+                        errors.auto_payment_retry_delay_days?.message ||
+                        'Days to wait between retry attempts'
+                      }
                       InputProps={{
                         endAdornment: <InputAdornment position="end">days</InputAdornment>,
                       }}
-                                          />
+                    />
                   )}
                 />
               </Box>
@@ -1664,13 +1750,7 @@ export const PaymentPlanSettings: React.FC = () => {
                 control={control}
                 render={({ field }) => (
                   <FormControlLabel
-                    control={
-                      <Switch
-                        {...field}
-                        checked={field.value}
-                        color="success"
-                      />
-                    }
+                    control={<Switch {...field} checked={field.value} color="success" />}
                     label="Allow Refunds"
                   />
                 )}
@@ -1682,7 +1762,9 @@ export const PaymentPlanSettings: React.FC = () => {
                     name="refund_deadline_hours"
                     control={control}
                     rules={{
-                      required: allowRefunds ? 'Refund deadline is required when refunds are enabled' : false,
+                      required: allowRefunds
+                        ? 'Refund deadline is required when refunds are enabled'
+                        : false,
                       min: { value: 1, message: 'Must be at least 1 hour' },
                       max: { value: 8760, message: 'Cannot exceed 1 year (8760 hours)' },
                     }}
@@ -1693,11 +1775,14 @@ export const PaymentPlanSettings: React.FC = () => {
                         label="Refund Deadline (Hours Before Event)"
                         type="number"
                         error={!!errors.refund_deadline_hours}
-                        helperText={errors.refund_deadline_hours?.message || 'Hours before event when refunds are no longer allowed'}
+                        helperText={
+                          errors.refund_deadline_hours?.message ||
+                          'Hours before event when refunds are no longer allowed'
+                        }
                         InputProps={{
                           endAdornment: <InputAdornment position="end">hours</InputAdornment>,
                         }}
-                                              />
+                      />
                     )}
                   />
 
@@ -1705,7 +1790,9 @@ export const PaymentPlanSettings: React.FC = () => {
                     name="refund_percentage"
                     control={control}
                     rules={{
-                      required: allowRefunds ? 'Refund percentage is required when refunds are enabled' : false,
+                      required: allowRefunds
+                        ? 'Refund percentage is required when refunds are enabled'
+                        : false,
                       min: { value: 0, message: 'Cannot be negative' },
                       max: { value: 100, message: 'Cannot exceed 100%' },
                     }}
@@ -1716,11 +1803,14 @@ export const PaymentPlanSettings: React.FC = () => {
                         label="Refund Percentage"
                         type="number"
                         error={!!errors.refund_percentage}
-                        helperText={errors.refund_percentage?.message || 'Percentage of payment that can be refunded'}
+                        helperText={
+                          errors.refund_percentage?.message ||
+                          'Percentage of payment that can be refunded'
+                        }
                         InputProps={{
                           endAdornment: <InputAdornment position="end">%</InputAdornment>,
                         }}
-                                              />
+                      />
                     )}
                   />
 
@@ -1736,7 +1826,7 @@ export const PaymentPlanSettings: React.FC = () => {
                         label="Refund Policy Text"
                         helperText="Optional custom refund policy text to display to clients"
                         placeholder="e.g., Full refund available up to 48 hours before your event..."
-                                              />
+                      />
                     )}
                   />
                 </>
@@ -1783,7 +1873,9 @@ export const PaymentPlanSettings: React.FC = () => {
             borderRadius: 1,
           }}
         >
-          <strong>DRY Compliance Achieved!</strong> These global settings serve as the single source of truth for all payment-related configuration. Refund policies and deposit amounts are now consistently applied across all booking flows, eliminating configuration duplication.
+          <strong>DRY Compliance Achieved!</strong> These global settings serve as the single source
+          of truth for all payment-related configuration. Refund policies and deposit amounts are
+          now consistently applied across all booking flows, eliminating configuration duplication.
         </Alert>
       </Box>
     </Box>

@@ -1,7 +1,7 @@
 // frontend/client-portal/src/pages/profile/Profile.tsx
 
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -15,7 +15,7 @@ import {
   Alert,
   useTheme,
   alpha,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Edit as EditIcon,
   Save as SaveIcon,
@@ -26,14 +26,14 @@ import {
   Security as SecurityIcon,
   Notifications as NotificationsIcon,
   Support as SupportIcon,
-} from "@mui/icons-material";
-import { useDocumentTitle } from "../../hooks/useDocumentTitle";
-import { useAuth } from "../../hooks/useAuth";
-import { GlassCard } from "../../design-system/components/GlassCard";
-import { AnimatedElement } from "../../design-system/components/AnimatedElement";
-import ChangePasswordDialog from "../../components/profile/ChangePasswordDialog";
-import { NotificationPreferencesDialog } from "../../components/notifications";
-import { useChangePassword } from "../../hooks/useChangePassword";
+} from '@mui/icons-material';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { useAuth } from '../../hooks/useAuth';
+import { GlassCard } from '../../design-system/components/GlassCard';
+import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import ChangePasswordDialog from '../../components/profile/ChangePasswordDialog';
+import { NotificationPreferencesDialog } from '../../components/notifications';
+import { useChangePassword } from '../../hooks/useChangePassword';
 
 interface ProfileFormData {
   first_name: string;
@@ -44,46 +44,44 @@ interface ProfileFormData {
 }
 
 const Profile: React.FC = () => {
-  useDocumentTitle("Profile | LifePlace Alfonso");
+  useDocumentTitle('Profile | LifePlace Alfonso');
   const theme = useTheme();
   const navigate = useNavigate();
   const { user, updateProfile, isUpdatingProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<ProfileFormData>({
-    first_name: user?.first_name || "",
-    last_name: user?.last_name || "",
-    email: user?.email || "",
-    phone: user?.profile?.phone || "",
-    company: user?.profile?.company || "",
+    first_name: user?.first_name || '',
+    last_name: user?.last_name || '',
+    email: user?.email || '',
+    phone: user?.profile?.phone || '',
+    company: user?.profile?.company || '',
   });
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
-  const [notificationPreferencesOpen, setNotificationPreferencesOpen] =
-    useState(false);
+  const [notificationPreferencesOpen, setNotificationPreferencesOpen] = useState(false);
 
   // Password change mutation
   const changePasswordMutation = useChangePassword();
 
   const getInitials = (firstName?: string, lastName?: string) => {
-    return `${firstName?.[0] || ""}${lastName?.[0] || ""}`.toUpperCase();
+    return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
 
   const handleEditToggle = () => {
     if (isEditing) {
       // Reset form data when canceling
       setFormData({
-        first_name: user?.first_name || "",
-        last_name: user?.last_name || "",
-        email: user?.email || "",
-        phone: user?.profile?.phone || "",
-        company: user?.profile?.company || "",
+        first_name: user?.first_name || '',
+        last_name: user?.last_name || '',
+        email: user?.email || '',
+        phone: user?.profile?.phone || '',
+        company: user?.profile?.company || '',
       });
     }
     setIsEditing(!isEditing);
   };
 
   const handleInputChange =
-    (field: keyof ProfileFormData) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+    (field: keyof ProfileFormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
       setFormData((prev) => ({
         ...prev,
         [field]: event.target.value,
@@ -119,11 +117,7 @@ const Profile: React.FC = () => {
     return (
       <>
         <AnimatedElement animation="fadeIn">
-          <GlassCard
-            variant="light"
-            intensity="subtle"
-            sx={{ p: 4, textAlign: "center" }}
-          >
+          <GlassCard variant="light" intensity="subtle" sx={{ p: 4, textAlign: 'center' }}>
             <Typography variant="h6" color="text.secondary">
               Loading profile...
             </Typography>
@@ -139,10 +133,7 @@ const Profile: React.FC = () => {
         {/* Header */}
         <AnimatedElement animation="slideDown" delay={100}>
           <Box sx={{ mb: 4 }}>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 600, mb: 1, color: "primary.main" }}
-            >
+            <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
               My Profile
             </Typography>
             <Typography variant="body1" color="text.secondary">
@@ -153,37 +144,35 @@ const Profile: React.FC = () => {
 
         <Box
           sx={{
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
             gap: 4,
           }}
         >
           {/* Profile Overview */}
-          <Box sx={{ flex: { md: "0 0 33%" } }}>
+          <Box sx={{ flex: { md: '0 0 33%' } }}>
             <AnimatedElement animation="slideRight" delay={200}>
               <GlassCard
                 variant="light"
                 intensity="medium"
                 sx={{
                   p: 3,
-                  textAlign: "center",
-                  border: `1px solid ${alpha("#fff", 0.1)}`,
-                  position: "sticky",
+                  textAlign: 'center',
+                  border: `1px solid ${alpha('#fff', 0.1)}`,
+                  position: 'sticky',
                   top: 20,
                 }}
               >
-                <Box
-                  sx={{ position: "relative", display: "inline-block", mb: 3 }}
-                >
+                <Box sx={{ position: 'relative', display: 'inline-block', mb: 3 }}>
                   <Avatar
                     sx={{
                       width: 120,
                       height: 120,
-                      fontSize: "2rem",
+                      fontSize: '2rem',
                       fontWeight: 600,
                       backgroundColor: theme.palette.primary.main,
-                      color: "white",
-                      border: `4px solid ${alpha("#fff", 0.2)}`,
+                      color: 'white',
+                      border: `4px solid ${alpha('#fff', 0.2)}`,
                     }}
                   >
                     {getInitials(user.first_name, user.last_name)}
@@ -191,17 +180,17 @@ const Profile: React.FC = () => {
                   <IconButton
                     size="small"
                     sx={{
-                      position: "absolute",
+                      position: 'absolute',
                       bottom: 0,
                       right: 0,
-                      backgroundColor: alpha("#fff", 0.9),
-                      backdropFilter: "blur(10px)",
-                      border: `2px solid ${alpha("#fff", 0.2)}`,
-                      "&:hover": {
-                        backgroundColor: alpha("#fff", 0.95),
-                        transform: "scale(1.1)",
+                      backgroundColor: alpha('#fff', 0.9),
+                      backdropFilter: 'blur(10px)',
+                      border: `2px solid ${alpha('#fff', 0.2)}`,
+                      '&:hover': {
+                        backgroundColor: alpha('#fff', 0.95),
+                        transform: 'scale(1.1)',
                       },
-                      transition: "all 0.2s ease",
+                      transition: 'all 0.2s ease',
                     }}
                   >
                     <PhotoCameraIcon fontSize="small" />
@@ -211,42 +200,36 @@ const Profile: React.FC = () => {
                 <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
                   {user.first_name} {user.last_name}
                 </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 2 }}
-                >
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                   {user.email}
                 </Typography>
 
                 <Chip
-                  label={user.is_active ? "Active Account" : "Inactive"}
-                  color={user.is_active ? "success" : "warning"}
+                  label={user.is_active ? 'Active Account' : 'Inactive'}
+                  color={user.is_active ? 'success' : 'warning'}
                   size="small"
                   sx={{
                     mb: 3,
-                    backgroundColor: alpha("#fff", 0.1),
-                    backdropFilter: "blur(5px)",
-                    border: `1px solid ${alpha("#fff", 0.2)}`,
+                    backgroundColor: alpha('#fff', 0.1),
+                    backdropFilter: 'blur(5px)',
+                    border: `1px solid ${alpha('#fff', 0.2)}`,
                   }}
                 />
 
-                <Divider sx={{ mb: 2, borderColor: alpha("#fff", 0.1) }} />
+                <Divider sx={{ mb: 2, borderColor: alpha('#fff', 0.1) }} />
 
-                <Stack spacing={1} sx={{ textAlign: "left" }}>
+                <Stack spacing={1} sx={{ textAlign: 'left' }}>
                   <Box display="flex" alignItems="center" gap={1}>
                     <CalendarIcon fontSize="small" color="action" />
                     <Typography variant="body2" color="text.secondary">
-                      Member since{" "}
-                      {user.date_joined
-                        ? new Date(user.date_joined).getFullYear()
-                        : "N/A"}
+                      Member since{' '}
+                      {user.date_joined ? new Date(user.date_joined).getFullYear() : 'N/A'}
                     </Typography>
                   </Box>
                   <Box display="flex" alignItems="center" gap={1}>
                     <PersonIcon fontSize="small" color="action" />
                     <Typography variant="body2" color="text.secondary">
-                      Account Status: {user.is_active ? "Active" : "Inactive"}
+                      Account Status: {user.is_active ? 'Active' : 'Inactive'}
                     </Typography>
                   </Box>
                 </Stack>
@@ -255,7 +238,7 @@ const Profile: React.FC = () => {
           </Box>
 
           {/* Profile Details */}
-          <Box sx={{ flex: { md: "1" } }}>
+          <Box sx={{ flex: { md: '1' } }}>
             <Stack spacing={4}>
               {/* Personal Information */}
               <AnimatedElement animation="slideLeft" delay={300}>
@@ -264,15 +247,10 @@ const Profile: React.FC = () => {
                   intensity="medium"
                   sx={{
                     p: 3,
-                    border: `1px solid ${alpha("#fff", 0.1)}`,
+                    border: `1px solid ${alpha('#fff', 0.1)}`,
                   }}
                 >
-                  <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    mb={3}
-                  >
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                     <Box display="flex" alignItems="center" gap={1}>
                       <PersonIcon color="primary" />
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
@@ -282,41 +260,35 @@ const Profile: React.FC = () => {
                     <Button
                       startIcon={isEditing ? <CancelIcon /> : <EditIcon />}
                       onClick={handleEditToggle}
-                      variant={isEditing ? "outlined" : "contained"}
+                      variant={isEditing ? 'outlined' : 'contained'}
                       size="small"
                       disabled={isUpdatingProfile}
                     >
-                      {isEditing ? "Cancel" : "Edit"}
+                      {isEditing ? 'Cancel' : 'Edit'}
                     </Button>
                   </Box>
 
                   <Stack spacing={3}>
                     <Box
                       sx={{
-                        display: "flex",
-                        flexDirection: { xs: "column", sm: "row" },
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
                         gap: 3,
                       }}
                     >
                       <TextField
                         label="First Name"
                         value={formData.first_name}
-                        onChange={handleInputChange("first_name")}
+                        onChange={handleInputChange('first_name')}
                         disabled={!isEditing || isUpdatingProfile}
                         fullWidth
                         variant="outlined"
                         sx={{
-                          "& .MuiOutlinedInput-root": {
-                            backgroundColor: alpha(
-                              "#fff",
-                              isEditing ? 0.1 : 0.05,
-                            ),
-                            backdropFilter: "blur(10px)",
-                            "&:hover": {
-                              backgroundColor: alpha(
-                                "#fff",
-                                isEditing ? 0.15 : 0.05,
-                              ),
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: alpha('#fff', isEditing ? 0.1 : 0.05),
+                            backdropFilter: 'blur(10px)',
+                            '&:hover': {
+                              backgroundColor: alpha('#fff', isEditing ? 0.15 : 0.05),
                             },
                           },
                         }}
@@ -324,22 +296,16 @@ const Profile: React.FC = () => {
                       <TextField
                         label="Last Name"
                         value={formData.last_name}
-                        onChange={handleInputChange("last_name")}
+                        onChange={handleInputChange('last_name')}
                         disabled={!isEditing || isUpdatingProfile}
                         fullWidth
                         variant="outlined"
                         sx={{
-                          "& .MuiOutlinedInput-root": {
-                            backgroundColor: alpha(
-                              "#fff",
-                              isEditing ? 0.1 : 0.05,
-                            ),
-                            backdropFilter: "blur(10px)",
-                            "&:hover": {
-                              backgroundColor: alpha(
-                                "#fff",
-                                isEditing ? 0.15 : 0.05,
-                              ),
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: alpha('#fff', isEditing ? 0.1 : 0.05),
+                            backdropFilter: 'blur(10px)',
+                            '&:hover': {
+                              backgroundColor: alpha('#fff', isEditing ? 0.15 : 0.05),
                             },
                           },
                         }}
@@ -347,45 +313,39 @@ const Profile: React.FC = () => {
                     </Box>
                     <Box
                       sx={{
-                        display: "flex",
-                        flexDirection: { xs: "column", sm: "row" },
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
                         gap: 3,
                       }}
                     >
                       <TextField
                         label="Email"
                         value={formData.email}
-                        onChange={handleInputChange("email")}
+                        onChange={handleInputChange('email')}
                         disabled={true} // Email should not be editable
                         fullWidth
                         variant="outlined"
                         type="email"
                         sx={{
-                          "& .MuiOutlinedInput-root": {
-                            backgroundColor: alpha("#fff", 0.05),
-                            backdropFilter: "blur(10px)",
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: alpha('#fff', 0.05),
+                            backdropFilter: 'blur(10px)',
                           },
                         }}
                       />
                       <TextField
                         label="Phone"
                         value={formData.phone}
-                        onChange={handleInputChange("phone")}
+                        onChange={handleInputChange('phone')}
                         disabled={!isEditing || isUpdatingProfile}
                         fullWidth
                         variant="outlined"
                         sx={{
-                          "& .MuiOutlinedInput-root": {
-                            backgroundColor: alpha(
-                              "#fff",
-                              isEditing ? 0.1 : 0.05,
-                            ),
-                            backdropFilter: "blur(10px)",
-                            "&:hover": {
-                              backgroundColor: alpha(
-                                "#fff",
-                                isEditing ? 0.15 : 0.05,
-                              ),
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: alpha('#fff', isEditing ? 0.1 : 0.05),
+                            backdropFilter: 'blur(10px)',
+                            '&:hover': {
+                              backgroundColor: alpha('#fff', isEditing ? 0.15 : 0.05),
                             },
                           },
                         }}
@@ -394,22 +354,16 @@ const Profile: React.FC = () => {
                     <TextField
                       label="Company"
                       value={formData.company}
-                      onChange={handleInputChange("company")}
+                      onChange={handleInputChange('company')}
                       disabled={!isEditing || isUpdatingProfile}
                       fullWidth
                       variant="outlined"
                       sx={{
-                        "& .MuiOutlinedInput-root": {
-                          backgroundColor: alpha(
-                            "#fff",
-                            isEditing ? 0.1 : 0.05,
-                          ),
-                          backdropFilter: "blur(10px)",
-                          "&:hover": {
-                            backgroundColor: alpha(
-                              "#fff",
-                              isEditing ? 0.15 : 0.05,
-                            ),
+                        '& .MuiOutlinedInput-root': {
+                          backgroundColor: alpha('#fff', isEditing ? 0.1 : 0.05),
+                          backdropFilter: 'blur(10px)',
+                          '&:hover': {
+                            backgroundColor: alpha('#fff', isEditing ? 0.15 : 0.05),
                           },
                         },
                       }}
@@ -417,12 +371,7 @@ const Profile: React.FC = () => {
                   </Stack>
 
                   {isEditing && (
-                    <Box
-                      mt={3}
-                      display="flex"
-                      justifyContent="flex-end"
-                      gap={2}
-                    >
+                    <Box mt={3} display="flex" justifyContent="flex-end" gap={2}>
                       <Button
                         variant="outlined"
                         onClick={handleEditToggle}
@@ -436,7 +385,7 @@ const Profile: React.FC = () => {
                         onClick={handleSave}
                         disabled={isUpdatingProfile}
                       >
-                        {isUpdatingProfile ? "Saving..." : "Save Changes"}
+                        {isUpdatingProfile ? 'Saving...' : 'Save Changes'}
                       </Button>
                     </Box>
                   )}
@@ -450,28 +399,28 @@ const Profile: React.FC = () => {
                   intensity="medium"
                   sx={{
                     p: 3,
-                    border: `1px solid ${alpha("#fff", 0.1)}`,
+                    border: `1px solid ${alpha('#fff', 0.1)}`,
                   }}
                 >
                   <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
                     Quick Actions
                   </Typography>
 
-                  <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                     <Button
                       variant="outlined"
                       startIcon={<SecurityIcon />}
                       fullWidth
                       onClick={() => setPasswordDialogOpen(true)}
                       sx={{
-                        backgroundColor: alpha("#fff", 0.1),
-                        backdropFilter: "blur(10px)",
-                        border: `1px solid ${alpha("#fff", 0.2)}`,
-                        "&:hover": {
-                          backgroundColor: alpha("#fff", 0.15),
-                          transform: "translateY(-2px)",
+                        backgroundColor: alpha('#fff', 0.1),
+                        backdropFilter: 'blur(10px)',
+                        border: `1px solid ${alpha('#fff', 0.2)}`,
+                        '&:hover': {
+                          backgroundColor: alpha('#fff', 0.15),
+                          transform: 'translateY(-2px)',
                         },
-                        transition: "all 0.2s ease",
+                        transition: 'all 0.2s ease',
                       }}
                     >
                       Change Password
@@ -482,14 +431,14 @@ const Profile: React.FC = () => {
                       fullWidth
                       onClick={() => setNotificationPreferencesOpen(true)}
                       sx={{
-                        backgroundColor: alpha("#fff", 0.1),
-                        backdropFilter: "blur(10px)",
-                        border: `1px solid ${alpha("#fff", 0.2)}`,
-                        "&:hover": {
-                          backgroundColor: alpha("#fff", 0.15),
-                          transform: "translateY(-2px)",
+                        backgroundColor: alpha('#fff', 0.1),
+                        backdropFilter: 'blur(10px)',
+                        border: `1px solid ${alpha('#fff', 0.2)}`,
+                        '&:hover': {
+                          backgroundColor: alpha('#fff', 0.15),
+                          transform: 'translateY(-2px)',
                         },
-                        transition: "all 0.2s ease",
+                        transition: 'all 0.2s ease',
                       }}
                     >
                       Notification Settings
@@ -498,16 +447,16 @@ const Profile: React.FC = () => {
                       variant="outlined"
                       startIcon={<SupportIcon />}
                       fullWidth
-                      onClick={() => navigate("/support")}
+                      onClick={() => navigate('/support')}
                       sx={{
-                        backgroundColor: alpha("#fff", 0.1),
-                        backdropFilter: "blur(10px)",
-                        border: `1px solid ${alpha("#fff", 0.2)}`,
-                        "&:hover": {
-                          backgroundColor: alpha("#fff", 0.15),
-                          transform: "translateY(-2px)",
+                        backgroundColor: alpha('#fff', 0.1),
+                        backdropFilter: 'blur(10px)',
+                        border: `1px solid ${alpha('#fff', 0.2)}`,
+                        '&:hover': {
+                          backgroundColor: alpha('#fff', 0.15),
+                          transform: 'translateY(-2px)',
                         },
-                        transition: "all 0.2s ease",
+                        transition: 'all 0.2s ease',
                       }}
                     >
                       Contact Support

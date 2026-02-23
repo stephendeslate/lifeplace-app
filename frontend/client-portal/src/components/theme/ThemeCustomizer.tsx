@@ -79,14 +79,54 @@ const defaultCustomization: ThemeCustomization = {
 };
 
 const colorPresets: ColorPreset[] = [
-  { name: 'Deep Forest', primary: '#2d5016', secondary: '#8b4513', preview: 'linear-gradient(45deg, #2d5016, #8b4513)' },
-  { name: 'Sunset Orange', primary: '#ff6b35', secondary: '#ff8a65', preview: 'linear-gradient(45deg, #ff6b35, #ff8a65)' },
-  { name: 'Forest Green', primary: '#2e7d32', secondary: '#66bb6a', preview: 'linear-gradient(45deg, #2e7d32, #66bb6a)' },
-  { name: 'Royal Purple', primary: '#7b1fa2', secondary: '#ba68c8', preview: 'linear-gradient(45deg, #7b1fa2, #ba68c8)' },
-  { name: 'Rose Gold', primary: '#e91e63', secondary: '#f8bbd9', preview: 'linear-gradient(45deg, #e91e63, #f8bbd9)' },
-  { name: 'Midnight', primary: '#263238', secondary: '#37474f', preview: 'linear-gradient(45deg, #263238, #37474f)' },
-  { name: 'Coral Reef', primary: '#ff7043', secondary: '#ffab91', preview: 'linear-gradient(45deg, #ff7043, #ffab91)' },
-  { name: 'Sage Green', primary: '#5a7c47', secondary: '#7a9469', preview: 'linear-gradient(45deg, #5a7c47, #7a9469)' },
+  {
+    name: 'Deep Forest',
+    primary: '#2d5016',
+    secondary: '#8b4513',
+    preview: 'linear-gradient(45deg, #2d5016, #8b4513)',
+  },
+  {
+    name: 'Sunset Orange',
+    primary: '#ff6b35',
+    secondary: '#ff8a65',
+    preview: 'linear-gradient(45deg, #ff6b35, #ff8a65)',
+  },
+  {
+    name: 'Forest Green',
+    primary: '#2e7d32',
+    secondary: '#66bb6a',
+    preview: 'linear-gradient(45deg, #2e7d32, #66bb6a)',
+  },
+  {
+    name: 'Royal Purple',
+    primary: '#7b1fa2',
+    secondary: '#ba68c8',
+    preview: 'linear-gradient(45deg, #7b1fa2, #ba68c8)',
+  },
+  {
+    name: 'Rose Gold',
+    primary: '#e91e63',
+    secondary: '#f8bbd9',
+    preview: 'linear-gradient(45deg, #e91e63, #f8bbd9)',
+  },
+  {
+    name: 'Midnight',
+    primary: '#263238',
+    secondary: '#37474f',
+    preview: 'linear-gradient(45deg, #263238, #37474f)',
+  },
+  {
+    name: 'Coral Reef',
+    primary: '#ff7043',
+    secondary: '#ffab91',
+    preview: 'linear-gradient(45deg, #ff7043, #ffab91)',
+  },
+  {
+    name: 'Sage Green',
+    primary: '#5a7c47',
+    secondary: '#7a9469',
+    preview: 'linear-gradient(45deg, #5a7c47, #7a9469)',
+  },
 ];
 
 const ThemeCustomizerContext = createContext<ThemeCustomizerContextType | undefined>(undefined);
@@ -112,7 +152,7 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
   const [isCustomizerOpen, setIsCustomizerOpen] = useState(false);
 
   const updateCustomization = (updates: Partial<ThemeCustomization>) => {
-    setCustomization(prev => {
+    setCustomization((prev) => {
       const newCustomization = { ...prev, ...updates };
       localStorage.setItem('theme-customization', JSON.stringify(newCustomization));
       return newCustomization;
@@ -125,7 +165,7 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
   };
 
   const toggleCustomizer = () => {
-    setIsCustomizerOpen(prev => !prev);
+    setIsCustomizerOpen((prev) => !prev);
   };
 
   // Apply theme based on system preference if auto mode
@@ -134,12 +174,15 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       const handleChange = () => {
         // Theme will be automatically updated through the applyTheme function
-        document.documentElement.setAttribute('data-theme-mode', mediaQuery.matches ? 'dark' : 'light');
+        document.documentElement.setAttribute(
+          'data-theme-mode',
+          mediaQuery.matches ? 'dark' : 'light',
+        );
       };
-      
+
       handleChange(); // Set initial value
       mediaQuery.addEventListener('change', handleChange);
-      
+
       return () => mediaQuery.removeEventListener('change', handleChange);
     } else {
       document.documentElement.setAttribute('data-theme-mode', customization.mode);
@@ -149,23 +192,23 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
   // Apply global CSS variables
   useEffect(() => {
     const root = document.documentElement;
-    
+
     // Color variables
     root.style.setProperty('--primary-color', customization.primaryColor);
     root.style.setProperty('--secondary-color', customization.secondaryColor);
-    
+
     // Glass morphism variables
     root.style.setProperty('--glass-intensity', customization.glassIntensity.toString());
     root.style.setProperty('--blur-strength', `${customization.blurStrength}px`);
     root.style.setProperty('--border-opacity', customization.borderOpacity.toString());
-    
+
     // Layout variables
     root.style.setProperty('--border-radius', `${customization.borderRadius}px`);
     root.style.setProperty('--font-size', `${customization.fontSize}px`);
-    
+
     // Animation variables
     root.style.setProperty('--animation-duration', `${1 / customization.animationSpeed}s`);
-    
+
     // Conditional classes
     root.classList.toggle('compact-mode', customization.compactMode);
     root.classList.toggle('high-contrast', customization.highContrast);
@@ -173,7 +216,8 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
   }, [customization]);
 
   const applyTheme = (theme: Record<string, unknown>) => {
-    const isDark = customization.mode === 'dark' || 
+    const isDark =
+      customization.mode === 'dark' ||
       (customization.mode === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
     return createTheme({
@@ -216,7 +260,9 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
           styleOverrides: {
             root: {
               borderRadius: customization.borderRadius,
-              backdropFilter: customization.reducedTransparency ? 'none' : `blur(${customization.blurStrength}px)`,
+              backdropFilter: customization.reducedTransparency
+                ? 'none'
+                : `blur(${customization.blurStrength}px)`,
             },
           },
         },
@@ -236,7 +282,7 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
   return (
     <ThemeCustomizerContext.Provider value={contextValue}>
       {children}
-      
+
       {/* Theme Customizer Dialog */}
       <Dialog
         open={isCustomizerOpen}
@@ -265,13 +311,15 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
               maxHeight: '90vh',
             }}
           >
-            <DialogTitle sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'space-between',
-              pb: 2,
-              borderBottom: `1px solid ${alpha('#fff', 0.1)}`,
-            }}>
+            <DialogTitle
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                pb: 2,
+                borderBottom: `1px solid ${alpha('#fff', 0.1)}`,
+              }}
+            >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <PaletteIcon color="primary" />
                 <Typography variant="h5" sx={{ fontWeight: 600 }}>
@@ -279,20 +327,20 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', gap: 1 }}>
-                <IconButton 
+                <IconButton
                   onClick={resetToDefault}
                   sx={{
                     backgroundColor: alpha('#fff', 0.1),
-                    '&:hover': { backgroundColor: alpha('#fff', 0.2) }
+                    '&:hover': { backgroundColor: alpha('#fff', 0.2) },
                   }}
                 >
                   <ResetIcon />
                 </IconButton>
-                <IconButton 
+                <IconButton
                   onClick={() => setIsCustomizerOpen(false)}
                   sx={{
                     backgroundColor: alpha('#fff', 0.1),
-                    '&:hover': { backgroundColor: alpha('#fff', 0.2) }
+                    '&:hover': { backgroundColor: alpha('#fff', 0.2) },
                   }}
                 >
                   <CloseIcon />
@@ -302,11 +350,13 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
 
             <DialogContent sx={{ p: 3, maxHeight: 'calc(90vh - 100px)', overflow: 'auto' }}>
               <Stack spacing={4}>
-                
                 {/* Theme Mode */}
                 <AnimatedElement animation="slideUp" delay={100}>
                   <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+                    >
                       <LightModeIcon fontSize="small" />
                       Theme Mode
                     </Typography>
@@ -317,13 +367,19 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
                           variant={customization.mode === mode ? 'contained' : 'outlined'}
                           onClick={() => updateCustomization({ mode })}
                           startIcon={
-                            mode === 'light' ? <LightModeIcon /> :
-                            mode === 'dark' ? <DarkModeIcon /> : <ColorIcon />
+                            mode === 'light' ? (
+                              <LightModeIcon />
+                            ) : mode === 'dark' ? (
+                              <DarkModeIcon />
+                            ) : (
+                              <ColorIcon />
+                            )
                           }
                           sx={{
-                            backgroundColor: customization.mode === mode 
-                              ? alpha(systemTheme.palette.primary.main, 0.2)
-                              : alpha('#fff', 0.1),
+                            backgroundColor:
+                              customization.mode === mode
+                                ? alpha(systemTheme.palette.primary.main, 0.2)
+                                : alpha('#fff', 0.1),
                             backdropFilter: 'blur(10px)',
                           }}
                         >
@@ -339,27 +395,43 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
                 {/* Color Presets */}
                 <AnimatedElement animation="slideUp" delay={200}>
                   <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+                    >
                       <ColorIcon fontSize="small" />
                       Color Presets
                     </Typography>
-                    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 2 }}>
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                        gap: 2,
+                      }}
+                    >
                       {colorPresets.map((preset, index) => (
-                        <AnimatedElement key={preset.name} animation="slideUp" delay={200 + index * 50}>
+                        <AnimatedElement
+                          key={preset.name}
+                          animation="slideUp"
+                          delay={200 + index * 50}
+                        >
                           <Button
                             variant="outlined"
-                            onClick={() => updateCustomization({ 
-                              primaryColor: preset.primary, 
-                              secondaryColor: preset.secondary 
-                            })}
+                            onClick={() =>
+                              updateCustomization({
+                                primaryColor: preset.primary,
+                                secondaryColor: preset.secondary,
+                              })
+                            }
                             sx={{
                               p: 2,
                               backgroundColor: alpha('#fff', 0.05),
                               backdropFilter: 'blur(10px)',
                               border: `1px solid ${alpha('#fff', 0.1)}`,
-                              borderColor: customization.primaryColor === preset.primary 
-                                ? systemTheme.palette.primary.main 
-                                : alpha('#fff', 0.1),
+                              borderColor:
+                                customization.primaryColor === preset.primary
+                                  ? systemTheme.palette.primary.main
+                                  : alpha('#fff', 0.1),
                               display: 'flex',
                               flexDirection: 'column',
                               gap: 1,
@@ -392,7 +464,10 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
                 {/* Glass Morphism Controls */}
                 <AnimatedElement animation="slideUp" delay={300}>
                   <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+                    >
                       <BlurIcon fontSize="small" />
                       Glass Morphism
                     </Typography>
@@ -403,7 +478,9 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
                         </Typography>
                         <Slider
                           value={customization.glassIntensity}
-                          onChange={(_, value) => updateCustomization({ glassIntensity: value as number })}
+                          onChange={(_, value) =>
+                            updateCustomization({ glassIntensity: value as number })
+                          }
                           min={0.05}
                           max={0.3}
                           step={0.01}
@@ -424,7 +501,9 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
                         </Typography>
                         <Slider
                           value={customization.blurStrength}
-                          onChange={(_, value) => updateCustomization({ blurStrength: value as number })}
+                          onChange={(_, value) =>
+                            updateCustomization({ blurStrength: value as number })
+                          }
                           min={5}
                           max={50}
                           step={1}
@@ -445,7 +524,9 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
                         </Typography>
                         <Slider
                           value={customization.borderOpacity}
-                          onChange={(_, value) => updateCustomization({ borderOpacity: value as number })}
+                          onChange={(_, value) =>
+                            updateCustomization({ borderOpacity: value as number })
+                          }
                           min={0.05}
                           max={0.5}
                           step={0.01}
@@ -468,7 +549,10 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
                 {/* Layout Controls */}
                 <AnimatedElement animation="slideUp" delay={400}>
                   <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography
+                      variant="h6"
+                      sx={{ fontWeight: 600, mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}
+                    >
                       <FontSizeIcon fontSize="small" />
                       Layout & Typography
                     </Typography>
@@ -479,7 +563,9 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
                         </Typography>
                         <Slider
                           value={customization.borderRadius}
-                          onChange={(_, value) => updateCustomization({ borderRadius: value as number })}
+                          onChange={(_, value) =>
+                            updateCustomization({ borderRadius: value as number })
+                          }
                           min={0}
                           max={24}
                           step={1}
@@ -500,7 +586,9 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
                         </Typography>
                         <Slider
                           value={customization.fontSize}
-                          onChange={(_, value) => updateCustomization({ fontSize: value as number })}
+                          onChange={(_, value) =>
+                            updateCustomization({ fontSize: value as number })
+                          }
                           min={12}
                           max={18}
                           step={1}
@@ -521,7 +609,9 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
                         </Typography>
                         <Slider
                           value={customization.animationSpeed}
-                          onChange={(_, value) => updateCustomization({ animationSpeed: value as number })}
+                          onChange={(_, value) =>
+                            updateCustomization({ animationSpeed: value as number })
+                          }
                           min={0.5}
                           max={3}
                           step={0.1}
@@ -569,7 +659,9 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
                         control={
                           <Switch
                             checked={customization.highContrast}
-                            onChange={(e) => updateCustomization({ highContrast: e.target.checked })}
+                            onChange={(e) =>
+                              updateCustomization({ highContrast: e.target.checked })
+                            }
                             sx={{
                               '& .MuiSwitch-switchBase.Mui-checked': {
                                 color: customization.primaryColor,
@@ -586,7 +678,9 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
                         control={
                           <Switch
                             checked={customization.reducedTransparency}
-                            onChange={(e) => updateCustomization({ reducedTransparency: e.target.checked })}
+                            onChange={(e) =>
+                              updateCustomization({ reducedTransparency: e.target.checked })
+                            }
                             sx={{
                               '& .MuiSwitch-switchBase.Mui-checked': {
                                 color: customization.primaryColor,
@@ -614,32 +708,37 @@ export const ThemeCustomizerProvider: React.FC<ThemeCustomizerProviderProps> = (
                       intensity="medium"
                       sx={{
                         p: 3,
-                        backgroundColor: alpha(customization.primaryColor, customization.glassIntensity),
+                        backgroundColor: alpha(
+                          customization.primaryColor,
+                          customization.glassIntensity,
+                        ),
                         backdropFilter: `blur(${customization.blurStrength}px)`,
                         border: `1px solid ${alpha('#fff', customization.borderOpacity)}`,
                         borderRadius: `${customization.borderRadius}px`,
                       }}
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                        <Avatar sx={{ 
-                          backgroundColor: customization.primaryColor,
-                          width: customization.compactMode ? 32 : 40,
-                          height: customization.compactMode ? 32 : 40,
-                        }}>
+                        <Avatar
+                          sx={{
+                            backgroundColor: customization.primaryColor,
+                            width: customization.compactMode ? 32 : 40,
+                            height: customization.compactMode ? 32 : 40,
+                          }}
+                        >
                           <PaletteIcon fontSize={customization.compactMode ? 'small' : 'medium'} />
                         </Avatar>
                         <Box>
-                          <Typography 
-                            variant={customization.compactMode ? 'body1' : 'h6'} 
-                            sx={{ 
+                          <Typography
+                            variant={customization.compactMode ? 'body1' : 'h6'}
+                            sx={{
                               fontWeight: 600,
                               fontSize: `${customization.fontSize}px`,
                             }}
                           >
                             Sample Card Title
                           </Typography>
-                          <Typography 
-                            variant="body2" 
+                          <Typography
+                            variant="body2"
                             color="text.secondary"
                             sx={{ fontSize: `${customization.fontSize - 2}px` }}
                           >

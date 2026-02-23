@@ -2,21 +2,23 @@
 import uuid
 from datetime import timedelta
 
-from core.utils.models import BaseModel
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from core.utils.models import BaseModel
+
 
 class UserManager(BaseUserManager):
     """Manager for User model with email-based authentication"""
+
     use_in_migrations = True
 
     def _create_user(self, email, password, **extra_fields):
         """Create and save a User with the given email and password."""
         if not email:
-            raise ValueError('The given email must be set')
+            raise ValueError("The given email must be set")
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
@@ -25,57 +27,58 @@ class UserManager(BaseUserManager):
 
     def create_user(self, email, password=None, **extra_fields):
         """Create and save a regular User with the given email and password."""
-        extra_fields.setdefault('is_staff', False)
-        extra_fields.setdefault('is_superuser', False)
+        extra_fields.setdefault("is_staff", False)
+        extra_fields.setdefault("is_superuser", False)
         return self._create_user(email, password, **extra_fields)
 
     def create_superuser(self, email, password, **extra_fields):
         """Create and save a SuperUser with the given email and password."""
-        extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('role', 'ADMIN')  # Ensure superusers are admins
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("role", "ADMIN")  # Ensure superusers are admins
 
-        if extra_fields.get('is_staff') is not True:
-            raise ValueError('Superuser must have is_staff=True.')
-        if extra_fields.get('is_superuser') is not True:
-            raise ValueError('Superuser must have is_superuser=True.')
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
 
         return self._create_user(email, password, **extra_fields)
 
 
 class User(AbstractUser):
     """User model with email-based authentication and role-based access"""
+
     username = None
-    email = models.EmailField(_('email address'), unique=True)
+    email = models.EmailField(_("email address"), unique=True)
 
     ROLE_CHOICES = (
-        ('CLIENT', 'Client'),
-        ('ADMIN', 'Admin'),
+        ("CLIENT", "Client"),
+        ("ADMIN", "Admin"),
     )
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='CLIENT')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default="CLIENT")
 
     AUTH_METHOD_CHOICES = [
-        ('password', 'Password'),
-        ('google', 'Google OAuth'),
-        ('invitation_pending', 'Invitation Pending'),
+        ("password", "Password"),
+        ("google", "Google OAuth"),
+        ("invitation_pending", "Invitation Pending"),
     ]
     auth_method = models.CharField(
         max_length=20,
         choices=AUTH_METHOD_CHOICES,
-        default='invitation_pending',
-        help_text="Authentication method: password, google, or invitation_pending"
+        default="invitation_pending",
+        help_text="Authentication method: password, google, or invitation_pending",
     )
 
     # Granular admin permissions - only applies to ADMIN role users
     admin_permissions = models.JSONField(
         default=dict,
         blank=True,
-        help_text="Granular admin permissions stored as JSON. Only applies to ADMIN role users."
+        help_text="Granular admin permissions stored as JSON. Only applies to ADMIN role users.",
     )
 
     objects = UserManager()
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
     def get_full_name(self):
@@ -99,7 +102,7 @@ class User(AbstractUser):
         """
         if self.is_superuser:
             return True
-        if self.role != 'ADMIN':
+        if self.role != "ADMIN":
             return False
 
         # SECURITY FIX (P0-B6): Empty permissions = no access (removed backward compatibility bypass)
@@ -117,15 +120,15 @@ class User(AbstractUser):
 
         if self.is_superuser:
             return FULL_ADMIN_PERMISSIONS.copy()
-        if self.role != 'ADMIN':
-            return {key: False for key in ADMIN_PERMISSIONS.keys()}
+        if self.role != "ADMIN":
+            return dict.fromkeys(ADMIN_PERMISSIONS.keys(), False)
 
         # SECURITY FIX (P0-B6): Empty permissions = no access
         if not self.admin_permissions:
-            return {key: False for key in ADMIN_PERMISSIONS.keys()}
+            return dict.fromkeys(ADMIN_PERMISSIONS.keys(), False)
 
         # Merge with defaults to ensure all keys exist
-        result = {key: False for key in ADMIN_PERMISSIONS.keys()}
+        result = dict.fromkeys(ADMIN_PERMISSIONS.keys(), False)
         result.update(self.admin_permissions)
         return result
 
@@ -135,12 +138,12 @@ class User(AbstractUser):
 
         if self.is_superuser:
             return True
-        if self.role != 'ADMIN':
+        if self.role != "ADMIN":
             return False
         # SECURITY FIX (P0-B6): Empty permissions = no access
         if not self.admin_permissions:
             return False
-        return all(self.admin_permissions.get(key, False) for key in ADMIN_PERMISSIONS.keys())
+        return all(self.admin_permissions.get(key, False) for key in ADMIN_PERMISSIONS)
 
     def __str__(self):
         return self.email
@@ -148,44 +151,38 @@ class User(AbstractUser):
 
 class UserProfile(BaseModel):
     """Profile for User with role-specific fields"""
+
     TIMEZONE_DISPLAY_CHOICES = [
-        ('business_only', 'Philippines Time Only'),
-        ('business_with_local', 'Philippines + Local Time'),
-        ('dual_display', 'Both Timezones Side by Side'),
+        ("business_only", "Philippines Time Only"),
+        ("business_with_local", "Philippines + Local Time"),
+        ("dual_display", "Both Timezones Side by Side"),
     ]
 
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     phone = models.CharField(max_length=20, blank=True, null=True)
     company = models.CharField(max_length=200, blank=True, null=True)
-    avatar = models.ImageField(
-        upload_to='users/avatars/',
-        null=True,
-        blank=True,
-        help_text='User profile picture'
-    )
+    avatar = models.ImageField(upload_to="users/avatars/", null=True, blank=True, help_text="User profile picture")
     google_picture_url = models.URLField(
         max_length=500,
         null=True,
         blank=True,
-        help_text='Profile picture URL from Google OAuth (if signed up via Google)'
+        help_text="Profile picture URL from Google OAuth (if signed up via Google)",
     )
-    
+
     # Timezone preferences
     display_timezone = models.CharField(
-        max_length=50,
-        default='Asia/Manila',
-        help_text="User's display timezone preference (for admin users)"
+        max_length=50, default="Asia/Manila", help_text="User's display timezone preference (for admin users)"
     )
     timezone_display_mode = models.CharField(
         max_length=20,
         choices=TIMEZONE_DISPLAY_CHOICES,
-        default='business_only',
-        help_text="How to display event times to this user"
+        default="business_only",
+        help_text="How to display event times to this user",
     )
-    
+
     class Meta:
-        verbose_name = 'User Profile'
-        verbose_name_plural = 'User Profiles'
+        verbose_name = "User Profile"
+        verbose_name_plural = "User Profiles"
 
     def __str__(self):
         return f"Profile for {self.user.email}"
@@ -202,28 +199,26 @@ class AdminInvitationManager(models.Manager):
 
 class AdminInvitation(BaseModel):
     """Invitations for new admin users or upgrading existing CLIENT users to ADMIN"""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
-    invited_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_invitations')
+    invited_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_invitations")
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='admin_upgrade_invitation',
+        related_name="admin_upgrade_invitation",
         null=True,
         blank=True,
-        help_text="Link to existing user if this is a role upgrade invitation"
+        help_text="Link to existing user if this is a role upgrade invitation",
     )
     is_accepted = models.BooleanField(default=False)
     is_upgrade = models.BooleanField(
-        default=False,
-        help_text="True if this invitation is to upgrade an existing CLIENT to ADMIN"
+        default=False, help_text="True if this invitation is to upgrade an existing CLIENT to ADMIN"
     )
     permissions = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text="Admin permissions to assign when invitation is accepted"
+        default=dict, blank=True, help_text="Admin permissions to assign when invitation is accepted"
     )
     expires_at = models.DateTimeField()
 
@@ -243,15 +238,16 @@ class AdminInvitation(BaseModel):
 
 class PasswordResetToken(BaseModel):
     """Password reset tokens for secure password recovery"""
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_reset_tokens')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_tokens")
     is_used = models.BooleanField(default=False)
     expires_at = models.DateTimeField()
 
     class Meta:
-        verbose_name = 'Password Reset Token'
-        verbose_name_plural = 'Password Reset Tokens'
-        ordering = ['-created_at']
+        verbose_name = "Password Reset Token"
+        verbose_name_plural = "Password Reset Tokens"
+        ordering = ["-created_at"]
 
     def save(self, *args, **kwargs):
         if not self.expires_at:
@@ -279,54 +275,45 @@ class ConsentRecord(BaseModel):
     """
 
     CONSENT_TYPE_CHOICES = [
-        ('MARKETING_EMAIL', 'Marketing Email'),
-        ('MARKETING_SMS', 'Marketing SMS'),
-        ('MARKETING_PUSH', 'Marketing Push Notifications'),
-        ('ANALYTICS', 'Usage Analytics'),
-        ('THIRD_PARTY_SHARING', 'Third-Party Sharing'),
-        ('SENSITIVE_DATA', 'Sensitive Personal Information Processing'),
-        ('PRIVACY_POLICY', 'Privacy Policy Acceptance'),
-        ('TERMS_OF_SERVICE', 'Terms of Service Acceptance'),
+        ("MARKETING_EMAIL", "Marketing Email"),
+        ("MARKETING_SMS", "Marketing SMS"),
+        ("MARKETING_PUSH", "Marketing Push Notifications"),
+        ("ANALYTICS", "Usage Analytics"),
+        ("THIRD_PARTY_SHARING", "Third-Party Sharing"),
+        ("SENSITIVE_DATA", "Sensitive Personal Information Processing"),
+        ("PRIVACY_POLICY", "Privacy Policy Acceptance"),
+        ("TERMS_OF_SERVICE", "Terms of Service Acceptance"),
     ]
 
     ACTION_CHOICES = [
-        ('GRANT', 'Consent Granted'),
-        ('WITHDRAW', 'Consent Withdrawn'),
-        ('UPDATE', 'Consent Updated'),
+        ("GRANT", "Consent Granted"),
+        ("WITHDRAW", "Consent Withdrawn"),
+        ("UPDATE", "Consent Updated"),
     ]
 
     SOURCE_CHOICES = [
-        ('REGISTRATION', 'Registration'),
-        ('SETTINGS', 'Settings Change'),
-        ('PRIVACY_DASHBOARD', 'Privacy Dashboard'),
-        ('API', 'API Request'),
-        ('ADMIN', 'Admin Action'),
+        ("REGISTRATION", "Registration"),
+        ("SETTINGS", "Settings Change"),
+        ("PRIVACY_DASHBOARD", "Privacy Dashboard"),
+        ("API", "API Request"),
+        ("ADMIN", "Admin Action"),
     ]
 
-    user = models.ForeignKey(
-        'users.User',
-        on_delete=models.CASCADE,
-        related_name='consent_records'
-    )
+    user = models.ForeignKey("users.User", on_delete=models.CASCADE, related_name="consent_records")
 
     consent_type = models.CharField(max_length=30, choices=CONSENT_TYPE_CHOICES)
     action = models.CharField(max_length=10, choices=ACTION_CHOICES)
 
     # The actual text the user consented to (for legal proof)
-    consent_text = models.TextField(
-        blank=True,
-        help_text="The exact text shown to user at time of consent"
-    )
+    consent_text = models.TextField(blank=True, help_text="The exact text shown to user at time of consent")
 
     # Version tracking
     privacy_policy_version = models.CharField(
-        max_length=20,
-        blank=True,
-        help_text="Privacy policy version at time of consent"
+        max_length=20, blank=True, help_text="Privacy policy version at time of consent"
     )
 
     # Source and context
-    source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default='SETTINGS')
+    source = models.CharField(max_length=20, choices=SOURCE_CHOICES, default="SETTINGS")
 
     # Request metadata (for audit)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
@@ -334,13 +321,13 @@ class ConsentRecord(BaseModel):
     device_type = models.CharField(max_length=20, blank=True)  # ios, android, web
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=['user', 'consent_type', '-created_at']),
-            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=["user", "consent_type", "-created_at"]),
+            models.Index(fields=["user", "-created_at"]),
         ]
-        verbose_name = 'Consent Record'
-        verbose_name_plural = 'Consent Records'
+        verbose_name = "Consent Record"
+        verbose_name_plural = "Consent Records"
 
     def __str__(self):
         return f"{self.user.email} - {self.consent_type} - {self.action}"
@@ -348,29 +335,26 @@ class ConsentRecord(BaseModel):
     @classmethod
     def get_current_consent(cls, user, consent_type):
         """Get the most recent consent record for a user and type"""
-        return cls.objects.filter(
-            user=user,
-            consent_type=consent_type
-        ).order_by('-created_at').first()
+        return cls.objects.filter(user=user, consent_type=consent_type).order_by("-created_at").first()
 
     @classmethod
     def is_consented(cls, user, consent_type):
         """Check if user has active consent for a type"""
         record = cls.get_current_consent(user, consent_type)
-        return record and record.action == 'GRANT'
+        return record and record.action == "GRANT"
 
     @classmethod
-    def record_consent(cls, user, consent_type, granted, request=None, source='SETTINGS', consent_text=''):
+    def record_consent(cls, user, consent_type, granted, request=None, source="SETTINGS", consent_text=""):
         """Record a consent action"""
         return cls.objects.create(
             user=user,
             consent_type=consent_type,
-            action='GRANT' if granted else 'WITHDRAW',
+            action="GRANT" if granted else "WITHDRAW",
             consent_text=consent_text,
             source=source,
             ip_address=cls._get_client_ip(request) if request else None,
-            user_agent=request.META.get('HTTP_USER_AGENT', '') if request else '',
-            device_type=cls._get_device_type(request) if request else '',
+            user_agent=request.META.get("HTTP_USER_AGENT", "") if request else "",
+            device_type=cls._get_device_type(request) if request else "",
         )
 
     @staticmethod
@@ -380,17 +364,17 @@ class ConsentRecord(BaseModel):
         Uses REMOTE_ADDR which is set to the real client IP by
         TrustedProxyMiddleware (respects NUM_PROXIES setting).
         """
-        return request.META.get('REMOTE_ADDR')
+        return request.META.get("REMOTE_ADDR")
 
     @staticmethod
     def _get_device_type(request):
         """Determine device type from user agent"""
-        ua = request.META.get('HTTP_USER_AGENT', '').lower()
-        if 'iphone' in ua or 'ipad' in ua:
-            return 'ios'
-        elif 'android' in ua:
-            return 'android'
-        return 'web'
+        ua = request.META.get("HTTP_USER_AGENT", "").lower()
+        if "iphone" in ua or "ipad" in ua:
+            return "ios"
+        elif "android" in ua:
+            return "android"
+        return "web"
 
 
 class PrivacyRequest(BaseModel):
@@ -400,66 +384,52 @@ class PrivacyRequest(BaseModel):
     """
 
     REQUEST_TYPE_CHOICES = [
-        ('ACCESS', 'Data Access'),
-        ('EXPORT', 'Data Export/Portability'),
-        ('DELETION', 'Account Deletion/Erasure'),
-        ('CORRECTION', 'Data Correction'),
-        ('OBJECTION', 'Processing Objection'),
+        ("ACCESS", "Data Access"),
+        ("EXPORT", "Data Export/Portability"),
+        ("DELETION", "Account Deletion/Erasure"),
+        ("CORRECTION", "Data Correction"),
+        ("OBJECTION", "Processing Objection"),
     ]
 
     STATUS_CHOICES = [
-        ('PENDING', 'Pending'),
-        ('PROCESSING', 'Processing'),
-        ('COMPLETED', 'Completed'),
-        ('REJECTED', 'Rejected'),
-        ('CANCELLED', 'Cancelled by User'),
+        ("PENDING", "Pending"),
+        ("PROCESSING", "Processing"),
+        ("COMPLETED", "Completed"),
+        ("REJECTED", "Rejected"),
+        ("CANCELLED", "Cancelled by User"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     user = models.ForeignKey(
-        'users.User',
+        "users.User",
         on_delete=models.SET_NULL,  # Keep record even if user deleted
         null=True,
-        related_name='privacy_requests'
+        related_name="privacy_requests",
     )
-    user_email = models.EmailField(
-        help_text="Preserved for audit even after user deletion"
-    )
+    user_email = models.EmailField(help_text="Preserved for audit even after user deletion")
 
     request_type = models.CharField(max_length=20, choices=REQUEST_TYPE_CHOICES)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDING")
 
     # Request details
     request_data = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text="Additional data submitted with request (e.g., corrections)"
+        default=dict, blank=True, help_text="Additional data submitted with request (e.g., corrections)"
     )
 
     # Response details
-    response_data = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text="Result data (e.g., export download URL)"
-    )
+    response_data = models.JSONField(default=dict, blank=True, help_text="Result data (e.g., export download URL)")
     rejection_reason = models.TextField(blank=True)
 
     # Processing
     processed_at = models.DateTimeField(null=True, blank=True)
     processed_by = models.ForeignKey(
-        'users.User',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='processed_privacy_requests'
+        "users.User", on_delete=models.SET_NULL, null=True, blank=True, related_name="processed_privacy_requests"
     )
 
     # For deletion requests - track what was deleted
     deletion_summary = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text="Summary of deleted, anonymized, and retained data"
+        default=dict, blank=True, help_text="Summary of deleted, anonymized, and retained data"
     )
 
     # Audit
@@ -467,14 +437,14 @@ class PrivacyRequest(BaseModel):
     user_agent = models.TextField(blank=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=['user', '-created_at']),
-            models.Index(fields=['status', '-created_at']),
-            models.Index(fields=['request_type', 'status']),
+            models.Index(fields=["user", "-created_at"]),
+            models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["request_type", "status"]),
         ]
-        verbose_name = 'Privacy Request'
-        verbose_name_plural = 'Privacy Requests'
+        verbose_name = "Privacy Request"
+        verbose_name_plural = "Privacy Requests"
 
     def __str__(self):
         return f"{self.request_type} - {self.user_email} - {self.status}"
@@ -486,11 +456,11 @@ class PrivacyRequest(BaseModel):
 
     def is_overdue(self):
         """Check if 30 working day deadline is passed"""
-        return self.days_since_submission() > 30 and self.status in ['PENDING', 'PROCESSING']
+        return self.days_since_submission() > 30 and self.status in ["PENDING", "PROCESSING"]
 
     def complete(self, processed_by=None, response_data=None):
         """Mark request as completed"""
-        self.status = 'COMPLETED'
+        self.status = "COMPLETED"
         self.processed_at = timezone.now()
         self.processed_by = processed_by
         if response_data:
@@ -499,7 +469,7 @@ class PrivacyRequest(BaseModel):
 
     def reject(self, reason, processed_by=None):
         """Mark request as rejected"""
-        self.status = 'REJECTED'
+        self.status = "REJECTED"
         self.rejection_reason = reason
         self.processed_at = timezone.now()
         self.processed_by = processed_by

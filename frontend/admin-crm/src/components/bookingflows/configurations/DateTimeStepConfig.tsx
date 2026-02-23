@@ -30,10 +30,7 @@ import {
   CheckCircle as AvailabilityIcon,
   Sync as SyncIcon,
 } from '@mui/icons-material';
-import type {
-  BookingFlowStep,
-  DateTimeStepConfiguration
-} from '../../../types/bookingflows.types';
+import type { BookingFlowStep, DateTimeStepConfiguration } from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import { useFormHandlers } from '../../../hooks/useFormHandlers';
 import { ConfigSection } from '../../common';
@@ -139,16 +136,9 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
   const [newBlockedDate, setNewBlockedDate] = useState('');
 
   // Use centralized form handlers (keeping custom handleInputChange for numeric parsing)
-  const { handleSwitchChange } = useFormHandlers(
-    setFormData,
-    errors,
-    setErrors
-  );
+  const { handleSwitchChange } = useFormHandlers(setFormData, errors, setErrors);
 
-  const {
-    updateConfiguration,
-    isUpdatingConfiguration,
-  } = useBookingFlowStepConfiguration();
+  const { updateConfiguration, isUpdatingConfiguration } = useBookingFlowStepConfiguration();
 
   useEffect(() => {
     if (config) {
@@ -177,28 +167,29 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
     }
   }, [config]);
 
-  const handleInputChange = (field: keyof DateTimeConfigFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | { value: unknown }>
-  ) => {
-    const value = event.target.value;
-    // Parse numeric fields (hours, threshold, and days fields)
-    const isNumericField = field.includes('hours') || field.includes('threshold') || field.includes('_days');
-    setFormData(prev => ({
-      ...prev,
-      [field]: isNumericField ? parseInt(value as string) || 0 : value,
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
+  const handleInputChange =
+    (field: keyof DateTimeConfigFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement | { value: unknown }>) => {
+      const value = event.target.value;
+      // Parse numeric fields (hours, threshold, and days fields)
+      const isNumericField =
+        field.includes('hours') || field.includes('threshold') || field.includes('_days');
+      setFormData((prev) => ({
         ...prev,
-        [field]: '',
+        [field]: isNumericField ? parseInt(value as string) || 0 : value,
       }));
-    }
-  };
+
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: '',
+        }));
+      }
+    };
 
   const handleDaysOfWeekChange = (value: number[]) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       available_days_of_week: value,
     }));
@@ -206,7 +197,7 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
 
   const handleAddBlockedDate = () => {
     if (newBlockedDate && !formData.blocked_dates.includes(newBlockedDate)) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         blocked_dates: [...prev.blocked_dates, newBlockedDate],
       }));
@@ -215,9 +206,9 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
   };
 
   const handleRemoveBlockedDate = (dateToRemove: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      blocked_dates: prev.blocked_dates.filter(date => date !== dateToRemove),
+      blocked_dates: prev.blocked_dates.filter((date) => date !== dateToRemove),
     }));
   };
 
@@ -245,22 +236,25 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
   const handleSave = () => {
     if (!validateForm()) return;
 
-    updateConfiguration({
-      stepId: step.id,
-      data: formData as unknown as Record<string, unknown>,
-    }, {
-      onSuccess: () => {
-        // Create updated step object for parent callback
-        const updatedStep: BookingFlowStep = {
-          ...step,
-          configuration_data: {
-            ...config,
-            ...formData,
-          } as DateTimeStepConfiguration,
-        };
-        onUpdate(updatedStep);
-      }
-    });
+    updateConfiguration(
+      {
+        stepId: step.id,
+        data: formData as unknown as Record<string, unknown>,
+      },
+      {
+        onSuccess: () => {
+          // Create updated step object for parent callback
+          const updatedStep: BookingFlowStep = {
+            ...step,
+            configuration_data: {
+              ...config,
+              ...formData,
+            } as DateTimeStepConfiguration,
+          };
+          onUpdate(updatedStep);
+        },
+      },
+    );
   };
 
   return (
@@ -270,308 +264,309 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
       </Typography>
 
       <Alert severity="info" sx={{ mb: 3 }}>
-        This step now only handles date selection. Time and duration settings have been moved to the Package Selection step where clients can customize their hours per venue.
+        This step now only handles date selection. Time and duration settings have been moved to the
+        Package Selection step where clients can customize their hours per venue.
       </Alert>
 
       <Stack spacing={3}>
         {/* Calendar Settings */}
         <ConfigSection title="Calendar Settings">
           <Stack spacing={2}>
-              <Box display="flex" alignItems="center" gap={1}>
-                <CalendarIcon color="primary" />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_calendar_view}
-                      onChange={handleSwitchChange('show_calendar_view')}
-                    />
-                  }
-                  label="Show Calendar View"
+            <Box display="flex" alignItems="center" gap={1}>
+              <CalendarIcon color="primary" />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_calendar_view}
+                    onChange={handleSwitchChange('show_calendar_view')}
+                  />
+                }
+                label="Show Calendar View"
+              />
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Display a visual calendar for date selection
+            </Typography>
+
+            <Box display="flex" alignItems="center" gap={1}>
+              <CalendarIcon color="action" />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.allow_multi_day}
+                    onChange={handleSwitchChange('allow_multi_day')}
+                  />
+                }
+                label="Allow Multi-Day Events"
+              />
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Allow events that span multiple days
+            </Typography>
+
+            {formData.allow_multi_day && (
+              <Box display="flex" gap={2} flexWrap="wrap" mt={1}>
+                <TextField
+                  label="Minimum Days"
+                  type="number"
+                  value={formData.min_event_days}
+                  onChange={(e) => {
+                    const days = parseInt(e.target.value) || 1;
+                    handleInputChange('min_event_days')({
+                      target: { value: String(days) },
+                    } as React.ChangeEvent<HTMLInputElement>);
+                  }}
+                  helperText="Minimum days (1 = allow single-day)"
+                  inputProps={{ min: 1 }}
+                  sx={{ maxWidth: 200 }}
+                />
+                <TextField
+                  label="Maximum Days"
+                  type="number"
+                  value={formData.max_event_days}
+                  onChange={(e) => {
+                    const days = parseInt(e.target.value) || 1;
+                    handleInputChange('max_event_days')({
+                      target: { value: String(days) },
+                    } as React.ChangeEvent<HTMLInputElement>);
+                  }}
+                  helperText="Maximum days allowed"
+                  inputProps={{ min: 1 }}
+                  sx={{ maxWidth: 200 }}
                 />
               </Box>
-              <Typography variant="caption" color="text.secondary">
-                Display a visual calendar for date selection
-              </Typography>
-
-              <Box display="flex" alignItems="center" gap={1}>
-                <CalendarIcon color="action" />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.allow_multi_day}
-                      onChange={handleSwitchChange('allow_multi_day')}
-                    />
-                  }
-                  label="Allow Multi-Day Events"
-                />
-              </Box>
-              <Typography variant="caption" color="text.secondary">
-                Allow events that span multiple days
-              </Typography>
-
-              {formData.allow_multi_day && (
-                <Box display="flex" gap={2} flexWrap="wrap" mt={1}>
-                  <TextField
-                    label="Minimum Days"
-                    type="number"
-                    value={formData.min_event_days}
-                    onChange={(e) => {
-                      const days = parseInt(e.target.value) || 1;
-                      handleInputChange('min_event_days')({ target: { value: String(days) } } as React.ChangeEvent<HTMLInputElement>);
-                    }}
-                    helperText="Minimum days (1 = allow single-day)"
-                    inputProps={{ min: 1 }}
-                    sx={{ maxWidth: 200 }}
-                  />
-                  <TextField
-                    label="Maximum Days"
-                    type="number"
-                    value={formData.max_event_days}
-                    onChange={(e) => {
-                      const days = parseInt(e.target.value) || 1;
-                      handleInputChange('max_event_days')({ target: { value: String(days) } } as React.ChangeEvent<HTMLInputElement>);
-                    }}
-                    helperText="Maximum days allowed"
-                    inputProps={{ min: 1 }}
-                    sx={{ maxWidth: 200 }}
-                  />
-                </Box>
-              )}
-            </Stack>
+            )}
+          </Stack>
         </ConfigSection>
 
         {/* Enhanced Availability Settings */}
         <ConfigSection title="Real-Time Availability">
-            
-            <Stack spacing={2}>
-              <Box display="flex" alignItems="center" gap={1}>
-                <AvailabilityIcon color="primary" />
+          <Stack spacing={2}>
+            <Box display="flex" alignItems="center" gap={1}>
+              <AvailabilityIcon color="primary" />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.enable_real_time_availability}
+                    onChange={handleSwitchChange('enable_real_time_availability')}
+                  />
+                }
+                label="Enable Real-Time Availability Check"
+              />
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Check against existing bookings and block unavailable slots
+            </Typography>
+
+            {formData.enable_real_time_availability && (
+              <>
                 <FormControlLabel
                   control={
                     <Switch
-                      checked={formData.enable_real_time_availability}
-                      onChange={handleSwitchChange('enable_real_time_availability')}
+                      checked={formData.show_availability_status}
+                      onChange={handleSwitchChange('show_availability_status')}
                     />
                   }
-                  label="Enable Real-Time Availability Check"
+                  label="Show Availability Status"
                 />
-              </Box>
-              <Typography variant="caption" color="text.secondary">
-                Check against existing bookings and block unavailable slots
-              </Typography>
-
-              {formData.enable_real_time_availability && (
-                <>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={formData.show_availability_status}
-                        onChange={handleSwitchChange('show_availability_status')}
-                      />
-                    }
-                    label="Show Availability Status"
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    Display availability indicators to clients
-                  </Typography>
-
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={formData.auto_check_conflicts}
-                        onChange={handleSwitchChange('auto_check_conflicts')}
-                      />
-                    }
-                    label="Auto-Check Conflicts"
-                  />
-                  <Typography variant="caption" color="text.secondary">
-                    Automatically prevent conflicting bookings
-                  </Typography>
-
-                  <FormControl fullWidth sx={{ mt: 2 }}>
-                    <InputLabel>Availability Display Mode</InputLabel>
-                    <Select
-                      value={formData.availability_display_mode}
-                      label="Availability Display Mode"
-                      onChange={(event) => {
-                        const value = event.target.value as 'FULL' | 'LIMITED' | 'SIMPLE';
-                        setFormData(prev => ({
-                          ...prev,
-                          availability_display_mode: value,
-                        }));
-                        if (errors['availability_display_mode']) {
-                          setErrors(prev => ({
-                            ...prev,
-                            availability_display_mode: '',
-                          }));
-                        }
-                      }}
-                    >
-                      {AVAILABILITY_DISPLAY_MODES.map((mode) => (
-                        <MenuItem key={mode.value} value={mode.value}>
-                          {mode.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </>
-              )}
-
-              {/* Available Days */}
-              <Box>
-                <Typography variant="body2" gutterBottom>
-                  Available Days of Week
+                <Typography variant="caption" color="text.secondary">
+                  Display availability indicators to clients
                 </Typography>
-                <FormControl fullWidth error={!!errors.available_days_of_week}>
-                  <Select
-                    multiple
-                    value={formData.available_days_of_week}
-                    onChange={(e) => handleDaysOfWeekChange(e.target.value as number[])}
-                    renderValue={(selected) => (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                        {selected.map((dayValue) => {
-                          const day = DAYS_OF_WEEK.find(d => d.value === dayValue);
-                          return (
-                            <Chip key={dayValue} label={day?.label} size="small" />
-                          );
-                        })}
-                      </Box>
-                    )}
-                  >
-                    {DAYS_OF_WEEK.map((day) => (
-                      <MenuItem key={day.value} value={day.value}>
-                        <Checkbox checked={formData.available_days_of_week.includes(day.value)} />
-                        <ListItemText primary={day.label} />
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {errors.available_days_of_week && (
-                    <Typography variant="caption" color="error">
-                      {errors.available_days_of_week}
-                    </Typography>
-                  )}
-                </FormControl>
-              </Box>
-            </Stack>
-        </ConfigSection>
 
-        {/* Availability Checking Configuration */}
-        <ConfigSection title="Availability Checking">
-            
-            <Stack spacing={2}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.check_venue_availability}
-                    onChange={handleSwitchChange('check_venue_availability')}
-                    disabled={!formData.enable_real_time_availability}
-                  />
-                }
-                label="Check Venue Availability"
-              />
-              
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.check_resource_availability}
-                    onChange={handleSwitchChange('check_resource_availability')}
-                    disabled={!formData.enable_real_time_availability}
-                  />
-                }
-                label="Check Resource Availability"
-              />
-              
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.check_staff_availability}
-                    onChange={handleSwitchChange('check_staff_availability')}
-                    disabled={!formData.enable_real_time_availability}
-                  />
-                }
-                label="Check Staff Availability"
-              />
-            </Stack>
-        </ConfigSection>
-
-        {/* Conflict Resolution */}
-        <ConfigSection title="Conflict Resolution">
-            
-            <Stack spacing={2}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.allow_overbooking}
-                    onChange={handleSwitchChange('allow_overbooking')}
-                  />
-                }
-                label="Allow Overbooking"
-              />
-              <Typography variant="caption" color="text.secondary">
-                Allow bookings even when conflicts are detected
-              </Typography>
-
-              {formData.allow_overbooking && (
-                <TextField
-                  label="Overbooking Threshold"
-                  type="number"
-                  value={formData.overbooking_threshold}
-                  onChange={handleInputChange('overbooking_threshold')}
-                  error={!!errors.overbooking_threshold}
-                  helperText={errors.overbooking_threshold || 'Maximum allowed conflicts before blocking'}
-                  inputProps={{ min: 0 }}
-                  sx={{ maxWidth: 300 }}
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.auto_check_conflicts}
+                      onChange={handleSwitchChange('auto_check_conflicts')}
+                    />
+                  }
+                  label="Auto-Check Conflicts"
                 />
-              )}
-            </Stack>
-        </ConfigSection>
+                <Typography variant="caption" color="text.secondary">
+                  Automatically prevent conflicting bookings
+                </Typography>
 
-        {/* Calendar Integration */}
-        <ConfigSection title="Calendar Integration" icon={<SyncIcon />}>
-            
-            <Stack spacing={2}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.sync_with_calendar}
-                    onChange={handleSwitchChange('sync_with_calendar')}
-                  />
-                }
-                label="Sync with External Calendar"
-              />
-              <Typography variant="caption" color="text.secondary">
-                Sync availability with external calendar systems
-              </Typography>
-
-              {formData.sync_with_calendar && (
-                <FormControl fullWidth sx={{ maxWidth: 400 }}>
-                  <InputLabel>Calendar Source</InputLabel>
+                <FormControl fullWidth sx={{ mt: 2 }}>
+                  <InputLabel>Availability Display Mode</InputLabel>
                   <Select
-                    value={formData.calendar_source}
-                    label="Calendar Source"
+                    value={formData.availability_display_mode}
+                    label="Availability Display Mode"
                     onChange={(event) => {
-                      const value = event.target.value as 'GOOGLE' | 'OUTLOOK' | 'EXTERNAL' | '';
-                      setFormData(prev => ({
+                      const value = event.target.value as 'FULL' | 'LIMITED' | 'SIMPLE';
+                      setFormData((prev) => ({
                         ...prev,
-                        calendar_source: value,
+                        availability_display_mode: value,
                       }));
-                      if (errors['calendar_source']) {
-                        setErrors(prev => ({
+                      if (errors['availability_display_mode']) {
+                        setErrors((prev) => ({
                           ...prev,
-                          calendar_source: '',
+                          availability_display_mode: '',
                         }));
                       }
                     }}
                   >
-                    {CALENDAR_SOURCES.map((source) => (
-                      <MenuItem key={source.value} value={source.value}>
-                        {source.label}
+                    {AVAILABILITY_DISPLAY_MODES.map((mode) => (
+                      <MenuItem key={mode.value} value={mode.value}>
+                        {mode.label}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
-              )}
-            </Stack>
+              </>
+            )}
+
+            {/* Available Days */}
+            <Box>
+              <Typography variant="body2" gutterBottom>
+                Available Days of Week
+              </Typography>
+              <FormControl fullWidth error={!!errors.available_days_of_week}>
+                <Select
+                  multiple
+                  value={formData.available_days_of_week}
+                  onChange={(e) => handleDaysOfWeekChange(e.target.value as number[])}
+                  renderValue={(selected) => (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {selected.map((dayValue) => {
+                        const day = DAYS_OF_WEEK.find((d) => d.value === dayValue);
+                        return <Chip key={dayValue} label={day?.label} size="small" />;
+                      })}
+                    </Box>
+                  )}
+                >
+                  {DAYS_OF_WEEK.map((day) => (
+                    <MenuItem key={day.value} value={day.value}>
+                      <Checkbox checked={formData.available_days_of_week.includes(day.value)} />
+                      <ListItemText primary={day.label} />
+                    </MenuItem>
+                  ))}
+                </Select>
+                {errors.available_days_of_week && (
+                  <Typography variant="caption" color="error">
+                    {errors.available_days_of_week}
+                  </Typography>
+                )}
+              </FormControl>
+            </Box>
+          </Stack>
+        </ConfigSection>
+
+        {/* Availability Checking Configuration */}
+        <ConfigSection title="Availability Checking">
+          <Stack spacing={2}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.check_venue_availability}
+                  onChange={handleSwitchChange('check_venue_availability')}
+                  disabled={!formData.enable_real_time_availability}
+                />
+              }
+              label="Check Venue Availability"
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.check_resource_availability}
+                  onChange={handleSwitchChange('check_resource_availability')}
+                  disabled={!formData.enable_real_time_availability}
+                />
+              }
+              label="Check Resource Availability"
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.check_staff_availability}
+                  onChange={handleSwitchChange('check_staff_availability')}
+                  disabled={!formData.enable_real_time_availability}
+                />
+              }
+              label="Check Staff Availability"
+            />
+          </Stack>
+        </ConfigSection>
+
+        {/* Conflict Resolution */}
+        <ConfigSection title="Conflict Resolution">
+          <Stack spacing={2}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.allow_overbooking}
+                  onChange={handleSwitchChange('allow_overbooking')}
+                />
+              }
+              label="Allow Overbooking"
+            />
+            <Typography variant="caption" color="text.secondary">
+              Allow bookings even when conflicts are detected
+            </Typography>
+
+            {formData.allow_overbooking && (
+              <TextField
+                label="Overbooking Threshold"
+                type="number"
+                value={formData.overbooking_threshold}
+                onChange={handleInputChange('overbooking_threshold')}
+                error={!!errors.overbooking_threshold}
+                helperText={
+                  errors.overbooking_threshold || 'Maximum allowed conflicts before blocking'
+                }
+                inputProps={{ min: 0 }}
+                sx={{ maxWidth: 300 }}
+              />
+            )}
+          </Stack>
+        </ConfigSection>
+
+        {/* Calendar Integration */}
+        <ConfigSection title="Calendar Integration" icon={<SyncIcon />}>
+          <Stack spacing={2}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.sync_with_calendar}
+                  onChange={handleSwitchChange('sync_with_calendar')}
+                />
+              }
+              label="Sync with External Calendar"
+            />
+            <Typography variant="caption" color="text.secondary">
+              Sync availability with external calendar systems
+            </Typography>
+
+            {formData.sync_with_calendar && (
+              <FormControl fullWidth sx={{ maxWidth: 400 }}>
+                <InputLabel>Calendar Source</InputLabel>
+                <Select
+                  value={formData.calendar_source}
+                  label="Calendar Source"
+                  onChange={(event) => {
+                    const value = event.target.value as 'GOOGLE' | 'OUTLOOK' | 'EXTERNAL' | '';
+                    setFormData((prev) => ({
+                      ...prev,
+                      calendar_source: value,
+                    }));
+                    if (errors['calendar_source']) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        calendar_source: '',
+                      }));
+                    }
+                  }}
+                >
+                  {CALENDAR_SOURCES.map((source) => (
+                    <MenuItem key={source.value} value={source.value}>
+                      {source.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+          </Stack>
         </ConfigSection>
 
         {/* Advanced Settings */}
@@ -579,7 +574,9 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Box display="flex" alignItems="center" gap={1}>
               <Typography variant="subtitle1">Advanced Settings</Typography>
-              {(formData.blocked_dates.length > 0 || formData.buffer_before_hours > 0 || formData.buffer_after_hours > 0) && (
+              {(formData.blocked_dates.length > 0 ||
+                formData.buffer_before_hours > 0 ||
+                formData.buffer_after_hours > 0) && (
                 <Chip label="Configured" size="small" color="primary" />
               )}
             </Box>
@@ -603,7 +600,7 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                       inputProps={{ min: 0 }}
                       sx={{ flex: 1 }}
                     />
-                    
+
                     <TextField
                       label="Buffer After (hours)"
                       type="number"
@@ -630,7 +627,7 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
                 <Typography variant="subtitle2" gutterBottom>
                   Blocked Dates
                 </Typography>
-                
+
                 <Box display="flex" gap={1} mb={2}>
                   <TextField
                     type="date"
@@ -677,58 +674,66 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
         {/* Configuration Summary */}
         <ConfigSection title="Configuration Summary">
           <Stack spacing={1}>
+            <Typography variant="body2">
+              <strong>Display:</strong>{' '}
+              {[
+                formData.show_calendar_view && 'Calendar View',
+                formData.allow_multi_day &&
+                  `Multi-Day Events (${formData.min_event_days}-${formData.max_event_days} days)`,
+              ]
+                .filter(Boolean)
+                .join(', ') || 'Basic date selection'}
+            </Typography>
+
+            <Typography variant="body2">
+              <strong>Available Days:</strong> {formData.available_days_of_week.length} days per
+              week
+            </Typography>
+
+            <Typography variant="body2">
+              <strong>Real-Time Availability:</strong>{' '}
+              {formData.enable_real_time_availability ? 'Enabled' : 'Disabled'}
+              {formData.enable_real_time_availability && ` (${formData.availability_display_mode})`}
+            </Typography>
+
+            {formData.enable_real_time_availability && (
               <Typography variant="body2">
-                <strong>Display:</strong>{' '}
+                <strong>Availability Checks:</strong>{' '}
                 {[
-                  formData.show_calendar_view && 'Calendar View',
-                  formData.allow_multi_day && `Multi-Day Events (${formData.min_event_days}-${formData.max_event_days} days)`
-                ].filter(Boolean).join(', ') || 'Basic date selection'}
+                  formData.check_venue_availability && 'Venue',
+                  formData.check_resource_availability && 'Resources',
+                  formData.check_staff_availability && 'Staff',
+                ]
+                  .filter(Boolean)
+                  .join(', ') || 'None'}
               </Typography>
+            )}
 
+            {(formData.buffer_before_hours > 0 || formData.buffer_after_hours > 0) && (
               <Typography variant="body2">
-                <strong>Available Days:</strong> {formData.available_days_of_week.length} days per week
+                <strong>Buffer:</strong> {formData.buffer_before_hours}h before,{' '}
+                {formData.buffer_after_hours}h after
               </Typography>
+            )}
 
+            {formData.blocked_dates.length > 0 && (
               <Typography variant="body2">
-                <strong>Real-Time Availability:</strong> {formData.enable_real_time_availability ? 'Enabled' : 'Disabled'}
-                {formData.enable_real_time_availability && ` (${formData.availability_display_mode})`}
+                <strong>Blocked Dates:</strong> {formData.blocked_dates.length} dates blocked
               </Typography>
+            )}
 
-              {formData.enable_real_time_availability && (
-                <Typography variant="body2">
-                  <strong>Availability Checks:</strong>{' '}
-                  {[
-                    formData.check_venue_availability && 'Venue',
-                    formData.check_resource_availability && 'Resources',
-                    formData.check_staff_availability && 'Staff'
-                  ].filter(Boolean).join(', ') || 'None'}
-                </Typography>
-              )}
+            {formData.allow_overbooking && (
+              <Typography variant="body2">
+                <strong>Overbooking:</strong> Allowed (threshold: {formData.overbooking_threshold})
+              </Typography>
+            )}
 
-              {(formData.buffer_before_hours > 0 || formData.buffer_after_hours > 0) && (
-                <Typography variant="body2">
-                  <strong>Buffer:</strong> {formData.buffer_before_hours}h before, {formData.buffer_after_hours}h after
-                </Typography>
-              )}
-
-              {formData.blocked_dates.length > 0 && (
-                <Typography variant="body2">
-                  <strong>Blocked Dates:</strong> {formData.blocked_dates.length} dates blocked
-                </Typography>
-              )}
-
-              {formData.allow_overbooking && (
-                <Typography variant="body2">
-                  <strong>Overbooking:</strong> Allowed (threshold: {formData.overbooking_threshold})
-                </Typography>
-              )}
-
-              {formData.sync_with_calendar && (
-                <Typography variant="body2">
-                  <strong>Calendar Sync:</strong> {formData.calendar_source || 'Enabled'}
-                </Typography>
-              )}
-            </Stack>
+            {formData.sync_with_calendar && (
+              <Typography variant="body2">
+                <strong>Calendar Sync:</strong> {formData.calendar_source || 'Enabled'}
+              </Typography>
+            )}
+          </Stack>
         </ConfigSection>
 
         {/* Actions */}
@@ -740,11 +745,8 @@ export const DateTimeStepConfig: React.FC<DateTimeStepConfigProps> = ({
           >
             {isLoading || isUpdatingConfiguration ? 'Saving...' : 'Save Configuration'}
           </Button>
-          
-          <Button
-            variant="outlined"
-            onClick={() => setFormData(defaultFormData)}
-          >
+
+          <Button variant="outlined" onClick={() => setFormData(defaultFormData)}>
             Reset to Defaults
           </Button>
         </Box>

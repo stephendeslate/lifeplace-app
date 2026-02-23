@@ -153,14 +153,14 @@ export const ResponsiveLayoutExample = () => (
     spacing="large"
     sx={{
       // Custom responsive overrides if needed
-      py: { xs: 4, md: 8, lg: 12 }
+      py: { xs: 4, md: 8, lg: 12 },
     }}
   >
     <Container
       maxWidth="content"
       sx={{
         // Custom container styles if needed
-        px: { xs: 2, sm: 4, md: 6 }
+        px: { xs: 2, sm: 4, md: 6 },
       }}
     >
       <ImageWithOverlay
@@ -168,10 +168,10 @@ export const ResponsiveLayoutExample = () => (
         alt="Responsive venue image"
         overlay="gradient"
         height={{
-          xs: '300px',    // Mobile
-          sm: '400px',    // Tablet
-          md: '500px',    // Desktop
-          lg: '600px',    // Large desktop
+          xs: '300px', // Mobile
+          sm: '400px', // Tablet
+          md: '500px', // Desktop
+          lg: '600px', // Large desktop
         }}
         objectFit="cover"
       >
@@ -181,7 +181,7 @@ export const ResponsiveLayoutExample = () => (
             color="white"
             textAlign="center"
             sx={{
-              fontSize: { xs: '2rem', md: '3rem', lg: '4rem' }
+              fontSize: { xs: '2rem', md: '3rem', lg: '4rem' },
             }}
           >
             Responsive Hero

@@ -64,8 +64,8 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
   };
 
   return (
-    <Card 
-      sx={{ 
+    <Card
+      sx={{
         mb: 1,
         border: `1px solid ${theme.palette.divider}`,
         borderRadius: 3,
@@ -90,12 +90,12 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
           >
             <ContractIcon fontSize="small" />
           </Avatar>
-          
+
           <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography 
-              variant="subtitle1" 
-              sx={{ 
-                fontWeight: 600, 
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontWeight: 600,
                 mb: 0.5,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -104,11 +104,11 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
             >
               {contract.event?.title || `Event #${contract.event?.id || 'Unknown'}`}
             </Typography>
-            
-            <Typography 
-              variant="caption" 
-              color="text.secondary" 
-              sx={{ 
+
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
                 display: 'block',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -119,7 +119,7 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
             </Typography>
           </Box>
 
-          <IconButton 
+          <IconButton
             size="small"
             onClick={handleToggleExpanded}
             sx={{
@@ -140,7 +140,7 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
             variant="filled"
             sx={{ fontSize: '0.75rem' }}
           />
-          
+
           {contract.is_amendment && (
             <Chip
               label={`Amendment #${contract.amendment_number}`}
@@ -150,7 +150,7 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
               sx={{ fontSize: '0.7rem' }}
             />
           )}
-          
+
           {isExpired && (
             <Chip
               icon={<ExpiredIcon sx={{ fontSize: '0.75rem !important' }} />}
@@ -163,9 +163,9 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
           )}
 
           {contract.contract_value && (
-            <Typography 
-              variant="body2" 
-              color="primary.main" 
+            <Typography
+              variant="body2"
+              color="primary.main"
               sx={{ fontWeight: 600, ml: 'auto !important' }}
             >
               {contractUtils.formatContractValue(contract.contract_value, contract.currency)}
@@ -176,15 +176,23 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
         {/* Progress Bar */}
         {contract.signature_progress && (
           <Box sx={{ mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                mb: 0.5,
+              }}
+            >
               <Typography variant="caption" color="text.secondary">
                 Signatures
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                {contract.signature_progress.signed_count}/{contract.signature_progress.total_required}
+                {contract.signature_progress.signed_count}/
+                {contract.signature_progress.total_required}
               </Typography>
             </Box>
-            
+
             <Box
               sx={{
                 width: '100%',
@@ -198,9 +206,10 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
                 sx={{
                   width: `${contract.signature_progress.percentage}%`,
                   height: '100%',
-                  backgroundColor: contract.signature_progress.percentage === 100 
-                    ? theme.palette.success.main 
-                    : theme.palette.primary.main,
+                  backgroundColor:
+                    contract.signature_progress.percentage === 100
+                      ? theme.palette.success.main
+                      : theme.palette.primary.main,
                   transition: 'width 0.3s ease',
                 }}
               />
@@ -231,7 +240,7 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
             >
               History
             </Button>
-            
+
             {canSign && (
               <Button
                 variant="contained"
@@ -244,7 +253,7 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
                 Sign
               </Button>
             )}
-            
+
             {contract.status === 'SIGNED' && (
               <Button
                 variant="outlined"
@@ -268,9 +277,7 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                   Created
                 </Typography>
-                <Typography variant="body2">
-                  {formatDate(contract.created_at)}
-                </Typography>
+                <Typography variant="body2">{formatDate(contract.created_at)}</Typography>
               </Box>
 
               {contract.fully_signed_at && (
@@ -278,9 +285,7 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                     Signed
                   </Typography>
-                  <Typography variant="body2">
-                    {formatDate(contract.fully_signed_at)}
-                  </Typography>
+                  <Typography variant="body2">{formatDate(contract.fully_signed_at)}</Typography>
                 </Box>
               )}
 
@@ -289,25 +294,27 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
                     Valid Until
                   </Typography>
-                  <Typography variant="body2">
-                    {formatDate(contract.valid_until)}
-                  </Typography>
+                  <Typography variant="body2">{formatDate(contract.valid_until)}</Typography>
                 </Box>
               )}
 
               {/* Signature Details */}
               {contract.signatures && contract.signatures.length > 0 && (
                 <Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: 'block', mb: 1 }}
+                  >
                     Signatures
                   </Typography>
                   <Stack spacing={0.5}>
                     {contract.signatures.map((signature) => (
-                      <Box 
-                        key={signature.id} 
-                        sx={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
+                      <Box
+                        key={signature.id}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
                           gap: 1,
                           p: 1,
                           backgroundColor: theme.palette.grey[50],
@@ -317,12 +324,19 @@ export const MobileContractCard: React.FC<MobileContractCardProps> = ({
                         <SignedIcon color="success" sx={{ fontSize: 16 }} />
                         <Box sx={{ flex: 1 }}>
                           <Typography variant="caption" sx={{ fontWeight: 500 }}>
-                            {signature.role === 'CLIENT' ? 'Client Signature' : 
-                             signature.role === 'COMPANY_REP' ? 'LifePlace Representative' :
-                             signature.role === 'WITNESS' ? 'Witness Signature' :
-                             signature.role_display || signature.role.replace('_', ' ')}
+                            {signature.role === 'CLIENT'
+                              ? 'Client Signature'
+                              : signature.role === 'COMPANY_REP'
+                                ? 'LifePlace Representative'
+                                : signature.role === 'WITNESS'
+                                  ? 'Witness Signature'
+                                  : signature.role_display || signature.role.replace('_', ' ')}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: 'block' }}
+                          >
                             {signature.signer_name} • {formatDate(signature.signed_at)}
                           </Typography>
                         </Box>

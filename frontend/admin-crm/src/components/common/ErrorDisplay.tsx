@@ -33,7 +33,7 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
   errors,
   title = 'Operation Failed',
   variant = 'inline',
-  severity = 'error'
+  severity = 'error',
 }) => {
   // Filter out empty/falsy errors and extract messages
   const errorMessages = Object.entries(errors)

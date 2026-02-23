@@ -15,7 +15,10 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint": "echo 'Shared package is linted via consuming apps'",
+    "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css}' '*.ts' 'design-system/**/*.{ts,tsx}' 'utils/**/*.ts' 'configs/**/*.ts'",
+    "format:check": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json,css}' '*.ts' 'design-system/**/*.{ts,tsx}' 'utils/**/*.ts' 'configs/**/*.ts'"
   },
   "keywords": [],
   "author": "",

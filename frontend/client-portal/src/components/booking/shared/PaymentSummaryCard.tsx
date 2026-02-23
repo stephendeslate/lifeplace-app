@@ -1,22 +1,8 @@
 // frontend/client-portal/src/components/booking/shared/PaymentSummaryCard.tsx
 
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Alert,
-  Chip,
-  Divider,
-  Stack,
-} from '@mui/material';
-import {
-  Payment,
-  Security,
-  Schedule,
-  CreditCard,
-  RequestQuote,
-} from '@mui/icons-material';
+import { Box, Typography, Paper, Alert, Chip, Divider, Stack } from '@mui/material';
+import { Payment, Security, Schedule, CreditCard, RequestQuote } from '@mui/icons-material';
 import { useCurrencySettings } from '../../../hooks/useCurrency';
 import type { PaymentSummary } from '../../../types/booking';
 
@@ -110,12 +96,7 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
                     <Typography variant="h5" color="success.main" sx={{ fontWeight: 'bold' }}>
                       {formatAmount(payment.amountPaid)}
                     </Typography>
-                    <Chip
-                      label="Deposit"
-                      size="small"
-                      color="success"
-                      sx={{ mt: 0.5 }}
-                    />
+                    <Chip label="Deposit" size="small" color="success" sx={{ mt: 0.5 }} />
                   </Box>
                 </Box>
 
@@ -140,19 +121,23 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
                   <Typography variant="h5" color="success.main" sx={{ fontWeight: 'bold' }}>
                     {formatAmount(payment.amountPaid)}
                   </Typography>
-                  <Chip
-                    label="Full Payment"
-                    size="small"
-                    color="success"
-                    sx={{ mt: 0.5 }}
-                  />
+                  <Chip label="Full Payment" size="small" color="success" sx={{ mt: 0.5 }} />
                 </Box>
               </Box>
             )}
 
             {/* Payment Method */}
             {payment.paymentMethod && (
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                  p: 2,
+                  backgroundColor: 'grey.50',
+                  borderRadius: 1,
+                }}
+              >
                 <CreditCard sx={{ color: 'text.secondary' }} />
                 <Box>
                   <Typography variant="body2" color="text.secondary">
@@ -167,7 +152,16 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
             )}
 
             {/* Security Notice */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 2, backgroundColor: 'primary.50', borderRadius: 1 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                p: 2,
+                backgroundColor: 'primary.50',
+                borderRadius: 1,
+              }}
+            >
               <Security sx={{ color: 'primary.main', fontSize: 20 }} />
               <Typography variant="caption" color="text.secondary">
                 Your payment information is securely processed and encrypted
@@ -186,7 +180,11 @@ export const PaymentSummaryCard: React.FC<PaymentSummaryCardProps> = ({
                 {refundPolicy.refundDeadlineHours} hours of booking.
               </Typography>
               {refundPolicy.refundPolicyText && (
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mt: 0.5, display: 'block' }}
+                >
                   {refundPolicy.refundPolicyText}
                 </Typography>
               )}

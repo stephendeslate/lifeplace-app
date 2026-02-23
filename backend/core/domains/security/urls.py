@@ -1,16 +1,17 @@
 # core/domains/security/urls.py
 
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
 from .views import SecurityBreachViewSet
 
-app_name = 'security'
+app_name = "security"
 
 router = DefaultRouter()
-router.register(r'breaches', SecurityBreachViewSet, basename='breach')
+router.register(r"breaches", SecurityBreachViewSet, basename="breach")
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", include(router.urls)),
 ]
 
 # Available endpoints:

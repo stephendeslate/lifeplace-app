@@ -32,22 +32,25 @@ export function calculateLayout(
   callbacks: LayoutCallbacks,
   selectedStageId: number | null = null,
   mode: 'view' | 'edit' = 'view',
-  config: LayoutConfig = DEFAULT_LAYOUT_CONFIG
+  config: LayoutConfig = DEFAULT_LAYOUT_CONFIG,
 ): LayoutResult {
   const nodes: FlowchartNode[] = [];
   const edges: FlowchartEdge[] = [];
 
   // Group stages by type
-  const stagesByType = stages.reduce((acc, stage) => {
-    if (!acc[stage.stage]) {
-      acc[stage.stage] = [];
-    }
-    acc[stage.stage].push(stage);
-    return acc;
-  }, {} as Record<StageType, WorkflowStage[]>);
+  const stagesByType = stages.reduce(
+    (acc, stage) => {
+      if (!acc[stage.stage]) {
+        acc[stage.stage] = [];
+      }
+      acc[stage.stage].push(stage);
+      return acc;
+    },
+    {} as Record<StageType, WorkflowStage[]>,
+  );
 
   // Sort stages within each type by order
-  Object.keys(stagesByType).forEach(type => {
+  Object.keys(stagesByType).forEach((type) => {
     stagesByType[type as StageType].sort((a, b) => a.order - b.order);
   });
 
@@ -166,21 +169,24 @@ export function calculateLayout(
  */
 export function getFlowchartBounds(
   stages: WorkflowStage[],
-  config: LayoutConfig = DEFAULT_LAYOUT_CONFIG
+  config: LayoutConfig = DEFAULT_LAYOUT_CONFIG,
 ): { width: number; height: number } {
   // Group stages by type
-  const stagesByType = stages.reduce((acc, stage) => {
-    if (!acc[stage.stage]) {
-      acc[stage.stage] = [];
-    }
-    acc[stage.stage].push(stage);
-    return acc;
-  }, {} as Record<StageType, WorkflowStage[]>);
+  const stagesByType = stages.reduce(
+    (acc, stage) => {
+      if (!acc[stage.stage]) {
+        acc[stage.stage] = [];
+      }
+      acc[stage.stage].push(stage);
+      return acc;
+    },
+    {} as Record<StageType, WorkflowStage[]>,
+  );
 
   // Find max stages in any lane
   const maxStagesInLane = Math.max(
-    ...SWIMLANE_CONFIGS.map(c => (stagesByType[c.stageType] || []).length),
-    1
+    ...SWIMLANE_CONFIGS.map((c) => (stagesByType[c.stageType] || []).length),
+    1,
   );
 
   // Calculate dimensions
@@ -206,15 +212,15 @@ export function calculateReorderMapping(
   stages: WorkflowStage[],
   draggedStageId: number,
   newIndex: number,
-  stageType: StageType
+  stageType: StageType,
 ): Record<string, number> {
   // Filter stages of the same type and sort by order
   const stagesInType = stages
-    .filter(s => s.stage === stageType)
+    .filter((s) => s.stage === stageType)
     .sort((a, b) => a.order - b.order);
 
   // Find the dragged stage
-  const draggedIndex = stagesInType.findIndex(s => s.id === draggedStageId);
+  const draggedIndex = stagesInType.findIndex((s) => s.id === draggedStageId);
   if (draggedIndex === -1) return {};
 
   // Remove from old position and insert at new position

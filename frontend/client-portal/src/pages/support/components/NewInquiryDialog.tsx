@@ -43,14 +43,18 @@ export const NewInquiryDialog: React.FC<NewInquiryDialogProps> = ({ open, onClos
     initial_message: '',
   });
 
-  const handleChange = (field: keyof SupportInquiryCreate) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | { target: { value: string | number } }
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.value,
-    }));
-  };
+  const handleChange =
+    (field: keyof SupportInquiryCreate) =>
+    (
+      event:
+        | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        | { target: { value: string | number } },
+    ) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: event.target.value,
+      }));
+    };
 
   const handleSubmit = async () => {
     const dataToSubmit = {
@@ -133,7 +137,9 @@ export const NewInquiryDialog: React.FC<NewInquiryDialogProps> = ({ open, onClos
               <Select
                 value={formData.event || ''}
                 label="Related Event (Optional)"
-                onChange={(e) => handleChange('event')(e as unknown as { target: { value: string } })}
+                onChange={(e) =>
+                  handleChange('event')(e as unknown as { target: { value: string } })
+                }
               >
                 <MenuItem value="">
                   <em>None</em>

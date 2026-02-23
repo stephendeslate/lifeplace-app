@@ -3,13 +3,13 @@ import type {
   KPISnapshotSummary,
   SystemHealthSnapshot,
   DORAMetricsReport,
-} from "../../../types/metrics.types";
+} from '../../../types/metrics.types';
 
 export function createMockPlatformMetrics(
   overrides: Partial<DailyKPISnapshot> = {},
 ): DailyKPISnapshot {
   return {
-    date: "2024-06-15",
+    date: '2024-06-15',
     total_bookings: 25,
     confirmed_bookings: 18,
     completed_bookings: 12,
@@ -30,14 +30,12 @@ export function createMockPlatformMetrics(
   };
 }
 
-export function createMockPlatformMetricsSeries(
-  days: number,
-): DailyKPISnapshot[] {
+export function createMockPlatformMetricsSeries(days: number): DailyKPISnapshot[] {
   return Array.from({ length: days }, (_, i) => {
-    const date = new Date("2024-06-01");
+    const date = new Date('2024-06-01');
     date.setDate(date.getDate() + i);
     return createMockPlatformMetrics({
-      date: date.toISOString().split("T")[0],
+      date: date.toISOString().split('T')[0],
       total_bookings: 15 + Math.floor(Math.random() * 20),
       confirmed_bookings: 10 + Math.floor(Math.random() * 15),
       completed_bookings: 5 + Math.floor(Math.random() * 10),
@@ -63,7 +61,7 @@ export function createMockKPISnapshotSummary(
   overrides: Partial<KPISnapshotSummary> = {},
 ): KPISnapshotSummary {
   return {
-    latest_date: "2024-06-15",
+    latest_date: '2024-06-15',
     cumulative_revenue: 5200000,
     cumulative_bookings: 180,
     cumulative_clients: 95,
@@ -88,7 +86,7 @@ export function createMockSystemHealth(
   overrides: Partial<SystemHealthSnapshot> = {},
 ): SystemHealthSnapshot {
   return {
-    date: "2024-06-15",
+    date: '2024-06-15',
     error_count: 3,
     pending_review_count: 2,
     celery_tasks_failed: 1,
@@ -98,9 +96,9 @@ export function createMockSystemHealth(
     total_queue_depth: 5,
     open_circuit_breakers: 0,
     circuit_breaker_states: {
-      stripe: "CLOSED",
-      paymongo: "CLOSED",
-      email: "CLOSED",
+      stripe: 'CLOSED',
+      paymongo: 'CLOSED',
+      email: 'CLOSED',
     },
     broker_healthy: true,
     broker_ping_ms: 12,
@@ -108,14 +106,12 @@ export function createMockSystemHealth(
   };
 }
 
-export function createMockSystemHealthSeries(
-  days: number,
-): SystemHealthSnapshot[] {
+export function createMockSystemHealthSeries(days: number): SystemHealthSnapshot[] {
   return Array.from({ length: days }, (_, i) => {
-    const date = new Date("2024-06-01");
+    const date = new Date('2024-06-01');
     date.setDate(date.getDate() + i);
     return createMockSystemHealth({
-      date: date.toISOString().split("T")[0],
+      date: date.toISOString().split('T')[0],
       error_count: Math.floor(Math.random() * 10),
       pending_review_count: Math.floor(Math.random() * 5),
       celery_tasks_failed: Math.floor(Math.random() * 3),
@@ -133,36 +129,36 @@ export function createMockDORAMetricsReport(
 ): DORAMetricsReport {
   return {
     period_days: 30,
-    service: "backend",
-    overall_classification: "High",
+    service: 'backend',
+    overall_classification: 'High',
     deployment_frequency: {
-      classification: "Elite",
+      classification: 'Elite',
       days: 30,
       total_deploys: 45,
       daily_average: 1.5,
       weekly_average: 10.5,
     },
     lead_time_for_changes: {
-      classification: "High",
+      classification: 'High',
       days: 30,
       avg_seconds: 3600,
-      avg_human: "1 hour",
+      avg_human: '1 hour',
       min_seconds: 600,
       max_seconds: 14400,
       sample_size: 45,
     },
     change_failure_rate: {
-      classification: "High",
+      classification: 'High',
       days: 30,
       total_deploys: 45,
       failed_deploys: 2,
       rate_pct: 4.4,
     },
     mean_time_to_recovery: {
-      classification: "High",
+      classification: 'High',
       days: 30,
       avg_seconds: 1800,
-      avg_human: "30 minutes",
+      avg_human: '30 minutes',
       incident_count: 2,
     },
     ...overrides,

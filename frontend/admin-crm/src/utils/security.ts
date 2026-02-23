@@ -12,37 +12,144 @@ import DOMPurify from 'dompurify';
  * @param context - Context of the HTML (email, template, preview, etc.)
  * @returns Sanitized HTML safe for rendering
  */
-export const sanitizeHTML = (html: string, context: 'email' | 'template' | 'preview' | 'strict' = 'strict'): string => {
+export const sanitizeHTML = (
+  html: string,
+  context: 'email' | 'template' | 'preview' | 'strict' = 'strict',
+): string => {
   if (!html) return '';
 
   // Define allowed tags based on context
   let allowedTags: string[];
   let allowedAttr: string[];
-  
+
   switch (context) {
     case 'email':
-      allowedTags = ['p', 'br', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-                     'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'blockquote',
-                     'a', 'img', 'table', 'thead', 'tbody', 'tr', 'td', 'th', 'hr'];
+      allowedTags = [
+        'p',
+        'br',
+        'div',
+        'span',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'strong',
+        'b',
+        'em',
+        'i',
+        'u',
+        'ul',
+        'ol',
+        'li',
+        'blockquote',
+        'a',
+        'img',
+        'table',
+        'thead',
+        'tbody',
+        'tr',
+        'td',
+        'th',
+        'hr',
+      ];
       allowedAttr = ['href', 'src', 'alt', 'title', 'class', 'width', 'height', 'align'];
       break;
-      
+
     case 'template':
-      allowedTags = ['p', 'br', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-                     'strong', 'b', 'em', 'i', 'u', 's', 'sub', 'sup', 'ul', 'ol', 'li',
-                     'blockquote', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'td', 'th',
-                     'hr', 'pre', 'code'];
+      allowedTags = [
+        'p',
+        'br',
+        'div',
+        'span',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'strong',
+        'b',
+        'em',
+        'i',
+        'u',
+        's',
+        'sub',
+        'sup',
+        'ul',
+        'ol',
+        'li',
+        'blockquote',
+        'a',
+        'img',
+        'table',
+        'thead',
+        'tbody',
+        'tr',
+        'td',
+        'th',
+        'hr',
+        'pre',
+        'code',
+      ];
       allowedAttr = ['href', 'src', 'alt', 'title', 'class', 'width', 'height', 'align'];
       break;
-      
+
     case 'preview':
-      allowedTags = ['p', 'br', 'div', 'span', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-                     'strong', 'b', 'em', 'i', 'u', 's', 'sub', 'sup', 'ul', 'ol', 'li',
-                     'blockquote', 'a', 'img', 'table', 'thead', 'tbody', 'tr', 'td', 'th',
-                     'hr', 'pre', 'code', 'small', 'mark', 'del', 'ins'];
-      allowedAttr = ['href', 'src', 'alt', 'title', 'class', 'width', 'height', 'align', 'colspan', 'rowspan'];
+      allowedTags = [
+        'p',
+        'br',
+        'div',
+        'span',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'strong',
+        'b',
+        'em',
+        'i',
+        'u',
+        's',
+        'sub',
+        'sup',
+        'ul',
+        'ol',
+        'li',
+        'blockquote',
+        'a',
+        'img',
+        'table',
+        'thead',
+        'tbody',
+        'tr',
+        'td',
+        'th',
+        'hr',
+        'pre',
+        'code',
+        'small',
+        'mark',
+        'del',
+        'ins',
+      ];
+      allowedAttr = [
+        'href',
+        'src',
+        'alt',
+        'title',
+        'class',
+        'width',
+        'height',
+        'align',
+        'colspan',
+        'rowspan',
+      ];
       break;
-      
+
     case 'strict':
     default:
       allowedTags = ['p', 'br', 'strong', 'b', 'em', 'i', 'u'];
@@ -55,12 +162,20 @@ export const sanitizeHTML = (html: string, context: 'email' | 'template' | 'prev
     ALLOWED_TAGS: allowedTags,
     ALLOWED_ATTR: allowedAttr,
     FORBID_TAGS: ['script', 'object', 'embed', 'form', 'input', 'button', 'iframe', 'svg'],
-    FORBID_ATTR: ['onload', 'onerror', 'onclick', 'onmouseover', 'onmouseout', 'onkeydown', 'onkeyup'],
+    FORBID_ATTR: [
+      'onload',
+      'onerror',
+      'onclick',
+      'onmouseover',
+      'onmouseout',
+      'onkeydown',
+      'onkeyup',
+    ],
   });
 
   // Additional security: remove javascript: URLs
   sanitized = sanitized.replace(/javascript:/gi, '');
-  
+
   // Force external links to open in new tab (post-processing)
   if (context !== 'strict') {
     sanitized = sanitized.replace(/<a\s+([^>]*href=["'][^"']*["'][^>]*)>/gi, (_, attrs) => {
@@ -81,7 +196,7 @@ export const sanitizeHTML = (html: string, context: 'email' | 'template' | 'prev
  */
 export const sanitizeCSS = (css: string): string => {
   if (!css) return '';
-  
+
   // Remove potentially dangerous CSS properties and values
   const dangerousPatterns = [
     /javascript:/gi,
@@ -92,12 +207,12 @@ export const sanitizeCSS = (css: string): string => {
     /-moz-binding/gi,
     /behavior:/gi,
   ];
-  
+
   let sanitized = css;
-  dangerousPatterns.forEach(pattern => {
+  dangerousPatterns.forEach((pattern) => {
     sanitized = sanitized.replace(pattern, '');
   });
-  
+
   return sanitized;
 };
 
@@ -108,7 +223,7 @@ export const sanitizeCSS = (css: string): string => {
  */
 export const escapeHTML = (text: string): string => {
   if (!text) return '';
-  
+
   const map: { [key: string]: string } = {
     '&': '&amp;',
     '<': '&lt;',
@@ -117,7 +232,7 @@ export const escapeHTML = (text: string): string => {
     "'": '&#39;',
     '/': '&#47;',
   };
-  
+
   return text.replace(/[&<>"'/]/g, (char) => map[char]);
 };
 
@@ -128,16 +243,16 @@ export const escapeHTML = (text: string): string => {
  */
 export const sanitizeURL = (url: string): string | null => {
   if (!url) return null;
-  
+
   try {
     const parsed = new URL(url);
-    
+
     // Only allow safe protocols
     const allowedProtocols = ['http:', 'https:', 'mailto:', 'tel:'];
     if (!allowedProtocols.includes(parsed.protocol)) {
       return null;
     }
-    
+
     return parsed.toString();
   } catch {
     return null;

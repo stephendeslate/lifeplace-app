@@ -23,7 +23,7 @@ export const useProductCategories = (filters?: CategoryFilters & { use_paginatio
     data: categories = [],
     isLoading: isLoadingCategories,
     error: categoriesError,
-    refetch: refetchCategories
+    refetch: refetchCategories,
   } = useQuery({
     queryKey: ['product-categories', filters],
     queryFn: () => productsApi.getCategories(filters),
@@ -62,15 +62,18 @@ export const useProductCategories = (filters?: CategoryFilters & { use_paginatio
       showSuccess('Category Created', `${newCategory.name} has been created successfully.`);
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create category'
-        : 'Failed to create category';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to create category'
+          : 'Failed to create category';
       showError('Create Failed', message);
     },
   });
 
   const updateCategoryMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateCategoryData }) => 
+    mutationFn: ({ id, data }: { id: number; data: UpdateCategoryData }) =>
       productsApi.updateCategory(id, data),
     onSuccess: (updatedCategory) => {
       queryClient.invalidateQueries({ queryKey: ['product-categories'] });
@@ -78,9 +81,12 @@ export const useProductCategories = (filters?: CategoryFilters & { use_paginatio
       showSuccess('Category Updated', `${updatedCategory.name} has been updated successfully.`);
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update category'
-        : 'Failed to update category';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to update category'
+          : 'Failed to update category';
       showError('Update Failed', message);
     },
   });
@@ -92,9 +98,12 @@ export const useProductCategories = (filters?: CategoryFilters & { use_paginatio
       showSuccess('Category Deleted', 'Category has been deleted successfully.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete category'
-        : 'Failed to delete category';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to delete category'
+          : 'Failed to delete category';
       showError('Delete Failed', message);
     },
   });
@@ -102,25 +111,25 @@ export const useProductCategories = (filters?: CategoryFilters & { use_paginatio
   return {
     // Data
     categories,
-    
+
     // Loading states
     isLoadingCategories,
     isCreatingCategory: createCategoryMutation.isPending,
     isUpdatingCategory: updateCategoryMutation.isPending,
     isDeletingCategory: deleteCategoryMutation.isPending,
-    
+
     // Error states
     categoriesError,
     createError: createCategoryMutation.error,
     updateError: updateCategoryMutation.error,
     deleteError: deleteCategoryMutation.error,
-    
+
     // Actions
     createCategory: createCategoryMutation.mutate,
     updateCategory: updateCategoryMutation.mutate,
     deleteCategory: deleteCategoryMutation.mutate,
     refetchCategories,
-    
+
     // Hooks for specific queries
     useCategoriesTree,
     useRootCategories,
@@ -137,7 +146,7 @@ export const useProducts = (filters?: ProductFilters & { use_pagination?: boolea
     data: products = [],
     isLoading: isLoadingProducts,
     error: productsError,
-    refetch: refetchProducts
+    refetch: refetchProducts,
   } = useQuery({
     queryKey: ['products', filters],
     queryFn: () => productsApi.getProducts(filters),
@@ -202,25 +211,38 @@ export const useProducts = (filters?: ProductFilters & { use_pagination?: boolea
       showSuccess('Product Created', `${newProduct.name} has been created successfully.`);
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create product'
-        : 'Failed to create product';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to create product'
+          : 'Failed to create product';
       showError('Create Failed', message);
     },
   });
 
   const updateProductMutation = useMutation({
-    mutationFn: ({ id, data, formData }: { id: number; data: UpdateProductData; formData?: FormData }) =>
-      productsApi.updateProduct(id, data, formData),
+    mutationFn: ({
+      id,
+      data,
+      formData,
+    }: {
+      id: number;
+      data: UpdateProductData;
+      formData?: FormData;
+    }) => productsApi.updateProduct(id, data, formData),
     onSuccess: (updatedProduct) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['product', updatedProduct.id] });
       showSuccess('Product Updated', `${updatedProduct.name} has been updated successfully.`);
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update product'
-        : 'Failed to update product';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to update product'
+          : 'Failed to update product';
       showError('Update Failed', message);
     },
   });
@@ -232,9 +254,12 @@ export const useProducts = (filters?: ProductFilters & { use_pagination?: boolea
       showSuccess('Product Deleted', 'Product has been deleted successfully.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete product'
-        : 'Failed to delete product';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to delete product'
+          : 'Failed to delete product';
       showError('Delete Failed', message);
     },
   });
@@ -242,25 +267,25 @@ export const useProducts = (filters?: ProductFilters & { use_pagination?: boolea
   return {
     // Data
     products,
-    
+
     // Loading states
     isLoadingProducts,
     isCreatingProduct: createProductMutation.isPending,
     isUpdatingProduct: updateProductMutation.isPending,
     isDeletingProduct: deleteProductMutation.isPending,
-    
+
     // Error states
     productsError,
     createError: createProductMutation.error,
     updateError: updateProductMutation.error,
     deleteError: deleteProductMutation.error,
-    
+
     // Actions
     createProduct: createProductMutation.mutate,
     updateProduct: updateProductMutation.mutate,
     deleteProduct: deleteProductMutation.mutate,
     refetchProducts,
-    
+
     // Hooks for specific queries
     useProduct,
     useProductsOnly,
@@ -280,7 +305,7 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
     data: discounts = [],
     isLoading: isLoadingDiscounts,
     error: discountsError,
-    refetch: refetchDiscounts
+    refetch: refetchDiscounts,
   } = useQuery({
     queryKey: ['discounts', filters],
     queryFn: () => productsApi.getDiscounts(filters),
@@ -320,15 +345,18 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
       showSuccess('Discount Created', `${newDiscount.name} has been created successfully.`);
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create discount'
-        : 'Failed to create discount';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to create discount'
+          : 'Failed to create discount';
       showError('Create Failed', message);
     },
   });
 
   const updateDiscountMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateDiscountData }) => 
+    mutationFn: ({ id, data }: { id: number; data: UpdateDiscountData }) =>
       productsApi.updateDiscount(id, data),
     onSuccess: (updatedDiscount) => {
       queryClient.invalidateQueries({ queryKey: ['discounts'] });
@@ -336,9 +364,12 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
       showSuccess('Discount Updated', `${updatedDiscount.name} has been updated successfully.`);
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update discount'
-        : 'Failed to update discount';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to update discount'
+          : 'Failed to update discount';
       showError('Update Failed', message);
     },
   });
@@ -350,9 +381,12 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
       showSuccess('Discount Deleted', 'Discount has been deleted successfully.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete discount'
-        : 'Failed to delete discount';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to delete discount'
+          : 'Failed to delete discount';
       showError('Delete Failed', message);
     },
   });
@@ -365,9 +399,12 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
       showSuccess('Usage Updated', 'Discount usage has been incremented.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to increment usage'
-        : 'Failed to increment usage';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to increment usage'
+          : 'Failed to increment usage';
       showError('Update Failed', message);
     },
   });
@@ -376,9 +413,12 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
     mutationFn: ({ id, data }: { id: number; data: ValidateDiscountData }) =>
       productsApi.validateDiscountForOrder(id, data),
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to validate discount'
-        : 'Failed to validate discount';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to validate discount'
+          : 'Failed to validate discount';
       showError('Validation Failed', message);
     },
   });
@@ -386,7 +426,7 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
   return {
     // Data
     discounts,
-    
+
     // Loading states
     isLoadingDiscounts,
     isCreatingDiscount: createDiscountMutation.isPending,
@@ -394,7 +434,7 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
     isDeletingDiscount: deleteDiscountMutation.isPending,
     isIncrementingUsage: incrementUsageMutation.isPending,
     isValidatingDiscount: validateDiscountMutation.isPending,
-    
+
     // Error states
     discountsError,
     createError: createDiscountMutation.error,
@@ -402,7 +442,7 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
     deleteError: deleteDiscountMutation.error,
     incrementError: incrementUsageMutation.error,
     validateError: validateDiscountMutation.error,
-    
+
     // Actions
     createDiscount: createDiscountMutation.mutate,
     updateDiscount: updateDiscountMutation.mutate,
@@ -410,12 +450,12 @@ export const useDiscounts = (filters?: DiscountFilters & { use_pagination?: bool
     incrementUsage: incrementUsageMutation.mutate,
     validateDiscount: validateDiscountMutation.mutate,
     refetchDiscounts,
-    
+
     // Hooks for specific queries
     useDiscount,
     useValidDiscounts,
     useDiscountsByType,
-    
+
     // Mutation results
     validationResult: validateDiscountMutation.data,
   };

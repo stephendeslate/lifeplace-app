@@ -1,13 +1,7 @@
 // frontend/admin-crm/src/components/common/EmptyState.tsx
 
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  Paper,
-  SvgIcon,
-} from '@mui/material';
+import { Box, Typography, Button, Paper, SvgIcon } from '@mui/material';
 import type { SvgIconComponent } from '@mui/icons-material';
 
 interface EmptyStateProps {
@@ -29,28 +23,40 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
 }) => {
   const getIconSize = () => {
     switch (size) {
-      case 'small': return 48;
-      case 'medium': return 64;
-      case 'large': return 80;
-      default: return 64;
+      case 'small':
+        return 48;
+      case 'medium':
+        return 64;
+      case 'large':
+        return 80;
+      default:
+        return 64;
     }
   };
 
   const getPadding = () => {
     switch (size) {
-      case 'small': return 3;
-      case 'medium': return 4;
-      case 'large': return 6;
-      default: return 4;
+      case 'small':
+        return 3;
+      case 'medium':
+        return 4;
+      case 'large':
+        return 6;
+      default:
+        return 4;
     }
   };
 
   const getTitleVariant = () => {
     switch (size) {
-      case 'small': return 'h6' as const;
-      case 'medium': return 'h5' as const;
-      case 'large': return 'h4' as const;
-      default: return 'h5' as const;
+      case 'small':
+        return 'h6' as const;
+      case 'medium':
+        return 'h5' as const;
+      case 'large':
+        return 'h4' as const;
+      default:
+        return 'h5' as const;
     }
   };
 
@@ -83,12 +89,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         </Box>
       )}
 
-      <Typography
-        variant={getTitleVariant()}
-        fontWeight="bold"
-        color="text.primary"
-        gutterBottom
-      >
+      <Typography variant={getTitleVariant()} fontWeight="bold" color="text.primary" gutterBottom>
         {title}
       </Typography>
 
@@ -104,11 +105,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         {description}
       </Typography>
 
-      {action && (
-        <Box>
-          {action}
-        </Box>
-      )}
+      {action && <Box>{action}</Box>}
     </Box>
   );
 
@@ -121,11 +118,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   }
 
   if (variant === 'contained') {
-    return (
-      <Paper sx={{ bgcolor: 'grey.50' }}>
-        {content}
-      </Paper>
-    );
+    return <Paper sx={{ bgcolor: 'grey.50' }}>{content}</Paper>;
   }
 
   return content;
@@ -140,36 +133,22 @@ interface EmptyStateVariantProps {
 }
 
 export const NoDataEmptyState: React.FC<EmptyStateVariantProps> = ({
-  title = "No data available",
+  title = 'No data available',
   description = "There's no data to display at the moment. Try refreshing or check back later.",
   action,
   size,
-}) => (
-  <EmptyState
-    title={title}
-    description={description}
-    action={action}
-    size={size}
-  />
-);
+}) => <EmptyState title={title} description={description} action={action} size={size} />;
 
 export const NoSearchResultsEmptyState: React.FC<EmptyStateVariantProps> = ({
-  title = "No results found",
-  description = "No items match your search criteria. Try adjusting your filters or search terms.",
+  title = 'No results found',
+  description = 'No items match your search criteria. Try adjusting your filters or search terms.',
   action,
   size,
-}) => (
-  <EmptyState
-    title={title}
-    description={description}
-    action={action}
-    size={size}
-  />
-);
+}) => <EmptyState title={title} description={description} action={action} size={size} />;
 
 export const ErrorEmptyState: React.FC<EmptyStateVariantProps> = ({
-  title = "Something went wrong",
-  description = "We encountered an error while loading the data. Please try again.",
+  title = 'Something went wrong',
+  description = 'We encountered an error while loading the data. Please try again.',
   action,
   size,
 }) => (
@@ -183,8 +162,8 @@ export const ErrorEmptyState: React.FC<EmptyStateVariantProps> = ({
 );
 
 // Analytics-specific empty states
-export const NoMetricsEmptyState: React.FC<{ onCreateClick?: () => void }> = ({ 
-  onCreateClick 
+export const NoMetricsEmptyState: React.FC<{ onCreateClick?: () => void }> = ({
+  onCreateClick,
 }) => (
   <EmptyState
     title="No metrics defined"
@@ -199,8 +178,8 @@ export const NoMetricsEmptyState: React.FC<{ onCreateClick?: () => void }> = ({
   />
 );
 
-export const NoDashboardsEmptyState: React.FC<{ onCreateClick?: () => void }> = ({ 
-  onCreateClick 
+export const NoDashboardsEmptyState: React.FC<{ onCreateClick?: () => void }> = ({
+  onCreateClick,
 }) => (
   <EmptyState
     title="No dashboards created"
@@ -215,8 +194,8 @@ export const NoDashboardsEmptyState: React.FC<{ onCreateClick?: () => void }> = 
   />
 );
 
-export const NoReportsEmptyState: React.FC<{ onCreateClick?: () => void }> = ({ 
-  onCreateClick 
+export const NoReportsEmptyState: React.FC<{ onCreateClick?: () => void }> = ({
+  onCreateClick,
 }) => (
   <EmptyState
     title="No reports configured"
@@ -231,8 +210,8 @@ export const NoReportsEmptyState: React.FC<{ onCreateClick?: () => void }> = ({
   />
 );
 
-export const NoFunnelsEmptyState: React.FC<{ onCreateClick?: () => void }> = ({ 
-  onCreateClick 
+export const NoFunnelsEmptyState: React.FC<{ onCreateClick?: () => void }> = ({
+  onCreateClick,
 }) => (
   <EmptyState
     title="No conversion funnels"
@@ -247,8 +226,8 @@ export const NoFunnelsEmptyState: React.FC<{ onCreateClick?: () => void }> = ({
   />
 );
 
-export const NoAlertRulesEmptyState: React.FC<{ onCreateClick?: () => void }> = ({ 
-  onCreateClick 
+export const NoAlertRulesEmptyState: React.FC<{ onCreateClick?: () => void }> = ({
+  onCreateClick,
 }) => (
   <EmptyState
     title="No alert rules configured"
@@ -272,12 +251,6 @@ export const NoEventsEmptyState: React.FC = () => (
 );
 
 // Loading empty state (for when data is being fetched)
-export const LoadingEmptyState: React.FC<{ message?: string }> = ({ 
-  message = "Loading data..." 
-}) => (
-  <EmptyState
-    title="Loading"
-    description={message}
-    size="small"
-  />
-);
+export const LoadingEmptyState: React.FC<{ message?: string }> = ({
+  message = 'Loading data...',
+}) => <EmptyState title="Loading" description={message} size="small" />;

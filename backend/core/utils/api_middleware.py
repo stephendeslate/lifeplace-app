@@ -6,12 +6,10 @@ API middleware for idempotency, caching, and other HTTP improvements.
 import hashlib
 import json
 import logging
-from typing import Optional
 
 from django.conf import settings
 from django.core.cache import cache
 from django.http import HttpRequest, HttpResponse, JsonResponse, StreamingHttpResponse
-from django.utils.cache import get_conditional_response
 from django.utils.http import quote_etag
 
 logger = logging.getLogger(__name__)
@@ -20,12 +18,12 @@ logger = logging.getLogger(__name__)
 IDEMPOTENCY_KEY_TTL = 60 * 60 * 24
 
 # Methods that support idempotency
-IDEMPOTENT_METHODS = {'POST', 'PUT', 'PATCH', 'DELETE'}
+IDEMPOTENT_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 # Header names
-IDEMPOTENCY_KEY_HEADER = 'HTTP_IDEMPOTENCY_KEY'
-ETAG_HEADER = 'ETag'
-IF_NONE_MATCH_HEADER = 'HTTP_IF_NONE_MATCH'
+IDEMPOTENCY_KEY_HEADER = "HTTP_IDEMPOTENCY_KEY"
+ETAG_HEADER = "ETag"
+IF_NONE_MATCH_HEADER = "HTTP_IF_NONE_MATCH"
 
 
 class IdempotencyMiddleware:
@@ -62,11 +60,8 @@ class IdempotencyMiddleware:
         # Validate key format (should be a reasonable string)
         if len(idempotency_key) > 255 or len(idempotency_key) < 16:
             return JsonResponse(
-                {
-                    'error': 'Invalid Idempotency-Key',
-                    'detail': 'Idempotency-Key must be between 16 and 255 characters'
-                },
-                status=400
+                {"error": "Invalid Idempotency-Key", "detail": "Idempotency-Key must be between 16 and 255 characters"},
+                status=400,
             )
 
         # Generate cache key including user info for isolation
@@ -97,7 +92,7 @@ class IdempotencyMiddleware:
         - User ID (if authenticated) for user isolation
         - Request path for additional safety
         """
-        user_id = getattr(request.user, 'id', 'anonymous')
+        user_id = getattr(request.user, "id", "anonymous")
         path = request.path
 
         # Hash the components for a predictable key length
@@ -106,7 +101,7 @@ class IdempotencyMiddleware:
 
         return f"lifeplace:idempotency:{key_hash}"
 
-    def _get_cached_response(self, cache_key: str) -> Optional[HttpResponse]:
+    def _get_cached_response(self, cache_key: str) -> HttpResponse | None:
         """
         Retrieve a cached response if available.
         """
@@ -117,17 +112,17 @@ class IdempotencyMiddleware:
 
             # Reconstruct the response
             response = JsonResponse(
-                cached_data['body'],
-                status=cached_data['status'],
-                safe=False  # Allow non-dict JSON
+                cached_data["body"],
+                status=cached_data["status"],
+                safe=False,  # Allow non-dict JSON
             )
 
             # Add headers
-            for header, value in cached_data.get('headers', {}).items():
+            for header, value in cached_data.get("headers", {}).items():
                 response[header] = value
 
             # Add marker header
-            response['X-Idempotent-Replay'] = 'true'
+            response["X-Idempotent-Replay"] = "true"
 
             return response
 
@@ -146,28 +141,28 @@ class IdempotencyMiddleware:
                 return
 
             # Only cache JSON responses
-            content_type = response.get('Content-Type', '')
-            if 'application/json' not in content_type:
+            content_type = response.get("Content-Type", "")
+            if "application/json" not in content_type:
                 logger.debug(f"Not caching non-JSON response for idempotency key: {idempotency_key[:8]}...")
                 return
 
             # Parse the response body
             try:
-                body = json.loads(response.content.decode('utf-8'))
+                body = json.loads(response.content.decode("utf-8"))
             except (json.JSONDecodeError, UnicodeDecodeError):
                 logger.debug(f"Could not parse response body for caching: {idempotency_key[:8]}...")
                 return
 
             # Extract relevant headers
             headers = {
-                'Content-Type': content_type,
+                "Content-Type": content_type,
             }
 
             # Cache the response data
             cache_data = {
-                'status': response.status_code,
-                'body': body,
-                'headers': headers,
+                "status": response.status_code,
+                "body": body,
+                "headers": headers,
             }
 
             cache.set(cache_key, cache_data, timeout=IDEMPOTENCY_KEY_TTL)
@@ -194,11 +189,11 @@ class ETagMiddleware:
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         # Only apply to GET requests
-        if request.method != 'GET':
+        if request.method != "GET":
             return self.get_response(request)
 
         # Skip for non-API requests
-        if not request.path.startswith('/api/'):
+        if not request.path.startswith("/api/"):
             return self.get_response(request)
 
         # Get the response
@@ -208,8 +203,8 @@ class ETagMiddleware:
         if response.status_code != 200:
             return response
 
-        content_type = response.get('Content-Type', '')
-        if 'application/json' not in content_type:
+        content_type = response.get("Content-Type", "")
+        if "application/json" not in content_type:
             return response
 
         # Generate ETag from response content
@@ -226,7 +221,7 @@ class ETagMiddleware:
 
         # Add ETag to response
         response[ETAG_HEADER] = quote_etag(etag)
-        response['Cache-Control'] = 'private, must-revalidate'
+        response["Cache-Control"] = "private, must-revalidate"
 
         return response
 
@@ -265,12 +260,16 @@ class TrustedProxyMiddleware:
         self.trusted_networks = []
 
         # Get trusted networks from settings
-        trusted_cidr_list = getattr(settings, 'TRUSTED_PROXY_NETWORKS', [
-            '127.0.0.1/32',
-            '172.16.0.0/12',
-            '10.0.0.0/8',
-            '192.168.0.0/16',
-        ])
+        trusted_cidr_list = getattr(
+            settings,
+            "TRUSTED_PROXY_NETWORKS",
+            [
+                "127.0.0.1/32",
+                "172.16.0.0/12",
+                "10.0.0.0/8",
+                "192.168.0.0/16",
+            ],
+        )
 
         for cidr in trusted_cidr_list:
             try:
@@ -281,7 +280,7 @@ class TrustedProxyMiddleware:
                 logger.warning(f"Invalid CIDR in TRUSTED_PROXY_NETWORKS: {cidr} - {e}")
 
         # Get number of proxies to trust
-        self.num_proxies = getattr(settings, 'NUM_PROXIES', 1)
+        self.num_proxies = getattr(settings, "NUM_PROXIES", 1)
 
     def _is_trusted_proxy(self, ip_str: str) -> bool:
         """Check if an IP address belongs to a trusted proxy network"""
@@ -303,20 +302,20 @@ class TrustedProxyMiddleware:
         3. Return the first untrusted IP in the chain (the real client)
         4. If all IPs are trusted, return the leftmost IP
         """
-        remote_addr = request.META.get('REMOTE_ADDR', '')
+        remote_addr = request.META.get("REMOTE_ADDR", "")
 
         # If direct connection isn't from a trusted proxy, use it directly
         if not self._is_trusted_proxy(remote_addr):
             return remote_addr
 
         # Get X-Forwarded-For header
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR', '')
+        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR", "")
         if not x_forwarded_for:
             return remote_addr
 
         # Parse the IP chain (leftmost is client, rightmost is closest proxy)
         # Format: "client_ip, proxy1_ip, proxy2_ip"
-        ip_chain = [ip.strip() for ip in x_forwarded_for.split(',') if ip.strip()]
+        ip_chain = [ip.strip() for ip in x_forwarded_for.split(",") if ip.strip()]
 
         if not ip_chain:
             return remote_addr
@@ -332,16 +331,16 @@ class TrustedProxyMiddleware:
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         # Store original REMOTE_ADDR for debugging
-        original_remote_addr = request.META.get('REMOTE_ADDR', '')
+        original_remote_addr = request.META.get("REMOTE_ADDR", "")
 
         # Get the real client IP
         client_ip = self._get_client_ip(request)
 
         # Update REMOTE_ADDR so Django's built-in rate limiting works correctly
-        request.META['REMOTE_ADDR'] = client_ip
+        request.META["REMOTE_ADDR"] = client_ip
 
         # Store original for audit purposes
-        request.META['HTTP_X_ORIGINAL_REMOTE_ADDR'] = original_remote_addr
+        request.META["HTTP_X_ORIGINAL_REMOTE_ADDR"] = original_remote_addr
 
         return self.get_response(request)
 
@@ -354,15 +353,15 @@ def get_cors_allow_headers():
     This should be added to CORS_ALLOW_HEADERS in settings.py.
     """
     return [
-        'accept',
-        'accept-encoding',
-        'authorization',
-        'content-type',
-        'dnt',
-        'origin',
-        'user-agent',
-        'x-csrftoken',
-        'x-requested-with',
-        'idempotency-key',  # For idempotent requests
-        'if-none-match',    # For ETag conditional requests
+        "accept",
+        "accept-encoding",
+        "authorization",
+        "content-type",
+        "dnt",
+        "origin",
+        "user-agent",
+        "x-csrftoken",
+        "x-requested-with",
+        "idempotency-key",  # For idempotent requests
+        "if-none-match",  # For ETag conditional requests
     ]

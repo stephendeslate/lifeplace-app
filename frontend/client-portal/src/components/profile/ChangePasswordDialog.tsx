@@ -83,7 +83,7 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({
   }, [open]);
 
   const togglePasswordVisibility = (field: keyof PasswordVisibility) => {
-    setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
+    setShowPasswords((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
   const calculatePasswordStrength = (password: string): PasswordStrength => {
@@ -211,7 +211,8 @@ const ChangePasswordDialog: React.FC<ChangePasswordDialogProps> = ({
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
             <Alert severity="info" sx={{ backgroundColor: alpha(theme.palette.info.main, 0.1) }}>
-              Your password must be at least 8 characters long and contain a mix of uppercase, lowercase, numbers, and special characters.
+              Your password must be at least 8 characters long and contain a mix of uppercase,
+              lowercase, numbers, and special characters.
             </Alert>
 
             {/* Current Password */}

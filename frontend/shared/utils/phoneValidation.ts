@@ -1,11 +1,8 @@
-import {
-  parsePhoneNumberWithError,
-  isValidPhoneNumber,
-} from "libphonenumber-js";
-import type { CountryCode } from "libphonenumber-js";
-import { z } from "zod";
+import { parsePhoneNumberWithError, isValidPhoneNumber } from 'libphonenumber-js';
+import type { CountryCode } from 'libphonenumber-js';
+import { z } from 'zod';
 
-const DEFAULT_COUNTRY: CountryCode = "PH";
+const DEFAULT_COUNTRY: CountryCode = 'PH';
 
 /**
  * Validate a phone number. Defaults to PH if no country code provided.
@@ -32,7 +29,7 @@ export function normalizePhoneNumber(
   try {
     const parsed = parsePhoneNumberWithError(phone.trim(), defaultCountry);
     if (parsed.isValid()) {
-      return parsed.format("E.164");
+      return parsed.format('E.164');
     }
     return null;
   } catch {
@@ -70,7 +67,6 @@ export const phoneSchema = z.string().refine(
     return validatePhoneNumber(value);
   },
   {
-    message:
-      "Please enter a valid phone number (e.g., 09123456789 or +639123456789)",
+    message: 'Please enter a valid phone number (e.g., 09123456789 or +639123456789)',
   },
 );

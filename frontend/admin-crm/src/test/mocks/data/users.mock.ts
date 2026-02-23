@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/test/mocks/data/users.mock.ts
 
-import type { User, AuthTokens, LoginResponse } from '../../../types/auth.types'
+import type { User, AuthTokens, LoginResponse } from '../../../types/auth.types';
 
 export const mockAdminUser: User = {
   id: 1,
@@ -15,7 +15,7 @@ export const mockAdminUser: User = {
     company: 'LifePlace',
   },
   is_full_admin: true,
-}
+};
 
 export const mockClientUser: User = {
   id: 2,
@@ -29,20 +29,20 @@ export const mockClientUser: User = {
     phone: '555-0200',
     company: 'Client Corp',
   },
-}
+};
 
 export const mockTokens: AuthTokens = {
   access: 'mock-access-token-12345',
   refresh: 'mock-refresh-token-67890',
-}
+};
 
 export const mockLoginResponse: LoginResponse = {
   tokens: mockTokens,
   user: mockAdminUser,
-}
+};
 
 export function createMockUser(overrides: Partial<User> = {}): User {
-  const id = overrides.id || Math.floor(Math.random() * 10000)
+  const id = overrides.id || Math.floor(Math.random() * 10000);
   return {
     id,
     email: `user${id}@example.com`,
@@ -56,5 +56,5 @@ export function createMockUser(overrides: Partial<User> = {}): User {
       company: 'Test Company',
     },
     ...overrides,
-  }
+  };
 }

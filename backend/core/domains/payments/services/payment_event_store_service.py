@@ -2,10 +2,11 @@
 
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any
+from typing import Any
+
 from django.db import transaction
-from django.utils import timezone
 from django.db.models import QuerySet
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ class PaymentEventStoreService:
     """
 
     @classmethod
-    def store_event(cls, event) -> 'PaymentEventStore':
+    def store_event(cls, event) -> "PaymentEventStore":
         """
         Store a payment domain event persistently.
 
@@ -49,22 +50,16 @@ class PaymentEventStoreService:
                     external_system_refs=cls._generate_external_refs(event),
                 )
 
-                logger.debug(
-                    f"Stored domain event: {stored_event.event_id} "
-                    f"for payment {stored_event.payment_number}"
-                )
+                logger.debug(f"Stored domain event: {stored_event.event_id} for payment {stored_event.payment_number}")
 
                 return stored_event
 
         except Exception as e:
-            logger.error(
-                f"Failed to store domain event {event.event_id}: {e}",
-                exc_info=True
-            )
+            logger.error(f"Failed to store domain event {event.event_id}: {e}", exc_info=True)
             raise
 
     @classmethod
-    def get_payment_events(cls, payment_id: int, event_types: List[str] = None) -> QuerySet:
+    def get_payment_events(cls, payment_id: int, event_types: list[str] = None) -> QuerySet:
         """
         Get all stored events for a payment.
 
@@ -82,7 +77,7 @@ class PaymentEventStoreService:
         if event_types:
             queryset = queryset.filter(event_type__in=event_types)
 
-        return queryset.order_by('created_at')
+        return queryset.order_by("created_at")
 
     @classmethod
     def get_unprocessed_events(cls, max_age_hours: int = 24) -> QuerySet:
@@ -99,14 +94,12 @@ class PaymentEventStoreService:
 
         cutoff_time = timezone.now() - timedelta(hours=max_age_hours)
 
-        return PaymentEventStore.objects.filter(
-            processed=False,
-            created_at__gte=cutoff_time
-        ).order_by('created_at')
+        return PaymentEventStore.objects.filter(processed=False, created_at__gte=cutoff_time).order_by("created_at")
 
     @classmethod
-    def replay_events(cls, payment_id: int, from_timestamp: datetime = None,
-                     to_timestamp: datetime = None) -> List[Dict[str, Any]]:
+    def replay_events(
+        cls, payment_id: int, from_timestamp: datetime = None, to_timestamp: datetime = None
+    ) -> list[dict[str, Any]]:
         """
         Replay events for a payment within a time range.
 
@@ -132,40 +125,34 @@ class PaymentEventStoreService:
             if to_timestamp:
                 queryset = queryset.filter(created_at__lte=to_timestamp)
 
-            events = queryset.order_by('created_at')
+            events = queryset.order_by("created_at")
 
             replay_data = []
             for event in events:
                 replay_entry = {
-                    'event_id': event.event_id,
-                    'event_type': event.event_type,
-                    'timestamp': event.created_at,
-                    'from_state': event.from_state,
-                    'to_state': event.to_state,
-                    'reason': event.transition_reason,
-                    'triggered_by': event.triggered_by,
-                    'event_data': event.event_data,
-                    'processed': event.processed,
-                    'processing_errors': event.processing_errors
+                    "event_id": event.event_id,
+                    "event_type": event.event_type,
+                    "timestamp": event.created_at,
+                    "from_state": event.from_state,
+                    "to_state": event.to_state,
+                    "reason": event.transition_reason,
+                    "triggered_by": event.triggered_by,
+                    "event_data": event.event_data,
+                    "processed": event.processed,
+                    "processing_errors": event.processing_errors,
                 }
                 replay_data.append(replay_entry)
 
-            logger.info(
-                f"Replayed {len(replay_data)} events for payment {payment_id}"
-            )
+            logger.info(f"Replayed {len(replay_data)} events for payment {payment_id}")
 
             return replay_data
 
         except Exception as e:
-            logger.error(
-                f"Failed to replay events for payment {payment_id}: {e}",
-                exc_info=True
-            )
+            logger.error(f"Failed to replay events for payment {payment_id}: {e}", exc_info=True)
             return []
 
     @classmethod
-    def get_event_stream(cls, filters: Dict[str, Any] = None,
-                        limit: int = 1000) -> QuerySet:
+    def get_event_stream(cls, filters: dict[str, Any] = None, limit: int = 1000) -> QuerySet:
         """
         Get an event stream with optional filters.
 
@@ -184,35 +171,35 @@ class PaymentEventStoreService:
 
         if filters:
             # Event type filter
-            if 'event_types' in filters:
-                queryset = queryset.filter(event_type__in=filters['event_types'])
+            if "event_types" in filters:
+                queryset = queryset.filter(event_type__in=filters["event_types"])
 
             # State transition filters
-            if 'from_states' in filters:
-                queryset = queryset.filter(from_state__in=filters['from_states'])
+            if "from_states" in filters:
+                queryset = queryset.filter(from_state__in=filters["from_states"])
 
-            if 'to_states' in filters:
-                queryset = queryset.filter(to_state__in=filters['to_states'])
+            if "to_states" in filters:
+                queryset = queryset.filter(to_state__in=filters["to_states"])
 
             # Time range filters
-            if 'from_date' in filters:
-                queryset = queryset.filter(created_at__gte=filters['from_date'])
+            if "from_date" in filters:
+                queryset = queryset.filter(created_at__gte=filters["from_date"])
 
-            if 'to_date' in filters:
-                queryset = queryset.filter(created_at__lte=filters['to_date'])
+            if "to_date" in filters:
+                queryset = queryset.filter(created_at__lte=filters["to_date"])
 
             # Processing status filter
-            if 'processed' in filters:
-                queryset = queryset.filter(processed=filters['processed'])
+            if "processed" in filters:
+                queryset = queryset.filter(processed=filters["processed"])
 
             # Payment filters
-            if 'payment_ids' in filters:
-                queryset = queryset.filter(payment_id__in=filters['payment_ids'])
+            if "payment_ids" in filters:
+                queryset = queryset.filter(payment_id__in=filters["payment_ids"])
 
-            if 'event_ids' in filters:
-                queryset = queryset.filter(event_id__in=filters['event_ids'])
+            if "event_ids" in filters:
+                queryset = queryset.filter(event_id__in=filters["event_ids"])
 
-        return queryset.order_by('-created_at')[:limit]
+        return queryset.order_by("-created_at")[:limit]
 
     @classmethod
     def mark_event_processing_started(cls, event_id: str) -> bool:
@@ -241,8 +228,9 @@ class PaymentEventStoreService:
             return False
 
     @classmethod
-    def add_event_processing_error(cls, event_id: str, error_message: str,
-                                  error_details: Dict[str, Any] = None) -> bool:
+    def add_event_processing_error(
+        cls, event_id: str, error_message: str, error_details: dict[str, Any] = None
+    ) -> bool:
         """Add processing error to an event"""
         from ..models import PaymentEventStore
 
@@ -268,10 +256,8 @@ class PaymentEventStoreService:
         from ..models import PaymentEventStore
 
         return PaymentEventStore.objects.filter(
-            processed=False,
-            retry_count__lt=max_retries,
-            processing_errors__isnull=False
-        ).order_by('created_at')
+            processed=False, retry_count__lt=max_retries, processing_errors__isnull=False
+        ).order_by("created_at")
 
     @classmethod
     def cleanup_old_events(cls, retention_days: int = 90) -> int:
@@ -288,16 +274,13 @@ class PaymentEventStoreService:
 
         cutoff_date = timezone.now() - timedelta(days=retention_days)
 
-        deleted_count = PaymentEventStore.objects.filter(
-            processed=True,
-            created_at__lt=cutoff_date
-        ).delete()[0]
+        deleted_count = PaymentEventStore.objects.filter(processed=True, created_at__lt=cutoff_date).delete()[0]
 
         logger.info(f"Cleaned up {deleted_count} old payment events")
         return deleted_count
 
     @classmethod
-    def get_event_statistics(cls, days: int = 30) -> Dict[str, Any]:
+    def get_event_statistics(cls, days: int = 30) -> dict[str, Any]:
         """
         Get event statistics for monitoring and analytics.
 
@@ -307,50 +290,50 @@ class PaymentEventStoreService:
         Returns:
             Dictionary with event statistics
         """
+        from django.db.models import Avg, Count
+
         from ..models import PaymentEventStore
-        from django.db.models import Count, Avg
 
         cutoff_date = timezone.now() - timedelta(days=days)
 
-        stats = PaymentEventStore.objects.filter(
-            created_at__gte=cutoff_date
-        ).aggregate(
-            total_events=Count('id'),
-            processed_events=Count('id', filter={'processed': True}),
-            failed_events=Count('id', filter={'retry_count__gt': 0}),
-            avg_retry_count=Avg('retry_count')
+        stats = PaymentEventStore.objects.filter(created_at__gte=cutoff_date).aggregate(
+            total_events=Count("id"),
+            processed_events=Count("id", filter={"processed": True}),
+            failed_events=Count("id", filter={"retry_count__gt": 0}),
+            avg_retry_count=Avg("retry_count"),
         )
 
         # Event type breakdown
-        event_type_stats = PaymentEventStore.objects.filter(
-            created_at__gte=cutoff_date
-        ).values('event_type').annotate(
-            count=Count('id')
-        ).order_by('-count')
+        event_type_stats = (
+            PaymentEventStore.objects.filter(created_at__gte=cutoff_date)
+            .values("event_type")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
 
         # State transition breakdown
-        state_transition_stats = PaymentEventStore.objects.filter(
-            created_at__gte=cutoff_date
-        ).values('to_state').annotate(
-            count=Count('id')
-        ).order_by('-count')
+        state_transition_stats = (
+            PaymentEventStore.objects.filter(created_at__gte=cutoff_date)
+            .values("to_state")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
 
         return {
-            'period_days': days,
-            'total_events': stats['total_events'] or 0,
-            'processed_events': stats['processed_events'] or 0,
-            'failed_events': stats['failed_events'] or 0,
-            'processing_rate': (
-                (stats['processed_events'] / stats['total_events']) * 100
-                if stats['total_events'] else 0
+            "period_days": days,
+            "total_events": stats["total_events"] or 0,
+            "processed_events": stats["processed_events"] or 0,
+            "failed_events": stats["failed_events"] or 0,
+            "processing_rate": (
+                (stats["processed_events"] / stats["total_events"]) * 100 if stats["total_events"] else 0
             ),
-            'avg_retry_count': stats['avg_retry_count'] or 0,
-            'event_type_breakdown': list(event_type_stats),
-            'state_transition_breakdown': list(state_transition_stats)
+            "avg_retry_count": stats["avg_retry_count"] or 0,
+            "event_type_breakdown": list(event_type_stats),
+            "state_transition_breakdown": list(state_transition_stats),
         }
 
     @classmethod
-    def _generate_external_refs(cls, event) -> Dict[str, Any]:
+    def _generate_external_refs(cls, event) -> dict[str, Any]:
         """
         Generate external system references for cross-system integration.
 
@@ -360,29 +343,29 @@ class PaymentEventStoreService:
         external_refs = {}
 
         # Workflow system integration
-        if hasattr(event.payment.event, 'workflow_template'):
-            external_refs['workflow_system'] = {
-                'event_id': event.payment.event_id,
-                'workflow_template_id': event.payment.event.workflow_template.id
+        if hasattr(event.payment.event, "workflow_template"):
+            external_refs["workflow_system"] = {
+                "event_id": event.payment.event_id,
+                "workflow_template_id": event.payment.event.workflow_template.id,
             }
 
         # Analytics system integration
-        external_refs['analytics_system'] = {
-            'payment_id': event.payment.id,
-            'client_id': event.payment.event.client_id,
-            'event_type': event.__class__.__name__
+        external_refs["analytics_system"] = {
+            "payment_id": event.payment.id,
+            "client_id": event.payment.event.client_id,
+            "event_type": event.__class__.__name__,
         }
 
         # Notification system integration
-        if event.transition.to_state.value in ['COMPLETED', 'FAILED', 'REFUNDED']:
-            external_refs['notification_system'] = {
-                'client_email': event.payment.event.client.email,
-                'notification_type': f'PAYMENT_{event.transition.to_state.value}',
-                'template_context': {
-                    'payment_number': event.payment.payment_number,
-                    'amount': str(event.payment.amount),
-                    'currency': event.payment.currency
-                }
+        if event.transition.to_state.value in ["COMPLETED", "FAILED", "REFUNDED"]:
+            external_refs["notification_system"] = {
+                "client_email": event.payment.event.client.email,
+                "notification_type": f"PAYMENT_{event.transition.to_state.value}",
+                "template_context": {
+                    "payment_number": event.payment.payment_number,
+                    "amount": str(event.payment.amount),
+                    "currency": event.payment.currency,
+                },
             }
 
         return external_refs

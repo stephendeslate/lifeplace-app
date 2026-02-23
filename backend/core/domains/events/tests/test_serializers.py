@@ -13,43 +13,40 @@ Tests:
 - Client serializers (ClientEventSerializer, ClientEventDetailSerializer, etc.)
 """
 
-import pytest
-from decimal import Decimal
 from datetime import timedelta
-from django.utils import timezone
+from decimal import Decimal
+
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 from rest_framework.test import APIRequestFactory
+
+import pytest
 
 from core.domains.events.models import (
     Event,
+    EventFeedback,
+    EventFile,
+    EventProductOption,
     EventTask,
     EventTimeline,
-    EventFile,
-    EventFeedback,
-    EventProductOption,
-)
-from core.domains.events.serializers.event_serializers import (
-    EventTaskSerializer,
-    EventTaskDetailSerializer,
-    EventProductOptionSerializer,
-    EventTimelineSerializer,
-    EventFileSerializer,
-    EventFeedbackSerializer,
-    EventSerializer,
-    EventDetailSerializer,
-    EventCreateUpdateSerializer,
 )
 from core.domains.events.serializers.client_serializers import (
-    ClientWorkflowStageSerializer,
-    ClientEventSerializer,
-    ClientEventDetailSerializer,
-    ClientEventTimelineSerializer,
-    ClientEventFileSerializer,
+    ClientEventFeedbackSerializer,
+    ClientEventFileUploadSerializer,
     ClientEventPreferencesSerializer,
+    ClientEventSerializer,
     ClientEventTaskSerializer,
     ClientEventTaskUpdateSerializer,
-    ClientEventFileUploadSerializer,
-    ClientEventFeedbackSerializer,
+    ClientEventTimelineSerializer,
+)
+from core.domains.events.serializers.event_serializers import (
+    EventCreateUpdateSerializer,
+    EventFeedbackSerializer,
+    EventFileSerializer,
+    EventProductOptionSerializer,
+    EventSerializer,
+    EventTaskSerializer,
+    EventTimelineSerializer,
 )
 
 
@@ -66,26 +63,26 @@ class TestEventTaskSerializer:
     def test_serialize_event_task(self, event_factory, user_factory):
         """Test serializing an event task."""
         event = event_factory()
-        user = user_factory(first_name='John', last_name='Doe')
+        user = user_factory(first_name="John", last_name="Doe")
 
         task = EventTask.objects.create(
             event=event,
-            title='Review contract',
-            description='Review the event contract',
+            title="Review contract",
+            description="Review the event contract",
             due_date=timezone.now() + timedelta(days=3),
-            priority='HIGH',
-            status='PENDING',
+            priority="HIGH",
+            status="PENDING",
             assigned_to=user,
         )
 
         serializer = EventTaskSerializer(task)
         data = serializer.data
 
-        assert data['title'] == 'Review contract'
-        assert data['description'] == 'Review the event contract'
-        assert data['priority'] == 'HIGH'
-        assert data['status'] == 'PENDING'
-        assert data['assigned_to_name'] == 'John Doe'
+        assert data["title"] == "Review contract"
+        assert data["description"] == "Review the event contract"
+        assert data["priority"] == "HIGH"
+        assert data["status"] == "PENDING"
+        assert data["assigned_to_name"] == "John Doe"
 
     def test_assigned_to_name_none_when_no_assignee(self, event_factory):
         """Test assigned_to_name returns None when no assignee."""
@@ -93,14 +90,14 @@ class TestEventTaskSerializer:
 
         task = EventTask.objects.create(
             event=event,
-            title='Unassigned task',
+            title="Unassigned task",
             due_date=timezone.now() + timedelta(days=1),
-            priority='LOW',
-            status='PENDING',
+            priority="LOW",
+            status="PENDING",
         )
 
         serializer = EventTaskSerializer(task)
-        assert serializer.data['assigned_to_name'] is None
+        assert serializer.data["assigned_to_name"] is None
 
     def test_deserialize_event_task(self, event_factory, user_factory):
         """Test deserializing event task data."""
@@ -108,20 +105,20 @@ class TestEventTaskSerializer:
         user = user_factory()
 
         data = {
-            'event': event.id,
-            'title': 'New task',
-            'description': 'Task description',
-            'due_date': (timezone.now() + timedelta(days=5)).isoformat(),
-            'priority': 'MEDIUM',
-            'status': 'PENDING',
-            'assigned_to': user.id,
+            "event": event.id,
+            "title": "New task",
+            "description": "Task description",
+            "due_date": (timezone.now() + timedelta(days=5)).isoformat(),
+            "priority": "MEDIUM",
+            "status": "PENDING",
+            "assigned_to": user.id,
         }
 
         serializer = EventTaskSerializer(data=data)
         assert serializer.is_valid(), serializer.errors
 
         task = serializer.save()
-        assert task.title == 'New task'
+        assert task.title == "New task"
         assert task.assigned_to == user
 
 
@@ -131,35 +128,35 @@ class TestEventProductOptionSerializer:
 
     def test_serialize_event_product_option(self, event_factory):
         """Test serializing an event product option."""
-        from core.domains.products.models import ProductOption, ProductCategory
+        from core.domains.products.models import ProductCategory, ProductOption
 
         event = event_factory()
 
         # Create category and product option
         category = ProductCategory.objects.create(
-            name='Test Category',
-            description='Test category',
+            name="Test Category",
+            description="Test category",
         )
         product = ProductOption.objects.create(
-            name='Test Package',
+            name="Test Package",
             category=category,
-            type='PACKAGE',
-            base_price=Decimal('5000.00'),
+            type="PACKAGE",
+            base_price=Decimal("5000.00"),
         )
 
         event_product = EventProductOption.objects.create(
             event=event,
             product_option=product,
             quantity=1,
-            final_price=Decimal('5000.00'),
+            final_price=Decimal("5000.00"),
         )
 
         serializer = EventProductOptionSerializer(event_product)
         data = serializer.data
 
-        assert data['product_name'] == 'Test Package'
-        assert data['quantity'] == 1
-        assert Decimal(data['final_price']) == Decimal('5000.00')
+        assert data["product_name"] == "Test Package"
+        assert data["quantity"] == 1
+        assert Decimal(data["final_price"]) == Decimal("5000.00")
 
 
 @pytest.mark.django_db
@@ -169,12 +166,12 @@ class TestEventTimelineSerializer:
     def test_serialize_timeline_entry(self, event_factory, user_factory):
         """Test serializing a timeline entry."""
         event = event_factory()
-        actor = user_factory(first_name='Jane', last_name='Smith')
+        actor = user_factory(first_name="Jane", last_name="Smith")
 
         entry = EventTimeline.objects.create(
             event=event,
-            action_type='STATUS_CHANGE',
-            description='Status changed from Lead to Confirmed',
+            action_type="STATUS_CHANGE",
+            description="Status changed from Lead to Confirmed",
             actor=actor,
             is_public=True,
         )
@@ -182,10 +179,10 @@ class TestEventTimelineSerializer:
         serializer = EventTimelineSerializer(entry)
         data = serializer.data
 
-        assert data['action_type'] == 'STATUS_CHANGE'
-        assert data['description'] == 'Status changed from Lead to Confirmed'
-        assert data['actor_name'] == 'Jane Smith'
-        assert data['is_public'] is True
+        assert data["action_type"] == "STATUS_CHANGE"
+        assert data["description"] == "Status changed from Lead to Confirmed"
+        assert data["actor_name"] == "Jane Smith"
+        assert data["is_public"] is True
 
     def test_actor_name_none_when_no_actor(self, event_factory):
         """Test actor_name returns None when no actor."""
@@ -193,12 +190,12 @@ class TestEventTimelineSerializer:
 
         entry = EventTimeline.objects.create(
             event=event,
-            action_type='SYSTEM_UPDATE',
-            description='System auto-update',
+            action_type="SYSTEM_UPDATE",
+            description="System auto-update",
         )
 
         serializer = EventTimelineSerializer(entry)
-        assert serializer.data['actor_name'] is None
+        assert serializer.data["actor_name"] is None
 
 
 @pytest.mark.django_db
@@ -208,56 +205,48 @@ class TestEventFileSerializer:
     def test_serialize_event_file(self, event_factory, user_factory, request_factory):
         """Test serializing an event file."""
         event = event_factory()
-        uploader = user_factory(first_name='Bob', last_name='Jones')
+        uploader = user_factory(first_name="Bob", last_name="Jones")
 
         # Create a test file
-        test_file = SimpleUploadedFile(
-            "test.pdf",
-            b"file_content",
-            content_type="application/pdf"
-        )
+        test_file = SimpleUploadedFile("test.pdf", b"file_content", content_type="application/pdf")
 
         event_file = EventFile.objects.create(
             event=event,
-            category='CONTRACT',
+            category="CONTRACT",
             file=test_file,
-            name='Test Contract',
-            description='Contract document',
-            mime_type='application/pdf',
+            name="Test Contract",
+            description="Contract document",
+            mime_type="application/pdf",
             size=1024,
             uploaded_by=uploader,
         )
 
-        request = request_factory.get('/')
-        serializer = EventFileSerializer(event_file, context={'request': request})
+        request = request_factory.get("/")
+        serializer = EventFileSerializer(event_file, context={"request": request})
         data = serializer.data
 
-        assert data['name'] == 'Test Contract'
-        assert data['category'] == 'CONTRACT'
-        assert data['uploaded_by_name'] == 'Bob Jones'
-        assert data['file_url'] is not None
+        assert data["name"] == "Test Contract"
+        assert data["category"] == "CONTRACT"
+        assert data["uploaded_by_name"] == "Bob Jones"
+        assert data["file_url"] is not None
 
     def test_uploaded_by_name_none_when_no_uploader(self, event_factory):
         """Test uploaded_by_name returns None when no uploader."""
         event = event_factory()
 
-        test_file = SimpleUploadedFile(
-            "test.pdf",
-            b"file_content",
-            content_type="application/pdf"
-        )
+        test_file = SimpleUploadedFile("test.pdf", b"file_content", content_type="application/pdf")
 
         event_file = EventFile.objects.create(
             event=event,
-            category='OTHER',
+            category="OTHER",
             file=test_file,
-            name='Anonymous Upload',
-            mime_type='application/pdf',
+            name="Anonymous Upload",
+            mime_type="application/pdf",
             size=512,
         )
 
         serializer = EventFileSerializer(event_file)
-        assert serializer.data['uploaded_by_name'] is None
+        assert serializer.data["uploaded_by_name"] is None
 
 
 @pytest.mark.django_db
@@ -267,27 +256,27 @@ class TestEventFeedbackSerializer:
     def test_serialize_event_feedback(self, event_factory, user_factory):
         """Test serializing event feedback."""
         event = event_factory(completed=True)
-        submitter = user_factory(first_name='Alice', last_name='Wonder')
-        responder = user_factory(first_name='Admin', last_name='User', admin=True)
+        submitter = user_factory(first_name="Alice", last_name="Wonder")
+        responder = user_factory(first_name="Admin", last_name="User", admin=True)
 
         feedback = EventFeedback.objects.create(
             event=event,
             submitted_by=submitter,
             overall_rating=5,
-            comments='Excellent service!',
-            testimonial='Highly recommend!',
+            comments="Excellent service!",
+            testimonial="Highly recommend!",
             is_public=True,
-            response='Thank you for your feedback!',
+            response="Thank you for your feedback!",
             response_by=responder,
         )
 
         serializer = EventFeedbackSerializer(feedback)
         data = serializer.data
 
-        assert data['overall_rating'] == 5
-        assert data['comments'] == 'Excellent service!'
-        assert data['submitted_by_name'] == 'Alice Wonder'
-        assert data['response_by_name'] == 'Admin User'
+        assert data["overall_rating"] == 5
+        assert data["comments"] == "Excellent service!"
+        assert data["submitted_by_name"] == "Alice Wonder"
+        assert data["response_by_name"] == "Admin User"
 
 
 @pytest.mark.django_db
@@ -296,27 +285,27 @@ class TestEventSerializer:
 
     def test_serialize_event(self, event_factory, event_type_factory, user_factory):
         """Test serializing an event."""
-        client = user_factory(first_name='Test', last_name='Client')
-        event_type = event_type_factory(name='Wedding')
+        client = user_factory(first_name="Test", last_name="Client")
+        event_type = event_type_factory(name="Wedding")
         event = event_factory(
             client=client,
             event_type=event_type,
-            name='Test Wedding',
-            status='LEAD',
+            name="Test Wedding",
+            status="LEAD",
         )
 
         serializer = EventSerializer(event)
         data = serializer.data
 
-        assert data['name'] == 'Test Wedding'
-        assert data['status'] == 'LEAD'
-        assert data['event_type_name'] == 'Wedding'
-        assert data['client_name'] == 'Test Client'
+        assert data["name"] == "Test Wedding"
+        assert data["status"] == "LEAD"
+        assert data["event_type_name"] == "Wedding"
+        assert data["client_name"] == "Test Client"
 
     def test_client_name_none_when_no_client(self, event_type_factory, user_factory):
         """Test client_name field when client is set."""
         # Note: Event requires a client, but test the method logic
-        client = user_factory(first_name='John', last_name='Doe')
+        client = user_factory(first_name="John", last_name="Doe")
         event_type = event_type_factory()
         event = Event.objects.create(
             client=client,
@@ -325,7 +314,7 @@ class TestEventSerializer:
         )
 
         serializer = EventSerializer(event)
-        assert serializer.data['client_name'] == 'John Doe'
+        assert serializer.data["client_name"] == "John Doe"
 
     def test_validate_end_date_before_start_date(self, event_factory):
         """Test validation fails when end_date is before start_date."""
@@ -334,15 +323,15 @@ class TestEventSerializer:
         end = start - timedelta(days=1)  # End before start
 
         data = {
-            'client': event.client.id,
-            'event_type': event.event_type.id,
-            'start_date': start.isoformat(),
-            'end_date': end.isoformat(),
+            "client": event.client.id,
+            "event_type": event.event_type.id,
+            "start_date": start.isoformat(),
+            "end_date": end.isoformat(),
         }
 
         serializer = EventSerializer(data=data)
         assert not serializer.is_valid()
-        assert 'end_date' in serializer.errors
+        assert "end_date" in serializer.errors
 
     def test_validate_end_date_after_start_date(self, event_factory):
         """Test validation passes when end_date is after start_date."""
@@ -351,10 +340,10 @@ class TestEventSerializer:
         end = start + timedelta(days=1)  # End after start
 
         data = {
-            'client': event.client.id,
-            'event_type': event.event_type.id,
-            'start_date': start.isoformat(),
-            'end_date': end.isoformat(),
+            "client": event.client.id,
+            "event_type": event.event_type.id,
+            "start_date": start.isoformat(),
+            "end_date": end.isoformat(),
         }
 
         serializer = EventSerializer(data=data)
@@ -365,60 +354,57 @@ class TestEventSerializer:
 class TestEventCreateUpdateSerializer:
     """Tests for EventCreateUpdateSerializer."""
 
-    @pytest.mark.skip(reason="Nested serializer validation requires event field during is_valid() - needs serializer fix")
-    def test_create_event_with_products(
-        self, user_factory, event_type_factory, request_factory
-    ):
+    @pytest.mark.skip(
+        reason="Nested serializer validation requires event field during is_valid() - needs serializer fix"
+    )
+    def test_create_event_with_products(self, user_factory, event_type_factory, request_factory):
         """Test creating an event with product options."""
-        from core.domains.products.models import ProductOption, ProductCategory
+        from core.domains.products.models import ProductCategory, ProductOption
 
         client = user_factory()
         event_type = event_type_factory()
 
         # Create category and product option
         category = ProductCategory.objects.create(
-            name='Test Category',
-            description='Test',
+            name="Test Category",
+            description="Test",
         )
         product = ProductOption.objects.create(
-            name='Test Package',
+            name="Test Package",
             category=category,
-            type='PACKAGE',
-            base_price=Decimal('10000.00'),
+            type="PACKAGE",
+            base_price=Decimal("10000.00"),
         )
 
         start_date = timezone.now() + timedelta(days=30)
 
         data = {
-            'client': client.id,
-            'event_type': event_type.id,
-            'name': 'New Event',
-            'start_date': start_date.isoformat(),
-            'event_products': [
+            "client": client.id,
+            "event_type": event_type.id,
+            "name": "New Event",
+            "start_date": start_date.isoformat(),
+            "event_products": [
                 {
-                    'product_option': product.id,
-                    'quantity': 1,
-                    'final_price': '10000.00',
+                    "product_option": product.id,
+                    "quantity": 1,
+                    "final_price": "10000.00",
                 }
             ],
         }
 
         # Create a mock request
         admin_user = user_factory(admin=True)
-        request = request_factory.post('/')
+        request = request_factory.post("/")
         request.user = admin_user
 
-        serializer = EventCreateUpdateSerializer(
-            data=data,
-            context={'request': request}
-        )
+        serializer = EventCreateUpdateSerializer(data=data, context={"request": request})
         assert serializer.is_valid(), serializer.errors
 
         event = serializer.save()
 
-        assert event.name == 'New Event'
+        assert event.name == "New Event"
         assert event.event_products.count() == 1
-        assert event.timeline.filter(action_type='SYSTEM_UPDATE').exists()
+        assert event.timeline.filter(action_type="SYSTEM_UPDATE").exists()
 
     def test_update_event_status(self, event_factory, user_factory, request_factory):
         """Test that status is a read-only field and cannot be updated via serializer.
@@ -427,17 +413,14 @@ class TestEventCreateUpdateSerializer:
         mass assignment. Status changes should be done through dedicated service
         methods, not via the serializer.
         """
-        event = event_factory(status='LEAD')
+        event = event_factory(status="LEAD")
         admin_user = user_factory(admin=True)
 
-        request = request_factory.patch('/')
+        request = request_factory.patch("/")
         request.user = admin_user
 
         serializer = EventCreateUpdateSerializer(
-            event,
-            data={'status': 'CONFIRMED'},
-            partial=True,
-            context={'request': request}
+            event, data={"status": "CONFIRMED"}, partial=True, context={"request": request}
         )
         # Serializer is valid because read-only fields are silently ignored
         assert serializer.is_valid(), serializer.errors
@@ -445,7 +428,7 @@ class TestEventCreateUpdateSerializer:
         updated_event = serializer.save()
 
         # Status remains unchanged because 'status' is a read_only_field
-        assert updated_event.status == 'LEAD'
+        assert updated_event.status == "LEAD"
 
 
 @pytest.mark.django_db
@@ -454,18 +437,18 @@ class TestClientEventSerializer:
 
     def test_serialize_client_event(self, event_factory, event_type_factory):
         """Test serializing an event for client view."""
-        event_type = event_type_factory(name='Birthday')
+        event_type = event_type_factory(name="Birthday")
         event = event_factory(
             event_type=event_type,
-            status='CONFIRMED',
+            status="CONFIRMED",
         )
 
         serializer = ClientEventSerializer(event)
         data = serializer.data
 
-        assert data['event_type_name'] == 'Birthday'
-        assert data['status'] == 'CONFIRMED'
-        assert 'client' not in data  # Client shouldn't see other clients
+        assert data["event_type_name"] == "Birthday"
+        assert data["status"] == "CONFIRMED"
+        assert "client" not in data  # Client shouldn't see other clients
 
     def test_days_until_event_future(self, event_factory):
         """Test days_until_event for future event."""
@@ -475,7 +458,7 @@ class TestClientEventSerializer:
         serializer = ClientEventSerializer(event)
 
         # Should be approximately 10 days (allow for timezone differences)
-        assert serializer.data['days_until_event'] in [9, 10]
+        assert serializer.data["days_until_event"] in [9, 10]
 
     def test_days_until_event_past(self, event_factory):
         """Test days_until_event returns None for past event."""
@@ -483,7 +466,7 @@ class TestClientEventSerializer:
         event = event_factory(start_date=past_date, completed=True)
 
         serializer = ClientEventSerializer(event)
-        assert serializer.data['days_until_event'] is None
+        assert serializer.data["days_until_event"] is None
 
 
 @pytest.mark.django_db
@@ -496,10 +479,10 @@ class TestClientEventTaskSerializer:
 
         task = EventTask.objects.create(
             event=event,
-            title='Client task',
+            title="Client task",
             due_date=timezone.now() + timedelta(days=3),
-            priority='HIGH',
-            status='PENDING',
+            priority="HIGH",
+            status="PENDING",
             is_visible_to_client=True,
             requires_client_input=True,
         )
@@ -507,9 +490,9 @@ class TestClientEventTaskSerializer:
         serializer = ClientEventTaskSerializer(task)
         data = serializer.data
 
-        assert data['title'] == 'Client task'
-        assert data['requires_client_input'] is True
-        assert data['can_update'] is True
+        assert data["title"] == "Client task"
+        assert data["requires_client_input"] is True
+        assert data["can_update"] is True
 
     def test_can_update_false_when_completed(self, event_factory):
         """Test can_update returns False when task is completed."""
@@ -517,16 +500,16 @@ class TestClientEventTaskSerializer:
 
         task = EventTask.objects.create(
             event=event,
-            title='Completed task',
+            title="Completed task",
             due_date=timezone.now() + timedelta(days=1),
-            priority='LOW',
-            status='COMPLETED',
+            priority="LOW",
+            status="COMPLETED",
             is_visible_to_client=True,
             requires_client_input=True,
         )
 
         serializer = ClientEventTaskSerializer(task)
-        assert serializer.data['can_update'] is False
+        assert serializer.data["can_update"] is False
 
 
 @pytest.mark.django_db
@@ -536,26 +519,26 @@ class TestClientEventTaskUpdateSerializer:
     def test_validate_completion_without_notes(self):
         """Test completion status adds default notes if missing."""
         data = {
-            'status': 'COMPLETED',
+            "status": "COMPLETED",
         }
 
         serializer = ClientEventTaskUpdateSerializer(data=data)
         assert serializer.is_valid(), serializer.errors
 
         validated = serializer.validated_data
-        assert validated['completion_notes'] == 'Completed by client'
+        assert validated["completion_notes"] == "Completed by client"
 
     def test_validate_completion_with_notes(self):
         """Test completion status preserves provided notes."""
         data = {
-            'status': 'COMPLETED',
-            'completion_notes': 'Custom completion note',
+            "status": "COMPLETED",
+            "completion_notes": "Custom completion note",
         }
 
         serializer = ClientEventTaskUpdateSerializer(data=data)
         assert serializer.is_valid(), serializer.errors
 
-        assert serializer.validated_data['completion_notes'] == 'Custom completion note'
+        assert serializer.validated_data["completion_notes"] == "Custom completion note"
 
 
 @pytest.mark.django_db
@@ -566,53 +549,41 @@ class TestClientEventFileUploadSerializer:
     def test_validate_file_size_too_large(self):
         """Test file validation rejects files over 10MB."""
         # Create a file larger than 10MB
-        large_content = b'x' * (11 * 1024 * 1024)  # 11MB
-        large_file = SimpleUploadedFile(
-            "large.pdf",
-            large_content,
-            content_type="application/pdf"
-        )
+        large_content = b"x" * (11 * 1024 * 1024)  # 11MB
+        large_file = SimpleUploadedFile("large.pdf", large_content, content_type="application/pdf")
 
         data = {
-            'name': 'Large File',
-            'category': 'OTHER',
-            'file': large_file,
+            "name": "Large File",
+            "category": "OTHER",
+            "file": large_file,
         }
 
         serializer = ClientEventFileUploadSerializer(data=data)
         assert not serializer.is_valid()
-        assert 'file' in serializer.errors
+        assert "file" in serializer.errors
 
     def test_validate_file_invalid_extension(self):
         """Test file validation rejects invalid extensions."""
-        invalid_file = SimpleUploadedFile(
-            "test.exe",
-            b"file_content",
-            content_type="application/octet-stream"
-        )
+        invalid_file = SimpleUploadedFile("test.exe", b"file_content", content_type="application/octet-stream")
 
         data = {
-            'name': 'Invalid File',
-            'category': 'OTHER',
-            'file': invalid_file,
+            "name": "Invalid File",
+            "category": "OTHER",
+            "file": invalid_file,
         }
 
         serializer = ClientEventFileUploadSerializer(data=data)
         assert not serializer.is_valid()
-        assert 'file' in serializer.errors
+        assert "file" in serializer.errors
 
     def test_validate_file_valid(self):
         """Test file validation accepts valid files."""
-        valid_file = SimpleUploadedFile(
-            "document.pdf",
-            b"file_content",
-            content_type="application/pdf"
-        )
+        valid_file = SimpleUploadedFile("document.pdf", b"file_content", content_type="application/pdf")
 
         data = {
-            'name': 'Valid Document',
-            'category': 'OTHER',
-            'file': valid_file,
+            "name": "Valid Document",
+            "category": "OTHER",
+            "file": valid_file,
         }
 
         serializer = ClientEventFileUploadSerializer(data=data)
@@ -626,8 +597,8 @@ class TestClientEventFeedbackSerializer:
     def test_validate_rating_in_range(self):
         """Test rating validation for valid range."""
         data = {
-            'overall_rating': 5,
-            'comments': 'Great event!',
+            "overall_rating": 5,
+            "comments": "Great event!",
         }
 
         serializer = ClientEventFeedbackSerializer(data=data)
@@ -636,33 +607,33 @@ class TestClientEventFeedbackSerializer:
     def test_validate_rating_below_range(self):
         """Test rating validation rejects rating below 1."""
         data = {
-            'overall_rating': 0,
-            'comments': 'Bad rating',
+            "overall_rating": 0,
+            "comments": "Bad rating",
         }
 
         serializer = ClientEventFeedbackSerializer(data=data)
         assert not serializer.is_valid()
-        assert 'overall_rating' in serializer.errors
+        assert "overall_rating" in serializer.errors
 
     def test_validate_rating_above_range(self):
         """Test rating validation rejects rating above 5."""
         data = {
-            'overall_rating': 6,
-            'comments': 'Invalid rating',
+            "overall_rating": 6,
+            "comments": "Invalid rating",
         }
 
         serializer = ClientEventFeedbackSerializer(data=data)
         assert not serializer.is_valid()
-        assert 'overall_rating' in serializer.errors
+        assert "overall_rating" in serializer.errors
 
     def test_validate_category_ratings(self):
         """Test category ratings validation."""
         data = {
-            'overall_rating': 4,
-            'categories': {
-                'venue': 5,
-                'service': 4,
-                'food': 5,
+            "overall_rating": 4,
+            "categories": {
+                "venue": 5,
+                "service": 4,
+                "food": 5,
             },
         }
 
@@ -672,15 +643,15 @@ class TestClientEventFeedbackSerializer:
     def test_validate_category_ratings_invalid(self):
         """Test category ratings validation rejects invalid ratings."""
         data = {
-            'overall_rating': 4,
-            'categories': {
-                'venue': 6,  # Invalid
+            "overall_rating": 4,
+            "categories": {
+                "venue": 6,  # Invalid
             },
         }
 
         serializer = ClientEventFeedbackSerializer(data=data)
         assert not serializer.is_valid()
-        assert 'categories' in serializer.errors
+        assert "categories" in serializer.errors
 
 
 @pytest.mark.django_db
@@ -690,9 +661,9 @@ class TestClientEventPreferencesSerializer:
     def test_validate_preferences(self):
         """Test preferences validation accepts JSON."""
         data = {
-            'preferences': {
-                'theme': 'elegant',
-                'colors': ['gold', 'white'],
+            "preferences": {
+                "theme": "elegant",
+                "colors": ["gold", "white"],
             },
         }
 
@@ -706,19 +677,19 @@ class TestClientEventTimelineSerializer:
 
     def test_actor_name_returns_you_for_client(self, event_factory, user_factory):
         """Test actor_name returns 'You' when actor is the client."""
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         event = event_factory(client=client)
 
         entry = EventTimeline.objects.create(
             event=event,
-            action_type='NOTE_ADDED',
-            description='Client added a note',
+            action_type="NOTE_ADDED",
+            description="Client added a note",
             actor=client,
             is_public=True,
         )
 
         serializer = ClientEventTimelineSerializer(entry)
-        assert serializer.data['actor_name'] == 'You'
+        assert serializer.data["actor_name"] == "You"
 
     def test_actor_name_returns_coordinator_for_admin(self, event_factory, user_factory):
         """Test actor_name returns 'Event Coordinator' when actor is admin."""
@@ -727,14 +698,14 @@ class TestClientEventTimelineSerializer:
 
         entry = EventTimeline.objects.create(
             event=event,
-            action_type='STATUS_CHANGE',
-            description='Admin updated status',
+            action_type="STATUS_CHANGE",
+            description="Admin updated status",
             actor=admin,
             is_public=True,
         )
 
         serializer = ClientEventTimelineSerializer(entry)
-        assert serializer.data['actor_name'] == 'Event Coordinator'
+        assert serializer.data["actor_name"] == "Event Coordinator"
 
     def test_actor_name_returns_system_when_no_actor(self, event_factory):
         """Test actor_name returns 'System' when no actor."""
@@ -742,10 +713,10 @@ class TestClientEventTimelineSerializer:
 
         entry = EventTimeline.objects.create(
             event=event,
-            action_type='SYSTEM_UPDATE',
-            description='Automated update',
+            action_type="SYSTEM_UPDATE",
+            description="Automated update",
             is_public=True,
         )
 
         serializer = ClientEventTimelineSerializer(entry)
-        assert serializer.data['actor_name'] == 'System'
+        assert serializer.data["actor_name"] == "System"

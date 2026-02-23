@@ -1,11 +1,6 @@
-import type {
-  DashboardKPIs,
-  BookingSummary,
-} from "../../../types/analytics.types";
+import type { DashboardKPIs, BookingSummary } from '../../../types/analytics.types';
 
-export function createMockDashboardKPIs(
-  overrides: Partial<DashboardKPIs> = {},
-): DashboardKPIs {
+export function createMockDashboardKPIs(overrides: Partial<DashboardKPIs> = {}): DashboardKPIs {
   return {
     total_bookings: 150,
     confirmed_bookings: 100,
@@ -21,8 +16,8 @@ export function createMockDashboardKPIs(
     completed_sessions: 150,
     conversion_rate: 75,
     period: {
-      startDate: "2024-06-01",
-      endDate: "2024-06-30",
+      startDate: '2024-06-01',
+      endDate: '2024-06-30',
     },
     ...overrides,
   };
@@ -30,7 +25,7 @@ export function createMockDashboardKPIs(
 
 export function createMockBookingsSummary(count = 3): BookingSummary[] {
   return Array.from({ length: count }, (_, i) => ({
-    period: `2024-06-${String(i * 10 + 1).padStart(2, "0")}`,
+    period: `2024-06-${String(i * 10 + 1).padStart(2, '0')}`,
     total_bookings: 50 + i * 10,
     confirmed_bookings: 30 + i * 5,
     completed_bookings: 20 + i * 5,

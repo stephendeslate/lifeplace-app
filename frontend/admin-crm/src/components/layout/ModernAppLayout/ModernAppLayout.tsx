@@ -17,13 +17,11 @@ interface ModernAppLayoutProps {
 
 export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({
   children,
-  enableScrollEffects = true
+  enableScrollEffects = true,
 }) => {
   const theme = useTheme();
 
-  const {
-    headerHeight = 64,
-  } = useLayout();
+  const { headerHeight = 64 } = useLayout();
 
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
@@ -37,7 +35,7 @@ export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       setShowScrollTop(currentScrollY > 300);
-      
+
       // Track scrolling state for performance
       setIsScrolling(true);
       clearTimeout(scrollTimeout);
@@ -57,15 +55,15 @@ export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
+      behavior: 'smooth',
     });
   };
 
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
-        minHeight: '100vh', 
+    <Box
+      sx={{
+        display: 'flex',
+        minHeight: '100vh',
         width: '100vw',
         position: 'relative',
         overflow: 'hidden',
@@ -99,9 +97,7 @@ export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({
         }}
       >
         {/* Enhanced Contextual Content Area */}
-        <ContextualContentArea>
-          {children}
-        </ContextualContentArea>
+        <ContextualContentArea>{children}</ContextualContentArea>
       </Box>
 
       {/* Scroll to Top FAB */}
@@ -126,7 +122,7 @@ export const ModernAppLayout: React.FC<ModernAppLayoutProps> = ({
 
               '&:active': {
                 background: tokens.color.neutral[100],
-              }
+              },
             }}
           >
             <KeyboardArrowUp />

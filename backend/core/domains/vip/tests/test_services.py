@@ -8,33 +8,31 @@ Tests:
 - VIPRedemptionService (benefit redemptions)
 """
 
-import pytest
 from decimal import Decimal
-from unittest.mock import Mock, patch, MagicMock
-from django.utils import timezone
-from datetime import timedelta
+from unittest.mock import Mock
+
+import pytest
 from freezegun import freeze_time
 
 from core.domains.vip.models import (
+    ClientVIPStatus,
+    VIPBenefit,
+    VIPRewardRedemption,
     VIPSettings,
     VIPTier,
-    VIPBenefit,
-    ClientVIPStatus,
-    VIPPointTransaction,
-    VIPRewardRedemption,
     VIPTierHistory,
 )
 from core.domains.vip.services import (
-    VIPService,
     VIPPointsService,
     VIPPricingIntegrationService,
     VIPRedemptionService,
+    VIPService,
 )
-
 
 # =============================================================================
 # VIPService Tests
 # =============================================================================
+
 
 @pytest.mark.django_db
 class TestVIPServiceGetSettings:
@@ -88,23 +86,19 @@ class TestVIPServiceGetOrCreateClientStatus:
 
     def test_creates_new_status_for_client(self, user_factory, default_tier):
         """Test creates new VIP status for client without one."""
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
 
         status = VIPService.get_or_create_client_status(client)
 
         assert status is not None
         assert status.client == client
         assert status.current_tier == default_tier
-        assert status.status == 'ACTIVE'
+        assert status.status == "ACTIVE"
 
     def test_returns_existing_status(self, user_factory, default_tier):
         """Test returns existing status if client already has one."""
-        client = user_factory(role='CLIENT')
-        existing = ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=default_tier,
-            points_balance=100
-        )
+        client = user_factory(role="CLIENT")
+        existing = ClientVIPStatus.objects.create(client=client, current_tier=default_tier, points_balance=100)
 
         status = VIPService.get_or_create_client_status(client)
 
@@ -113,19 +107,19 @@ class TestVIPServiceGetOrCreateClientStatus:
 
     def test_creates_initial_tier_history(self, user_factory, default_tier):
         """Test creates tier history entry on initial status creation."""
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
 
         status = VIPService.get_or_create_client_status(client)
 
         history = VIPTierHistory.objects.filter(client_vip_status=status)
         assert history.count() == 1
-        assert history.first().reason == 'INITIAL'
+        assert history.first().reason == "INITIAL"
         assert history.first().from_tier is None
         assert history.first().to_tier == default_tier
 
     def test_no_default_tier_creates_status_without_tier(self, user_factory):
         """Test creates status without tier if no default tier exists."""
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
 
         status = VIPService.get_or_create_client_status(client)
 
@@ -140,19 +134,17 @@ class TestVIPServiceCalculateEligibleTier:
     @pytest.fixture
     def tier_hierarchy(self):
         """Create a tier hierarchy."""
-        standard = VIPTier.objects.create(
-            name="Standard", level=0, is_default=True, is_active=True
-        )
+        standard = VIPTier.objects.create(name="Standard", level=0, is_default=True, is_active=True)
         silver = VIPTier.objects.create(
-            name="Silver", level=1, is_active=True,
-            min_total_spent=Decimal('10000.00'),
-            min_completed_bookings=3
+            name="Silver", level=1, is_active=True, min_total_spent=Decimal("10000.00"), min_completed_bookings=3
         )
         gold = VIPTier.objects.create(
-            name="Gold", level=2, is_active=True,
-            min_total_spent=Decimal('50000.00'),
+            name="Gold",
+            level=2,
+            is_active=True,
+            min_total_spent=Decimal("50000.00"),
             min_completed_bookings=10,
-            min_points_required=500
+            min_points_required=500,
         )
         return standard, silver, gold
 
@@ -160,13 +152,13 @@ class TestVIPServiceCalculateEligibleTier:
     def client_status(self, user_factory, tier_hierarchy):
         """Create a client VIP status."""
         standard, _, _ = tier_hierarchy
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         return ClientVIPStatus.objects.create(
             client=client,
             current_tier=standard,
-            total_spent=Decimal('0.00'),
+            total_spent=Decimal("0.00"),
             completed_bookings_count=0,
-            points_balance=0
+            points_balance=0,
         )
 
     def test_returns_none_when_program_disabled(self, client_status):
@@ -196,10 +188,10 @@ class TestVIPServiceCalculateEligibleTier:
         settings = VIPSettings.get_settings()
         settings.is_program_enabled = True
         settings.earning_automatic_enabled = True
-        settings.automatic_earning_type = 'SPENDING'
+        settings.automatic_earning_type = "SPENDING"
         settings.save()
 
-        client_status.total_spent = Decimal('25000.00')
+        client_status.total_spent = Decimal("25000.00")
         client_status.save()
 
         result = VIPService.calculate_eligible_tier(client_status)
@@ -212,7 +204,7 @@ class TestVIPServiceCalculateEligibleTier:
         settings = VIPSettings.get_settings()
         settings.is_program_enabled = True
         settings.earning_automatic_enabled = True
-        settings.automatic_earning_type = 'BOOKINGS'
+        settings.automatic_earning_type = "BOOKINGS"
         settings.save()
 
         client_status.completed_bookings_count = 5
@@ -228,10 +220,10 @@ class TestVIPServiceCalculateEligibleTier:
         settings = VIPSettings.get_settings()
         settings.is_program_enabled = True
         settings.earning_automatic_enabled = True
-        settings.automatic_earning_type = 'SPENDING'
+        settings.automatic_earning_type = "SPENDING"
         settings.save()
 
-        client_status.total_spent = Decimal('75000.00')
+        client_status.total_spent = Decimal("75000.00")
         client_status.save()
 
         result = VIPService.calculate_eligible_tier(client_status)
@@ -244,11 +236,11 @@ class TestVIPServiceCalculateEligibleTier:
         settings = VIPSettings.get_settings()
         settings.is_program_enabled = True
         settings.earning_automatic_enabled = True
-        settings.automatic_earning_type = 'BOTH'
+        settings.automatic_earning_type = "BOTH"
         settings.save()
 
         # Only spending meets silver threshold
-        client_status.total_spent = Decimal('15000.00')
+        client_status.total_spent = Decimal("15000.00")
         client_status.completed_bookings_count = 1  # Below threshold
         client_status.save()
 
@@ -262,7 +254,7 @@ class TestVIPServiceCalculateEligibleTier:
         settings = VIPSettings.get_settings()
         settings.is_program_enabled = True
         settings.earning_automatic_enabled = True
-        settings.automatic_earning_type = 'BOTH'
+        settings.automatic_earning_type = "BOTH"
         settings.save()
 
         client_status.points_balance = 600
@@ -278,10 +270,10 @@ class TestVIPServiceCalculateEligibleTier:
         settings = VIPSettings.get_settings()
         settings.is_program_enabled = True
         settings.earning_automatic_enabled = True
-        settings.automatic_earning_type = 'SPENDING'
+        settings.automatic_earning_type = "SPENDING"
         settings.save()
 
-        client_status.total_spent = Decimal('100.00')
+        client_status.total_spent = Decimal("100.00")
         client_status.save()
 
         result = VIPService.calculate_eligible_tier(client_status)
@@ -296,25 +288,16 @@ class TestVIPServiceUpgradeTierIfEligible:
     @pytest.fixture
     def tier_hierarchy(self):
         """Create tier hierarchy."""
-        standard = VIPTier.objects.create(
-            name="Standard", level=0, is_default=True, is_active=True
-        )
-        gold = VIPTier.objects.create(
-            name="Gold", level=2, is_active=True,
-            min_total_spent=Decimal('50000.00')
-        )
+        standard = VIPTier.objects.create(name="Standard", level=0, is_default=True, is_active=True)
+        gold = VIPTier.objects.create(name="Gold", level=2, is_active=True, min_total_spent=Decimal("50000.00"))
         return standard, gold
 
     @pytest.fixture
     def client_status(self, user_factory, tier_hierarchy):
         """Create client VIP status."""
         standard, _ = tier_hierarchy
-        client = user_factory(role='CLIENT')
-        return ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=standard,
-            total_spent=Decimal('60000.00')
-        )
+        client = user_factory(role="CLIENT")
+        return ClientVIPStatus.objects.create(client=client, current_tier=standard, total_spent=Decimal("60000.00"))
 
     def test_upgrades_tier_when_eligible(self, client_status, tier_hierarchy):
         """Test upgrades tier when client qualifies for higher tier."""
@@ -322,7 +305,7 @@ class TestVIPServiceUpgradeTierIfEligible:
         settings = VIPSettings.get_settings()
         settings.is_program_enabled = True
         settings.earning_automatic_enabled = True
-        settings.automatic_earning_type = 'SPENDING'
+        settings.automatic_earning_type = "SPENDING"
         settings.save()
 
         result = VIPService.upgrade_tier_if_eligible(client_status)
@@ -337,15 +320,12 @@ class TestVIPServiceUpgradeTierIfEligible:
         settings = VIPSettings.get_settings()
         settings.is_program_enabled = True
         settings.earning_automatic_enabled = True
-        settings.automatic_earning_type = 'SPENDING'
+        settings.automatic_earning_type = "SPENDING"
         settings.save()
 
         VIPService.upgrade_tier_if_eligible(client_status)
 
-        history = VIPTierHistory.objects.filter(
-            client_vip_status=client_status,
-            reason='AUTOMATIC_UPGRADE'
-        )
+        history = VIPTierHistory.objects.filter(client_vip_status=client_status, reason="AUTOMATIC_UPGRADE")
         assert history.count() == 1
         assert history.first().from_tier == standard
         assert history.first().to_tier == gold
@@ -353,16 +333,16 @@ class TestVIPServiceUpgradeTierIfEligible:
     def test_returns_false_when_not_eligible(self, user_factory, tier_hierarchy):
         """Test returns False when client is not eligible for upgrade."""
         standard, gold = tier_hierarchy
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         client_status = ClientVIPStatus.objects.create(
             client=client,
             current_tier=standard,
-            total_spent=Decimal('1000.00')  # Below gold threshold
+            total_spent=Decimal("1000.00"),  # Below gold threshold
         )
         settings = VIPSettings.get_settings()
         settings.is_program_enabled = True
         settings.earning_automatic_enabled = True
-        settings.automatic_earning_type = 'SPENDING'
+        settings.automatic_earning_type = "SPENDING"
         settings.save()
 
         result = VIPService.upgrade_tier_if_eligible(client_status)
@@ -372,16 +352,14 @@ class TestVIPServiceUpgradeTierIfEligible:
     def test_returns_false_when_already_at_tier(self, user_factory, tier_hierarchy):
         """Test returns False when client already at eligible tier."""
         standard, gold = tier_hierarchy
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         client_status = ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            total_spent=Decimal('60000.00')
+            client=client, current_tier=gold, total_spent=Decimal("60000.00")
         )
         settings = VIPSettings.get_settings()
         settings.is_program_enabled = True
         settings.earning_automatic_enabled = True
-        settings.automatic_earning_type = 'SPENDING'
+        settings.automatic_earning_type = "SPENDING"
         settings.save()
 
         result = VIPService.upgrade_tier_if_eligible(client_status)
@@ -403,42 +381,29 @@ class TestVIPServiceAssignTierManually:
     def test_assigns_tier_manually(self, user_factory, tiers):
         """Test manually assigns tier to client."""
         standard, gold = tiers
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         admin = user_factory(admin=True)
 
-        status = VIPService.assign_tier_manually(
-            client=client,
-            tier=gold,
-            assigned_by=admin,
-            reason="VIP customer"
-        )
+        status = VIPService.assign_tier_manually(client=client, tier=gold, assigned_by=admin, reason="VIP customer")
 
         assert status.current_tier == gold
         assert status.assigned_by == admin
         assert status.assignment_reason == "VIP customer"
-        assert status.status == 'ACTIVE'
+        assert status.status == "ACTIVE"
 
     def test_creates_tier_history_entry(self, user_factory, tiers):
         """Test creates tier history entry for manual assignment."""
         standard, gold = tiers
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         admin = user_factory(admin=True)
 
         # First create initial status
         initial_status = VIPService.get_or_create_client_status(client)
 
         # Then assign manually
-        VIPService.assign_tier_manually(
-            client=client,
-            tier=gold,
-            assigned_by=admin,
-            reason="VIP customer"
-        )
+        VIPService.assign_tier_manually(client=client, tier=gold, assigned_by=admin, reason="VIP customer")
 
-        history = VIPTierHistory.objects.filter(
-            client_vip_status=initial_status,
-            reason='MANUAL_ASSIGNMENT'
-        )
+        history = VIPTierHistory.objects.filter(client_vip_status=initial_status, reason="MANUAL_ASSIGNMENT")
         assert history.count() == 1
         assert history.first().to_tier == gold
         assert history.first().changed_by == admin
@@ -453,34 +418,21 @@ class TestVIPServiceGetClientBenefits:
         """Create gold tier with benefits."""
         gold = VIPTier.objects.create(name="Gold", level=2)
         benefit1 = VIPBenefit.objects.create(
-            tier=gold,
-            benefit_type='PERCENTAGE_DISCOUNT',
-            value=Decimal('10.00'),
-            is_active=True
+            tier=gold, benefit_type="PERCENTAGE_DISCOUNT", value=Decimal("10.00"), is_active=True
         )
         benefit2 = VIPBenefit.objects.create(
-            tier=gold,
-            benefit_type='FREE_HOURS',
-            value=Decimal('2.00'),
-            is_active=True
+            tier=gold, benefit_type="FREE_HOURS", value=Decimal("2.00"), is_active=True
         )
-        benefit_inactive = VIPBenefit.objects.create(
-            tier=gold,
-            benefit_type='FIXED_DISCOUNT',
-            value=Decimal('500.00'),
-            is_active=False
+        VIPBenefit.objects.create(
+            tier=gold, benefit_type="FIXED_DISCOUNT", value=Decimal("500.00"), is_active=False
         )
         return gold, [benefit1, benefit2]
 
     def test_returns_active_benefits_for_tier(self, user_factory, gold_tier_with_benefits):
         """Test returns active benefits for client's tier."""
         gold, expected_benefits = gold_tier_with_benefits
-        client = user_factory(role='CLIENT')
-        ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='ACTIVE'
-        )
+        client = user_factory(role="CLIENT")
+        ClientVIPStatus.objects.create(client=client, current_tier=gold, status="ACTIVE")
 
         benefits = VIPService.get_client_benefits(client)
 
@@ -489,7 +441,7 @@ class TestVIPServiceGetClientBenefits:
 
     def test_returns_empty_for_no_tier(self, user_factory):
         """Test returns empty list when client has no tier."""
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         ClientVIPStatus.objects.create(client=client, current_tier=None)
 
         benefits = VIPService.get_client_benefits(client)
@@ -499,12 +451,8 @@ class TestVIPServiceGetClientBenefits:
     def test_returns_empty_for_inactive_status(self, user_factory, gold_tier_with_benefits):
         """Test returns empty list when status is not ACTIVE."""
         gold, _ = gold_tier_with_benefits
-        client = user_factory(role='CLIENT')
-        ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='EXPIRED'
-        )
+        client = user_factory(role="CLIENT")
+        ClientVIPStatus.objects.create(client=client, current_tier=gold, status="EXPIRED")
 
         benefits = VIPService.get_client_benefits(client)
 
@@ -512,7 +460,7 @@ class TestVIPServiceGetClientBenefits:
 
     def test_returns_empty_for_no_vip_status(self, user_factory):
         """Test returns empty list when client has no VIP status."""
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
 
         benefits = VIPService.get_client_benefits(client)
 
@@ -529,50 +477,42 @@ class TestVIPServiceGetAutomaticAndRedeemableBenefits:
         gold = VIPTier.objects.create(name="Gold", level=2)
         auto_benefit = VIPBenefit.objects.create(
             tier=gold,
-            benefit_type='PERCENTAGE_DISCOUNT',
-            value=Decimal('10.00'),
-            application_mode='AUTOMATIC',
-            is_active=True
+            benefit_type="PERCENTAGE_DISCOUNT",
+            value=Decimal("10.00"),
+            application_mode="AUTOMATIC",
+            is_active=True,
         )
         redeem_benefit = VIPBenefit.objects.create(
             tier=gold,
-            benefit_type='FIXED_DISCOUNT',
-            value=Decimal('500.00'),
-            application_mode='REDEEMABLE',
+            benefit_type="FIXED_DISCOUNT",
+            value=Decimal("500.00"),
+            application_mode="REDEEMABLE",
             points_cost=100,
-            is_active=True
+            is_active=True,
         )
         return gold, auto_benefit, redeem_benefit
 
     def test_get_automatic_benefits(self, user_factory, tier_with_mixed_benefits):
         """Test returns only automatic benefits."""
         gold, auto_benefit, _ = tier_with_mixed_benefits
-        client = user_factory(role='CLIENT')
-        ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='ACTIVE'
-        )
+        client = user_factory(role="CLIENT")
+        ClientVIPStatus.objects.create(client=client, current_tier=gold, status="ACTIVE")
 
         benefits = VIPService.get_automatic_benefits(client)
 
         assert len(benefits) == 1
-        assert benefits[0].application_mode == 'AUTOMATIC'
+        assert benefits[0].application_mode == "AUTOMATIC"
 
     def test_get_redeemable_benefits(self, user_factory, tier_with_mixed_benefits):
         """Test returns only redeemable benefits."""
         gold, _, redeem_benefit = tier_with_mixed_benefits
-        client = user_factory(role='CLIENT')
-        ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='ACTIVE'
-        )
+        client = user_factory(role="CLIENT")
+        ClientVIPStatus.objects.create(client=client, current_tier=gold, status="ACTIVE")
 
         benefits = VIPService.get_redeemable_benefits(client)
 
         assert len(benefits) == 1
-        assert benefits[0].application_mode == 'REDEEMABLE'
+        assert benefits[0].application_mode == "REDEEMABLE"
 
 
 @pytest.mark.django_db
@@ -585,25 +525,20 @@ class TestVIPServiceCheckBenefitEligibility:
         gold = VIPTier.objects.create(name="Gold", level=2)
         benefit = VIPBenefit.objects.create(
             tier=gold,
-            benefit_type='FIXED_DISCOUNT',
-            value=Decimal('500.00'),
-            application_mode='REDEEMABLE',
+            benefit_type="FIXED_DISCOUNT",
+            value=Decimal("500.00"),
+            application_mode="REDEEMABLE",
             points_cost=100,
             max_uses_per_month=2,
-            is_active=True
+            is_active=True,
         )
         return gold, benefit
 
     def test_eligible_for_benefit(self, user_factory, gold_tier_with_benefit):
         """Test client is eligible for benefit."""
         gold, benefit = gold_tier_with_benefit
-        client = user_factory(role='CLIENT')
-        ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='ACTIVE',
-            points_balance=200
-        )
+        client = user_factory(role="CLIENT")
+        ClientVIPStatus.objects.create(client=client, current_tier=gold, status="ACTIVE", points_balance=200)
 
         is_eligible, reason = VIPService.check_benefit_eligibility(client, benefit)
 
@@ -622,7 +557,7 @@ class TestVIPServiceCheckBenefitEligibility:
     def test_not_eligible_no_vip_status(self, user_factory, gold_tier_with_benefit):
         """Test not eligible when client has no VIP status."""
         _, benefit = gold_tier_with_benefit
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
 
         is_eligible, reason = VIPService.check_benefit_eligibility(client, benefit)
 
@@ -633,13 +568,8 @@ class TestVIPServiceCheckBenefitEligibility:
         """Test not eligible when benefit is for different tier."""
         gold, benefit = gold_tier_with_benefit
         silver = VIPTier.objects.create(name="Silver", level=1)
-        client = user_factory(role='CLIENT')
-        ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=silver,
-            status='ACTIVE',
-            points_balance=200
-        )
+        client = user_factory(role="CLIENT")
+        ClientVIPStatus.objects.create(client=client, current_tier=silver, status="ACTIVE", points_balance=200)
 
         is_eligible, reason = VIPService.check_benefit_eligibility(client, benefit)
 
@@ -649,13 +579,8 @@ class TestVIPServiceCheckBenefitEligibility:
     def test_not_eligible_inactive_status(self, user_factory, gold_tier_with_benefit):
         """Test not eligible when VIP status is not active."""
         gold, benefit = gold_tier_with_benefit
-        client = user_factory(role='CLIENT')
-        ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='EXPIRED',
-            points_balance=200
-        )
+        client = user_factory(role="CLIENT")
+        ClientVIPStatus.objects.create(client=client, current_tier=gold, status="EXPIRED", points_balance=200)
 
         is_eligible, reason = VIPService.check_benefit_eligibility(client, benefit)
 
@@ -667,13 +592,8 @@ class TestVIPServiceCheckBenefitEligibility:
         gold, benefit = gold_tier_with_benefit
         benefit.is_active = False
         benefit.save()
-        client = user_factory(role='CLIENT')
-        ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='ACTIVE',
-            points_balance=200
-        )
+        client = user_factory(role="CLIENT")
+        ClientVIPStatus.objects.create(client=client, current_tier=gold, status="ACTIVE", points_balance=200)
 
         is_eligible, reason = VIPService.check_benefit_eligibility(client, benefit)
 
@@ -683,12 +603,12 @@ class TestVIPServiceCheckBenefitEligibility:
     def test_not_eligible_insufficient_points(self, user_factory, gold_tier_with_benefit):
         """Test not eligible when insufficient points for redeemable."""
         gold, benefit = gold_tier_with_benefit
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         ClientVIPStatus.objects.create(
             client=client,
             current_tier=gold,
-            status='ACTIVE',
-            points_balance=50  # Less than 100 required
+            status="ACTIVE",
+            points_balance=50,  # Less than 100 required
         )
 
         is_eligible, reason = VIPService.check_benefit_eligibility(client, benefit)
@@ -696,27 +616,17 @@ class TestVIPServiceCheckBenefitEligibility:
         assert is_eligible is False
         assert "Insufficient points" in reason
 
-    @freeze_time('2024-01-15 10:00:00')
+    @freeze_time("2024-01-15 10:00:00")
     def test_not_eligible_monthly_limit_reached(self, user_factory, gold_tier_with_benefit, event_factory):
         """Test not eligible when monthly usage limit reached."""
         gold, benefit = gold_tier_with_benefit
-        client = user_factory(role='CLIENT')
-        status = ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='ACTIVE',
-            points_balance=500
-        )
+        client = user_factory(role="CLIENT")
+        status = ClientVIPStatus.objects.create(client=client, current_tier=gold, status="ACTIVE", points_balance=500)
 
         # Create 2 redemptions this month
         event = event_factory(client=client)
         for _ in range(2):
-            VIPRewardRedemption.objects.create(
-                client_vip_status=status,
-                benefit=benefit,
-                event=event,
-                status='APPLIED'
-            )
+            VIPRewardRedemption.objects.create(client_vip_status=status, benefit=benefit, event=event, status="APPLIED")
 
         is_eligible, reason = VIPService.check_benefit_eligibility(client, benefit)
 
@@ -728,6 +638,7 @@ class TestVIPServiceCheckBenefitEligibility:
 # VIPPointsService Tests
 # =============================================================================
 
+
 @pytest.mark.django_db
 class TestVIPPointsServiceAwardPointsForPayment:
     """Tests for VIPPointsService.award_points_for_payment()."""
@@ -738,14 +649,14 @@ class TestVIPPointsServiceAwardPointsForPayment:
         settings = VIPSettings.get_settings()
         settings.is_program_enabled = True
         settings.earning_points_enabled = True
-        settings.points_per_currency_spent = Decimal('1.00')
-        settings.points_currency_unit = Decimal('100.00')
+        settings.points_per_currency_spent = Decimal("1.00")
+        settings.points_currency_unit = Decimal("100.00")
         settings.save()
 
         tier = VIPTier.objects.create(name="Standard", level=0, is_default=True)
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         event = event_factory(client=client)
-        payment = payment_factory(event=event, amount=Decimal('5000.00'))
+        payment = payment_factory(event=event, amount=Decimal("5000.00"))
 
         return client, event, payment, tier
 
@@ -757,7 +668,7 @@ class TestVIPPointsServiceAwardPointsForPayment:
 
         assert transaction is not None
         assert transaction.points == 50  # 5000 / 100 * 1 = 50 points
-        assert transaction.transaction_type == 'EARNED_PAYMENT'
+        assert transaction.transaction_type == "EARNED_PAYMENT"
 
     def test_updates_client_balance(self, setup_vip):
         """Test updates client points balance."""
@@ -813,24 +724,21 @@ class TestVIPPointsServiceAwardBonusPoints:
     def test_awards_bonus_points(self, user_factory):
         """Test awards bonus points to client."""
         VIPTier.objects.create(name="Standard", level=0, is_default=True)
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         admin = user_factory(admin=True)
 
         transaction = VIPPointsService.award_bonus_points(
-            client=client,
-            points=100,
-            description="Welcome bonus",
-            performed_by=admin
+            client=client, points=100, description="Welcome bonus", performed_by=admin
         )
 
         assert transaction.points == 100
-        assert transaction.transaction_type == 'EARNED_BONUS'
+        assert transaction.transaction_type == "EARNED_BONUS"
         assert transaction.performed_by == admin
 
     def test_updates_balance_and_lifetime(self, user_factory):
         """Test updates balance and lifetime earned."""
         VIPTier.objects.create(name="Standard", level=0, is_default=True)
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         admin = user_factory(admin=True)
 
         VIPPointsService.award_bonus_points(client, 100, "Test", admin)
@@ -848,7 +756,7 @@ class TestVIPPointsServiceSpendPoints:
     def client_with_points(self, user_factory):
         """Create client with points balance."""
         VIPTier.objects.create(name="Standard", level=0, is_default=True)
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         status = VIPService.get_or_create_client_status(client)
         status.points_balance = 500
         status.save()
@@ -858,14 +766,10 @@ class TestVIPPointsServiceSpendPoints:
         """Test deducts points from balance."""
         client, status = client_with_points
 
-        transaction = VIPPointsService.spend_points(
-            client=client,
-            points=100,
-            description="Redeemed reward"
-        )
+        transaction = VIPPointsService.spend_points(client=client, points=100, description="Redeemed reward")
 
         assert transaction.points == -100
-        assert transaction.transaction_type == 'SPENT_REWARD'
+        assert transaction.transaction_type == "SPENT_REWARD"
 
     def test_updates_balance_and_lifetime_spent(self, client_with_points):
         """Test updates balance and lifetime spent."""
@@ -895,7 +799,7 @@ class TestVIPPointsServiceAdjustPoints:
     def client_with_points(self, user_factory):
         """Create client with points."""
         VIPTier.objects.create(name="Standard", level=0, is_default=True)
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         status = VIPService.get_or_create_client_status(client)
         status.points_balance = 200
         status.save()
@@ -907,14 +811,11 @@ class TestVIPPointsServiceAdjustPoints:
         admin = user_factory(admin=True)
 
         transaction = VIPPointsService.adjust_points(
-            client=client,
-            points=50,
-            description="Correction",
-            performed_by=admin
+            client=client, points=50, description="Correction", performed_by=admin
         )
 
         assert transaction.points == 50
-        assert transaction.transaction_type == 'ADJUSTED'
+        assert transaction.transaction_type == "ADJUSTED"
 
         status.refresh_from_db()
         assert status.points_balance == 250
@@ -925,10 +826,7 @@ class TestVIPPointsServiceAdjustPoints:
         admin = user_factory(admin=True)
 
         transaction = VIPPointsService.adjust_points(
-            client=client,
-            points=-50,
-            description="Correction",
-            performed_by=admin
+            client=client, points=-50, description="Correction", performed_by=admin
         )
 
         assert transaction.points == -50
@@ -951,6 +849,7 @@ class TestVIPPointsServiceAdjustPoints:
 # VIPPricingIntegrationService Tests
 # =============================================================================
 
+
 @pytest.mark.django_db
 class TestVIPPricingIntegrationServiceCalculateVIPDiscount:
     """Tests for VIPPricingIntegrationService.calculate_vip_discount()."""
@@ -960,26 +859,20 @@ class TestVIPPricingIntegrationServiceCalculateVIPDiscount:
         gold = VIPTier.objects.create(name="Gold", level=2)
         VIPBenefit.objects.create(
             tier=gold,
-            benefit_type='PERCENTAGE_DISCOUNT',
-            value=Decimal('10.00'),
-            application_mode='AUTOMATIC',
-            is_active=True
+            benefit_type="PERCENTAGE_DISCOUNT",
+            value=Decimal("10.00"),
+            application_mode="AUTOMATIC",
+            is_active=True,
         )
-        client = user_factory(role='CLIENT')
-        ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='ACTIVE'
-        )
+        client = user_factory(role="CLIENT")
+        ClientVIPStatus.objects.create(client=client, current_tier=gold, status="ACTIVE")
         settings = VIPSettings.get_settings()
         settings.is_program_enabled = True
         settings.save()
 
-        discount, applied = VIPPricingIntegrationService.calculate_vip_discount(
-            client, Decimal('10000.00')
-        )
+        discount, applied = VIPPricingIntegrationService.calculate_vip_discount(client, Decimal("10000.00"))
 
-        assert discount == Decimal('1000.00')
+        assert discount == Decimal("1000.00")
         assert len(applied) == 1
 
 
@@ -991,47 +884,32 @@ class TestVIPPricingIntegrationServiceShouldWaiveFee:
         """Test returns True for waived service charge."""
         gold = VIPTier.objects.create(name="Gold", level=2)
         VIPBenefit.objects.create(
-            tier=gold,
-            benefit_type='WAIVE_SERVICE_CHARGE',
-            application_mode='AUTOMATIC',
-            is_active=True
+            tier=gold, benefit_type="WAIVE_SERVICE_CHARGE", application_mode="AUTOMATIC", is_active=True
         )
-        client = user_factory(role='CLIENT')
-        ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='ACTIVE'
-        )
+        client = user_factory(role="CLIENT")
+        ClientVIPStatus.objects.create(client=client, current_tier=gold, status="ACTIVE")
 
-        result = VIPPricingIntegrationService.should_waive_fee(client, 'SERVICE_CHARGE')
+        result = VIPPricingIntegrationService.should_waive_fee(client, "SERVICE_CHARGE")
 
         assert result is True
 
     def test_does_not_waive_when_no_benefit(self, user_factory):
         """Test returns False when no waive benefit."""
         gold = VIPTier.objects.create(name="Gold", level=2)
-        client = user_factory(role='CLIENT')
-        ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='ACTIVE'
-        )
+        client = user_factory(role="CLIENT")
+        ClientVIPStatus.objects.create(client=client, current_tier=gold, status="ACTIVE")
 
-        result = VIPPricingIntegrationService.should_waive_fee(client, 'SERVICE_CHARGE')
+        result = VIPPricingIntegrationService.should_waive_fee(client, "SERVICE_CHARGE")
 
         assert result is False
 
     def test_unknown_fee_type_returns_false(self, user_factory):
         """Test returns False for unknown fee type."""
         gold = VIPTier.objects.create(name="Gold", level=2)
-        client = user_factory(role='CLIENT')
-        ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='ACTIVE'
-        )
+        client = user_factory(role="CLIENT")
+        ClientVIPStatus.objects.create(client=client, current_tier=gold, status="ACTIVE")
 
-        result = VIPPricingIntegrationService.should_waive_fee(client, 'UNKNOWN_FEE')
+        result = VIPPricingIntegrationService.should_waive_fee(client, "UNKNOWN_FEE")
 
         assert result is False
 
@@ -1039,6 +917,7 @@ class TestVIPPricingIntegrationServiceShouldWaiveFee:
 # =============================================================================
 # VIPRedemptionService Tests
 # =============================================================================
+
 
 @pytest.mark.django_db
 class TestVIPRedemptionServiceRedeemBenefit:
@@ -1050,19 +929,14 @@ class TestVIPRedemptionServiceRedeemBenefit:
         gold = VIPTier.objects.create(name="Gold", level=2)
         benefit = VIPBenefit.objects.create(
             tier=gold,
-            benefit_type='FIXED_DISCOUNT',
-            value=Decimal('500.00'),
-            application_mode='REDEEMABLE',
+            benefit_type="FIXED_DISCOUNT",
+            value=Decimal("500.00"),
+            application_mode="REDEEMABLE",
             points_cost=100,
-            is_active=True
+            is_active=True,
         )
-        client = user_factory(role='CLIENT')
-        ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='ACTIVE',
-            points_balance=500
-        )
+        client = user_factory(role="CLIENT")
+        ClientVIPStatus.objects.create(client=client, current_tier=gold, status="ACTIVE", points_balance=500)
         event = event_factory(client=client)
         return client, benefit, event
 
@@ -1073,7 +947,7 @@ class TestVIPRedemptionServiceRedeemBenefit:
         redemption = VIPRedemptionService.redeem_benefit(client, benefit, event)
 
         assert redemption is not None
-        assert redemption.status == 'PENDING'
+        assert redemption.status == "PENDING"
         assert redemption.points_spent == 100
         assert redemption.benefit == benefit
         assert redemption.event == event
@@ -1093,18 +967,18 @@ class TestVIPRedemptionServiceRedeemBenefit:
         silver = VIPTier.objects.create(name="Silver", level=1)
         benefit = VIPBenefit.objects.create(
             tier=gold,
-            benefit_type='FIXED_DISCOUNT',
-            value=Decimal('500.00'),
-            application_mode='REDEEMABLE',
+            benefit_type="FIXED_DISCOUNT",
+            value=Decimal("500.00"),
+            application_mode="REDEEMABLE",
             points_cost=100,
-            is_active=True
+            is_active=True,
         )
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         ClientVIPStatus.objects.create(
             client=client,
             current_tier=silver,  # Wrong tier
-            status='ACTIVE',
-            points_balance=500
+            status="ACTIVE",
+            points_balance=500,
         )
         event = event_factory(client=client)
 
@@ -1123,30 +997,23 @@ class TestVIPRedemptionServiceApplyRedemption:
         gold = VIPTier.objects.create(name="Gold", level=2)
         benefit = VIPBenefit.objects.create(
             tier=gold,
-            benefit_type='FIXED_DISCOUNT',
-            value=Decimal('500.00'),
-            application_mode='REDEEMABLE',
-            is_active=True
+            benefit_type="FIXED_DISCOUNT",
+            value=Decimal("500.00"),
+            application_mode="REDEEMABLE",
+            is_active=True,
         )
-        client = user_factory(role='CLIENT')
-        status = ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='ACTIVE'
-        )
+        client = user_factory(role="CLIENT")
+        status = ClientVIPStatus.objects.create(client=client, current_tier=gold, status="ACTIVE")
         event = event_factory(client=client)
         redemption = VIPRewardRedemption.objects.create(
-            client_vip_status=status,
-            benefit=benefit,
-            event=event,
-            status='PENDING'
+            client_vip_status=status, benefit=benefit, event=event, status="PENDING"
         )
 
-        VIPRedemptionService.apply_redemption(redemption, Decimal('500.00'))
+        VIPRedemptionService.apply_redemption(redemption, Decimal("500.00"))
 
         redemption.refresh_from_db()
-        assert redemption.status == 'APPLIED'
-        assert redemption.value_applied == Decimal('500.00')
+        assert redemption.status == "APPLIED"
+        assert redemption.value_applied == Decimal("500.00")
         assert redemption.applied_at is not None
 
 
@@ -1159,33 +1026,25 @@ class TestVIPRedemptionServiceCancelRedemption:
         gold = VIPTier.objects.create(name="Gold", level=2)
         benefit = VIPBenefit.objects.create(
             tier=gold,
-            benefit_type='FIXED_DISCOUNT',
-            value=Decimal('500.00'),
-            application_mode='REDEEMABLE',
+            benefit_type="FIXED_DISCOUNT",
+            value=Decimal("500.00"),
+            application_mode="REDEEMABLE",
             points_cost=100,
-            is_active=True
+            is_active=True,
         )
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         status = ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='ACTIVE',
-            points_balance=400,
-            lifetime_points_spent=100
+            client=client, current_tier=gold, status="ACTIVE", points_balance=400, lifetime_points_spent=100
         )
         event = event_factory(client=client)
         redemption = VIPRewardRedemption.objects.create(
-            client_vip_status=status,
-            benefit=benefit,
-            event=event,
-            status='PENDING',
-            points_spent=100
+            client_vip_status=status, benefit=benefit, event=event, status="PENDING", points_spent=100
         )
 
         VIPRedemptionService.cancel_redemption(redemption)
 
         redemption.refresh_from_db()
-        assert redemption.status == 'CANCELLED'
+        assert redemption.status == "CANCELLED"
 
         status.refresh_from_db()
         assert status.points_balance == 500  # Refunded
@@ -1195,25 +1054,16 @@ class TestVIPRedemptionServiceCancelRedemption:
         gold = VIPTier.objects.create(name="Gold", level=2)
         benefit = VIPBenefit.objects.create(
             tier=gold,
-            benefit_type='FIXED_DISCOUNT',
-            value=Decimal('500.00'),
-            application_mode='REDEEMABLE',
-            is_active=True
+            benefit_type="FIXED_DISCOUNT",
+            value=Decimal("500.00"),
+            application_mode="REDEEMABLE",
+            is_active=True,
         )
-        client = user_factory(role='CLIENT')
-        status = ClientVIPStatus.objects.create(
-            client=client,
-            current_tier=gold,
-            status='ACTIVE',
-            points_balance=400
-        )
+        client = user_factory(role="CLIENT")
+        status = ClientVIPStatus.objects.create(client=client, current_tier=gold, status="ACTIVE", points_balance=400)
         event = event_factory(client=client)
         redemption = VIPRewardRedemption.objects.create(
-            client_vip_status=status,
-            benefit=benefit,
-            event=event,
-            status='CANCELLED',
-            points_spent=100
+            client_vip_status=status, benefit=benefit, event=event, status="CANCELLED", points_spent=100
         )
 
         VIPRedemptionService.cancel_redemption(redemption)

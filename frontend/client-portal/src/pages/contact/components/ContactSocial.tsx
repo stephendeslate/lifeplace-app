@@ -90,11 +90,7 @@ export const ContactSocial: React.FC = () => {
             }}
           >
             {socialLinks.map((social, index) => (
-              <AnimatedElement
-                key={social.name}
-                animation="fadeIn"
-                delay={100 + index * 100}
-              >
+              <AnimatedElement key={social.name} animation="fadeIn" delay={100 + index * 100}>
                 <Stack spacing={1.5} alignItems="center">
                   <IconButton
                     href={social.url}

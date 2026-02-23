@@ -47,8 +47,8 @@ export const ServicesSection: React.FC = () => {
                 fontWeight: 400,
               }}
             >
-              We provide services for renting out venues, arranging lodging, and offering comprehensive
-              packages for events such as weddings and camping trips.
+              We provide services for renting out venues, arranging lodging, and offering
+              comprehensive packages for events such as weddings and camping trips.
             </Typography>
           </AnimatedElement>
         </Stack>

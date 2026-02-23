@@ -75,13 +75,15 @@ const StripePaymentFlowSection: React.FC<{
   onError: (error: PaymentFlowError) => void;
   disabled: boolean;
 }> = ({ formData, selectedGateway, savedPaymentMethod, onSuccess, onError, disabled }) => {
-
   // Memoize config to prevent recreation
-  const config = useMemo<SaveModeConfig>(() => ({
-    mode: 'save',
-    save_as_default: formData.is_default,
-    nickname: formData.nickname,
-  }), [formData.is_default, formData.nickname]);
+  const config = useMemo<SaveModeConfig>(
+    () => ({
+      mode: 'save',
+      save_as_default: formData.is_default,
+      nickname: formData.nickname,
+    }),
+    [formData.is_default, formData.nickname],
+  );
 
   // Memoize gateway with stable timestamps - use a ref for stable timestamps
   const gateway = useMemo<PaymentGateway>(() => {
@@ -112,7 +114,8 @@ const StripePaymentFlowSection: React.FC<{
             Card saved successfully:
           </Typography>
           <Typography variant="body2">
-            •••• •••• •••• {savedPaymentMethod.last_four} ({savedPaymentMethod.gateway_details?.name || 'CARD'})
+            •••• •••• •••• {savedPaymentMethod.last_four} (
+            {savedPaymentMethod.gateway_details?.name || 'CARD'})
           </Typography>
         </Box>
       )}
@@ -145,7 +148,9 @@ const AddPaymentMethodDialog: React.FC<{
       handleReset();
     },
     onError: (error) => {
-      setErrors({ general: error instanceof Error ? error.message : 'Failed to create payment method' });
+      setErrors({
+        general: error instanceof Error ? error.message : 'Failed to create payment method',
+      });
     },
   });
 
@@ -209,11 +214,12 @@ const AddPaymentMethodDialog: React.FC<{
       ...(selectedGateway && { gateway: selectedGateway.id }),
     };
 
-    if (import.meta.env.DEV) console.log('PaymentMethodSelector - Creating payment method manually:', {
-      formData,
-      selectedGateway: selectedGateway?.id,
-      finalFormData
-    });
+    if (import.meta.env.DEV)
+      console.log('PaymentMethodSelector - Creating payment method manually:', {
+        formData,
+        selectedGateway: selectedGateway?.id,
+        finalFormData,
+      });
 
     createMutation.mutate(finalFormData);
   };
@@ -242,10 +248,12 @@ const AddPaymentMethodDialog: React.FC<{
                 select
                 label="Payment Type"
                 value={formData.type}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  type: e.target.value as PaymentMethod['type']
-                }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    type: e.target.value as PaymentMethod['type'],
+                  }))
+                }
                 required
               >
                 <MenuItem value="CREDIT_CARD">Credit/Debit Card</MenuItem>
@@ -259,7 +267,7 @@ const AddPaymentMethodDialog: React.FC<{
             <TextField
               label="Nickname"
               value={formData.nickname}
-              onChange={(e) => setFormData(prev => ({ ...prev, nickname: e.target.value }))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, nickname: e.target.value }))}
               error={!!errors.nickname}
               helperText={errors.nickname || 'A friendly name for this payment method'}
               required
@@ -269,7 +277,7 @@ const AddPaymentMethodDialog: React.FC<{
             <TextField
               label="Instructions"
               value={formData.instructions}
-              onChange={(e) => setFormData(prev => ({ ...prev, instructions: e.target.value }))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, instructions: e.target.value }))}
               multiline
               rows={3}
               placeholder="Special instructions or notes for this payment method..."
@@ -310,15 +318,15 @@ const AddPaymentMethodDialog: React.FC<{
               control={
                 <Radio
                   checked={formData.is_default}
-                  onChange={(e) => setFormData(prev => ({ ...prev, is_default: e.target.checked }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, is_default: e.target.checked }))
+                  }
                 />
               }
               label="Set as default payment method"
             />
 
-            {errors.general && (
-              <Alert severity="error">{errors.general}</Alert>
-            )}
+            {errors.general && <Alert severity="error">{errors.general}</Alert>}
           </Stack>
         </DialogContent>
 
@@ -375,9 +383,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 
   // Filter payment methods by allowed types with defensive programming
   const filteredMethods = Array.isArray(paymentMethods)
-    ? paymentMethods.filter(method =>
-        !allowedTypes || allowedTypes.includes(method.type)
-      )
+    ? paymentMethods.filter((method) => !allowedTypes || allowedTypes.includes(method.type))
     : [];
 
   // Reset auto-trigger guard when authentication status changes
@@ -397,7 +403,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
 
   const handleMethodChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const methodId = parseInt(event.target.value);
-    const method = filteredMethods.find(m => m.id === methodId) || null;
+    const method = filteredMethods.find((m) => m.id === methodId) || null;
     onMethodSelect(method);
   };
 
@@ -452,10 +458,7 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
       <GlassCard variant="light" intensity="subtle">
         <Box sx={{ p: 3 }}>
           <FormControl component="fieldset" fullWidth disabled={disabled}>
-            <RadioGroup
-              value={selectedMethod?.id || ''}
-              onChange={handleMethodChange}
-            >
+            <RadioGroup value={selectedMethod?.id || ''} onChange={handleMethodChange}>
               <Stack spacing={2}>
                 {filteredMethods.map((method) => (
                   <Box key={method.id}>
@@ -489,7 +492,11 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
                                 )}
                               </Stack>
                               {method.instructions && (
-                                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  sx={{ mt: 0.5, display: 'block' }}
+                                >
                                   {method.instructions}
                                 </Typography>
                               )}
@@ -502,9 +509,10 @@ export const PaymentMethodSelector: React.FC<PaymentMethodSelectorProps> = ({
                         p: 2,
                         border: `1px solid ${alpha('#fff', 0.1)}`,
                         borderRadius: 1,
-                        backgroundColor: selectedMethod?.id === method.id
-                          ? alpha(theme.palette.primary.main, 0.1)
-                          : 'transparent',
+                        backgroundColor:
+                          selectedMethod?.id === method.id
+                            ? alpha(theme.palette.primary.main, 0.1)
+                            : 'transparent',
                         '&:hover': {
                           backgroundColor: alpha('#fff', 0.05),
                         },

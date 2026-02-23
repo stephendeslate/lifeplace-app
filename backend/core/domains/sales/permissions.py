@@ -11,11 +11,7 @@ class IsQuoteOwner(permissions.BasePermission):
         """
         Check if user is authenticated and has CLIENT role
         """
-        return (
-            request.user and
-            request.user.is_authenticated and
-            request.user.role == 'CLIENT'
-        )
+        return request.user and request.user.is_authenticated and request.user.role == "CLIENT"
 
     def has_object_permission(self, request, view, obj):
         """
@@ -34,11 +30,7 @@ class IsClientQuoteAccessible(permissions.BasePermission):
         """
         Check if user is authenticated and has CLIENT role
         """
-        return (
-            request.user and
-            request.user.is_authenticated and
-            request.user.role == 'CLIENT'
-        )
+        return request.user and request.user.is_authenticated and request.user.role == "CLIENT"
 
     def has_object_permission(self, request, view, obj):
         """
@@ -47,6 +39,6 @@ class IsClientQuoteAccessible(permissions.BasePermission):
         - Quote status is SENT, ACCEPTED, or REJECTED (not DRAFT or EXPIRED)
         """
         is_owner = obj.event.client == request.user
-        is_accessible_status = obj.status in ['SENT', 'ACCEPTED', 'REJECTED']
+        is_accessible_status = obj.status in ["SENT", "ACCEPTED", "REJECTED"]
 
         return is_owner and is_accessible_status

@@ -15,7 +15,8 @@ const exampleTestimonials: Testimonial[] = [
     id: '1',
     name: 'Sarah Chen',
     organization: 'Grace Community Church',
-    review: 'Our church retreat at LifePlace was transformative. The peaceful atmosphere and excellent facilities created the perfect environment for spiritual growth. The staff went above and beyond to ensure everything was perfect.',
+    review:
+      'Our church retreat at LifePlace was transformative. The peaceful atmosphere and excellent facilities created the perfect environment for spiritual growth. The staff went above and beyond to ensure everything was perfect.',
     eventDate: 'March 15, 2025',
     eventType: 'Church Retreat',
   },
@@ -24,7 +25,8 @@ const exampleTestimonials: Testimonial[] = [
   {
     id: '2',
     name: 'James Rodriguez',
-    review: 'Beautiful venue with stunning views. Our wedding was everything we dreamed of. The coordination team made the entire process seamless and stress-free.',
+    review:
+      'Beautiful venue with stunning views. Our wedding was everything we dreamed of. The coordination team made the entire process seamless and stress-free.',
     eventDate: 'June 20, 2025',
     eventType: 'Wedding',
   },
@@ -33,7 +35,8 @@ const exampleTestimonials: Testimonial[] = [
   {
     id: '3',
     name: 'Patricia Lim',
-    review: 'As an events coordinator, I highly recommend LifePlace to my clients. The venue is versatile and the team is always professional. Five stars across the board!',
+    review:
+      'As an events coordinator, I highly recommend LifePlace to my clients. The venue is versatile and the team is always professional. Five stars across the board!',
     eventType: 'Multiple Events',
   },
 
@@ -100,11 +103,7 @@ export const TestimonialCardExample: React.FC = () => {
             }}
           >
             {exampleTestimonials.slice(0, 3).map((testimonial, index) => (
-              <TestimonialCard
-                key={testimonial.id}
-                testimonial={testimonial}
-                index={index}
-              />
+              <TestimonialCard key={testimonial.id} testimonial={testimonial} index={index} />
             ))}
           </Box>
         </Box>
@@ -127,11 +126,7 @@ export const TestimonialCardExample: React.FC = () => {
             }}
           >
             {exampleTestimonials.map((testimonial, index) => (
-              <TestimonialCard
-                key={testimonial.id}
-                testimonial={testimonial}
-                index={index}
-              />
+              <TestimonialCard key={testimonial.id} testimonial={testimonial} index={index} />
             ))}
           </Box>
         </Box>

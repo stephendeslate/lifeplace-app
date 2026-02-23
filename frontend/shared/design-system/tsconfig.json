@@ -7,14 +7,6 @@
     "outDir": "./dist",
     "rootDir": "."
   },
-  "include": [
-    "components/**/*",
-    "examples/**/*",
-    "tokens/**/*",
-    "index.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["components/**/*", "examples/**/*", "tokens/**/*", "index.ts"],
+  "exclude": ["node_modules", "dist"]
 }

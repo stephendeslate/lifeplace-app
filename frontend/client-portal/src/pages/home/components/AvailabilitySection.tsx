@@ -14,18 +14,15 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Box, Typography, Stack, Alert, CircularProgress, Button } from '@mui/material';
 import { ArrowForward } from '@mui/icons-material';
-import {
-  AnimatedElement,
-  Section,
-  Container,
-  ModernCard,
-  tokens
-} from '../../../design-system';
+import { AnimatedElement, Section, Container, ModernCard, tokens } from '../../../design-system';
 import { EventAvailabilityCalendar } from '../../../design-system/visualizations/EventAvailabilityCalendar';
 import { useEventAvailability } from '../../../hooks/useEventAvailability';
 import { useToastActions } from '../../../contexts/ToastContext';
 import type { AvailabilitySectionProps } from '../types/home.types';
-import type { EventData, AvailabilitySlot } from '../../../design-system/visualizations/EventAvailabilityCalendar';
+import type {
+  EventData,
+  AvailabilitySlot,
+} from '../../../design-system/visualizations/EventAvailabilityCalendar';
 import { useGlobalAvailabilityConfig } from '../../../hooks/useGlobalAvailabilityConfig';
 
 export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
@@ -41,14 +38,19 @@ export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // Fetch event availability data for the current month
-  const { data: availabilityEvents = [], isLoading, isFetching, isError } = useEventAvailability({
+  const {
+    data: availabilityEvents = [],
+    isLoading,
+    isFetching,
+    isError,
+  } = useEventAvailability({
     currentMonth,
     enabled: true,
   });
 
   // Convert availability events to EventData format for calendar
   const calendarEvents: EventData[] = useMemo(() => {
-    return availabilityEvents.map(event => ({
+    return availabilityEvents.map((event) => ({
       id: event.id,
       name: event.name,
       event_type_name: event.event_type_name || '',
@@ -65,31 +67,33 @@ export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
   }, []);
 
   // Handle date selection with availability checking
-  const handleDateSelect = useCallback((date: Date, slot: AvailabilitySlot) => {
-    setSelectedDate(date);
+  const handleDateSelect = useCallback(
+    (date: Date, slot: AvailabilitySlot) => {
+      setSelectedDate(date);
 
-    // Check if the selected date is bookable
-    if (!slot.isBookable) {
-      showError('Date Unavailable', slot.reason || 'This date is not available for booking.');
-      return;
-    }
+      // Check if the selected date is bookable
+      if (!slot.isBookable) {
+        showError('Date Unavailable', slot.reason || 'This date is not available for booking.');
+        return;
+      }
 
-    // Date is available - show success and navigate to booking
-    showSuccess('Date Available', 'Great choice! Redirecting you to start your booking...');
+      // Date is available - show success and navigate to booking
+      showSuccess('Date Available', 'Great choice! Redirecting you to start your booking...');
 
-    // Navigate to booking flow
-    // TODO: Optionally pass selected date via navigation state
-    setTimeout(() => {
-      onNavigateToBooking?.();
-    }, 500);
-  }, [onNavigateToBooking, showError, showSuccess]);
+      // Navigate to booking flow
+      // TODO: Optionally pass selected date via navigation state
+      setTimeout(() => {
+        onNavigateToBooking?.();
+      }, 500);
+    },
+    [onNavigateToBooking, showError, showSuccess],
+  );
 
   return (
     <Section background="cream" spacing="large">
       <Container maxWidth="narrow">
         <AnimatedElement animation="fadeIn" delay={200}>
           <Stack spacing={tokens.spacing.space[6]} alignItems="center">
-
             {/* Header */}
             <Stack spacing={tokens.spacing.space[3]} textAlign="center">
               <Typography
@@ -98,12 +102,12 @@ export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
                   fontSize: {
                     xs: tokens.typography.responsive.h2.mobile.fontSize,
                     sm: tokens.typography.responsive.h2.tablet.fontSize,
-                    md: tokens.typography.styles.h2.fontSize
+                    md: tokens.typography.styles.h2.fontSize,
                   },
                   lineHeight: {
                     xs: tokens.typography.responsive.h2.mobile.lineHeight,
                     sm: tokens.typography.responsive.h2.tablet.lineHeight,
-                    md: tokens.typography.styles.h2.lineHeight
+                    md: tokens.typography.styles.h2.lineHeight,
                   },
                   color: tokens.color.base.sage[800],
                   textAlign: 'center',
@@ -128,18 +132,16 @@ export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
             <Box sx={{ width: '100%' }}>
               <ModernCard variant="elevated" size="large" hover={false}>
                 <Stack spacing={tokens.spacing.space[4]}>
-
                   {/* Initial Loading State (first load only) */}
                   {isLoading && (
-                    <Box sx={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      py: tokens.spacing.space[8]
-                    }}>
-                      <CircularProgress
-                        sx={{ color: tokens.color.base.sage[500] }}
-                        size={48}
-                      />
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        py: tokens.spacing.space[8],
+                      }}
+                    >
+                      <CircularProgress sx={{ color: tokens.color.base.sage[500] }} size={48} />
                     </Box>
                   )}
 
@@ -171,20 +173,19 @@ export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
                       />
                       {/* Subtle loading overlay when fetching new month data */}
                       {isFetching && (
-                        <Box sx={{
-                          position: 'absolute',
-                          inset: 0,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: 'rgba(255, 255, 255, 0.5)',
-                          borderRadius: tokens.spacing.radius.lg,
-                          zIndex: 1,
-                        }}>
-                          <CircularProgress
-                            sx={{ color: tokens.color.base.sage[500] }}
-                            size={32}
-                          />
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                            borderRadius: tokens.spacing.radius.lg,
+                            zIndex: 1,
+                          }}
+                        >
+                          <CircularProgress sx={{ color: tokens.color.base.sage[500] }} size={32} />
                         </Box>
                       )}
                     </Box>
@@ -192,11 +193,13 @@ export const AvailabilitySection: React.FC<AvailabilitySectionProps> = ({
 
                   {/* CTA Button */}
                   {!isError && !isLoading && (
-                    <Box sx={{
-                      display: 'flex',
-                      justifyContent: 'center',
-                      mt: tokens.spacing.space[4]
-                    }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        mt: tokens.spacing.space[4],
+                      }}
+                    >
                       <Button
                         variant="contained"
                         size="large"

@@ -70,7 +70,7 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
   const updateTargetRect = useCallback(() => {
     if (state.targetElement) {
       const rect = state.targetElement.getBoundingClientRect();
-      setState(prev => {
+      setState((prev) => {
         // Only update if rect has changed to avoid unnecessary re-renders
         if (
           prev.targetRect?.top !== rect.top ||
@@ -120,7 +120,7 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
       }
 
       // Wait up to 3 seconds for element to appear
-      return new Promise(resolve => {
+      return new Promise((resolve) => {
         const element = find();
         if (element) {
           resolve(element);
@@ -143,7 +143,7 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
         }, 3000);
       });
     },
-    []
+    [],
   );
 
   // Navigate to a specific step, auto-skipping if target not found
@@ -188,16 +188,16 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
       // Scroll target into view
       targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       // Wait for scroll to complete
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         currentStepIndex: stepIndex,
         targetElement,
         targetRect: targetElement.getBoundingClientRect(),
       }));
     },
-    [findTargetElement]
+    [findTargetElement],
   );
 
   // Start a tour
@@ -213,13 +213,16 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
       if (tour.requiredPath && location.pathname !== tour.requiredPath) {
         navigate(tour.requiredPath);
         // Wait for navigation and DOM to settle
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
       // Find the first step with a valid target
       let firstValidStepIndex = -1;
       for (let i = 0; i < tour.steps.length; i++) {
-        const targetElement = await findTargetElement(tour.steps[i].target, tour.steps[i].waitForElement);
+        const targetElement = await findTargetElement(
+          tour.steps[i].target,
+          tour.steps[i].waitForElement,
+        );
         if (targetElement) {
           firstValidStepIndex = i;
           break;
@@ -233,7 +236,7 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
       }
 
       // Set tour as active
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isActive: true,
         currentTour: tour,
@@ -246,7 +249,7 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
       // Navigate to first valid step
       await goToStepInternal(tour, firstValidStepIndex, 'forward');
     },
-    [location.pathname, navigate, goToStepInternal, findTargetElement]
+    [location.pathname, navigate, goToStepInternal, findTargetElement],
   );
 
   // End the current tour
@@ -255,10 +258,10 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
       if (state.currentTour) {
         const tourId = state.currentTour.id;
 
-        setPreferences(prev => ({
+        setPreferences((prev) => ({
           ...prev,
           completedTours: [
-            ...prev.completedTours.filter(t => t.tourId !== tourId),
+            ...prev.completedTours.filter((t) => t.tourId !== tourId),
             {
               tourId,
               completed,
@@ -272,7 +275,7 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
 
       setState(INITIAL_STATE);
     },
-    [state.currentTour, state.currentStepIndex]
+    [state.currentTour, state.currentStepIndex],
   );
 
   // Navigate to next step
@@ -306,7 +309,7 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
       const direction = stepIndex > state.currentStepIndex ? 'forward' : 'backward';
       goToStepInternal(state.currentTour, stepIndex, direction);
     },
-    [state.currentTour, state.currentStepIndex, goToStepInternal]
+    [state.currentTour, state.currentStepIndex, goToStepInternal],
   );
 
   // Skip tour (marks as not completed)
@@ -316,28 +319,28 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
 
   // Pause tour
   const pauseTour = useCallback(() => {
-    setState(prev => ({ ...prev, isPaused: true }));
+    setState((prev) => ({ ...prev, isPaused: true }));
   }, []);
 
   // Resume tour
   const resumeTour = useCallback(() => {
-    setState(prev => ({ ...prev, isPaused: false }));
+    setState((prev) => ({ ...prev, isPaused: false }));
   }, []);
 
   // Check if tour is completed (finished all steps)
   const isTourCompleted = useCallback(
     (tourId: TourId): boolean => {
-      return preferences.completedTours.some(t => t.tourId === tourId && t.completed);
+      return preferences.completedTours.some((t) => t.tourId === tourId && t.completed);
     },
-    [preferences.completedTours]
+    [preferences.completedTours],
   );
 
   // Check if tour has been seen (completed or skipped)
   const isTourSeen = useCallback(
     (tourId: TourId): boolean => {
-      return preferences.completedTours.some(t => t.tourId === tourId);
+      return preferences.completedTours.some((t) => t.tourId === tourId);
     },
-    [preferences.completedTours]
+    [preferences.completedTours],
   );
 
   // Check if tour is dismissed
@@ -345,7 +348,7 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
     (tourId: TourId): boolean => {
       return preferences.dismissedTours.includes(tourId);
     },
-    [preferences.dismissedTours]
+    [preferences.dismissedTours],
   );
 
   // Check if tour should auto-trigger
@@ -362,7 +365,7 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
 
       return true;
     },
-    [preferences.autoShowTours, isTourSeen, isTourDismissed]
+    [preferences.autoShowTours, isTourSeen, isTourDismissed],
   );
 
   // Get all available tours
@@ -372,16 +375,16 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
 
   // Set auto-show tours preference
   const setAutoShowTours = useCallback((enabled: boolean) => {
-    setPreferences(prev => ({ ...prev, autoShowTours: enabled }));
+    setPreferences((prev) => ({ ...prev, autoShowTours: enabled }));
   }, []);
 
   // Reset progress for a specific tour
   const resetTourProgress = useCallback((tourId?: TourId) => {
     if (tourId) {
-      setPreferences(prev => ({
+      setPreferences((prev) => ({
         ...prev,
-        completedTours: prev.completedTours.filter(t => t.tourId !== tourId),
-        dismissedTours: prev.dismissedTours.filter(id => id !== tourId),
+        completedTours: prev.completedTours.filter((t) => t.tourId !== tourId),
+        dismissedTours: prev.dismissedTours.filter((id) => id !== tourId),
       }));
     }
   }, []);
@@ -394,7 +397,7 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
   // Dismiss a tour permanently
   const dismissTour = useCallback(
     (tourId: TourId) => {
-      setPreferences(prev => ({
+      setPreferences((prev) => ({
         ...prev,
         dismissedTours: [...new Set([...prev.dismissedTours, tourId])],
       }));
@@ -402,7 +405,7 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
         endTour(false);
       }
     },
-    [state.currentTour, endTour]
+    [state.currentTour, endTour],
   );
 
   // First-login detection for welcome tour
@@ -427,7 +430,14 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
       }, 1500);
       return () => clearTimeout(timer);
     }
-  }, [user, preferences.showWelcomeTour, preferences.autoShowTours, state.isActive, shouldAutoTrigger, startTour]);
+  }, [
+    user,
+    preferences.showWelcomeTour,
+    preferences.autoShowTours,
+    state.isActive,
+    shouldAutoTrigger,
+    startTour,
+  ]);
 
   // Context value
   const value = useMemo<WalkthroughContextType>(
@@ -470,7 +480,7 @@ export const WalkthroughProvider: React.FC<WalkthroughProviderProps> = ({ childr
       isTourDismissed,
       getAvailableTours,
       shouldAutoTrigger,
-    ]
+    ],
   );
 
   const currentStep = state.currentTour?.steps[state.currentStepIndex];

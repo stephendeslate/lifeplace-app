@@ -118,8 +118,8 @@ export class ErrorBoundary extends Component<Props, State> {
                     Oops! Something went wrong
                   </Typography>
                   <Typography variant="body1" color="text.secondary">
-                    We encountered an unexpected error. Please try refreshing the page or
-                    contact support if the problem persists.
+                    We encountered an unexpected error. Please try refreshing the page or contact
+                    support if the problem persists.
                   </Typography>
                 </Box>
 
@@ -131,11 +131,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   >
                     Try Again
                   </Button>
-                  <Button
-                    variant="outlined"
-                    startIcon={<HomeIcon />}
-                    onClick={this.handleGoHome}
-                  >
+                  <Button variant="outlined" startIcon={<HomeIcon />} onClick={this.handleGoHome}>
                     Go to Home
                   </Button>
                 </Stack>
@@ -146,9 +142,7 @@ export class ErrorBoundary extends Component<Props, State> {
                     <Button
                       fullWidth
                       onClick={this.toggleDetails}
-                      endIcon={
-                        this.state.showDetails ? <ExpandLessIcon /> : <ExpandMoreIcon />
-                      }
+                      endIcon={this.state.showDetails ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                       sx={{ justifyContent: 'space-between' }}
                     >
                       Error Details (Development Only)
@@ -198,7 +192,7 @@ export const useErrorHandler = () => {
 // HOC to wrap components with error boundary
 export const withErrorBoundary = <P extends object>(
   Component: React.ComponentType<P>,
-  fallback?: ReactNode
+  fallback?: ReactNode,
 ) => {
   return (props: P) => (
     <ErrorBoundary fallback={fallback}>

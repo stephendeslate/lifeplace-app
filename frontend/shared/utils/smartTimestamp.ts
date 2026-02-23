@@ -7,7 +7,7 @@ import {
   isYesterday,
   isThisWeek,
   isValid,
-  parseISO
+  parseISO,
 } from 'date-fns';
 
 /**
@@ -64,7 +64,6 @@ export function formatSmartTimestamp(timestamp: string): string {
 
     // Rule 6: > 7 days -> "Jan 15, 2025 at 3:45 PM"
     return `${format(date, 'MMM d, yyyy')} at ${format(date, 'h:mm a')}`;
-
   } catch (error) {
     // Graceful fallback for any parsing errors
     console.warn('Failed to parse timestamp:', timestamp, error);

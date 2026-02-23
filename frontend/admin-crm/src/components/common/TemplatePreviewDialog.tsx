@@ -55,11 +55,7 @@ const TabPanel = ({ children, value, index, ...other }: TabPanelProps) => (
     aria-labelledby={`preview-tab-${index}`}
     {...other}
   >
-    {value === index && (
-      <Box sx={{ p: 3 }}>
-        {children}
-      </Box>
-    )}
+    {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
   </div>
 );
 
@@ -86,7 +82,7 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
     if (open) {
       const sampleData: Record<string, unknown> = {};
 
-      variables.forEach(variable => {
+      variables.forEach((variable) => {
         // Provide sample values based on variable names
         if (variable.includes('name')) {
           sampleData[variable] = 'John Doe';
@@ -94,7 +90,11 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
           sampleData[variable] = 'john.doe@example.com';
         } else if (variable.includes('date')) {
           sampleData[variable] = new Date().toLocaleDateString();
-        } else if (variable.includes('amount') || variable.includes('price') || variable.includes('total')) {
+        } else if (
+          variable.includes('amount') ||
+          variable.includes('price') ||
+          variable.includes('total')
+        ) {
           sampleData[variable] = '50,000.00';
         } else if (variable.includes('venue')) {
           sampleData[variable] = 'Beautiful Gardens';
@@ -151,7 +151,7 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
   }, [contextData, onPreview]);
 
   const handleContextChange = (variable: string, value: string) => {
-    setContextData(prev => ({
+    setContextData((prev) => ({
       ...prev,
       [variable]: value,
     }));
@@ -171,16 +171,14 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
       maxWidth="lg"
       fullWidth
       PaperProps={{
-        sx: { height: '80vh', maxHeight: '800px' }
+        sx: { height: '80vh', maxHeight: '800px' },
       }}
     >
       <DialogTitle>
         <Box display="flex" alignItems="center" gap={1}>
           <PreviewIcon color="primary" />
           <Box>
-            <Typography variant="h6">
-              Preview Template
-            </Typography>
+            <Typography variant="h6">Preview Template</Typography>
             <Typography variant="body2" color="text.secondary">
               {templateName}
             </Typography>
@@ -202,16 +200,8 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
           onChange={(_, newValue) => setCurrentTab(newValue)}
           sx={{ borderBottom: 1, borderColor: 'divider', px: 3 }}
         >
-          <Tab 
-            icon={<CodeIcon />} 
-            label="Variables" 
-            iconPosition="start"
-          />
-          <Tab 
-            icon={<VisibilityIcon />} 
-            label="Preview" 
-            iconPosition="start"
-          />
+          <Tab icon={<CodeIcon />} label="Variables" iconPosition="start" />
+          <Tab icon={<VisibilityIcon />} label="Preview" iconPosition="start" />
         </Tabs>
 
         <TabPanel value={currentTab} index={0}>
@@ -221,12 +211,10 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
           <Typography variant="body2" color="text.secondary" gutterBottom>
             Adjust the values below to see how they appear in the rendered template:
           </Typography>
-          
+
           <Box mt={2}>
             {variables.length === 0 ? (
-              <Alert severity="info">
-                This template does not use any variables.
-              </Alert>
+              <Alert severity="info">This template does not use any variables.</Alert>
             ) : (
               <Box display="flex" flexDirection="column" gap={2}>
                 {variables.map((variable) => (
@@ -247,9 +235,7 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
 
         <TabPanel value={currentTab} index={1}>
           <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-            <Typography variant="h6">
-              Rendered Preview
-            </Typography>
+            <Typography variant="h6">Rendered Preview</Typography>
             <Button
               startIcon={<RefreshIcon />}
               onClick={handlePreview}
@@ -285,16 +271,22 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
               {templateType === 'communication' ? (
                 <Box>
                   <Typography variant="body1" component="div">
-                    <div dangerouslySetInnerHTML={{
-                      __html: DOMPurify.sanitize(previewData.rendered_content.replace(/\n/g, '<br />'))
-                    }} />
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: DOMPurify.sanitize(
+                          previewData.rendered_content.replace(/\n/g, '<br />'),
+                        ),
+                      }}
+                    />
                   </Typography>
                 </Box>
               ) : (
                 <Box>
-                  <div dangerouslySetInnerHTML={{
-                    __html: DOMPurify.sanitize(previewData.rendered_content)
-                  }} />
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: DOMPurify.sanitize(previewData.rendered_content),
+                    }}
+                  />
                 </Box>
               )}
             </Paper>
@@ -303,13 +295,9 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
       </DialogContent>
 
       <Divider />
-      
+
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button
-          onClick={handleClose}
-          startIcon={<CloseIcon />}
-          color="inherit"
-        >
+        <Button onClick={handleClose} startIcon={<CloseIcon />} color="inherit">
           Close
         </Button>
       </DialogActions>

@@ -13,21 +13,21 @@ Tests:
 - DateReservation model (temporary holds)
 """
 
-import pytest
-from decimal import Decimal
 from datetime import timedelta
+from decimal import Decimal
+
 from django.utils import timezone
+
+import pytest
 from freezegun import freeze_time
 
 from core.domains.events.models import (
-    Event,
-    EventType,
-    EventTask,
-    EventFeedback,
-    EventTimeline,
-    EventFile,
-    EventDateReminder,
     DateReservation,
+    Event,
+    EventDateReminder,
+    EventFeedback,
+    EventTask,
+    EventTimeline,
 )
 
 
@@ -37,16 +37,16 @@ class TestEventTypeModel:
 
     def test_create_event_type(self, event_type_factory):
         """Test creating an event type."""
-        event_type = event_type_factory(name='Wedding')
+        event_type = event_type_factory(name="Wedding")
 
-        assert event_type.name == 'Wedding'
+        assert event_type.name == "Wedding"
         assert event_type.is_active is True
 
     def test_event_type_string_representation(self, event_type_factory):
         """Test EventType __str__ returns name."""
-        event_type = event_type_factory(name='Corporate Event')
+        event_type = event_type_factory(name="Corporate Event")
 
-        assert str(event_type) == 'Corporate Event'
+        assert str(event_type) == "Corporate Event"
 
     def test_inactive_event_type(self, event_type_factory):
         """Test creating an inactive event type."""
@@ -63,24 +63,24 @@ class TestEventModel:
         """Test creating an event with default values."""
         event = event_factory()
 
-        assert event.status == 'LEAD'
-        assert event.payment_status == 'UNPAID'
+        assert event.status == "LEAD"
+        assert event.payment_status == "UNPAID"
         assert event.date_blocked is False
-        assert event.date_hold_status == 'NONE'
-        assert event.check_in_status == 'PENDING'
+        assert event.date_hold_status == "NONE"
+        assert event.check_in_status == "PENDING"
 
     def test_event_string_representation(self, event_factory, event_type_factory):
         """Test Event __str__ returns informative string."""
-        event_type = event_type_factory(name='Birthday')
-        event = event_factory(name='John Birthday Party', event_type=event_type)
+        event_type = event_type_factory(name="Birthday")
+        event = event_factory(name="John Birthday Party", event_type=event_type)
 
-        assert 'John Birthday Party' in str(event)
+        assert "John Birthday Party" in str(event)
 
     def test_event_string_representation_without_name(self, event_factory, user_factory, event_type_factory):
         """Test Event __str__ fallback when name is empty."""
-        client = user_factory(first_name='Jane', last_name='Doe')
-        event_type = event_type_factory(name='Wedding')
-        event = event_factory(name='', client=client, event_type=event_type)
+        client = user_factory(first_name="Jane", last_name="Doe")
+        event_type = event_type_factory(name="Wedding")
+        event = event_factory(name="", client=client, event_type=event_type)
 
         # Should fall back to event_type and client
         assert str(event) is not None
@@ -89,51 +89,51 @@ class TestEventModel:
         """Test creating a confirmed event."""
         event = event_factory(confirmed=True)
 
-        assert event.status == 'CONFIRMED'
+        assert event.status == "CONFIRMED"
 
     def test_completed_event_status(self, event_factory):
         """Test creating a completed event."""
         event = event_factory(completed=True)
 
-        assert event.status == 'COMPLETED'
+        assert event.status == "COMPLETED"
 
     def test_cancelled_event_status(self, event_factory):
         """Test creating a cancelled event."""
         event = event_factory(cancelled=True)
 
-        assert event.status == 'CANCELLED'
-        assert event.cancelled_reason == 'CLIENT_REQUEST'
+        assert event.status == "CANCELLED"
+        assert event.cancelled_reason == "CLIENT_REQUEST"
         assert event.cancelled_at is not None
 
     def test_paid_event_status(self, event_factory):
         """Test creating a paid event."""
         event = event_factory(paid=True)
 
-        assert event.payment_status == 'PAID'
-        assert event.total_amount_paid == Decimal('5000.00')
-        assert event.total_amount_due == Decimal('5000.00')
+        assert event.payment_status == "PAID"
+        assert event.total_amount_paid == Decimal("5000.00")
+        assert event.total_amount_due == Decimal("5000.00")
 
     def test_partially_paid_event_status(self, event_factory):
         """Test creating a partially paid event."""
         event = event_factory(partially_paid=True)
 
-        assert event.payment_status == 'PARTIALLY_PAID'
-        assert event.total_amount_paid == Decimal('2500.00')
-        assert event.total_amount_due == Decimal('5000.00')
+        assert event.payment_status == "PARTIALLY_PAID"
+        assert event.total_amount_paid == Decimal("2500.00")
+        assert event.total_amount_due == Decimal("5000.00")
 
     def test_date_blocked_event(self, event_factory):
         """Test creating an event with date blocked."""
         event = event_factory(date_blocked_trait=True)
 
         assert event.date_blocked is True
-        assert event.date_hold_status == 'PERMANENT_BLOCK'
+        assert event.date_hold_status == "PERMANENT_BLOCK"
         assert event.date_blocked_at is not None
 
     def test_temporary_hold_event(self, event_factory):
         """Test creating an event with temporary hold."""
         event = event_factory(temporary_hold=True)
 
-        assert event.date_hold_status == 'TEMPORARY_HOLD'
+        assert event.date_hold_status == "TEMPORARY_HOLD"
         assert event.date_hold_expires_at is not None
         assert event.date_held_at is not None
 
@@ -157,14 +157,14 @@ class TestEventModel:
         """Test creating an upcoming event."""
         event = event_factory(upcoming=True)
 
-        assert event.status == 'CONFIRMED'
+        assert event.status == "CONFIRMED"
         assert event.start_date > timezone.now()
 
     def test_past_event(self, event_factory):
         """Test creating a past event."""
         event = event_factory(past=True)
 
-        assert event.status == 'COMPLETED'
+        assert event.status == "COMPLETED"
         assert event.start_date < timezone.now()
 
 
@@ -177,21 +177,21 @@ class TestEventPaymentStatus:
         event = event_factory()
         event.update_payment_status()
 
-        assert event.payment_status == 'UNPAID'
+        assert event.payment_status == "UNPAID"
 
     def test_computed_total_amount_due(self, event_factory, invoice_factory):
         """Test computed_total_amount_due property."""
         event = event_factory(confirmed=True)
-        invoice_factory(event=event, issued=True, total_amount=Decimal('5000.00'))
+        invoice_factory(event=event, issued=True, total_amount=Decimal("5000.00"))
 
-        assert event.computed_total_amount_due == Decimal('5000.00')
+        assert event.computed_total_amount_due == Decimal("5000.00")
 
     def test_computed_total_amount_paid(self, event_factory, payment_factory):
         """Test computed_total_amount_paid property."""
         event = event_factory(confirmed=True)
-        payment_factory(event=event, completed=True, amount=Decimal('2500.00'))
+        payment_factory(event=event, completed=True, amount=Decimal("2500.00"))
 
-        assert event.computed_total_amount_paid == Decimal('2500.00')
+        assert event.computed_total_amount_paid == Decimal("2500.00")
 
 
 @pytest.mark.django_db
@@ -202,7 +202,7 @@ class TestEventDateBlocking:
         """Test default date hold status is NONE."""
         event = event_factory()
 
-        assert event.date_hold_status == 'NONE'
+        assert event.date_hold_status == "NONE"
         assert event.date_blocked is False
 
     def test_date_blocked_at_timestamp(self, event_factory):
@@ -236,20 +236,20 @@ class TestEventCheckIn:
         """Test default check-in status is PENDING."""
         event = event_factory()
 
-        assert event.check_in_status == 'PENDING'
+        assert event.check_in_status == "PENDING"
 
     def test_check_in_timestamps(self, event_factory, user_factory):
         """Test check-in timestamp and user tracking."""
         event = event_factory(confirmed=True)
         staff = user_factory(admin=True)
 
-        event.check_in_status = 'CHECKED_IN'
+        event.check_in_status = "CHECKED_IN"
         event.actual_check_in_time = timezone.now()
         event.checked_in_by = staff
         event.save()
 
         event.refresh_from_db()
-        assert event.check_in_status == 'CHECKED_IN'
+        assert event.check_in_status == "CHECKED_IN"
         assert event.actual_check_in_time is not None
         assert event.checked_in_by == staff
 
@@ -258,13 +258,13 @@ class TestEventCheckIn:
         event = event_factory(confirmed=True)
         staff = user_factory(admin=True)
 
-        event.check_in_status = 'CHECKED_OUT'
+        event.check_in_status = "CHECKED_OUT"
         event.actual_checkout_time = timezone.now()
         event.checked_out_by = staff
         event.save()
 
         event.refresh_from_db()
-        assert event.check_in_status == 'CHECKED_OUT'
+        assert event.check_in_status == "CHECKED_OUT"
         assert event.actual_checkout_time is not None
         assert event.checked_out_by == staff
 
@@ -273,12 +273,12 @@ class TestEventCheckIn:
         event = event_factory(confirmed=True)
 
         event.late_checkout_fee_applied = True
-        event.late_checkout_fee_amount = Decimal('500.00')
+        event.late_checkout_fee_amount = Decimal("500.00")
         event.save()
 
         event.refresh_from_db()
         assert event.late_checkout_fee_applied is True
-        assert event.late_checkout_fee_amount == Decimal('500.00')
+        assert event.late_checkout_fee_amount == Decimal("500.00")
 
 
 @pytest.mark.django_db
@@ -292,32 +292,32 @@ class TestEventTask:
 
         task = EventTask.objects.create(
             event=event,
-            title='Review contract',
-            description='Review and approve event contract',
+            title="Review contract",
+            description="Review and approve event contract",
             due_date=timezone.now() + timedelta(days=3),
-            priority='HIGH',
-            status='PENDING',
+            priority="HIGH",
+            status="PENDING",
             assigned_to=user,
         )
 
         assert task.event == event
-        assert task.title == 'Review contract'
-        assert task.priority == 'HIGH'
-        assert task.status == 'PENDING'
+        assert task.title == "Review contract"
+        assert task.priority == "HIGH"
+        assert task.status == "PENDING"
 
     def test_task_string_representation(self, event_factory):
         """Test EventTask __str__ returns informative string."""
         event = event_factory()
         task = EventTask.objects.create(
             event=event,
-            title='Setup venue',
+            title="Setup venue",
             due_date=timezone.now() + timedelta(days=1),
-            priority='MEDIUM',
-            status='PENDING',
+            priority="MEDIUM",
+            status="PENDING",
         )
 
-        assert 'Setup venue' in str(task)
-        assert 'PENDING' in str(task)
+        assert "Setup venue" in str(task)
+        assert "PENDING" in str(task)
 
     def test_task_completion_sets_timestamp(self, event_factory, user_factory):
         """Test that completing a task sets completed_at timestamp."""
@@ -326,13 +326,13 @@ class TestEventTask:
 
         task = EventTask.objects.create(
             event=event,
-            title='Test task',
+            title="Test task",
             due_date=timezone.now() + timedelta(days=1),
-            priority='LOW',
-            status='PENDING',
+            priority="LOW",
+            status="PENDING",
         )
 
-        task.status = 'COMPLETED'
+        task.status = "COMPLETED"
         task.completed_by = user
         task.save()
 
@@ -343,23 +343,23 @@ class TestEventTask:
         """Test tasks are ordered by due_date and priority."""
         event = event_factory()
 
-        task1 = EventTask.objects.create(
+        EventTask.objects.create(
             event=event,
-            title='Later task',
+            title="Later task",
             due_date=timezone.now() + timedelta(days=5),
-            priority='HIGH',
-            status='PENDING',
+            priority="HIGH",
+            status="PENDING",
         )
-        task2 = EventTask.objects.create(
+        EventTask.objects.create(
             event=event,
-            title='Earlier task',
+            title="Earlier task",
             due_date=timezone.now() + timedelta(days=1),
-            priority='LOW',
-            status='PENDING',
+            priority="LOW",
+            status="PENDING",
         )
 
         tasks = list(event.tasks.all())
-        assert tasks[0].title == 'Earlier task'
+        assert tasks[0].title == "Earlier task"
 
 
 @pytest.mark.django_db
@@ -375,11 +375,11 @@ class TestEventFeedback:
             event=event,
             submitted_by=user,
             overall_rating=5,
-            comments='Great event!',
+            comments="Great event!",
         )
 
         assert feedback.overall_rating == 5
-        assert feedback.comments == 'Great event!'
+        assert feedback.comments == "Great event!"
 
     def test_feedback_string_representation(self, event_factory, user_factory):
         """Test EventFeedback __str__ returns informative string."""
@@ -392,7 +392,7 @@ class TestEventFeedback:
             overall_rating=4,
         )
 
-        assert 'Rating: 4' in str(feedback)
+        assert "Rating: 4" in str(feedback)
 
     def test_feedback_unique_per_user(self, event_factory, user_factory):
         """Test only one feedback per user per event."""
@@ -426,13 +426,13 @@ class TestEventTimeline:
 
         entry = EventTimeline.objects.create(
             event=event,
-            action_type='STATUS_CHANGE',
-            description='Status changed from Lead to Confirmed',
+            action_type="STATUS_CHANGE",
+            description="Status changed from Lead to Confirmed",
             actor=user,
             is_public=True,
         )
 
-        assert entry.action_type == 'STATUS_CHANGE'
+        assert entry.action_type == "STATUS_CHANGE"
         assert entry.is_public is True
 
     def test_timeline_string_representation(self, event_factory):
@@ -441,29 +441,29 @@ class TestEventTimeline:
 
         entry = EventTimeline.objects.create(
             event=event,
-            action_type='QUOTE_CREATED',
-            description='Quote created',
+            action_type="QUOTE_CREATED",
+            description="Quote created",
         )
 
-        assert 'QUOTE_CREATED' in str(entry)
+        assert "QUOTE_CREATED" in str(entry)
 
     def test_timeline_ordering(self, event_factory):
         """Test timeline entries are ordered by created_at descending."""
         event = event_factory()
 
-        entry1 = EventTimeline.objects.create(
+        EventTimeline.objects.create(
             event=event,
-            action_type='STATUS_CHANGE',
-            description='First entry',
+            action_type="STATUS_CHANGE",
+            description="First entry",
         )
-        entry2 = EventTimeline.objects.create(
+        EventTimeline.objects.create(
             event=event,
-            action_type='QUOTE_CREATED',
-            description='Second entry',
+            action_type="QUOTE_CREATED",
+            description="Second entry",
         )
 
         entries = list(event.timeline.all())
-        assert entries[0].description == 'Second entry'
+        assert entries[0].description == "Second entry"
 
 
 @pytest.mark.django_db
@@ -477,13 +477,13 @@ class TestDateReservation:
 
         reservation = DateReservation.objects.create(
             target_date=target_date,
-            booking_session_id='session_123',
-            status='PENDING',
+            booking_session_id="session_123",
+            status="PENDING",
             expires_at=expires_at,
         )
 
         assert reservation.token is not None
-        assert reservation.status == 'PENDING'
+        assert reservation.status == "PENDING"
         assert reservation.target_date == target_date
 
     def test_reservation_string_representation(self):
@@ -492,13 +492,13 @@ class TestDateReservation:
 
         reservation = DateReservation.objects.create(
             target_date=target_date,
-            booking_session_id='session_123',
-            status='PENDING',
+            booking_session_id="session_123",
+            status="PENDING",
             expires_at=timezone.now() + timedelta(minutes=5),
         )
 
         assert str(target_date) in str(reservation)
-        assert 'PENDING' in str(reservation)
+        assert "PENDING" in str(reservation)
 
     def test_reservation_is_expired_property_not_expired(self):
         """Test is_expired returns False when not expired."""
@@ -507,25 +507,25 @@ class TestDateReservation:
 
         reservation = DateReservation.objects.create(
             target_date=target_date,
-            booking_session_id='session_123',
-            status='PENDING',
+            booking_session_id="session_123",
+            status="PENDING",
             expires_at=expires_at,
         )
 
         assert reservation.is_expired is False
 
-    @freeze_time('2024-01-15 10:10:00')
+    @freeze_time("2024-01-15 10:10:00")
     def test_reservation_is_expired_property_expired(self):
         """Test is_expired returns True when expired."""
-        from datetime import datetime
+
         target_date = timezone.now().date() + timedelta(days=30)
         # Expiry was 5 minutes ago
         expires_at = timezone.now() - timedelta(minutes=5)
 
         reservation = DateReservation.objects.create(
             target_date=target_date,
-            booking_session_id='session_123',
-            status='PENDING',
+            booking_session_id="session_123",
+            status="PENDING",
             expires_at=expires_at,
         )
 
@@ -538,8 +538,8 @@ class TestDateReservation:
 
         reservation = DateReservation.objects.create(
             target_date=target_date,
-            booking_session_id='session_123',
-            status='PENDING',
+            booking_session_id="session_123",
+            status="PENDING",
             expires_at=expires_at,
         )
 
@@ -552,8 +552,8 @@ class TestDateReservation:
 
         reservation = DateReservation.objects.create(
             target_date=target_date,
-            booking_session_id='session_123',
-            status='CONFIRMED',
+            booking_session_id="session_123",
+            status="CONFIRMED",
             expires_at=expires_at,
         )
 
@@ -586,7 +586,7 @@ class TestEventDateReminder:
             days_before=3,
         )
 
-        assert '3 days before' in str(reminder)
+        assert "3 days before" in str(reminder)
 
     def test_reminder_unique_constraint(self, event_factory):
         """Test only one reminder per days_before per event."""
@@ -622,13 +622,8 @@ class TestOptimizedEventManager:
 
     def test_upcoming_events(self, event_factory):
         """Test upcoming() returns future events."""
-        upcoming_event = event_factory(
-            start_date=timezone.now() + timedelta(days=7)
-        )
-        past_event = event_factory(
-            start_date=timezone.now() - timedelta(days=7),
-            completed=True
-        )
+        upcoming_event = event_factory(start_date=timezone.now() + timedelta(days=7))
+        past_event = event_factory(start_date=timezone.now() - timedelta(days=7), completed=True)
 
         upcoming_events = Event.objects.upcoming()
 

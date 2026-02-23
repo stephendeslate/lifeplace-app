@@ -76,13 +76,15 @@ export const PaymentGatewaySelector: React.FC<PaymentGatewaySelectorProps> = ({
   });
 
   // Filter gateways by allowed codes with defensive programming - memoize to stabilize reference
-  const filteredGateways = useMemo(() =>
-    Array.isArray(gateways)
-      ? gateways.filter(gateway =>
-          gateway.is_active && (!allowedGateways || allowedGateways.includes(gateway.code))
-        )
-      : [],
-    [gateways, allowedGateways]
+  const filteredGateways = useMemo(
+    () =>
+      Array.isArray(gateways)
+        ? gateways.filter(
+            (gateway) =>
+              gateway.is_active && (!allowedGateways || allowedGateways.includes(gateway.code)),
+          )
+        : [],
+    [gateways, allowedGateways],
   );
 
   // Auto-select single gateway when available
@@ -94,7 +96,7 @@ export const PaymentGatewaySelector: React.FC<PaymentGatewaySelectorProps> = ({
 
   const handleGatewayChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const gatewayId = parseInt(event.target.value);
-    const gateway = filteredGateways.find(g => g.id === gatewayId) || null;
+    const gateway = filteredGateways.find((g) => g.id === gatewayId) || null;
     onGatewaySelect(gateway);
   };
 
@@ -114,15 +116,10 @@ export const PaymentGatewaySelector: React.FC<PaymentGatewaySelectorProps> = ({
     const isAuthError = errorObj.response?.status === 403 || errorObj.response?.status === 401;
 
     return (
-      <Alert
-        severity={isAuthError ? "info" : "error"}
-        icon={<ErrorIcon />}
-        sx={{ mb: 2 }}
-      >
+      <Alert severity={isAuthError ? 'info' : 'error'} icon={<ErrorIcon />} sx={{ mb: 2 }}>
         {isAuthError
-          ? "Payment gateway information is not available. Please contact support if you need to select a specific gateway."
-          : "Failed to load payment gateways. Please try again."
-        }
+          ? 'Payment gateway information is not available. Please contact support if you need to select a specific gateway.'
+          : 'Failed to load payment gateways. Please try again.'}
       </Alert>
     );
   }
@@ -134,7 +131,6 @@ export const PaymentGatewaySelector: React.FC<PaymentGatewaySelectorProps> = ({
       </Alert>
     );
   }
-
 
   return (
     <Box>
@@ -173,10 +169,7 @@ export const PaymentGatewaySelector: React.FC<PaymentGatewaySelectorProps> = ({
           ) : (
             // Multiple gateways - show radio selection
             <FormControl component="fieldset" fullWidth disabled={disabled}>
-              <RadioGroup
-                value={selectedGateway?.id || ''}
-                onChange={handleGatewayChange}
-              >
+              <RadioGroup value={selectedGateway?.id || ''} onChange={handleGatewayChange}>
                 <Stack spacing={2}>
                   {filteredGateways.map((gateway) => (
                     <Box key={gateway.id}>
@@ -208,9 +201,10 @@ export const PaymentGatewaySelector: React.FC<PaymentGatewaySelectorProps> = ({
                           p: 2,
                           border: `1px solid ${alpha('#fff', 0.1)}`,
                           borderRadius: 1,
-                          backgroundColor: selectedGateway?.id === gateway.id
-                            ? alpha(theme.palette.primary.main, 0.1)
-                            : 'transparent',
+                          backgroundColor:
+                            selectedGateway?.id === gateway.id
+                              ? alpha(theme.palette.primary.main, 0.1)
+                              : 'transparent',
                           '&:hover': {
                             backgroundColor: alpha('#fff', 0.05),
                           },

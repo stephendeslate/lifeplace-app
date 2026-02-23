@@ -55,7 +55,7 @@ export function OrderableList<T extends OrderableItem>({
   useEffect(() => {
     const sorted = [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     setOrderedItems(sorted);
-    
+
     // Initialize order inputs
     const inputs: Record<string, string> = {};
     sorted.forEach((item, index) => {
@@ -68,54 +68,54 @@ export function OrderableList<T extends OrderableItem>({
 
   const handleOrderChange = (itemId: string | number, value: string) => {
     const id = String(itemId);
-    
+
     // Allow empty input while typing
     if (value === '') {
-      setOrderInputs(prev => ({ ...prev, [id]: value }));
-      setErrors(prev => ({ ...prev, [id]: 'Order is required' }));
+      setOrderInputs((prev) => ({ ...prev, [id]: value }));
+      setErrors((prev) => ({ ...prev, [id]: 'Order is required' }));
       setHasChanges(true);
       return;
     }
 
     const numValue = parseInt(value);
-    
+
     // Validate input
     if (isNaN(numValue)) {
-      setErrors(prev => ({ ...prev, [id]: 'Must be a number' }));
-      setOrderInputs(prev => ({ ...prev, [id]: value }));
+      setErrors((prev) => ({ ...prev, [id]: 'Must be a number' }));
+      setOrderInputs((prev) => ({ ...prev, [id]: value }));
       setHasChanges(true);
       return;
     }
 
     if (numValue < minOrder || numValue > maxOrder) {
-      setErrors(prev => ({ 
-        ...prev, 
-        [id]: `Must be between ${minOrder} and ${maxOrder}` 
+      setErrors((prev) => ({
+        ...prev,
+        [id]: `Must be between ${minOrder} and ${maxOrder}`,
       }));
-      setOrderInputs(prev => ({ ...prev, [id]: value }));
+      setOrderInputs((prev) => ({ ...prev, [id]: value }));
       setHasChanges(true);
       return;
     }
 
     // Check for duplicates
     const duplicate = Object.entries(orderInputs).find(
-      ([key, val]) => key !== id && val === String(numValue)
+      ([key, val]) => key !== id && val === String(numValue),
     );
 
     if (duplicate) {
-      setErrors(prev => ({ 
-        ...prev, 
-        [id]: `Order ${numValue} is already used` 
+      setErrors((prev) => ({
+        ...prev,
+        [id]: `Order ${numValue} is already used`,
       }));
     } else {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[id];
         return newErrors;
       });
     }
 
-    setOrderInputs(prev => ({ ...prev, [id]: value }));
+    setOrderInputs((prev) => ({ ...prev, [id]: value }));
     setHasChanges(true);
   };
 
@@ -142,7 +142,7 @@ export function OrderableList<T extends OrderableItem>({
     }
 
     // Apply new orders to items
-    const reorderedItems = orderedItems.map(item => ({
+    const reorderedItems = orderedItems.map((item) => ({
       ...item,
       order: parseInt(orderInputs[String(item.id)] || '1'),
     }));
@@ -182,10 +182,10 @@ export function OrderableList<T extends OrderableItem>({
 
   const hasGaps = () => {
     const orders = Object.values(orderInputs)
-      .map(v => parseInt(v))
-      .filter(v => !isNaN(v))
+      .map((v) => parseInt(v))
+      .filter((v) => !isNaN(v))
       .sort((a, b) => a - b);
-    
+
     for (let i = 1; i < orders.length; i++) {
       if (orders[i] - orders[i - 1] > 1) {
         return true;
@@ -214,8 +214,8 @@ export function OrderableList<T extends OrderableItem>({
 
       {/* Warnings */}
       {hasDuplicates() && (
-        <Alert 
-          severity="error" 
+        <Alert
+          severity="error"
           sx={{ mb: 2 }}
           action={
             showAutoFix && (
@@ -237,11 +237,7 @@ export function OrderableList<T extends OrderableItem>({
       )}
 
       {hasGaps() && (
-        <Alert 
-          severity="warning" 
-          sx={{ mb: 2 }}
-          icon={<WarningIcon />}
-        >
+        <Alert severity="warning" sx={{ mb: 2 }} icon={<WarningIcon />}>
           <Typography variant="body2">
             There are gaps in the order sequence. Consider using auto-fix for sequential numbering.
           </Typography>
@@ -296,16 +292,12 @@ export function OrderableList<T extends OrderableItem>({
               sx={{
                 p: 2,
                 border: 1,
-                borderColor: hasError 
-                  ? 'error.main' 
-                  : hasOrderChanged 
-                  ? 'warning.main' 
-                  : 'divider',
+                borderColor: hasError ? 'error.main' : hasOrderChanged ? 'warning.main' : 'divider',
                 backgroundColor: hasError
                   ? 'error.50'
-                  : hasOrderChanged 
-                  ? 'warning.50' 
-                  : 'background.paper',
+                  : hasOrderChanged
+                    ? 'warning.50'
+                    : 'background.paper',
               }}
             >
               <Box display="flex" alignItems="center" gap={2}>
@@ -319,16 +311,12 @@ export function OrderableList<T extends OrderableItem>({
                   helperText={errors[id]}
                   sx={{ width: 100 }}
                   InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        #
-                      </InputAdornment>
-                    ),
+                    startAdornment: <InputAdornment position="start">#</InputAdornment>,
                     inputProps: {
                       min: minOrder,
                       max: maxOrder,
                       step: 1,
-                    }
+                    },
                   }}
                 />
 
@@ -345,9 +333,7 @@ export function OrderableList<T extends OrderableItem>({
                 )}
 
                 {/* Item content */}
-                <Box flex={1}>
-                  {renderItem(item, index)}
-                </Box>
+                <Box flex={1}>{renderItem(item, index)}</Box>
               </Box>
             </Paper>
           );
@@ -358,11 +344,10 @@ export function OrderableList<T extends OrderableItem>({
       {hasChanges && !hasDuplicates() && displayItems.length > 1 && (
         <Box mt={2} p={2} bgcolor="grey.50" borderRadius={1}>
           <Typography variant="caption" color="text.secondary" component="div">
-            <strong>Preview:</strong> {
-              displayItems
-                .map((item, idx) => `${idx + 1}. ${item.name || item.title || 'Item'}`)
-                .join(' → ')
-            }
+            <strong>Preview:</strong>{' '}
+            {displayItems
+              .map((item, idx) => `${idx + 1}. ${item.name || item.title || 'Item'}`)
+              .join(' → ')}
           </Typography>
         </Box>
       )}

@@ -1,22 +1,22 @@
-import { BookingLayout } from "../components/layout";
-import { BookingPage } from "../pages/booking";
+import { BookingLayout } from '../components/layout';
+import { BookingPage } from '../pages/booking';
 
 export function meta() {
   return [
-    { title: "Book Your Event | LifePlace Alfonso" },
+    { title: 'Book Your Event | LifePlace Alfonso' },
     {
-      name: "description",
+      name: 'description',
       content:
-        "Book your event at LifePlace Alfonso. Easy online booking for retreats, weddings, and corporate events.",
+        'Book your event at LifePlace Alfonso. Easy online booking for retreats, weddings, and corporate events.',
     },
-    { property: "og:title", content: "Book Your Event | LifePlace Alfonso" },
+    { property: 'og:title', content: 'Book Your Event | LifePlace Alfonso' },
     {
-      property: "og:description",
+      property: 'og:description',
       content:
-        "Book your event at LifePlace Alfonso. Easy online booking for retreats, weddings, and corporate events.",
+        'Book your event at LifePlace Alfonso. Easy online booking for retreats, weddings, and corporate events.',
     },
-    { property: "og:image", content: "/og-image.jpg" },
-    { property: "og:type", content: "website" },
+    { property: 'og:image', content: '/og-image.jpg' },
+    { property: 'og:type', content: 'website' },
   ];
 }
 

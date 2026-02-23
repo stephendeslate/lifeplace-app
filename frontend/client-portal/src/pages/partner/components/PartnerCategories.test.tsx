@@ -14,7 +14,7 @@ describe('PartnerCategories', () => {
     it('renders the section description', () => {
       render(<PartnerCategories />);
       expect(
-        screen.getByText(/We welcome partnerships from various industries/)
+        screen.getByText(/We welcome partnerships from various industries/),
       ).toBeInTheDocument();
     });
 
@@ -34,59 +34,37 @@ describe('PartnerCategories', () => {
 
       expect(screen.getByText('Travel Agencies')).toBeInTheDocument();
       expect(
-        screen.getByText(/Partner with us to offer your clients exclusive retreat/)
+        screen.getByText(/Partner with us to offer your clients exclusive retreat/),
       ).toBeInTheDocument();
-      expect(
-        screen.getByText(/Specialized group packages for retreats/)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/Competitive commission structures/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Specialized group packages for retreats/)).toBeInTheDocument();
+      expect(screen.getByText(/Competitive commission structures/)).toBeInTheDocument();
     });
 
     it('renders Wedding Coordinators category with correct content', () => {
       render(<PartnerCategories />);
 
       expect(screen.getByText('Wedding Coordinators')).toBeInTheDocument();
-      expect(
-        screen.getByText(/Become a preferred wedding coordinator/)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/Preferred venue status/)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/Discounted venue rates/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Become a preferred wedding coordinator/)).toBeInTheDocument();
+      expect(screen.getByText(/Preferred venue status/)).toBeInTheDocument();
+      expect(screen.getByText(/Discounted venue rates/)).toBeInTheDocument();
     });
 
     it('renders Schools category with correct content', () => {
       render(<PartnerCategories />);
 
       expect(screen.getByText('Schools')).toBeInTheDocument();
-      expect(
-        screen.getByText(/Access educational-focused packages/)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/Educational-focused packages/)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/Camps and leadership training rates/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Access educational-focused packages/)).toBeInTheDocument();
+      expect(screen.getByText(/Educational-focused packages/)).toBeInTheDocument();
+      expect(screen.getByText(/Camps and leadership training rates/)).toBeInTheDocument();
     });
 
     it('renders Churches category with correct content', () => {
       render(<PartnerCategories />);
 
       expect(screen.getByText('Churches')).toBeInTheDocument();
-      expect(
-        screen.getByText(/Special rates for spiritual retreats/)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/Discounted rates for spiritual retreats/)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/Youth camp facilities/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Special rates for spiritual retreats/)).toBeInTheDocument();
+      expect(screen.getByText(/Discounted rates for spiritual retreats/)).toBeInTheDocument();
+      expect(screen.getByText(/Youth camp facilities/)).toBeInTheDocument();
     });
   });
 
@@ -347,18 +325,10 @@ describe('PartnerCategories', () => {
       render(<PartnerCategories />);
 
       // Check that each description is informative (not empty or generic)
-      expect(
-        screen.getByText(/Partner with us to offer your clients/)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/Become a preferred wedding coordinator/)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/Access educational-focused packages/)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/Special rates for spiritual retreats/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Partner with us to offer your clients/)).toBeInTheDocument();
+      expect(screen.getByText(/Become a preferred wedding coordinator/)).toBeInTheDocument();
+      expect(screen.getByText(/Access educational-focused packages/)).toBeInTheDocument();
+      expect(screen.getByText(/Special rates for spiritual retreats/)).toBeInTheDocument();
     });
   });
 });

@@ -4,15 +4,12 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { ConfirmationApi } from '../../apis/booking/confirmation.api';
 import { BookingCoreApi } from '../../apis/booking/core.api';
 import { ErrorHandler } from '../../utils/errorHandler';
-import type {
-  BookingCompletionResult,
-  ConfirmationStepConfiguration,
-} from '../../types/booking';
+import type { BookingCompletionResult, ConfirmationStepConfiguration } from '../../types/booking';
 
 // Hook for managing confirmation step and booking completion
 export const useConfirmation = (
   sessionId?: string,
-  config?: ConfirmationStepConfiguration | null
+  config?: ConfirmationStepConfiguration | null,
 ) => {
   const [loading, setLoading] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -31,7 +28,7 @@ export const useConfirmation = (
     try {
       const details = await ConfirmationApi.getSessionDetails(sessionId);
       setSessionDetails(details);
-      
+
       // Format confirmation data for display
       const formatted = ConfirmationApi.formatConfirmationData(details);
       setConfirmationData(formatted);
@@ -77,104 +74,115 @@ export const useConfirmation = (
   const [unavailableDateError, setUnavailableDateError] = useState<string | null>(null);
 
   // Complete the booking with pre-validation
-  const completeBooking = useCallback(async (providedCompletionType?: 'payment' | 'quote'): Promise<boolean> => {
-    if (!sessionId) {
-      setError('Session information missing');
-      return false;
-    }
+  const completeBooking = useCallback(
+    async (providedCompletionType?: 'payment' | 'quote'): Promise<boolean> => {
+      if (!sessionId) {
+        setError('Session information missing');
+        return false;
+      }
 
-    setCompleting(true);
-    setError(null);
-    setDateUnavailable(false);
-    setUnavailableDateError(null);
+      setCompleting(true);
+      setError(null);
+      setDateUnavailable(false);
+      setUnavailableDateError(null);
 
-    // Use provided type if available, fallback to session detection
-    const completionType = providedCompletionType || getCompletionType();
-    let reservationToken: string | undefined;
+      // Use provided type if available, fallback to session detection
+      const completionType = providedCompletionType || getCompletionType();
+      let reservationToken: string | undefined;
 
-    try {
-      // CRITICAL: For payment completions, validate availability BEFORE charging the card
-      // This prevents customers from being charged for dates that are no longer available
-      if (completionType === 'payment') {
-        if (import.meta.env.DEV) console.log('[Confirmation] Validating date availability before payment...');
+      try {
+        // CRITICAL: For payment completions, validate availability BEFORE charging the card
+        // This prevents customers from being charged for dates that are no longer available
+        if (completionType === 'payment') {
+          if (import.meta.env.DEV)
+            console.log('[Confirmation] Validating date availability before payment...');
 
-        try {
-          const validation = await BookingCoreApi.validateAvailability(sessionId);
+          try {
+            const validation = await BookingCoreApi.validateAvailability(sessionId);
 
-          if (!validation.available) {
-            // Date is no longer available - show error without charging
-            if (import.meta.env.DEV) console.warn('[Confirmation] Date no longer available:', validation.error);
-            setDateUnavailable(true);
-            setUnavailableDateError(
-              validation.error ||
-                'This date is no longer available. Another customer completed their booking just before you.'
-            );
-            setCompleting(false);
-            return false;
+            if (!validation.available) {
+              // Date is no longer available - show error without charging
+              if (import.meta.env.DEV)
+                console.warn('[Confirmation] Date no longer available:', validation.error);
+              setDateUnavailable(true);
+              setUnavailableDateError(
+                validation.error ||
+                  'This date is no longer available. Another customer completed their booking just before you.',
+              );
+              setCompleting(false);
+              return false;
+            }
+
+            // Store the reservation token for the completion call
+            reservationToken = validation.reservation_token;
+            if (import.meta.env.DEV)
+              console.log('[Confirmation] Date reserved, token:', reservationToken);
+          } catch (validationErr) {
+            // If validation fails due to network error, we might still want to proceed
+            // The backend has its own atomic check, so this is a defense-in-depth measure
+            if (import.meta.env.DEV)
+              console.warn('[Confirmation] Pre-validation failed:', validationErr);
+            // Proceed without reservation token - backend will still check atomically
           }
-
-          // Store the reservation token for the completion call
-          reservationToken = validation.reservation_token;
-          if (import.meta.env.DEV) console.log('[Confirmation] Date reserved, token:', reservationToken);
-        } catch (validationErr) {
-          // If validation fails due to network error, we might still want to proceed
-          // The backend has its own atomic check, so this is a defense-in-depth measure
-          if (import.meta.env.DEV) console.warn('[Confirmation] Pre-validation failed:', validationErr);
-          // Proceed without reservation token - backend will still check atomically
         }
-      }
 
-      // Complete the booking (with reservation token if we have one)
-      const result = await BookingCoreApi.completeBooking(sessionId, completionType, reservationToken);
-      setCompletionResult(result);
-
-      // Clear the session from localStorage to prevent "Resume Booking" dialog
-      // from showing for completed bookings
-      BookingCoreApi.clearSessionFromLocal(sessionId);
-
-      // Reload session details to get updated information
-      await loadSessionDetails();
-
-      return true;
-    } catch (err) {
-      const errorMessage = ErrorHandler.extractMessage(err);
-
-      // Check if the error is due to date unavailability
-      if (
-        errorMessage.includes('no longer available') ||
-        errorMessage.includes('DATE_NO_LONGER_AVAILABLE') ||
-        errorMessage.includes('already blocked')
-      ) {
-        setDateUnavailable(true);
-        setUnavailableDateError(
-          'This date is no longer available. Another customer completed their booking just before you.'
+        // Complete the booking (with reservation token if we have one)
+        const result = await BookingCoreApi.completeBooking(
+          sessionId,
+          completionType,
+          reservationToken,
         );
-      } else {
-        setError(errorMessage);
-      }
+        setCompletionResult(result);
 
-      // Release the reservation if we had one and completion failed
-      if (reservationToken) {
-        try {
-          await BookingCoreApi.releaseReservation(sessionId, reservationToken);
-          if (import.meta.env.DEV) console.log('[Confirmation] Released reservation after error');
-        } catch (releaseErr) {
-          if (import.meta.env.DEV) console.warn('[Confirmation] Failed to release reservation:', releaseErr);
+        // Clear the session from localStorage to prevent "Resume Booking" dialog
+        // from showing for completed bookings
+        BookingCoreApi.clearSessionFromLocal(sessionId);
+
+        // Reload session details to get updated information
+        await loadSessionDetails();
+
+        return true;
+      } catch (err) {
+        const errorMessage = ErrorHandler.extractMessage(err);
+
+        // Check if the error is due to date unavailability
+        if (
+          errorMessage.includes('no longer available') ||
+          errorMessage.includes('DATE_NO_LONGER_AVAILABLE') ||
+          errorMessage.includes('already blocked')
+        ) {
+          setDateUnavailable(true);
+          setUnavailableDateError(
+            'This date is no longer available. Another customer completed their booking just before you.',
+          );
+        } else {
+          setError(errorMessage);
         }
-      }
 
-      return false;
-    } finally {
-      setCompleting(false);
-    }
-  }, [sessionId, loadSessionDetails, getCompletionType]);
+        // Release the reservation if we had one and completion failed
+        if (reservationToken) {
+          try {
+            await BookingCoreApi.releaseReservation(sessionId, reservationToken);
+            if (import.meta.env.DEV) console.log('[Confirmation] Released reservation after error');
+          } catch (releaseErr) {
+            if (import.meta.env.DEV)
+              console.warn('[Confirmation] Failed to release reservation:', releaseErr);
+          }
+        }
+
+        return false;
+      } finally {
+        setCompleting(false);
+      }
+    },
+    [sessionId, loadSessionDetails, getCompletionType],
+  );
 
   // Clear date unavailable error
   const clearDateUnavailableError = useCallback(() => {
     setDateUnavailable(false);
     setUnavailableDateError(null);
   }, []);
-
 
   // Get booking reference number
   const bookingReference = useMemo(() => {
@@ -193,10 +201,13 @@ export const useConfirmation = (
   }, []);
 
   // Get formatted confirmation title and message
-  const confirmationContent = useMemo(() => ({
-    title: config?.title || 'Booking Confirmed!',
-    message: config?.message || 'Thank you for your booking. We\'ll be in touch soon!',
-  }), [config]);
+  const confirmationContent = useMemo(
+    () => ({
+      title: config?.title || 'Booking Confirmed!',
+      message: config?.message || "Thank you for your booking. We'll be in touch soon!",
+    }),
+    [config],
+  );
 
   // Check if booking is completed
   const isCompleted = useMemo(() => {
@@ -305,12 +316,15 @@ export const useConfirmation = (
 // Hook for displaying confirmation information without session management
 export const useConfirmationDisplay = (
   bookingData: Record<string, unknown>,
-  config?: ConfirmationStepConfiguration | null
+  config?: ConfirmationStepConfiguration | null,
 ) => {
-  const confirmationContent = useMemo(() => ({
-    title: config?.title || 'Booking Confirmed!',
-    message: config?.message || 'Thank you for your booking. We\'ll be in touch soon!',
-  }), [config]);
+  const confirmationContent = useMemo(
+    () => ({
+      title: config?.title || 'Booking Confirmed!',
+      message: config?.message || "Thank you for your booking. We'll be in touch soon!",
+    }),
+    [config],
+  );
 
   const nextSteps = useMemo(() => {
     return ConfirmationApi.getNextStepsContent((config || {}) as Record<string, unknown>);

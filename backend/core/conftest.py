@@ -15,47 +15,46 @@ After registration, factories are available as:
 import pytest
 from pytest_factoryboy import register
 
-# =============================================================================
-# IMPORT FACTORIES
-# =============================================================================
-
-from core.factories.users import (
-    UserFactory,
-    UserProfileFactory,
-    AdminInvitationFactory,
-    PasswordResetTokenFactory,
-    ConsentRecordFactory,
-    PrivacyRequestFactory,
+from core.factories.contracts import (
+    ContractAmendmentFactory,
+    ContractDocumentFactory,
+    ContractNoteFactory,
+    ContractSignatureFactory,
+    ContractTemplateFactory,
+    EventContractFactory,
 )
 from core.factories.events import (
     EventFactory,
     EventTypeFactory,
 )
 from core.factories.payments import (
+    InvoiceFactory,
     PaymentFactory,
     PaymentGatewayFactory,
     PaymentMethodFactory,
-    InvoiceFactory,
+)
+from core.factories.products import (
+    DiscountFactory,
+    ProductCategoryFactory,
+    ProductOptionFactory,
 )
 from core.factories.questionnaires import (
     QuestionnaireFactory,
     QuestionnaireFieldFactory,
     QuestionnaireResponseFactory,
 )
-from core.factories.products import (
-    ProductCategoryFactory,
-    ProductOptionFactory,
-    DiscountFactory,
-)
-from core.factories.contracts import (
-    ContractTemplateFactory,
-    EventContractFactory,
-    ContractSignatureFactory,
-    ContractAmendmentFactory,
-    ContractDocumentFactory,
-    ContractNoteFactory,
-)
 
+# =============================================================================
+# IMPORT FACTORIES
+# =============================================================================
+from core.factories.users import (
+    AdminInvitationFactory,
+    ConsentRecordFactory,
+    PasswordResetTokenFactory,
+    PrivacyRequestFactory,
+    UserFactory,
+    UserProfileFactory,
+)
 
 # =============================================================================
 # REGISTER FACTORIES AS FIXTURES
@@ -107,6 +106,7 @@ register(ContractNoteFactory)
 # CONVENIENCE FIXTURES
 # =============================================================================
 
+
 @pytest.fixture
 def admin_user(user_factory):
     """Create an admin user with full permissions."""
@@ -116,7 +116,7 @@ def admin_user(user_factory):
 @pytest.fixture
 def client_user(user_factory):
     """Create a client user."""
-    return user_factory(role='CLIENT')
+    return user_factory(role="CLIENT")
 
 
 @pytest.fixture
@@ -134,35 +134,22 @@ def stripe_gateway(payment_gateway_factory):
 @pytest.fixture
 def confirmed_event(event_factory, client_user):
     """Create a confirmed event with a client."""
-    return event_factory(
-        client=client_user,
-        confirmed=True
-    )
+    return event_factory(client=client_user, confirmed=True)
 
 
 @pytest.fixture
 def paid_event(event_factory, client_user):
     """Create a fully paid event."""
-    return event_factory(
-        client=client_user,
-        confirmed=True,
-        paid=True
-    )
+    return event_factory(client=client_user, confirmed=True, paid=True)
 
 
 @pytest.fixture
 def completed_payment(payment_factory, confirmed_event):
     """Create a completed payment for an event."""
-    return payment_factory(
-        event=confirmed_event,
-        completed=True
-    )
+    return payment_factory(event=confirmed_event, completed=True)
 
 
 @pytest.fixture
 def issued_invoice(invoice_factory, confirmed_event):
     """Create an issued invoice for an event."""
-    return invoice_factory(
-        event=confirmed_event,
-        issued=True
-    )
+    return invoice_factory(event=confirmed_event, issued=True)

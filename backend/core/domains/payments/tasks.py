@@ -12,13 +12,11 @@ Includes:
 import logging
 import random
 from datetime import timedelta
-from typing import Dict, Any, List
+
+from django.core.cache import cache
+from django.utils import timezone
 
 from celery import shared_task
-from django.core.cache import cache
-from django.db import transaction
-from django.db.models import Q
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +42,7 @@ WEBHOOK_RETRY_JITTER = 0.3
 # Gateway Health Monitoring Tasks
 # =============================================================================
 
+
 @shared_task
 def check_gateway_health():
     """
@@ -63,38 +62,30 @@ def check_gateway_health():
                 is_healthy, message = _check_gateway_status(gateway)
 
                 health_results[gateway.code] = {
-                    'name': gateway.name,
-                    'is_healthy': is_healthy,
-                    'message': message,
-                    'last_checked': timezone.now().isoformat()
+                    "name": gateway.name,
+                    "is_healthy": is_healthy,
+                    "message": message,
+                    "last_checked": timezone.now().isoformat(),
                 }
 
                 # Store individual gateway health
-                cache.set(
-                    f"gateway_health:{gateway.code}",
-                    health_results[gateway.code],
-                    timeout=3600
-                )
+                cache.set(f"gateway_health:{gateway.code}", health_results[gateway.code], timeout=3600)
 
             except Exception as e:
                 logger.error(f"Health check failed for gateway {gateway.code}: {e}")
                 health_results[gateway.code] = {
-                    'name': gateway.name,
-                    'is_healthy': False,
-                    'message': str(e),
-                    'last_checked': timezone.now().isoformat()
+                    "name": gateway.name,
+                    "is_healthy": False,
+                    "message": str(e),
+                    "last_checked": timezone.now().isoformat(),
                 }
 
         # Store overall health summary
-        all_healthy = all(r['is_healthy'] for r in health_results.values())
+        all_healthy = all(r["is_healthy"] for r in health_results.values())
         cache.set(
-            'gateway_health_summary',
-            {
-                'all_healthy': all_healthy,
-                'gateways': health_results,
-                'last_checked': timezone.now().isoformat()
-            },
-            timeout=3600
+            "gateway_health_summary",
+            {"all_healthy": all_healthy, "gateways": health_results, "last_checked": timezone.now().isoformat()},
+            timeout=3600,
         )
 
         logger.info(
@@ -102,20 +93,17 @@ def check_gateway_health():
             f"{sum(1 for r in health_results.values() if r['is_healthy'])}/{len(health_results)} healthy"
         )
 
-        return {
-            'status': 'success',
-            'all_healthy': all_healthy,
-            'gateways': health_results
-        }
+        return {"status": "success", "all_healthy": all_healthy, "gateways": health_results}
 
     except Exception as e:
         logger.error(f"Gateway health check failed: {e}")
-        return {'status': 'error', 'message': str(e)}
+        return {"status": "error", "message": str(e)}
 
 
 # =============================================================================
 # Webhook Retry Tasks
 # =============================================================================
+
 
 @shared_task(bind=True, max_retries=MAX_WEBHOOK_RETRIES)
 def retry_failed_webhook(self, webhook_log_id: int):
@@ -128,7 +116,7 @@ def retry_failed_webhook(self, webhook_log_id: int):
     Args:
         webhook_log_id: ID of the PaymentWebhookLog to retry
     """
-    from .models import PaymentWebhookLog, WebhookDeadLetter
+    from .models import PaymentWebhookLog
     from .services.unified_webhook_processor import UnifiedWebhookProcessor, WebhookEvent
 
     try:
@@ -137,13 +125,13 @@ def retry_failed_webhook(self, webhook_log_id: int):
         # Check if already processed successfully
         if webhook_log.processed_successfully:
             logger.info(f"Webhook {webhook_log_id} already processed successfully, skipping retry")
-            return {'status': 'already_processed', 'webhook_id': webhook_log_id}
+            return {"status": "already_processed", "webhook_id": webhook_log_id}
 
         # Check if max retries exceeded
         if webhook_log.retry_count >= MAX_WEBHOOK_RETRIES:
             logger.warning(f"Webhook {webhook_log_id} exceeded max retries, moving to dead letter")
             _move_to_dead_letter(webhook_log)
-            return {'status': 'moved_to_dead_letter', 'webhook_id': webhook_log_id}
+            return {"status": "moved_to_dead_letter", "webhook_id": webhook_log_id}
 
         # Reconstruct webhook event from stored data
         webhook_event = WebhookEvent(
@@ -151,7 +139,7 @@ def retry_failed_webhook(self, webhook_log_id: int):
             event_type=webhook_log.event_type,
             event_id=webhook_log.event_id,
             transaction_id=webhook_log.transaction_id,
-            raw_data=webhook_log.raw_data
+            raw_data=webhook_log.raw_data,
         )
 
         # Get the appropriate handler
@@ -159,7 +147,7 @@ def retry_failed_webhook(self, webhook_log_id: int):
         if not handler:
             logger.error(f"No handler found for gateway: {webhook_log.gateway_code}")
             _move_to_dead_letter(webhook_log, error="No handler found for gateway")
-            return {'status': 'no_handler', 'webhook_id': webhook_log_id}
+            return {"status": "no_handler", "webhook_id": webhook_log_id}
 
         # Process the webhook
         result = handler.process_webhook_event(webhook_event)
@@ -169,11 +157,7 @@ def retry_failed_webhook(self, webhook_log_id: int):
         if result.success:
             webhook_log.mark_processed(success=True, action=result.action_taken)
             logger.info(f"Webhook {webhook_log_id} retry successful on attempt {webhook_log.retry_count}")
-            return {
-                'status': 'success',
-                'webhook_id': webhook_log_id,
-                'attempt': webhook_log.retry_count
-            }
+            return {"status": "success", "webhook_id": webhook_log_id, "attempt": webhook_log.retry_count}
         else:
             webhook_log.mark_processed(success=False, error=result.message)
             webhook_log.save()
@@ -190,7 +174,7 @@ def retry_failed_webhook(self, webhook_log_id: int):
 
     except PaymentWebhookLog.DoesNotExist:
         logger.error(f"Webhook log {webhook_log_id} not found")
-        return {'status': 'not_found', 'webhook_id': webhook_log_id}
+        return {"status": "not_found", "webhook_id": webhook_log_id}
 
     except self.MaxRetriesExceededError:
         logger.error(f"Webhook {webhook_log_id} max retries exceeded")
@@ -199,7 +183,7 @@ def retry_failed_webhook(self, webhook_log_id: int):
             _move_to_dead_letter(webhook_log, error="Max retries exceeded")
         except PaymentWebhookLog.DoesNotExist:
             pass
-        return {'status': 'max_retries_exceeded', 'webhook_id': webhook_log_id}
+        return {"status": "max_retries_exceeded", "webhook_id": webhook_log_id}
 
     except Exception as e:
         logger.error(f"Error retrying webhook {webhook_log_id}: {e}")
@@ -220,15 +204,17 @@ def process_failed_webhooks():
         # Find failed webhooks from the last 24 hours that haven't exceeded retry limit
         cutoff_time = timezone.now() - timedelta(hours=24)
 
-        failed_webhooks = PaymentWebhookLog.objects.filter(
-            processed_successfully=False,
-            retry_count__lt=MAX_WEBHOOK_RETRIES,
-            received_at__gte=cutoff_time
-        ).exclude(
-            # Exclude webhooks that are currently being processed
-            # (have processed_at set recently)
-            processed_at__gte=timezone.now() - timedelta(minutes=5)
-        ).order_by('retry_count', 'received_at')[:50]  # Process max 50 at a time
+        failed_webhooks = (
+            PaymentWebhookLog.objects.filter(
+                processed_successfully=False, retry_count__lt=MAX_WEBHOOK_RETRIES, received_at__gte=cutoff_time
+            )
+            .exclude(
+                # Exclude webhooks that are currently being processed
+                # (have processed_at set recently)
+                processed_at__gte=timezone.now() - timedelta(minutes=5)
+            )
+            .order_by("retry_count", "received_at")[:50]
+        )  # Process max 50 at a time
 
         queued_count = 0
         for webhook_log in failed_webhooks:
@@ -236,21 +222,15 @@ def process_failed_webhooks():
             delay = _calculate_retry_delay(webhook_log.retry_count)
 
             # Queue the retry task
-            retry_failed_webhook.apply_async(
-                args=[webhook_log.id],
-                countdown=delay
-            )
+            retry_failed_webhook.apply_async(args=[webhook_log.id], countdown=delay)
             queued_count += 1
 
         logger.info(f"Queued {queued_count} failed webhooks for retry")
-        return {
-            'status': 'success',
-            'queued_count': queued_count
-        }
+        return {"status": "success", "queued_count": queued_count}
 
     except Exception as e:
         logger.error(f"Error processing failed webhooks: {e}")
-        return {'status': 'error', 'message': str(e)}
+        return {"status": "error", "message": str(e)}
 
 
 def _calculate_retry_delay(retry_count: int) -> int:
@@ -306,8 +286,7 @@ def _move_to_dead_letter(webhook_log, error: str = None):
         )
 
         logger.warning(
-            f"Webhook {webhook_log.event_id} moved to dead letter queue "
-            f"after {webhook_log.retry_count} retries"
+            f"Webhook {webhook_log.event_id} moved to dead letter queue after {webhook_log.retry_count} retries"
         )
 
     except Exception as e:
@@ -317,6 +296,7 @@ def _move_to_dead_letter(webhook_log, error: str = None):
 # =============================================================================
 # Orphaned Payment Detection Tasks
 # =============================================================================
+
 
 @shared_task
 def detect_orphaned_payments():
@@ -329,76 +309,69 @@ def detect_orphaned_payments():
     3. Have mismatched status with their Stripe records
     """
     from .models import Payment, PaymentTransaction
-    from .services.gateway_service import PaymentGatewayService
 
     try:
-        results = {
-            'stale_pending': [],
-            'stale_processing': [],
-            'missing_transactions': [],
-            'total_orphaned': 0
-        }
+        results = {"stale_pending": [], "stale_processing": [], "missing_transactions": [], "total_orphaned": 0}
 
         now = timezone.now()
 
         # 1. Find payments stuck in PENDING for more than 1 hour
         stale_pending_cutoff = now - timedelta(hours=1)
-        stale_pending = Payment.objects.filter(
-            status='PENDING',
-            created_at__lt=stale_pending_cutoff
-        ).select_related('event', 'invoice')
+        stale_pending = Payment.objects.filter(status="PENDING", created_at__lt=stale_pending_cutoff).select_related(
+            "event", "invoice"
+        )
 
         for payment in stale_pending:
-            results['stale_pending'].append({
-                'payment_id': payment.id,
-                'payment_number': payment.payment_number,
-                'amount': str(payment.amount),
-                'created_at': payment.created_at.isoformat(),
-                'event_id': payment.event_id,
-            })
+            results["stale_pending"].append(
+                {
+                    "payment_id": payment.id,
+                    "payment_number": payment.payment_number,
+                    "amount": str(payment.amount),
+                    "created_at": payment.created_at.isoformat(),
+                    "event_id": payment.event_id,
+                }
+            )
 
         # 2. Find payments stuck in PROCESSING for more than 30 minutes
         stale_processing_cutoff = now - timedelta(minutes=30)
         stale_processing = Payment.objects.filter(
-            status='PROCESSING',
-            created_at__lt=stale_processing_cutoff
-        ).select_related('event', 'invoice')
+            status="PROCESSING", created_at__lt=stale_processing_cutoff
+        ).select_related("event", "invoice")
 
         for payment in stale_processing:
-            results['stale_processing'].append({
-                'payment_id': payment.id,
-                'payment_number': payment.payment_number,
-                'amount': str(payment.amount),
-                'created_at': payment.created_at.isoformat(),
-                'event_id': payment.event_id,
-            })
+            results["stale_processing"].append(
+                {
+                    "payment_id": payment.id,
+                    "payment_number": payment.payment_number,
+                    "amount": str(payment.amount),
+                    "created_at": payment.created_at.isoformat(),
+                    "event_id": payment.event_id,
+                }
+            )
 
         # 3. Find completed payments without transaction records
         missing_transactions_cutoff = now - timedelta(hours=2)
         completed_without_transactions = Payment.objects.filter(
-            status='COMPLETED',
-            created_at__lt=missing_transactions_cutoff
-        ).exclude(
-            id__in=PaymentTransaction.objects.values_list('payment_id', flat=True)
-        )
+            status="COMPLETED", created_at__lt=missing_transactions_cutoff
+        ).exclude(id__in=PaymentTransaction.objects.values_list("payment_id", flat=True))
 
         for payment in completed_without_transactions:
-            results['missing_transactions'].append({
-                'payment_id': payment.id,
-                'payment_number': payment.payment_number,
-                'amount': str(payment.amount),
-                'created_at': payment.created_at.isoformat(),
-            })
+            results["missing_transactions"].append(
+                {
+                    "payment_id": payment.id,
+                    "payment_number": payment.payment_number,
+                    "amount": str(payment.amount),
+                    "created_at": payment.created_at.isoformat(),
+                }
+            )
 
         # Calculate totals
-        results['total_orphaned'] = (
-            len(results['stale_pending']) +
-            len(results['stale_processing']) +
-            len(results['missing_transactions'])
+        results["total_orphaned"] = (
+            len(results["stale_pending"]) + len(results["stale_processing"]) + len(results["missing_transactions"])
         )
 
         # Log results
-        if results['total_orphaned'] > 0:
+        if results["total_orphaned"] > 0:
             logger.warning(
                 f"Orphaned payment detection found {results['total_orphaned']} issues: "
                 f"{len(results['stale_pending'])} stale pending, "
@@ -408,29 +381,24 @@ def detect_orphaned_payments():
 
             # Store in cache for admin dashboard
             cache.set(
-                'orphaned_payments_report',
-                {
-                    **results,
-                    'detected_at': now.isoformat()
-                },
-                timeout=86400  # 24 hours
+                "orphaned_payments_report",
+                {**results, "detected_at": now.isoformat()},
+                timeout=86400,  # 24 hours
             )
         else:
             logger.info("Orphaned payment detection: No issues found")
 
-        return {
-            'status': 'success',
-            **results
-        }
+        return {"status": "success", **results}
 
     except Exception as e:
         logger.error(f"Error detecting orphaned payments: {e}")
-        return {'status': 'error', 'message': str(e)}
+        return {"status": "error", "message": str(e)}
 
 
 # =============================================================================
 # Payment Reconciliation Tasks
 # =============================================================================
+
 
 @shared_task
 def reconcile_payments_with_stripe():
@@ -440,40 +408,33 @@ def reconcile_payments_with_stripe():
     Compares local payment transaction records with Stripe's records
     to identify discrepancies.
     """
-    from .models import Payment, PaymentTransaction, PaymentGateway
+    from .models import PaymentGateway, PaymentTransaction
 
     try:
         import stripe
 
-        results = {
-            'checked': 0,
-            'matched': 0,
-            'discrepancies': [],
-            'errors': []
-        }
+        results = {"checked": 0, "matched": 0, "discrepancies": [], "errors": []}
 
         # Get Stripe gateway config
         try:
-            stripe_gateway = PaymentGateway.objects.get(code='stripe', is_active=True)
+            stripe_gateway = PaymentGateway.objects.get(code="stripe", is_active=True)
             config = stripe_gateway.get_decrypted_config()
-            stripe.api_key = config.get('secret_key')
+            stripe.api_key = config.get("secret_key")
         except PaymentGateway.DoesNotExist:
             logger.warning("Stripe gateway not found or inactive, skipping reconciliation")
-            return {'status': 'skipped', 'reason': 'No active Stripe gateway'}
+            return {"status": "skipped", "reason": "No active Stripe gateway"}
 
         # Get transactions from the last 24 hours
         cutoff_time = timezone.now() - timedelta(hours=24)
         transactions = PaymentTransaction.objects.filter(
-            gateway=stripe_gateway,
-            created_at__gte=cutoff_time,
-            transaction_id__isnull=False
-        ).select_related('payment')[:100]  # Limit to 100 per run
+            gateway=stripe_gateway, created_at__gte=cutoff_time, transaction_id__isnull=False
+        ).select_related("payment")[:100]  # Limit to 100 per run
 
         for txn in transactions:
-            results['checked'] += 1
+            results["checked"] += 1
             try:
                 # Retrieve the payment intent from Stripe
-                if txn.transaction_id.startswith('pi_'):
+                if txn.transaction_id.startswith("pi_"):
                     stripe_intent = stripe.PaymentIntent.retrieve(txn.transaction_id)
 
                     # Compare status
@@ -482,41 +443,37 @@ def reconcile_payments_with_stripe():
 
                     # Map Stripe status to local status
                     status_map = {
-                        'succeeded': 'COMPLETED',
-                        'requires_payment_method': 'FAILED',
-                        'requires_confirmation': 'PENDING',
-                        'requires_action': 'PENDING',
-                        'processing': 'PROCESSING',
-                        'canceled': 'CANCELLED',
+                        "succeeded": "COMPLETED",
+                        "requires_payment_method": "FAILED",
+                        "requires_confirmation": "PENDING",
+                        "requires_action": "PENDING",
+                        "processing": "PROCESSING",
+                        "canceled": "CANCELLED",
                     }
 
-                    expected_local_status = status_map.get(stripe_status, 'UNKNOWN')
+                    expected_local_status = status_map.get(stripe_status, "UNKNOWN")
 
                     if local_status == expected_local_status:
-                        results['matched'] += 1
+                        results["matched"] += 1
                     else:
-                        results['discrepancies'].append({
-                            'transaction_id': txn.transaction_id,
-                            'payment_id': txn.payment_id,
-                            'local_status': local_status,
-                            'stripe_status': stripe_status,
-                            'expected_local_status': expected_local_status,
-                            'amount': str(txn.amount),
-                        })
+                        results["discrepancies"].append(
+                            {
+                                "transaction_id": txn.transaction_id,
+                                "payment_id": txn.payment_id,
+                                "local_status": local_status,
+                                "stripe_status": stripe_status,
+                                "expected_local_status": expected_local_status,
+                                "amount": str(txn.amount),
+                            }
+                        )
 
             except stripe.error.StripeError as e:
-                results['errors'].append({
-                    'transaction_id': txn.transaction_id,
-                    'error': str(e)
-                })
+                results["errors"].append({"transaction_id": txn.transaction_id, "error": str(e)})
             except Exception as e:
-                results['errors'].append({
-                    'transaction_id': txn.transaction_id,
-                    'error': str(e)
-                })
+                results["errors"].append({"transaction_id": txn.transaction_id, "error": str(e)})
 
         # Log results
-        if results['discrepancies']:
+        if results["discrepancies"]:
             logger.warning(
                 f"Payment reconciliation found {len(results['discrepancies'])} discrepancies "
                 f"out of {results['checked']} checked"
@@ -524,12 +481,9 @@ def reconcile_payments_with_stripe():
 
             # Store in cache for admin dashboard
             cache.set(
-                'payment_reconciliation_report',
-                {
-                    **results,
-                    'reconciled_at': timezone.now().isoformat()
-                },
-                timeout=86400  # 24 hours
+                "payment_reconciliation_report",
+                {**results, "reconciled_at": timezone.now().isoformat()},
+                timeout=86400,  # 24 hours
             )
         else:
             logger.info(
@@ -537,19 +491,17 @@ def reconcile_payments_with_stripe():
                 f"{len(results['errors'])} errors"
             )
 
-        return {
-            'status': 'success',
-            **results
-        }
+        return {"status": "success", **results}
 
     except Exception as e:
         logger.error(f"Error reconciling payments: {e}")
-        return {'status': 'error', 'message': str(e)}
+        return {"status": "error", "message": str(e)}
 
 
 # =============================================================================
 # Helper Functions
 # =============================================================================
+
 
 def _check_gateway_status(gateway) -> tuple:
     """
@@ -559,32 +511,33 @@ def _check_gateway_status(gateway) -> tuple:
         Tuple of (is_healthy: bool, message: str)
     """
     # Gateway-specific health checks
-    if gateway.code == 'stripe':
+    if gateway.code == "stripe":
         return _check_stripe_health(gateway)
-    elif gateway.code == 'paymongo':
+    elif gateway.code == "paymongo":
         return _check_paymongo_health(gateway)
     else:
         # Generic check - just verify config exists
         config = gateway.get_decrypted_config()
         if config:
-            return True, 'Configuration present'
-        return False, 'No configuration found'
+            return True, "Configuration present"
+        return False, "No configuration found"
 
 
 def _check_stripe_health(gateway) -> tuple:
     """Check Stripe gateway health."""
     try:
         import stripe
+
         config = gateway.get_decrypted_config()
 
-        if not config.get('secret_key'):
-            return False, 'Missing secret key'
+        if not config.get("secret_key"):
+            return False, "Missing secret key"
 
         # Try to retrieve account info
-        stripe.api_key = config['secret_key']
+        stripe.api_key = config["secret_key"]
         stripe.Account.retrieve()
 
-        return True, 'Connected'
+        return True, "Connected"
 
     except Exception as e:
         return False, str(e)
@@ -594,25 +547,24 @@ def _check_paymongo_health(gateway) -> tuple:
     """Check PayMongo gateway health."""
     try:
         import requests
+
         config = gateway.get_decrypted_config()
 
-        if not config.get('secret_key'):
-            return False, 'Missing secret key'
+        if not config.get("secret_key"):
+            return False, "Missing secret key"
 
         # Try a simple API call
         response = requests.get(
-            'https://api.paymongo.com/v1/payment_intents',
-            auth=(config['secret_key'], ''),
-            timeout=10
+            "https://api.paymongo.com/v1/payment_intents", auth=(config["secret_key"], ""), timeout=10
         )
 
         if response.status_code in [200, 401]:  # 401 is ok, means auth works
-            return True, 'Connected'
+            return True, "Connected"
         else:
-            return False, f'API error: {response.status_code}'
+            return False, f"API error: {response.status_code}"
 
     except requests.Timeout:
-        return False, 'Connection timeout'
+        return False, "Connection timeout"
     except Exception as e:
         return False, str(e)
 
@@ -623,36 +575,34 @@ def payments_health_check():
     try:
         logger.info("Payments system health check passed")
         return {
-            'status': 'healthy',
-            'timestamp': timezone.now().isoformat(),
-            'message': 'Payments system is operational'
+            "status": "healthy",
+            "timestamp": timezone.now().isoformat(),
+            "message": "Payments system is operational",
         }
     except Exception as e:
         logger.error(f"Payments health check failed: {e}")
-        return {'status': 'unhealthy', 'message': str(e)}
+        return {"status": "unhealthy", "message": str(e)}
 
 
-@shared_task(name='payments.send_overdue_payment_notices')
+@shared_task(name="payments.send_overdue_payment_notices")
 def send_overdue_payment_notices():
     """
     Send Payment Overdue Notice for invoices past their due date.
 
     This task runs daily to notify clients about overdue invoices.
     """
-    from .models import Invoice
+    from core.domains.communications.context_service import CommunicationContextService, ContextType
     from core.domains.communications.services import CommunicationService
-    from core.domains.communications.context_service import (
-        CommunicationContextService, ContextType
-    )
+
+    from .models import Invoice
 
     try:
         today = timezone.now().date()
 
         # Find unpaid invoices past their due date
         overdue_invoices = Invoice.objects.filter(
-            status__in=['PENDING', 'PARTIALLY_PAID'],
-            due_date__lt=today
-        ).select_related('event', 'event__client')
+            status__in=["PENDING", "PARTIALLY_PAID"], due_date__lt=today
+        ).select_related("event", "event__client")
 
         count = 0
         for invoice in overdue_invoices:
@@ -664,10 +614,11 @@ def send_overdue_payment_notices():
 
                 # Check if we already sent an overdue notice recently (within 7 days)
                 from .models import PaymentNotificationHistory
+
                 recent_notice = PaymentNotificationHistory.objects.filter(
                     invoice=invoice,
-                    notification_type='PAYMENT_OVERDUE',
-                    sent_at__gte=timezone.now() - timedelta(days=7)
+                    notification_type="PAYMENT_OVERDUE",
+                    sent_at__gte=timezone.now() - timedelta(days=7),
                 ).exists()
 
                 if recent_notice:
@@ -684,11 +635,11 @@ def send_overdue_payment_notices():
 
                 # Add overdue-specific context
                 days_overdue = (today - invoice.due_date).days
-                template_data['days_overdue'] = days_overdue
-                template_data['due_date_formatted'] = invoice.due_date.strftime("%B %d, %Y")
+                template_data["days_overdue"] = days_overdue
+                template_data["due_date_formatted"] = invoice.due_date.strftime("%B %d, %Y")
 
                 comm_service.send_communication(
-                    template_name='Payment Overdue Notice',
+                    template_name="Payment Overdue Notice",
                     recipient=client.email,
                     context_data=template_data,
                     client=client,
@@ -700,7 +651,7 @@ def send_overdue_payment_notices():
                 # Record the notification
                 PaymentNotificationHistory.objects.create(
                     invoice=invoice,
-                    notification_type='PAYMENT_OVERDUE',
+                    notification_type="PAYMENT_OVERDUE",
                     recipient_email=client.email,
                     sent_at=timezone.now(),
                 )
@@ -712,8 +663,8 @@ def send_overdue_payment_notices():
                 logger.error(f"Failed to send overdue notice for invoice {invoice.id}: {e}")
 
         logger.info(f"Payment overdue task completed: sent {count} notices")
-        return {'status': 'success', 'notices_sent': count}
+        return {"status": "success", "notices_sent": count}
 
     except Exception as e:
         logger.error(f"Error in send_overdue_payment_notices task: {e}")
-        return {'status': 'error', 'message': str(e)}
+        return {"status": "error", "message": str(e)}

@@ -1,12 +1,12 @@
 # backend/core/domains/vip/models.py
 from decimal import Decimal
 
-from core.utils.models import BaseModel
 from django.conf import settings
-from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
+
+from core.utils.models import BaseModel
 
 
 class VIPSettings(BaseModel):
@@ -16,95 +16,67 @@ class VIPSettings(BaseModel):
     """
 
     # Program Toggle
-    is_program_enabled = models.BooleanField(
-        default=True,
-        help_text="Master toggle for the VIP program"
-    )
+    is_program_enabled = models.BooleanField(default=True, help_text="Master toggle for the VIP program")
     program_name = models.CharField(
-        max_length=100,
-        default="VIP Program",
-        help_text="Display name for the loyalty program"
+        max_length=100, default="VIP Program", help_text="Display name for the loyalty program"
     )
 
     # Earning Methods (toggles)
     earning_automatic_enabled = models.BooleanField(
-        default=True,
-        help_text="Enable automatic tier upgrades based on spending/bookings"
+        default=True, help_text="Enable automatic tier upgrades based on spending/bookings"
     )
-    earning_points_enabled = models.BooleanField(
-        default=False,
-        help_text="Enable points-based loyalty system"
-    )
-    earning_manual_enabled = models.BooleanField(
-        default=True,
-        help_text="Allow manual VIP assignment by admins"
-    )
+    earning_points_enabled = models.BooleanField(default=False, help_text="Enable points-based loyalty system")
+    earning_manual_enabled = models.BooleanField(default=True, help_text="Allow manual VIP assignment by admins")
 
     # Automatic Earning Configuration
     AUTOMATIC_EARNING_TYPE_CHOICES = [
-        ('SPENDING', 'Total Spending'),
-        ('BOOKINGS', 'Completed Bookings'),
-        ('BOTH', 'Both (Any Condition Met)'),
+        ("SPENDING", "Total Spending"),
+        ("BOOKINGS", "Completed Bookings"),
+        ("BOTH", "Both (Any Condition Met)"),
     ]
     automatic_earning_type = models.CharField(
         max_length=20,
         choices=AUTOMATIC_EARNING_TYPE_CHOICES,
-        default='SPENDING',
-        help_text="Criteria for automatic tier upgrades"
+        default="SPENDING",
+        help_text="Criteria for automatic tier upgrades",
     )
 
     # Points Configuration
     points_per_currency_spent = models.DecimalField(
-        max_digits=5,
-        decimal_places=2,
-        default=Decimal('1.00'),
-        help_text="Points earned per currency unit spent"
+        max_digits=5, decimal_places=2, default=Decimal("1.00"), help_text="Points earned per currency unit spent"
     )
     points_currency_unit = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        default=Decimal('100.00'),
-        help_text="Currency amount that earns points_per_currency_spent"
+        default=Decimal("100.00"),
+        help_text="Currency amount that earns points_per_currency_spent",
     )
     points_expiry_months = models.PositiveIntegerField(
-        default=0,
-        help_text="Months until points expire (0 = never expire)"
+        default=0, help_text="Months until points expire (0 = never expire)"
     )
 
     # VIP Status Expiration Settings
     EXPIRATION_TYPE_CHOICES = [
-        ('NEVER', 'Never Expires'),
-        ('INACTIVITY', 'After X Months Inactivity'),
-        ('ANNUAL', 'Annual Renewal Required'),
+        ("NEVER", "Never Expires"),
+        ("INACTIVITY", "After X Months Inactivity"),
+        ("ANNUAL", "Annual Renewal Required"),
     ]
     expiration_type = models.CharField(
-        max_length=20,
-        choices=EXPIRATION_TYPE_CHOICES,
-        default='NEVER',
-        help_text="How VIP status expires"
+        max_length=20, choices=EXPIRATION_TYPE_CHOICES, default="NEVER", help_text="How VIP status expires"
     )
     expiration_months = models.PositiveIntegerField(
-        default=12,
-        help_text="Months for expiration (used with INACTIVITY or ANNUAL)"
+        default=12, help_text="Months for expiration (used with INACTIVITY or ANNUAL)"
     )
 
     # Client Visibility Settings
-    show_vip_status_to_client = models.BooleanField(
-        default=True,
-        help_text="Show VIP tier/status in client portal"
-    )
+    show_vip_status_to_client = models.BooleanField(default=True, help_text="Show VIP tier/status in client portal")
     show_tier_progress_to_client = models.BooleanField(
-        default=True,
-        help_text="Show progress toward next tier in client portal"
+        default=True, help_text="Show progress toward next tier in client portal"
     )
     show_available_rewards_to_client = models.BooleanField(
-        default=True,
-        help_text="Show available benefits/rewards in client portal"
+        default=True, help_text="Show available benefits/rewards in client portal"
     )
-    show_points_balance_to_client = models.BooleanField(
-        default=True,
-        help_text="Show points balance in client portal"
-    )
+    show_points_balance_to_client = models.BooleanField(default=True, help_text="Show points balance in client portal")
 
     class Meta:
         verbose_name = "VIP Settings"
@@ -131,29 +103,13 @@ class VIPTier(BaseModel):
     multi-tier hierarchy (Bronze/Silver/Gold/Platinum).
     """
 
-    name = models.CharField(
-        max_length=100,
-        help_text="Display name for the tier (e.g., 'Gold', 'VIP', 'Platinum')"
-    )
-    slug = models.SlugField(
-        max_length=100,
-        unique=True,
-        blank=True
-    )
-    description = models.TextField(
-        blank=True,
-        help_text="Description of tier benefits shown to clients"
-    )
+    name = models.CharField(max_length=100, help_text="Display name for the tier (e.g., 'Gold', 'VIP', 'Platinum')")
+    slug = models.SlugField(max_length=100, unique=True, blank=True)
+    description = models.TextField(blank=True, help_text="Description of tier benefits shown to clients")
 
     # Tier Hierarchy
-    level = models.PositiveIntegerField(
-        unique=True,
-        help_text="Tier level - higher numbers = more exclusive"
-    )
-    is_default = models.BooleanField(
-        default=False,
-        help_text="Default tier for new clients (typically 'Standard')"
-    )
+    level = models.PositiveIntegerField(unique=True, help_text="Tier level - higher numbers = more exclusive")
+    is_default = models.BooleanField(default=False, help_text="Default tier for new clients (typically 'Standard')")
 
     # Automatic Qualification Thresholds (any can qualify)
     min_total_spent = models.DecimalField(
@@ -161,35 +117,25 @@ class VIPTier(BaseModel):
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="Minimum total spending to qualify for this tier"
+        help_text="Minimum total spending to qualify for this tier",
     )
     min_completed_bookings = models.PositiveIntegerField(
-        null=True,
-        blank=True,
-        help_text="Minimum completed bookings to qualify for this tier"
+        null=True, blank=True, help_text="Minimum completed bookings to qualify for this tier"
     )
     min_points_required = models.PositiveIntegerField(
-        null=True,
-        blank=True,
-        help_text="Minimum points balance to qualify for this tier"
+        null=True, blank=True, help_text="Minimum points balance to qualify for this tier"
     )
 
     # Styling (for client portal display)
     color = models.CharField(
-        max_length=7,
-        default='#6B7280',
-        help_text="Hex color for tier badge (e.g., #FFD700 for gold)"
+        max_length=7, default="#6B7280", help_text="Hex color for tier badge (e.g., #FFD700 for gold)"
     )
-    icon = models.CharField(
-        max_length=50,
-        blank=True,
-        help_text="Icon name for tier display"
-    )
+    icon = models.CharField(max_length=50, blank=True, help_text="Icon name for tier display")
 
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        ordering = ['level']
+        ordering = ["level"]
         verbose_name = "VIP Tier"
         verbose_name_plural = "VIP Tiers"
 
@@ -220,37 +166,26 @@ class VIPBenefit(BaseModel):
     """
 
     BENEFIT_TYPE_CHOICES = [
-        ('PERCENTAGE_DISCOUNT', 'Percentage Discount'),
-        ('FIXED_DISCOUNT', 'Fixed Amount Discount'),
-        ('FREE_HOURS', 'Free Excess Hours'),
-        ('WAIVE_SERVICE_CHARGE', 'Waive Service Charge'),
-        ('WAIVE_LATE_FEE', 'Waive Late Fee'),
-        ('WAIVE_RESCHEDULING_FEE', 'Waive Rescheduling Fee'),
-        ('PRIORITY_BOOKING', 'Priority Booking'),
-        ('EARLY_ACCESS', 'Early Access to Packages'),
-        ('EXCLUSIVE_PACKAGE', 'Access to Exclusive Packages'),
-        ('COMPLIMENTARY_ADDON', 'Complimentary Add-on'),
+        ("PERCENTAGE_DISCOUNT", "Percentage Discount"),
+        ("FIXED_DISCOUNT", "Fixed Amount Discount"),
+        ("FREE_HOURS", "Free Excess Hours"),
+        ("WAIVE_SERVICE_CHARGE", "Waive Service Charge"),
+        ("WAIVE_LATE_FEE", "Waive Late Fee"),
+        ("WAIVE_RESCHEDULING_FEE", "Waive Rescheduling Fee"),
+        ("PRIORITY_BOOKING", "Priority Booking"),
+        ("EARLY_ACCESS", "Early Access to Packages"),
+        ("EXCLUSIVE_PACKAGE", "Access to Exclusive Packages"),
+        ("COMPLIMENTARY_ADDON", "Complimentary Add-on"),
     ]
 
     APPLICATION_MODE_CHOICES = [
-        ('AUTOMATIC', 'Apply Automatically'),
-        ('REDEEMABLE', 'Redeemable from Pool'),
+        ("AUTOMATIC", "Apply Automatically"),
+        ("REDEEMABLE", "Redeemable from Pool"),
     ]
 
-    tier = models.ForeignKey(
-        VIPTier,
-        on_delete=models.CASCADE,
-        related_name='benefits'
-    )
-    benefit_type = models.CharField(
-        max_length=30,
-        choices=BENEFIT_TYPE_CHOICES
-    )
-    application_mode = models.CharField(
-        max_length=20,
-        choices=APPLICATION_MODE_CHOICES,
-        default='AUTOMATIC'
-    )
+    tier = models.ForeignKey(VIPTier, on_delete=models.CASCADE, related_name="benefits")
+    benefit_type = models.CharField(max_length=30, choices=BENEFIT_TYPE_CHOICES)
+    application_mode = models.CharField(max_length=20, choices=APPLICATION_MODE_CHOICES, default="AUTOMATIC")
 
     # Benefit Value (interpretation depends on benefit_type)
     value = models.DecimalField(
@@ -258,48 +193,34 @@ class VIPBenefit(BaseModel):
         decimal_places=2,
         null=True,
         blank=True,
-        help_text="Discount %, fixed amount, or number of free hours"
+        help_text="Discount %, fixed amount, or number of free hours",
     )
 
     # For exclusive packages/addons - links to specific products
     applicable_products = models.ManyToManyField(
-        'products.ProductOption',
+        "products.ProductOption",
         blank=True,
-        related_name='vip_benefits',
-        help_text="Products this benefit applies to (for exclusive/complimentary)"
+        related_name="vip_benefits",
+        help_text="Products this benefit applies to (for exclusive/complimentary)",
     )
 
     # Usage Limits
     max_uses_per_booking = models.PositiveIntegerField(
-        null=True,
-        blank=True,
-        help_text="Maximum times this benefit can be used per booking"
+        null=True, blank=True, help_text="Maximum times this benefit can be used per booking"
     )
     max_uses_per_month = models.PositiveIntegerField(
-        null=True,
-        blank=True,
-        help_text="Maximum times this benefit can be used per month"
+        null=True, blank=True, help_text="Maximum times this benefit can be used per month"
     )
 
     # Points cost (for redeemable benefits)
-    points_cost = models.PositiveIntegerField(
-        default=0,
-        help_text="Points required to redeem this benefit (0 = free)"
-    )
+    points_cost = models.PositiveIntegerField(default=0, help_text="Points required to redeem this benefit (0 = free)")
 
     is_active = models.BooleanField(default=True)
-    description = models.TextField(
-        blank=True,
-        help_text="Internal description of the benefit"
-    )
-    display_name = models.CharField(
-        max_length=100,
-        blank=True,
-        help_text="Client-facing name for the benefit"
-    )
+    description = models.TextField(blank=True, help_text="Internal description of the benefit")
+    display_name = models.CharField(max_length=100, blank=True, help_text="Client-facing name for the benefit")
 
     class Meta:
-        ordering = ['tier__level', 'benefit_type']
+        ordering = ["tier__level", "benefit_type"]
         verbose_name = "VIP Benefit"
         verbose_name_plural = "VIP Benefits"
 
@@ -321,24 +242,18 @@ class ClientVIPStatus(BaseModel):
     """
 
     STATUS_CHOICES = [
-        ('ACTIVE', 'Active'),
-        ('EXPIRED', 'Expired'),
-        ('SUSPENDED', 'Suspended'),
+        ("ACTIVE", "Active"),
+        ("EXPIRED", "Expired"),
+        ("SUSPENDED", "Suspended"),
     ]
 
     client = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='vip_status',
-        limit_choices_to={'role': 'CLIENT'}
+        related_name="vip_status",
+        limit_choices_to={"role": "CLIENT"},
     )
-    current_tier = models.ForeignKey(
-        VIPTier,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='members'
-    )
+    current_tier = models.ForeignKey(VIPTier, on_delete=models.SET_NULL, null=True, blank=True, related_name="members")
 
     # Points System
     points_balance = models.PositiveIntegerField(default=0)
@@ -346,19 +261,11 @@ class ClientVIPStatus(BaseModel):
     lifetime_points_spent = models.PositiveIntegerField(default=0)
 
     # Spending/Booking Tracking
-    total_spent = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=Decimal('0.00')
-    )
+    total_spent = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal("0.00"))
     completed_bookings_count = models.PositiveIntegerField(default=0)
 
     # Status
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='ACTIVE'
-    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="ACTIVE")
 
     # Manual Assignment Info
     assigned_by = models.ForeignKey(
@@ -366,30 +273,15 @@ class ClientVIPStatus(BaseModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='vip_assignments',
-        help_text="Admin who manually assigned the tier"
+        related_name="vip_assignments",
+        help_text="Admin who manually assigned the tier",
     )
-    assigned_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        help_text="When tier was manually assigned"
-    )
-    assignment_reason = models.CharField(
-        max_length=255,
-        blank=True,
-        help_text="Reason for manual assignment"
-    )
+    assigned_at = models.DateTimeField(null=True, blank=True, help_text="When tier was manually assigned")
+    assignment_reason = models.CharField(max_length=255, blank=True, help_text="Reason for manual assignment")
 
     # Expiration
-    expires_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        help_text="When VIP status expires"
-    )
-    last_activity_at = models.DateTimeField(
-        auto_now=True,
-        help_text="Last booking/payment activity"
-    )
+    expires_at = models.DateTimeField(null=True, blank=True, help_text="When VIP status expires")
+    last_activity_at = models.DateTimeField(auto_now=True, help_text="Last booking/payment activity")
 
     class Meta:
         verbose_name = "Client VIP Status"
@@ -404,16 +296,14 @@ class ClientVIPStatus(BaseModel):
         """Check if client has a non-default tier"""
         if not self.current_tier:
             return False
-        return not self.current_tier.is_default and self.status == 'ACTIVE'
+        return not self.current_tier.is_default and self.status == "ACTIVE"
 
     @property
     def is_expired(self):
         """Check if VIP status has expired"""
-        if self.status == 'EXPIRED':
+        if self.status == "EXPIRED":
             return True
-        if self.expires_at and self.expires_at < timezone.now():
-            return True
-        return False
+        return bool(self.expires_at and self.expires_at < timezone.now())
 
 
 class VIPPointTransaction(BaseModel):
@@ -423,60 +313,37 @@ class VIPPointTransaction(BaseModel):
     """
 
     TRANSACTION_TYPE_CHOICES = [
-        ('EARNED_BOOKING', 'Earned from Booking'),  # Reserved — points earned via EARNED_PAYMENT
-        ('EARNED_PAYMENT', 'Earned from Payment'),
-        ('EARNED_MANUAL', 'Manually Added'),  # Reserved — use EARNED_BONUS for manual awards
-        ('EARNED_BONUS', 'Bonus Points'),
-        ('SPENT_REWARD', 'Spent on Reward'),
-        ('EXPIRED', 'Points Expired'),
-        ('ADJUSTED', 'Manual Adjustment'),
+        ("EARNED_BOOKING", "Earned from Booking"),  # Reserved — points earned via EARNED_PAYMENT
+        ("EARNED_PAYMENT", "Earned from Payment"),
+        ("EARNED_MANUAL", "Manually Added"),  # Reserved — use EARNED_BONUS for manual awards
+        ("EARNED_BONUS", "Bonus Points"),
+        ("SPENT_REWARD", "Spent on Reward"),
+        ("EXPIRED", "Points Expired"),
+        ("ADJUSTED", "Manual Adjustment"),
     ]
 
-    client_vip_status = models.ForeignKey(
-        ClientVIPStatus,
-        on_delete=models.CASCADE,
-        related_name='point_transactions'
-    )
-    transaction_type = models.CharField(
-        max_length=20,
-        choices=TRANSACTION_TYPE_CHOICES
-    )
-    points = models.IntegerField(
-        help_text="Positive for earned, negative for spent/expired"
-    )
+    client_vip_status = models.ForeignKey(ClientVIPStatus, on_delete=models.CASCADE, related_name="point_transactions")
+    transaction_type = models.CharField(max_length=20, choices=TRANSACTION_TYPE_CHOICES)
+    points = models.IntegerField(help_text="Positive for earned, negative for spent/expired")
 
     # Reference to source (optional based on transaction type)
     event = models.ForeignKey(
-        'events.Event',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='vip_point_transactions'
+        "events.Event", on_delete=models.SET_NULL, null=True, blank=True, related_name="vip_point_transactions"
     )
     payment = models.ForeignKey(
-        'payments.Payment',
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='vip_point_transactions'
+        "payments.Payment", on_delete=models.SET_NULL, null=True, blank=True, related_name="vip_point_transactions"
     )
 
     description = models.CharField(max_length=255)
-    balance_after = models.PositiveIntegerField(
-        help_text="Points balance after this transaction"
-    )
+    balance_after = models.PositiveIntegerField(help_text="Points balance after this transaction")
 
     # Admin who performed manual adjustment
     performed_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='vip_point_adjustments'
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="vip_point_adjustments"
     )
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         verbose_name = "VIP Point Transaction"
         verbose_name_plural = "VIP Point Transactions"
 
@@ -491,53 +358,26 @@ class VIPRewardRedemption(BaseModel):
     """
 
     STATUS_CHOICES = [
-        ('PENDING', 'Pending'),
-        ('APPLIED', 'Applied'),
-        ('CANCELLED', 'Cancelled'),
+        ("PENDING", "Pending"),
+        ("APPLIED", "Applied"),
+        ("CANCELLED", "Cancelled"),
     ]
 
-    client_vip_status = models.ForeignKey(
-        ClientVIPStatus,
-        on_delete=models.CASCADE,
-        related_name='redemptions'
-    )
-    benefit = models.ForeignKey(
-        VIPBenefit,
-        on_delete=models.CASCADE,
-        related_name='redemptions'
-    )
-    event = models.ForeignKey(
-        'events.Event',
-        on_delete=models.CASCADE,
-        related_name='vip_redemptions'
-    )
+    client_vip_status = models.ForeignKey(ClientVIPStatus, on_delete=models.CASCADE, related_name="redemptions")
+    benefit = models.ForeignKey(VIPBenefit, on_delete=models.CASCADE, related_name="redemptions")
+    event = models.ForeignKey("events.Event", on_delete=models.CASCADE, related_name="vip_redemptions")
 
     # Redemption Details
-    status = models.CharField(
-        max_length=20,
-        choices=STATUS_CHOICES,
-        default='PENDING'
-    )
-    points_spent = models.PositiveIntegerField(
-        default=0,
-        help_text="Points deducted for this redemption"
-    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="PENDING")
+    points_spent = models.PositiveIntegerField(default=0, help_text="Points deducted for this redemption")
     value_applied = models.DecimalField(
-        max_digits=10,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        help_text="Monetary value of the benefit applied"
+        max_digits=10, decimal_places=2, null=True, blank=True, help_text="Monetary value of the benefit applied"
     )
 
-    applied_at = models.DateTimeField(
-        null=True,
-        blank=True,
-        help_text="When the benefit was applied to the booking"
-    )
+    applied_at = models.DateTimeField(null=True, blank=True, help_text="When the benefit was applied to the booking")
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         verbose_name = "VIP Reward Redemption"
         verbose_name_plural = "VIP Reward Redemptions"
 
@@ -552,52 +392,26 @@ class VIPTierHistory(BaseModel):
     """
 
     REASON_CHOICES = [
-        ('AUTOMATIC_UPGRADE', 'Automatic Upgrade'),
-        ('AUTOMATIC_DOWNGRADE', 'Automatic Downgrade'),
-        ('MANUAL_ASSIGNMENT', 'Manual Assignment'),
-        ('EXPIRATION', 'Status Expired'),
-        ('INITIAL', 'Initial Assignment'),
+        ("AUTOMATIC_UPGRADE", "Automatic Upgrade"),
+        ("AUTOMATIC_DOWNGRADE", "Automatic Downgrade"),
+        ("MANUAL_ASSIGNMENT", "Manual Assignment"),
+        ("EXPIRATION", "Status Expired"),
+        ("INITIAL", "Initial Assignment"),
     ]
 
-    client_vip_status = models.ForeignKey(
-        ClientVIPStatus,
-        on_delete=models.CASCADE,
-        related_name='tier_history'
-    )
-    from_tier = models.ForeignKey(
-        VIPTier,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='+'
-    )
-    to_tier = models.ForeignKey(
-        VIPTier,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='+'
-    )
+    client_vip_status = models.ForeignKey(ClientVIPStatus, on_delete=models.CASCADE, related_name="tier_history")
+    from_tier = models.ForeignKey(VIPTier, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    to_tier = models.ForeignKey(VIPTier, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
 
-    reason = models.CharField(
-        max_length=30,
-        choices=REASON_CHOICES
-    )
-    notes = models.TextField(
-        blank=True,
-        help_text="Additional notes about the tier change"
-    )
+    reason = models.CharField(max_length=30, choices=REASON_CHOICES)
+    notes = models.TextField(blank=True, help_text="Additional notes about the tier change")
 
     changed_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='vip_tier_changes'
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="vip_tier_changes"
     )
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         verbose_name = "VIP Tier History"
         verbose_name_plural = "VIP Tier Histories"
 

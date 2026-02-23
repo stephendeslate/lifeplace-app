@@ -19,10 +19,7 @@ import {
   CheckCircle as RequiredIcon,
   RadioButtonUnchecked as OptionalIcon,
 } from '@mui/icons-material';
-import type {
-  TemplateVariableInserterProps,
-  VariableGroup,
-} from '../../types/templates.types';
+import type { TemplateVariableInserterProps, VariableGroup } from '../../types/templates.types';
 import { getVariableGroupTitle, getVariableGroupColor } from '../../hooks/useTemplateVariables';
 import { TemplateStartersGallery } from './TemplateStartersGallery';
 
@@ -67,7 +64,9 @@ export const TemplateVariableInserter: React.FC<TemplateVariableInserterProps> =
     if (!variableSchemas?.variable_groups) return [];
 
     // Helper to get group color (inline to avoid dependency issues)
-    const getGroupColor = (groupKey: string): 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'error' => {
+    const getGroupColor = (
+      groupKey: string,
+    ): 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'error' => {
       if (groupColors && groupColors[groupKey]) {
         return groupColors[groupKey];
       }
@@ -86,7 +85,10 @@ export const TemplateVariableInserter: React.FC<TemplateVariableInserterProps> =
       color: 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'error';
     }> = [];
 
-    for (const [groupKey, groupData] of Object.entries(variableSchemas.variable_groups) as [string, VariableGroup][]) {
+    for (const [groupKey, groupData] of Object.entries(variableSchemas.variable_groups) as [
+      string,
+      VariableGroup,
+    ][]) {
       // Filter by context type if specified
       if (contextType && !groupData.available_in.includes(contextType)) {
         continue;
@@ -142,9 +144,13 @@ export const TemplateVariableInserter: React.FC<TemplateVariableInserterProps> =
             <Typography variant="caption" color="text.secondary">
               Click any variable to insert it at the cursor position.
               <Box component="span" sx={{ ml: 1 }}>
-                <RequiredIcon sx={{ fontSize: 12, color: 'success.main', verticalAlign: 'middle', mr: 0.5 }} />
+                <RequiredIcon
+                  sx={{ fontSize: 12, color: 'success.main', verticalAlign: 'middle', mr: 0.5 }}
+                />
                 = always available
-                <OptionalIcon sx={{ fontSize: 12, color: 'text.disabled', verticalAlign: 'middle', mx: 0.5 }} />
+                <OptionalIcon
+                  sx={{ fontSize: 12, color: 'text.disabled', verticalAlign: 'middle', mx: 0.5 }}
+                />
                 = may be empty
               </Box>
             </Typography>
@@ -169,7 +175,10 @@ export const TemplateVariableInserter: React.FC<TemplateVariableInserterProps> =
                         title={
                           <Box>
                             <Typography variant="body2">{variable.description}</Typography>
-                            <Typography variant="caption" color={variable.required ? 'success.light' : 'grey.400'}>
+                            <Typography
+                              variant="caption"
+                              color={variable.required ? 'success.light' : 'grey.400'}
+                            >
                               {variable.required ? 'Always available' : 'May be empty'}
                             </Typography>
                           </Box>
@@ -239,10 +248,15 @@ export const TemplateVariableInserter: React.FC<TemplateVariableInserterProps> =
                   description: template.description,
                   content: template.content,
                   previewHtml: template.content,
-                  category: key.includes('welcome') ? 'welcome' :
-                           key.includes('reminder') ? 'reminder' :
-                           key.includes('followup') || key.includes('follow') ? 'followup' :
-                           key.includes('confirm') ? 'confirmation' : undefined,
+                  category: key.includes('welcome')
+                    ? 'welcome'
+                    : key.includes('reminder')
+                      ? 'reminder'
+                      : key.includes('followup') || key.includes('follow')
+                        ? 'followup'
+                        : key.includes('confirm')
+                          ? 'confirmation'
+                          : undefined,
                 }))}
                 onSelect={onTemplateLoad}
                 showConfirmation={true}
@@ -254,10 +268,7 @@ export const TemplateVariableInserter: React.FC<TemplateVariableInserterProps> =
 
       {/* Formatting Tips */}
       {showFormattingTips && (
-        <Accordion
-          expanded={expandedPanel === 'tips'}
-          onChange={handlePanelChange('tips')}
-        >
+        <Accordion expanded={expandedPanel === 'tips'} onChange={handlePanelChange('tips')}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Typography variant="body2" fontWeight="medium">
               Formatting Tips

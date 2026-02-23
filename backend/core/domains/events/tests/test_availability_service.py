@@ -10,23 +10,20 @@ Tests:
 - Cache operations
 """
 
-import pytest
 from datetime import date, timedelta
-from decimal import Decimal
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from django.utils import timezone
-from freezegun import freeze_time
+
+import pytest
 
 from core.domains.events.services.availability_service import (
-    DateAvailabilityService,
     AvailabilityRequest,
-    DateAvailabilityInfo,
     AvailabilityStatus,
     ConflictLevel,
+    DateAvailabilityService,
     availability_service,
 )
-from core.domains.events.models import Event
 
 
 @pytest.mark.django_db
@@ -81,7 +78,7 @@ class TestCheckDateAvailability:
         target_date = timezone.now() + timedelta(days=30)
         event_factory(
             start_date=target_date,
-            status='LEAD',
+            status="LEAD",
         )
 
         request = AvailabilityRequest(
@@ -100,7 +97,7 @@ class TestCheckDateAvailability:
         target_date = timezone.now() + timedelta(days=30)
         event_factory(
             start_date=target_date,
-            status='CONFIRMED',
+            status="CONFIRMED",
             date_blocked_trait=True,
         )
 
@@ -113,7 +110,7 @@ class TestCheckDateAvailability:
         assert result.status == AvailabilityStatus.FULLY_BOOKED
         assert result.conflict_level == ConflictLevel.CONFIRMED
         assert result.can_book_event is False
-        assert 'already booked' in result.reasons[0].lower()
+        assert "already booked" in result.reasons[0].lower()
 
     def test_confirmed_without_date_blocked_allows_booking(self, event_factory, clear_cache):
         """Test confirmed event without date_blocked still allows new bookings."""
@@ -122,7 +119,7 @@ class TestCheckDateAvailability:
         target_date = timezone.now() + timedelta(days=30)
         event_factory(
             start_date=target_date,
-            status='CONFIRMED',
+            status="CONFIRMED",
             date_blocked=False,
         )
 
@@ -142,7 +139,7 @@ class TestCheckDateAvailability:
         target_date = timezone.now() + timedelta(days=30)
         event = event_factory(
             start_date=target_date,
-            status='CONFIRMED',
+            status="CONFIRMED",
             date_blocked_trait=True,
         )
 
@@ -184,12 +181,12 @@ class TestCheckDateAvailability:
         target_date = timezone.now() + timedelta(days=30)
         event_factory(
             start_date=target_date,
-            status='CONFIRMED',
+            status="CONFIRMED",
             date_blocked_trait=True,
         )
         event_factory(
             start_date=target_date,
-            status='CONFIRMED',
+            status="CONFIRMED",
             date_blocked_trait=True,
         )
 
@@ -210,14 +207,14 @@ class TestConflictAnalysis:
     @pytest.mark.skip(reason="Client name not being included in conflict - serialization issue")
     def test_conflict_details_include_event_info(self, event_factory, user_factory, clear_cache):
         """Test that conflicts include event details."""
-        client = user_factory(first_name='John', last_name='Doe')
+        client = user_factory(first_name="John", last_name="Doe")
         target_date = timezone.now() + timedelta(days=30)
 
         event_factory(
             client=client,
             start_date=target_date,
-            name='Johns Wedding',
-            status='CONFIRMED',
+            name="Johns Wedding",
+            status="CONFIRMED",
         )
 
         request = AvailabilityRequest(
@@ -228,9 +225,9 @@ class TestConflictAnalysis:
 
         assert len(result.conflicts) == 1
         conflict = result.conflicts[0]
-        assert conflict['status'] == 'CONFIRMED'
-        assert conflict['event_name'] == 'Johns Wedding'
-        assert 'John Doe' in conflict['client_name']
+        assert conflict["status"] == "CONFIRMED"
+        assert conflict["event_name"] == "Johns Wedding"
+        assert "John Doe" in conflict["client_name"]
 
     def test_conflict_severity_levels(self, event_factory, clear_cache):
         """Test conflict severity is correctly assigned."""
@@ -239,7 +236,7 @@ class TestConflictAnalysis:
         # Confirmed event should have high severity
         event_factory(
             start_date=target_date,
-            status='CONFIRMED',
+            status="CONFIRMED",
         )
 
         request = AvailabilityRequest(
@@ -248,7 +245,7 @@ class TestConflictAnalysis:
 
         result = availability_service.check_date_availability(request)
 
-        assert result.conflicts[0]['severity'] == 'high'
+        assert result.conflicts[0]["severity"] == "high"
 
 
 @pytest.mark.django_db
@@ -262,7 +259,7 @@ class TestBufferConflicts:
         # Create event one day before target
         event_factory(
             start_date=target_date - timedelta(days=1),
-            status='CONFIRMED',
+            status="CONFIRMED",
         )
 
         request = AvailabilityRequest(
@@ -282,7 +279,7 @@ class TestBufferConflicts:
 
         event_factory(
             start_date=target_date - timedelta(days=1),
-            status='CONFIRMED',
+            status="CONFIRMED",
         )
 
         request = AvailabilityRequest(
@@ -308,7 +305,7 @@ class TestCheckMultipleDates:
         # Create an event in the middle of the range
         event_factory(
             start_date=timezone.now() + timedelta(days=32),
-            status='CONFIRMED',
+            status="CONFIRMED",
             date_blocked_trait=True,
         )
 
@@ -359,7 +356,7 @@ class TestGetNextAvailableDate:
         for i in range(3):
             event_factory(
                 start_date=timezone.now() + timedelta(days=50 + i),
-                status='CONFIRMED',
+                status="CONFIRMED",
                 date_blocked_trait=True,
             )
 
@@ -381,7 +378,7 @@ class TestGetNextAvailableDate:
         for i in range(5):
             event_factory(
                 start_date=timezone.now() + timedelta(days=200 + i),
-                status='CONFIRMED',
+                status="CONFIRMED",
                 date_blocked_trait=True,
             )
 
@@ -414,7 +411,7 @@ class TestValidateBookingRequest:
 
         event_factory(
             start_date=target_date,
-            status='CONFIRMED',
+            status="CONFIRMED",
             date_blocked_trait=True,
         )
 
@@ -433,7 +430,7 @@ class TestValidateBookingRequest:
         # Confirmed but not blocked - leads should still be allowed
         event_factory(
             start_date=target_date,
-            status='CONFIRMED',
+            status="CONFIRMED",
             date_blocked=False,
         )
 
@@ -453,7 +450,7 @@ class TestValidateBookingRequest:
         # Block middle day
         event_factory(
             start_date=timezone.now() + timedelta(days=72),
-            status='CONFIRMED',
+            status="CONFIRMED",
             date_blocked_trait=True,
         )
 
@@ -463,7 +460,7 @@ class TestValidateBookingRequest:
         )
 
         assert is_valid is False
-        assert any('not available' in error.lower() for error in errors)
+        assert any("not available" in error.lower() for error in errors)
 
 
 @pytest.mark.django_db
@@ -481,18 +478,16 @@ class TestCacheOperations:
 
         key = service._get_cache_key(request)
 
-        assert 'event_availability' in key
-        assert '2024-06-15' in key
-        assert '1' in key  # event_type_id
+        assert "event_availability" in key
+        assert "2024-06-15" in key
+        assert "1" in key  # event_type_id
 
     @pytest.mark.skip(reason="LocMemCache doesn't support delete_pattern - requires Redis")
     def test_cache_invalidation(self):
         """Test cache invalidation method."""
         # This test verifies the method doesn't error
         availability_service.invalidate_cache()
-        availability_service.invalidate_cache(
-            date_range=(date.today(), date.today() + timedelta(days=7))
-        )
+        availability_service.invalidate_cache(date_range=(date.today(), date.today() + timedelta(days=7)))
 
 
 @pytest.mark.django_db
@@ -500,17 +495,15 @@ class TestBlockingPolicyHandling:
     """Tests for different date blocking policy handling."""
 
     @pytest.mark.skip(reason="DateBlockingService not exposed at module level - import path issue")
-    @patch('core.domains.events.services.availability_service.DateBlockingService')
+    @patch("core.domains.events.services.availability_service.DateBlockingService")
     def test_immediate_policy_blocks_on_confirm(self, mock_service, event_factory, clear_cache):
         """Test IMMEDIATE policy blocks when event confirmed."""
-        mock_service.get_effective_payment_terms.return_value = {
-            'date_blocking_policy': 'IMMEDIATE'
-        }
+        mock_service.get_effective_payment_terms.return_value = {"date_blocking_policy": "IMMEDIATE"}
 
         target_date = timezone.now() + timedelta(days=80)
         event_factory(
             start_date=target_date,
-            status='CONFIRMED',
+            status="CONFIRMED",
             date_blocked=False,  # Even without date_blocked
         )
 
@@ -534,9 +527,9 @@ class TestBlockingPolicyHandling:
         # Create confirmed but unpaid event (no date_blocked)
         event_factory(
             start_date=target_date,
-            status='CONFIRMED',
+            status="CONFIRMED",
             date_blocked=False,
-            payment_status='UNPAID',
+            payment_status="UNPAID",
         )
 
         request = AvailabilityRequest(
@@ -556,11 +549,7 @@ class TestEdgeCases:
 
     def test_handles_exception_gracefully(self, mocker, clear_cache):
         """Test service handles exceptions and returns safe default."""
-        mocker.patch.object(
-            DateAvailabilityService,
-            '_get_existing_events',
-            side_effect=Exception('Database error')
-        )
+        mocker.patch.object(DateAvailabilityService, "_get_existing_events", side_effect=Exception("Database error"))
 
         request = AvailabilityRequest(
             start_date=date.today() + timedelta(days=30),
@@ -571,7 +560,7 @@ class TestEdgeCases:
         # Should return blocked status as safe default
         assert result.status == AvailabilityStatus.BLOCKED
         assert result.can_book_event is False
-        assert 'Error checking availability' in result.reasons[0]
+        assert "Error checking availability" in result.reasons[0]
 
     @pytest.mark.skip(reason="Multi-day event spanning detection not finding event - logic needs review")
     def test_multi_day_event_spanning_target_date(self, event_factory, clear_cache):
@@ -582,7 +571,7 @@ class TestEdgeCases:
         event_factory(
             start_date=target_date - timedelta(days=1),
             end_date=target_date + timedelta(days=1),
-            status='CONFIRMED',
+            status="CONFIRMED",
             date_blocked_trait=True,
         )
 
@@ -597,15 +586,15 @@ class TestEdgeCases:
 
     def test_event_type_filter(self, event_factory, event_type_factory, clear_cache):
         """Test filtering by event type."""
-        event_type1 = event_type_factory(name='Wedding')
-        event_type2 = event_type_factory(name='Corporate')
+        event_type1 = event_type_factory(name="Wedding")
+        event_type2 = event_type_factory(name="Corporate")
         target_date = timezone.now() + timedelta(days=100)
 
         # Create event with type 1
         event_factory(
             start_date=target_date,
             event_type=event_type1,
-            status='CONFIRMED',
+            status="CONFIRMED",
             date_blocked_trait=True,
         )
 

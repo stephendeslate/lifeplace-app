@@ -28,9 +28,9 @@ import {
   Assignment as TemplateIcon,
 } from '@mui/icons-material';
 import { useEventTypes } from '../../hooks/useEvents';
-import type { 
-  QuoteTemplate, 
-  CreateQuoteTemplateData, 
+import type {
+  QuoteTemplate,
+  CreateQuoteTemplateData,
   UpdateQuoteTemplateData,
   QuoteTemplateFormData,
 } from '../../types/sales.types';
@@ -83,11 +83,12 @@ export const QuoteTemplateFormDialog: React.FC<QuoteTemplateFormDialogProps> = (
         has_multiple_options: editingTemplate.has_multiple_options,
         default_tax_rate: editingTemplate.default_tax_rate?.toString() || '',
         workflow_template: editingTemplate.workflow_template?.toString() || '',
-        products: editingTemplate.products?.map((p) => ({
-          product: p.product.toString(),
-          quantity: p.quantity.toString(),
-          is_required: p.is_required,
-        })) || [],
+        products:
+          editingTemplate.products?.map((p) => ({
+            product: p.product.toString(),
+            quantity: p.quantity.toString(),
+            is_required: p.is_required,
+          })) || [],
       });
     } else if (open && !editingTemplate) {
       setFormData(initialFormData);
@@ -102,52 +103,51 @@ export const QuoteTemplateFormDialog: React.FC<QuoteTemplateFormDialogProps> = (
     }
   }, [open]);
 
-  const handleInputChange = (field: keyof QuoteTemplateFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = event.target.type === 'checkbox' 
-      ? (event.target as HTMLInputElement).checked 
-      : event.target.value;
+  const handleInputChange =
+    (field: keyof QuoteTemplateFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value =
+        event.target.type === 'checkbox'
+          ? (event.target as HTMLInputElement).checked
+          : event.target.value;
 
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    // Clear error for this field
-    if (errors[field]) {
-      setErrors((prev) => ({
+      setFormData((prev) => ({
         ...prev,
-        [field]: undefined,
+        [field]: value,
       }));
-    }
-  };
 
-  const handleSelectChange = (field: keyof QuoteTemplateFormData) => (
-    event: SelectChangeEvent<string>
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: event.target.value as string,
-    }));
+      // Clear error for this field
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: undefined,
+        }));
+      }
+    };
 
-    // Clear error for this field
-    if (errors[field]) {
-      setErrors((prev) => ({
+  const handleSelectChange =
+    (field: keyof QuoteTemplateFormData) => (event: SelectChangeEvent<string>) => {
+      setFormData((prev) => ({
         ...prev,
-        [field]: undefined,
+        [field]: event.target.value as string,
       }));
-    }
-  };
 
-  const handleSwitchChange = (field: keyof QuoteTemplateFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: event.target.checked,
-    }));
-  };
+      // Clear error for this field
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: undefined,
+        }));
+      }
+    };
+
+  const handleSwitchChange =
+    (field: keyof QuoteTemplateFormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: event.target.checked,
+      }));
+    };
 
   const validateForm = (): boolean => {
     const newErrors: Partial<QuoteTemplateFormData> = {};
@@ -166,7 +166,7 @@ export const QuoteTemplateFormDialog: React.FC<QuoteTemplateFormDialogProps> = (
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -221,7 +221,7 @@ export const QuoteTemplateFormDialog: React.FC<QuoteTemplateFormDialogProps> = (
               <Typography variant="subtitle2" gutterBottom color="text.secondary">
                 Basic Information
               </Typography>
-              
+
               <Stack spacing={2.5}>
                 <TextField
                   fullWidth
@@ -271,7 +271,7 @@ export const QuoteTemplateFormDialog: React.FC<QuoteTemplateFormDialogProps> = (
               <Typography variant="subtitle2" gutterBottom color="text.secondary">
                 Configuration
               </Typography>
-              
+
               <Stack spacing={2.5}>
                 <TextField
                   fullWidth
@@ -280,7 +280,9 @@ export const QuoteTemplateFormDialog: React.FC<QuoteTemplateFormDialogProps> = (
                   value={formData.default_validity_days}
                   onChange={handleInputChange('default_validity_days')}
                   error={!!errors.default_validity_days}
-                  helperText={errors.default_validity_days || 'Number of days the quote remains valid'}
+                  helperText={
+                    errors.default_validity_days || 'Number of days the quote remains valid'
+                  }
                   required
                   disabled={isLoading}
                   inputProps={{ min: 1 }}
@@ -329,7 +331,7 @@ export const QuoteTemplateFormDialog: React.FC<QuoteTemplateFormDialogProps> = (
               <Typography variant="subtitle2" gutterBottom color="text.secondary">
                 Terms and Conditions
               </Typography>
-              
+
               <TextField
                 fullWidth
                 label="Terms and Conditions"
@@ -344,8 +346,8 @@ export const QuoteTemplateFormDialog: React.FC<QuoteTemplateFormDialogProps> = (
 
             {/* Info Alert */}
             <Alert severity="info" variant="outlined">
-              Products and pricing can be configured after creating the template. 
-              This template will be available for creating standardized quotes.
+              Products and pricing can be configured after creating the template. This template will
+              be available for creating standardized quotes.
             </Alert>
           </Stack>
         </DialogContent>

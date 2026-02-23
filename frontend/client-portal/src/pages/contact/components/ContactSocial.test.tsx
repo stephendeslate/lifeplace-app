@@ -30,7 +30,7 @@ describe('ContactSocial', () => {
     it('renders the description text', () => {
       render(<ContactSocial />);
       expect(
-        screen.getByText('Stay connected and see the latest happenings at LifePlace Alfonso.')
+        screen.getByText('Stay connected and see the latest happenings at LifePlace Alfonso.'),
       ).toBeInTheDocument();
     });
   });

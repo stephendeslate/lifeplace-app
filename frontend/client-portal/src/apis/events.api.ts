@@ -14,7 +14,7 @@ import type {
   EventFeedback,
   FeedbackSubmission,
   TaskUpdate,
-  FileUpload
+  FileUpload,
 } from '../types/events.types';
 
 export const eventsApi = {
@@ -23,10 +23,10 @@ export const eventsApi = {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
     if (filters?.upcoming_only) params.append('upcoming_only', 'true');
-    
+
     const response = await api.get(`/client/events/?${params.toString()}`);
     const data = response.data as EventsListResponse | Event[];
-    
+
     // Handle both paginated and non-paginated responses
     return (data as EventsListResponse).results || (data as Event[]);
   },
@@ -51,10 +51,7 @@ export const eventsApi = {
 
   // Update event preferences
   updatePreferences: async (id: number, data: EventPreferencesUpdate): Promise<EventDetail> => {
-    const response = await api.patch<EventDetail>(
-      `/client/events/${id}/update_preferences/`,
-      data
-    );
+    const response = await api.patch<EventDetail>(`/client/events/${id}/update_preferences/`, data);
     return response.data;
   },
 
@@ -65,7 +62,10 @@ export const eventsApi = {
   },
 
   // Create a note for an event
-  createEventNote: async (id: number, data: { content: string; title?: string }): Promise<EventNote> => {
+  createEventNote: async (
+    id: number,
+    data: { content: string; title?: string },
+  ): Promise<EventNote> => {
     const response = await api.post<EventNote>(`/client/events/${id}/notes/`, data);
     return response.data;
   },
@@ -75,15 +75,15 @@ export const eventsApi = {
     try {
       // Use the existing API instance for authenticated requests if the URL is relative
       const isRelativeUrl = !url.startsWith('http://') && !url.startsWith('https://');
-      
+
       if (isRelativeUrl) {
         // For relative URLs, use the api instance to include auth headers
         const response = await api.get<Blob>(url, {
-          responseType: 'blob'
+          responseType: 'blob',
         });
         const blob = response.data;
         const downloadUrl = window.URL.createObjectURL(blob);
-        
+
         const link = document.createElement('a');
         link.href = downloadUrl;
         link.download = filename;
@@ -91,7 +91,7 @@ export const eventsApi = {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         // Clean up the URL object
         setTimeout(() => {
           window.URL.revokeObjectURL(downloadUrl);
@@ -99,14 +99,14 @@ export const eventsApi = {
       } else {
         // For absolute URLs, use fetch
         const response = await fetch(url);
-        
+
         if (!response.ok) {
           throw new Error(`Failed to download file: ${response.statusText}`);
         }
-        
+
         const blob = await response.blob();
         const downloadUrl = window.URL.createObjectURL(blob);
-        
+
         const link = document.createElement('a');
         link.href = downloadUrl;
         link.download = filename;
@@ -114,7 +114,7 @@ export const eventsApi = {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         // Clean up the URL object
         setTimeout(() => {
           window.URL.revokeObjectURL(downloadUrl);
@@ -168,7 +168,11 @@ export const eventsApi = {
   },
 
   // Update event task
-  updateEventTask: async (eventId: number, taskId: number, data: TaskUpdate): Promise<EventTask> => {
+  updateEventTask: async (
+    eventId: number,
+    taskId: number,
+    data: TaskUpdate,
+  ): Promise<EventTask> => {
     const response = await api.patch<EventTask>(`/client/events/${eventId}/tasks/${taskId}/`, data);
     return response.data;
   },
@@ -204,8 +208,15 @@ export const eventsApi = {
   },
 
   // Update event feedback
-  updateEventFeedback: async (eventId: number, feedbackId: number, data: Partial<FeedbackSubmission>): Promise<EventFeedback> => {
-    const response = await api.patch<EventFeedback>(`/client/events/${eventId}/feedback/${feedbackId}/`, data);
+  updateEventFeedback: async (
+    eventId: number,
+    feedbackId: number,
+    data: Partial<FeedbackSubmission>,
+  ): Promise<EventFeedback> => {
+    const response = await api.patch<EventFeedback>(
+      `/client/events/${eventId}/feedback/${feedbackId}/`,
+      data,
+    );
     return response.data;
   },
 
@@ -262,9 +273,12 @@ export const eventsApi = {
 
   // Get file blob for viewing (used for PDF preview to bypass X-Frame-Options)
   getDocumentBlob: async (eventId: number, fileId: number): Promise<Blob> => {
-    const response = await api.get<Blob>(`/client/events/${eventId}/documents/${fileId}/download/`, {
-      responseType: 'blob',
-    });
+    const response = await api.get<Blob>(
+      `/client/events/${eventId}/documents/${fileId}/download/`,
+      {
+        responseType: 'blob',
+      },
+    );
     return response.data;
   },
 };

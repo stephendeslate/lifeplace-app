@@ -82,7 +82,7 @@ export const formatCurrency = (
     showCode?: boolean;
     minimumFractionDigits?: number;
     maximumFractionDigits?: number;
-  } = {}
+  } = {},
 ): string => {
   const {
     showSymbol = true,
@@ -93,7 +93,7 @@ export const formatCurrency = (
 
   const config = getCurrencyConfig(currencyCode);
   const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  
+
   if (isNaN(numericAmount)) {
     return `${showSymbol ? config.symbol : ''}0${showCode ? ` ${config.code}` : ''}`;
   }
@@ -114,7 +114,7 @@ export const formatCurrency = (
     }
 
     if (showSymbol && !showCode) {
-      return config.position === 'before' 
+      return config.position === 'before'
         ? `${config.symbol}${formattedAmount}`
         : `${formattedAmount}${config.symbol}`;
     }
@@ -124,7 +124,7 @@ export const formatCurrency = (
     }
 
     // Show both symbol and code
-    return config.position === 'before' 
+    return config.position === 'before'
       ? `${config.symbol}${formattedAmount} ${config.code}`
       : `${formattedAmount}${config.symbol} ${config.code}`;
   } catch (error) {
@@ -137,7 +137,7 @@ export const formatCurrency = (
  * Get currency options for dropdowns
  */
 export const getCurrencyOptions = () => {
-  return Object.values(SUPPORTED_CURRENCIES).map(currency => ({
+  return Object.values(SUPPORTED_CURRENCIES).map((currency) => ({
     value: currency.code,
     label: `${currency.symbol} ${currency.name} (${currency.code})`,
     code: currency.code,

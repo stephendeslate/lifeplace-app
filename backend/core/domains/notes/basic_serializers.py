@@ -6,16 +6,23 @@ from .models import Note
 
 class BasicNoteSerializer(serializers.ModelSerializer):
     """Basic serializer for Note model for cross-domain references"""
+
     created_by_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Note
         fields = [
-            'id', 'title', 'content', 'created_at', 'updated_at',
-            'created_by', 'created_by_name', 'is_client_visible'
+            "id",
+            "title",
+            "content",
+            "created_at",
+            "updated_at",
+            "created_by",
+            "created_by_name",
+            "is_client_visible",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'created_by', 'created_by_name']
-    
+        read_only_fields = ["id", "created_at", "updated_at", "created_by", "created_by_name"]
+
     def get_created_by_name(self, obj):
         if obj.created_by:
             return f"{obj.created_by.first_name} {obj.created_by.last_name}"

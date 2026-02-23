@@ -11,15 +11,9 @@ import {
   Menu,
   MenuItem,
   Divider,
-  Alert
+  Alert,
 } from '@mui/material';
-import {
-  AccessTime,
-  Public,
-  Settings,
-  BusinessCenter,
-  Schedule
-} from '@mui/icons-material';
+import { AccessTime, Public, Settings, BusinessCenter, Schedule } from '@mui/icons-material';
 import {
   formatPhilippinesTime,
   formatWithUserPreference,
@@ -27,7 +21,7 @@ import {
   getBusinessHoursStatus,
   BUSINESS_TIMEZONE_DISPLAY,
   BUSINESS_TIMEZONE_FULL,
-  ADMIN_TIMEZONES
+  ADMIN_TIMEZONES,
 } from '../../utils/timezone';
 
 interface AdminTimezoneDisplayProps {
@@ -48,40 +42,38 @@ export const AdminTimezoneDisplay: React.FC<AdminTimezoneDisplayProps> = ({
   userTimezone = 'America/Los_Angeles',
   showSettings = true,
   onDisplayModeChange,
-  onTimezoneChange
+  onTimezoneChange,
 }) => {
   const [settingsAnchor, setSettingsAnchor] = React.useState<null | HTMLElement>(null);
-  
+
   const formatted = formatWithUserPreference(date, { mode: displayMode, userTimezone });
-  
+
   const handleSettingsClick = (event: React.MouseEvent<HTMLElement>) => {
     setSettingsAnchor(event.currentTarget);
   };
-  
+
   const handleSettingsClose = () => {
     setSettingsAnchor(null);
   };
-  
+
   return (
     <Stack direction="row" alignItems="center" spacing={1}>
       <AccessTime fontSize="small" color="action" />
-      
-      <Typography variant="body1">
-        {formatted.primary}
-      </Typography>
-      
+
+      <Typography variant="body1">{formatted.primary}</Typography>
+
       {formatted.secondary && (
         <Typography variant="body2" color="text.secondary">
           {formatted.secondary}
         </Typography>
       )}
-      
+
       {showSettings && (
         <>
           <IconButton size="small" onClick={handleSettingsClick}>
             <Settings fontSize="small" />
           </IconButton>
-          
+
           <Menu
             anchorEl={settingsAnchor}
             open={Boolean(settingsAnchor)}
@@ -91,7 +83,7 @@ export const AdminTimezoneDisplay: React.FC<AdminTimezoneDisplayProps> = ({
               Display Settings
             </Typography>
             <Divider />
-            
+
             <MenuItem
               onClick={() => {
                 onDisplayModeChange?.('business_only');
@@ -101,7 +93,7 @@ export const AdminTimezoneDisplay: React.FC<AdminTimezoneDisplayProps> = ({
             >
               Philippines Time Only
             </MenuItem>
-            
+
             <MenuItem
               onClick={() => {
                 onDisplayModeChange?.('business_with_local');
@@ -111,7 +103,7 @@ export const AdminTimezoneDisplay: React.FC<AdminTimezoneDisplayProps> = ({
             >
               Philippines + My Time
             </MenuItem>
-            
+
             <MenuItem
               onClick={() => {
                 onDisplayModeChange?.('dual_display');
@@ -121,14 +113,14 @@ export const AdminTimezoneDisplay: React.FC<AdminTimezoneDisplayProps> = ({
             >
               Side by Side
             </MenuItem>
-            
+
             <Divider />
-            
+
             <Typography variant="subtitle2" sx={{ px: 2, py: 1 }}>
               My Timezone
             </Typography>
-            
-            {ADMIN_TIMEZONES.map(tz => (
+
+            {ADMIN_TIMEZONES.map((tz) => (
               <MenuItem
                 key={tz.value}
                 onClick={() => {
@@ -153,15 +145,15 @@ export const AdminTimezoneDisplay: React.FC<AdminTimezoneDisplayProps> = ({
  */
 export const BusinessHoursIndicator: React.FC = () => {
   const status = getBusinessHoursStatus();
-  
+
   return (
     <Alert
       severity={status.isOpen ? 'success' : 'info'}
       icon={<BusinessCenter />}
       sx={{
         '& .MuiAlert-message': {
-          width: '100%'
-        }
+          width: '100%',
+        },
       }}
     >
       <Stack direction="row" justifyContent="space-between" alignItems="center">
@@ -174,7 +166,7 @@ export const BusinessHoursIndicator: React.FC = () => {
             {status.nextOpenTime && ` • Opens at ${status.nextOpenTime}`}
           </Typography>
         </Box>
-        
+
         <Chip
           label={status.isOpen ? 'OPEN' : 'CLOSED'}
           color={status.isOpen ? 'success' : 'default'}
@@ -197,7 +189,7 @@ export const EventTimeDisplay: React.FC<{
 }> = ({ startDate, endDate, adminTimezone = 'America/Los_Angeles', showDual = false }) => {
   const startDual = showDual ? formatDualTimezone(startDate, adminTimezone) : null;
   const endDual = endDate && showDual ? formatDualTimezone(endDate, adminTimezone) : null;
-  
+
   return (
     <Box
       sx={{
@@ -205,7 +197,7 @@ export const EventTimeDisplay: React.FC<{
         bgcolor: 'primary.50',
         borderRadius: 2,
         border: '1px solid',
-        borderColor: 'primary.200'
+        borderColor: 'primary.200',
       }}
     >
       <Stack spacing={2}>
@@ -214,14 +206,9 @@ export const EventTimeDisplay: React.FC<{
           <Typography variant="h6" color="primary.main">
             Event Schedule
           </Typography>
-          <Chip
-            label={BUSINESS_TIMEZONE_DISPLAY}
-            size="small"
-            color="primary"
-            variant="outlined"
-          />
+          <Chip label={BUSINESS_TIMEZONE_DISPLAY} size="small" color="primary" variant="outlined" />
         </Stack>
-        
+
         <Box>
           <Typography variant="subtitle2" color="text.secondary" gutterBottom>
             Start Time
@@ -236,7 +223,7 @@ export const EventTimeDisplay: React.FC<{
             </Typography>
           )}
         </Box>
-        
+
         {endDate && (
           <Box>
             <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -253,7 +240,7 @@ export const EventTimeDisplay: React.FC<{
             )}
           </Box>
         )}
-        
+
         <Alert severity="info" sx={{ mt: 1 }}>
           <Typography variant="caption">
             All events take place in the Philippines. Times shown are in {BUSINESS_TIMEZONE_FULL}.
@@ -272,7 +259,9 @@ export const TimezoneBadge: React.FC<{
   label?: string;
 }> = ({ timezone = 'business', label }) => {
   return (
-    <Tooltip title={timezone === 'business' ? `${BUSINESS_TIMEZONE_FULL} (UTC+8)` : 'Your local timezone'}>
+    <Tooltip
+      title={timezone === 'business' ? `${BUSINESS_TIMEZONE_FULL} (UTC+8)` : 'Your local timezone'}
+    >
       <Chip
         label={label || (timezone === 'business' ? BUSINESS_TIMEZONE_DISPLAY : 'Local')}
         size="small"
@@ -281,7 +270,7 @@ export const TimezoneBadge: React.FC<{
         sx={{
           height: 24,
           fontSize: '0.75rem',
-          fontWeight: 600
+          fontWeight: 600,
         }}
       />
     </Tooltip>

@@ -1,22 +1,22 @@
-import { PublicLayout } from "../components/layout";
-import { ContactPage } from "../pages/contact";
+import { PublicLayout } from '../components/layout';
+import { ContactPage } from '../pages/contact';
 
 export function meta() {
   return [
-    { title: "Contact Us | LifePlace Alfonso" },
+    { title: 'Contact Us | LifePlace Alfonso' },
     {
-      name: "description",
+      name: 'description',
       content:
-        "Get in touch with LifePlace Alfonso. Contact us for bookings, inquiries, and venue tours.",
+        'Get in touch with LifePlace Alfonso. Contact us for bookings, inquiries, and venue tours.',
     },
-    { property: "og:title", content: "Contact Us | LifePlace Alfonso" },
+    { property: 'og:title', content: 'Contact Us | LifePlace Alfonso' },
     {
-      property: "og:description",
+      property: 'og:description',
       content:
-        "Get in touch with LifePlace Alfonso. Contact us for bookings, inquiries, and venue tours.",
+        'Get in touch with LifePlace Alfonso. Contact us for bookings, inquiries, and venue tours.',
     },
-    { property: "og:image", content: "/og-image.jpg" },
-    { property: "og:type", content: "website" },
+    { property: 'og:image', content: '/og-image.jpg' },
+    { property: 'og:type', content: 'website' },
   ];
 }
 

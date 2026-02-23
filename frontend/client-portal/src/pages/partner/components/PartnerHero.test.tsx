@@ -7,12 +7,26 @@ import { PartnerHero } from './PartnerHero';
 
 // Mock the design system components
 vi.mock('../../../design-system', () => ({
-  HeroBackground: ({ children, ...props }: { children: React.ReactNode; [key: string]: unknown }) => (
+  HeroBackground: ({
+    children,
+    ...props
+  }: {
+    children: React.ReactNode;
+    [key: string]: unknown;
+  }) => (
     <div data-testid="hero-background" {...props}>
       {children}
     </div>
   ),
-  AnimatedElement: ({ children, animation, delay }: { children: React.ReactNode; animation?: string; delay?: number }) => (
+  AnimatedElement: ({
+    children,
+    animation,
+    delay,
+  }: {
+    children: React.ReactNode;
+    animation?: string;
+    delay?: number;
+  }) => (
     <div data-testid="animated-element" data-animation={animation} data-delay={delay}>
       {children}
     </div>
@@ -125,15 +139,13 @@ describe('PartnerHero', () => {
 
     it('renders subheading text', () => {
       render(<PartnerHero />);
-      expect(
-        screen.getByText(/discover the power of collaboration/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/discover the power of collaboration/i)).toBeInTheDocument();
     });
 
     it('renders supporting text about benefits', () => {
       render(<PartnerHero />);
       expect(
-        screen.getByText(/whether you're a vendor, service provider, or organization/i)
+        screen.getByText(/whether you're a vendor, service provider, or organization/i),
       ).toBeInTheDocument();
     });
 
@@ -146,14 +158,14 @@ describe('PartnerHero', () => {
     it('renders primary CTA button', () => {
       render(<PartnerHero />);
       expect(
-        screen.getByRole('button', { name: /become a partner - contact us/i })
+        screen.getByRole('button', { name: /become a partner - contact us/i }),
       ).toBeInTheDocument();
     });
 
     it('renders secondary CTA button', () => {
       render(<PartnerHero />);
       expect(
-        screen.getByRole('button', { name: /learn more about partnership benefits/i })
+        screen.getByRole('button', { name: /learn more about partnership benefits/i }),
       ).toBeInTheDocument();
     });
 
@@ -329,16 +341,16 @@ describe('PartnerHero', () => {
       render(<PartnerHero />);
 
       expect(
-        screen.getByRole('button', { name: /become a partner - contact us/i })
+        screen.getByRole('button', { name: /become a partner - contact us/i }),
       ).toHaveAttribute('aria-label');
 
       expect(
-        screen.getByRole('button', { name: /learn more about partnership benefits/i })
+        screen.getByRole('button', { name: /learn more about partnership benefits/i }),
       ).toHaveAttribute('aria-label');
 
-      expect(
-        screen.getByRole('button', { name: /scroll to content/i })
-      ).toHaveAttribute('aria-label');
+      expect(screen.getByRole('button', { name: /scroll to content/i })).toHaveAttribute(
+        'aria-label',
+      );
     });
 
     it('scroll indicator is keyboard accessible', () => {
@@ -381,9 +393,9 @@ describe('PartnerHero', () => {
 
     it('renders buttons in a responsive stack', () => {
       render(<PartnerHero />);
-      const buttons = screen.getAllByRole('button').filter((btn) =>
-        btn.getAttribute('aria-label')?.includes('partner')
-      );
+      const buttons = screen
+        .getAllByRole('button')
+        .filter((btn) => btn.getAttribute('aria-label')?.includes('partner'));
 
       // Should have both CTA buttons
       expect(buttons.length).toBeGreaterThanOrEqual(2);
@@ -469,7 +481,7 @@ describe('PartnerHero', () => {
 
       // Target audience
       expect(
-        screen.getByText(/whether you're a vendor, service provider, or organization/i)
+        screen.getByText(/whether you're a vendor, service provider, or organization/i),
       ).toBeInTheDocument();
     });
 
@@ -477,9 +489,7 @@ describe('PartnerHero', () => {
       render(<PartnerHero />);
 
       // Primary action
-      expect(
-        screen.getByRole('button', { name: /become a partner/i })
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /become a partner/i })).toBeInTheDocument();
 
       // Secondary action
       expect(screen.getByRole('button', { name: /learn more/i })).toBeInTheDocument();

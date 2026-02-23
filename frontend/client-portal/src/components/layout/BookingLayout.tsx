@@ -9,16 +9,14 @@ interface BookingLayoutProps {
   children: React.ReactNode;
 }
 
-export const BookingLayout: React.FC<BookingLayoutProps> = ({
-  children,
-}) => {
+export const BookingLayout: React.FC<BookingLayoutProps> = ({ children }) => {
   const theme = useTheme();
 
   return (
-    <Box 
-      sx={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
         minHeight: '100vh',
         width: '100%',
         overflow: 'hidden',

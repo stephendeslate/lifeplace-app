@@ -23,7 +23,7 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
-  CircularProgress
+  CircularProgress,
 } from '@mui/material';
 import {
   Send as SendIcon,
@@ -32,7 +32,7 @@ import {
   ExpandMore,
   Email as EmailIcon,
   Sms as SmsIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
 } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
 import { sanitizeHTML } from '../../utils/security';
@@ -58,47 +58,56 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
   open,
   onClose,
   client,
-  eventId
+  eventId,
 }) => {
   const [formData, setFormData] = useState<MessageFormData>({
     templateId: '',
     channel: 'EMAIL',
     subject: '',
     body: '',
-    variables: {}
+    variables: {},
   });
   const [previewExpanded, setPreviewExpanded] = useState(false);
   const [variablesExpanded, setVariablesExpanded] = useState(false);
 
-  const { 
-    useTemplates, 
-    usePreviewTemplate, 
-    useSendManual, 
-    useVariableSchemas 
-  } = useCommunications();
+  const { useTemplates, usePreviewTemplate, useSendManual, useVariableSchemas } =
+    useCommunications();
 
   // Get manual templates only
   const { data: templates, isLoading: isLoadingTemplates } = useTemplates({
-    category: 'MANUAL'
+    category: 'MANUAL',
   });
 
   const { data: variableSchemas } = useVariableSchemas();
-  const { mutate: previewTemplate, isPending: isPreviewing, data: previewData } = usePreviewTemplate();
+  const {
+    mutate: previewTemplate,
+    isPending: isPreviewing,
+    data: previewData,
+  } = usePreviewTemplate();
   const { mutate: sendMessage, isPending: isSending } = useSendManual();
 
   // Generate context variables for the client
-  const clientVariables = useMemo(() => ({
-    first_name: client.first_name || '',
-    last_name: client.last_name || '',
-    email: client.email,
-    company: client.profile?.company || '',
-    phone: client.profile?.phone || '',
-    full_name: `${client.first_name} ${client.last_name}`.trim(),
-    // System variables
-    site_name: 'LifePlace',
-    current_date: new Date().toLocaleDateString(),
-    support_email: 'support@lifeplace.com'
-  }), [client.first_name, client.last_name, client.email, client.profile?.company, client.profile?.phone]);
+  const clientVariables = useMemo(
+    () => ({
+      first_name: client.first_name || '',
+      last_name: client.last_name || '',
+      email: client.email,
+      company: client.profile?.company || '',
+      phone: client.profile?.phone || '',
+      full_name: `${client.first_name} ${client.last_name}`.trim(),
+      // System variables
+      site_name: 'LifePlace',
+      current_date: new Date().toLocaleDateString(),
+      support_email: 'support@lifeplace.com',
+    }),
+    [
+      client.first_name,
+      client.last_name,
+      client.email,
+      client.profile?.company,
+      client.profile?.phone,
+    ],
+  );
 
   // Reset form when dialog opens
   useEffect(() => {
@@ -108,7 +117,7 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
         channel: 'EMAIL',
         subject: '',
         body: '',
-        variables: clientVariables
+        variables: clientVariables,
       });
       setPreviewExpanded(false);
       setVariablesExpanded(false);
@@ -117,45 +126,48 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
 
   // Update variables when client changes
   useEffect(() => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      variables: { ...prev.variables, ...clientVariables }
+      variables: { ...prev.variables, ...clientVariables },
     }));
   }, [clientVariables]);
 
-  const handleInputChange = (field: keyof MessageFormData, value: MessageFormData[keyof MessageFormData]) => {
-    setFormData(prev => ({
+  const handleInputChange = (
+    field: keyof MessageFormData,
+    value: MessageFormData[keyof MessageFormData],
+  ) => {
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const handleTemplateChange = (templateId: number | '') => {
     if (templateId && templates) {
-      const template = templates.find(t => t.id === templateId);
+      const template = templates.find((t) => t.id === templateId);
       if (template) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           templateId,
           channel: template.channel,
           // Don't auto-fill subject/body - let admin write their own
           subject: prev.subject || '',
-          body: prev.body || ''
+          body: prev.body || '',
         }));
       }
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         templateId: '',
         subject: '',
-        body: ''
+        body: '',
       }));
     }
   };
 
   const handleVariableInsert = (variable: string) => {
     const variableText = `{{ ${variable} }}`;
-    
+
     // Insert into body at cursor position if possible
     const textarea = document.getElementById('message-body') as HTMLTextAreaElement;
     if (textarea) {
@@ -164,10 +176,10 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
       const text = formData.body;
       const before = text.substring(0, start);
       const after = text.substring(end);
-      
+
       const newText = before + variableText + after;
       handleInputChange('body', newText);
-      
+
       // Set cursor position after inserted variable
       setTimeout(() => {
         textarea.focus();
@@ -178,23 +190,18 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
 
   const handlePreview = () => {
     if (!formData.templateId || !formData.body) return;
-    
+
     // Create a custom body that combines the template layout with user content
-    const selectedTemplate = templates?.find(t => t.id === formData.templateId);
+    const selectedTemplate = templates?.find((t) => t.id === formData.templateId);
     if (!selectedTemplate) return;
 
     // Replace template body with user's custom content but keep template structure
     let customTemplate = selectedTemplate.body_template;
-    
+
     // Look for main content area in template and replace with user content
     // This is a simple approach - you might want to make this more sophisticated
-    const contentPlaceholders = [
-      '{{content}}',
-      '{{message}}', 
-      '{{body}}',
-      'YOUR_MESSAGE_HERE'
-    ];
-    
+    const contentPlaceholders = ['{{content}}', '{{message}}', '{{body}}', 'YOUR_MESSAGE_HERE'];
+
     let hasPlaceholder = false;
     for (const placeholder of contentPlaceholders) {
       if (customTemplate.includes(placeholder)) {
@@ -203,13 +210,16 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
         break;
       }
     }
-    
+
     // If no placeholder found, append to the template
     if (!hasPlaceholder) {
       // Insert before closing div or at the end
       if (customTemplate.includes('</div>')) {
         const parts = customTemplate.split('</div>');
-        customTemplate = parts[0] + `<div style="margin: 16px 0;">${formData.body}</div></div>` + parts.slice(1).join('</div>');
+        customTemplate =
+          parts[0] +
+          `<div style="margin: 16px 0;">${formData.body}</div></div>` +
+          parts.slice(1).join('</div>');
       } else {
         customTemplate += `<div style="margin: 16px 0;">${formData.body}</div>`;
       }
@@ -225,9 +235,9 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
           custom_body: formData.body,
           // Override template with custom content
           body_template: customTemplate,
-          subject_template: formData.subject
-        }
-      }
+          subject_template: formData.subject,
+        },
+      },
     });
     setPreviewExpanded(true);
   };
@@ -241,34 +251,34 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
       recipient: client.email,
       client_id: client.id,
       event_id: eventId,
-      custom_subject: formData.subject,  // Make sure this field is included
+      custom_subject: formData.subject, // Make sure this field is included
       custom_body: formData.body,
       context_data: {
         ...formData.variables,
         custom_subject: formData.subject,
-        custom_body: formData.body
-      }
+        custom_body: formData.body,
+      },
     };
 
     sendMessage(sendData, {
       onSuccess: () => {
         onClose();
-      }
+      },
     });
   };
 
-  const selectedTemplate = templates?.find(t => t.id === formData.templateId);
+  const selectedTemplate = templates?.find((t) => t.id === formData.templateId);
   const canPreview = formData.templateId && formData.body;
   const canSend = formData.templateId && formData.subject && formData.body;
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={onClose} 
-      maxWidth="md" 
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { height: '90vh', display: 'flex', flexDirection: 'column' }
+        sx: { height: '90vh', display: 'flex', flexDirection: 'column' },
       }}
     >
       <DialogTitle>
@@ -319,11 +329,11 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
                 ))}
               </Select>
             </FormControl>
-            
+
             {selectedTemplate && (
               <Alert severity="info" sx={{ mt: 1 }}>
-                Using <strong>{selectedTemplate.name}</strong> as the email layout. 
-                Your custom subject and message will be formatted with this template's styling.
+                Using <strong>{selectedTemplate.name}</strong> as the email layout. Your custom
+                subject and message will be formatted with this template's styling.
               </Alert>
             )}
           </Box>
@@ -342,7 +352,7 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
             data-form-type="other"
             inputProps={{
               'data-form-type': 'other',
-              'autoComplete': 'off'
+              autoComplete: 'off',
             }}
           />
 
@@ -361,7 +371,7 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
               placeholder="Write your message here... You can use variables like {{ first_name }} for personalization."
               helperText="Your message content will be formatted with the selected template's layout"
             />
-            
+
             {formData.channel === 'SMS' && (
               <Typography variant="caption" color="text.secondary" display="block" mt={1}>
                 Character count: {formData.body.length}/160
@@ -374,7 +384,7 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
 
           {/* Variables Helper */}
           {selectedTemplate && (
-            <Accordion 
+            <Accordion
               expanded={variablesExpanded}
               onChange={(_, expanded) => setVariablesExpanded(expanded)}
             >
@@ -389,7 +399,7 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
                   onVariableInsert={handleVariableInsert}
                   showFormattingTips={formData.channel === 'EMAIL'}
                 />
-                
+
                 <Box mt={2}>
                   <Typography variant="subtitle2" gutterBottom>
                     Available for this client:
@@ -425,7 +435,7 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
                 >
                   {isPreviewing ? <CircularProgress size={16} /> : 'Preview Message'}
                 </Button>
-                
+
                 {previewData && (
                   <Button
                     variant="text"
@@ -442,12 +452,16 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
                   <Typography variant="subtitle2" gutterBottom>
                     Preview:
                   </Typography>
-                  
+
                   <Box mb={2}>
                     <Typography variant="caption" color="text.secondary" display="block">
                       Subject:
                     </Typography>
-                    <Typography variant="body2" fontFamily="monospace" sx={{ p: 1, bgcolor: 'grey.50', borderRadius: 1 }}>
+                    <Typography
+                      variant="body2"
+                      fontFamily="monospace"
+                      sx={{ p: 1, bgcolor: 'grey.50', borderRadius: 1 }}
+                    >
                       {formData.subject}
                     </Typography>
                   </Box>
@@ -463,15 +477,17 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
                       p: 2,
                       bgcolor: 'background.paper',
                       maxHeight: 300,
-                      overflow: 'auto'
+                      overflow: 'auto',
                     }}
                   >
                     {formData.channel === 'EMAIL' ? (
-                      <Box 
-                        dangerouslySetInnerHTML={{ __html: sanitizeHTML(previewData.body, 'template') }}
-                        sx={{ 
+                      <Box
+                        dangerouslySetInnerHTML={{
+                          __html: sanitizeHTML(previewData.body, 'template'),
+                        }}
+                        sx={{
                           '& *': { maxWidth: '100%' },
-                          wordBreak: 'break-word'
+                          wordBreak: 'break-word',
                         }}
                       />
                     ) : (
@@ -498,7 +514,7 @@ export const SendMessageDialog: React.FC<SendMessageDialogProps> = ({
         >
           Cancel
         </Button>
-        
+
         <Button
           variant="contained"
           startIcon={<SendIcon />}

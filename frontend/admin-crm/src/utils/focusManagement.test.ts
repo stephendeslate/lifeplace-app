@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   safeBlyurActiveElement,
   safeFocusElement,
@@ -8,14 +8,14 @@ import {
   getEnhancedDialogProps,
   getFocusVisibleStyles,
   isElementInDialog,
-} from "./focusManagement";
+} from './focusManagement';
 
-describe("safeBlyurActiveElement", () => {
-  it("blurs the currently focused element", () => {
-    const button = document.createElement("button");
+describe('safeBlyurActiveElement', () => {
+  it('blurs the currently focused element', () => {
+    const button = document.createElement('button');
     document.body.appendChild(button);
     button.focus();
-    const blurSpy = vi.spyOn(button, "blur");
+    const blurSpy = vi.spyOn(button, 'blur');
 
     safeBlyurActiveElement();
 
@@ -23,7 +23,7 @@ describe("safeBlyurActiveElement", () => {
     document.body.removeChild(button);
   });
 
-  it("does nothing when body is focused", () => {
+  it('does nothing when body is focused', () => {
     // body is the default activeElement
     document.body.focus();
     // Should not throw
@@ -31,11 +31,11 @@ describe("safeBlyurActiveElement", () => {
   });
 });
 
-describe("safeFocusElement", () => {
-  it("focuses the primary element", () => {
-    const input = document.createElement("input");
+describe('safeFocusElement', () => {
+  it('focuses the primary element', () => {
+    const input = document.createElement('input');
     document.body.appendChild(input);
-    const focusSpy = vi.spyOn(input, "focus");
+    const focusSpy = vi.spyOn(input, 'focus');
 
     safeFocusElement(input);
 
@@ -43,10 +43,10 @@ describe("safeFocusElement", () => {
     document.body.removeChild(input);
   });
 
-  it("uses fallback when primary is null", () => {
-    const fallback = document.createElement("button");
+  it('uses fallback when primary is null', () => {
+    const fallback = document.createElement('button');
     document.body.appendChild(fallback);
-    const focusSpy = vi.spyOn(fallback, "focus");
+    const focusSpy = vi.spyOn(fallback, 'focus');
 
     safeFocusElement(null, fallback);
 
@@ -54,18 +54,18 @@ describe("safeFocusElement", () => {
     document.body.removeChild(fallback);
   });
 
-  it("handles element not in DOM gracefully", () => {
-    const detached = document.createElement("input");
+  it('handles element not in DOM gracefully', () => {
+    const detached = document.createElement('input');
     // not appended to document
     safeFocusElement(detached);
     // Should not throw
   });
 
-  it("handles delay parameter", async () => {
+  it('handles delay parameter', async () => {
     vi.useFakeTimers();
-    const input = document.createElement("input");
+    const input = document.createElement('input');
     document.body.appendChild(input);
-    const focusSpy = vi.spyOn(input, "focus");
+    const focusSpy = vi.spyOn(input, 'focus');
 
     safeFocusElement(input, null, 100);
     expect(focusSpy).not.toHaveBeenCalled();
@@ -78,9 +78,9 @@ describe("safeFocusElement", () => {
   });
 });
 
-describe("storeFocusedElement", () => {
-  it("returns the currently focused element", () => {
-    const button = document.createElement("button");
+describe('storeFocusedElement', () => {
+  it('returns the currently focused element', () => {
+    const button = document.createElement('button');
     document.body.appendChild(button);
     button.focus();
 
@@ -90,14 +90,14 @@ describe("storeFocusedElement", () => {
     document.body.removeChild(button);
   });
 
-  it("returns null when body is focused", () => {
+  it('returns null when body is focused', () => {
     expect(storeFocusedElement()).toBeNull();
   });
 
-  it("returns null for elements inside a dialog", () => {
-    const dialog = document.createElement("div");
-    dialog.setAttribute("role", "dialog");
-    const button = document.createElement("button");
+  it('returns null for elements inside a dialog', () => {
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    const button = document.createElement('button');
     dialog.appendChild(button);
     document.body.appendChild(dialog);
     button.focus();
@@ -109,16 +109,16 @@ describe("storeFocusedElement", () => {
   });
 });
 
-describe("handleKeyboardActivation", () => {
+describe('handleKeyboardActivation', () => {
   let onActivate: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     onActivate = vi.fn();
   });
 
-  it("calls onActivate on Enter", () => {
+  it('calls onActivate on Enter', () => {
     const event = {
-      key: "Enter",
+      key: 'Enter',
       preventDefault: vi.fn(),
     } as unknown as React.KeyboardEvent;
     handleKeyboardActivation(event, onActivate);
@@ -126,18 +126,18 @@ describe("handleKeyboardActivation", () => {
     expect(event.preventDefault).toHaveBeenCalled();
   });
 
-  it("calls onActivate on Space", () => {
+  it('calls onActivate on Space', () => {
     const event = {
-      key: " ",
+      key: ' ',
       preventDefault: vi.fn(),
     } as unknown as React.KeyboardEvent;
     handleKeyboardActivation(event, onActivate);
     expect(onActivate).toHaveBeenCalled();
   });
 
-  it("does not call onActivate on other keys", () => {
+  it('does not call onActivate on other keys', () => {
     const event = {
-      key: "Tab",
+      key: 'Tab',
       preventDefault: vi.fn(),
     } as unknown as React.KeyboardEvent;
     handleKeyboardActivation(event, onActivate);
@@ -145,11 +145,11 @@ describe("handleKeyboardActivation", () => {
   });
 });
 
-describe("handleEscapeKey", () => {
-  it("calls onEscape on Escape", () => {
+describe('handleEscapeKey', () => {
+  it('calls onEscape on Escape', () => {
     const onEscape = vi.fn();
     const event = {
-      key: "Escape",
+      key: 'Escape',
       preventDefault: vi.fn(),
     } as unknown as React.KeyboardEvent;
     handleEscapeKey(event, onEscape);
@@ -157,20 +157,20 @@ describe("handleEscapeKey", () => {
     expect(event.preventDefault).toHaveBeenCalled();
   });
 
-  it("does not call onEscape when isLoading=true", () => {
+  it('does not call onEscape when isLoading=true', () => {
     const onEscape = vi.fn();
     const event = {
-      key: "Escape",
+      key: 'Escape',
       preventDefault: vi.fn(),
     } as unknown as React.KeyboardEvent;
     handleEscapeKey(event, onEscape, true);
     expect(onEscape).not.toHaveBeenCalled();
   });
 
-  it("does not call onEscape on other keys", () => {
+  it('does not call onEscape on other keys', () => {
     const onEscape = vi.fn();
     const event = {
-      key: "Enter",
+      key: 'Enter',
       preventDefault: vi.fn(),
     } as unknown as React.KeyboardEvent;
     handleEscapeKey(event, onEscape);
@@ -178,43 +178,43 @@ describe("handleEscapeKey", () => {
   });
 });
 
-describe("getEnhancedDialogProps", () => {
-  it("returns base props without optional params", () => {
+describe('getEnhancedDialogProps', () => {
+  it('returns base props without optional params', () => {
     const props = getEnhancedDialogProps();
     expect(props.disableRestoreFocus).toBe(false);
     expect(props.disableEnforceFocus).toBe(false);
     expect(props.keepMounted).toBe(false);
   });
 
-  it("includes aria-labelledby when provided", () => {
-    const props = getEnhancedDialogProps("dialog-title");
-    expect(props["aria-labelledby"]).toBe("dialog-title");
+  it('includes aria-labelledby when provided', () => {
+    const props = getEnhancedDialogProps('dialog-title');
+    expect(props['aria-labelledby']).toBe('dialog-title');
   });
 
-  it("includes aria-describedby when provided", () => {
-    const props = getEnhancedDialogProps(undefined, "dialog-description");
-    expect(props["aria-describedby"]).toBe("dialog-description");
+  it('includes aria-describedby when provided', () => {
+    const props = getEnhancedDialogProps(undefined, 'dialog-description');
+    expect(props['aria-describedby']).toBe('dialog-description');
   });
 });
 
-describe("getFocusVisibleStyles", () => {
-  it("returns styles with default color when no theme", () => {
+describe('getFocusVisibleStyles', () => {
+  it('returns styles with default color when no theme', () => {
     const styles = getFocusVisibleStyles();
-    expect(styles["&:focus-visible"].outlineColor).toBe("#0087ff");
+    expect(styles['&:focus-visible'].outlineColor).toBe('#0087ff');
   });
 
-  it("uses theme color when provided", () => {
-    const theme = { palette: { primary: { main: "#ff0000" } } };
+  it('uses theme color when provided', () => {
+    const theme = { palette: { primary: { main: '#ff0000' } } };
     const styles = getFocusVisibleStyles(theme);
-    expect(styles["&:focus-visible"].outlineColor).toBe("#ff0000");
+    expect(styles['&:focus-visible'].outlineColor).toBe('#ff0000');
   });
 });
 
-describe("isElementInDialog", () => {
+describe('isElementInDialog', () => {
   it('returns true when inside [role="dialog"]', () => {
-    const dialog = document.createElement("div");
-    dialog.setAttribute("role", "dialog");
-    const button = document.createElement("button");
+    const dialog = document.createElement('div');
+    dialog.setAttribute('role', 'dialog');
+    const button = document.createElement('button');
     dialog.appendChild(button);
     document.body.appendChild(dialog);
 
@@ -223,10 +223,10 @@ describe("isElementInDialog", () => {
     document.body.removeChild(dialog);
   });
 
-  it("returns true when inside .MuiModal-root", () => {
-    const modal = document.createElement("div");
-    modal.classList.add("MuiModal-root");
-    const button = document.createElement("button");
+  it('returns true when inside .MuiModal-root', () => {
+    const modal = document.createElement('div');
+    modal.classList.add('MuiModal-root');
+    const button = document.createElement('button');
     modal.appendChild(button);
     document.body.appendChild(modal);
 
@@ -235,8 +235,8 @@ describe("isElementInDialog", () => {
     document.body.removeChild(modal);
   });
 
-  it("returns false when outside both", () => {
-    const button = document.createElement("button");
+  it('returns false when outside both', () => {
+    const button = document.createElement('button');
     document.body.appendChild(button);
 
     expect(isElementInDialog(button)).toBe(false);

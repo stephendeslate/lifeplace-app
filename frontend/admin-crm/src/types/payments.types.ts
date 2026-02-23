@@ -506,14 +506,37 @@ export interface PaymentSettings {
 }
 
 // Enums and Types
-export type PaymentStatus = 'CREATED' | 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
-export type PaymentPlanStatus = 'PENDING' | 'ACTIVE' | 'COMPLETED' | 'SUSPENDED' | 'DEFAULTED' | 'CANCELLED';
-export type PaymentMethodType = 'CREDIT_CARD' | 'BANK_TRANSFER' | 'CHECK' | 'CASH' | 'DIGITAL_WALLET';
+export type PaymentStatus =
+  | 'CREATED'
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED'
+  | 'REFUNDED';
+export type PaymentPlanStatus =
+  | 'PENDING'
+  | 'ACTIVE'
+  | 'COMPLETED'
+  | 'SUSPENDED'
+  | 'DEFAULTED'
+  | 'CANCELLED';
+export type PaymentMethodType =
+  | 'CREDIT_CARD'
+  | 'BANK_TRANSFER'
+  | 'CHECK'
+  | 'CASH'
+  | 'DIGITAL_WALLET';
 export type PaymentFrequency = 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY';
 export type InstallmentStatus = 'PENDING' | 'PAID' | 'PARTIAL' | 'WAIVED' | 'CANCELLED' | 'OVERDUE';
 export type TransactionStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 export type InvoiceStatus = 'DRAFT' | 'ISSUED' | 'PAID' | 'VOID' | 'CANCELLED';
-export type NotificationType = 'INVOICE_ISSUED' | 'PAYMENT_REMINDER' | 'PAYMENT_RECEIVED' | 'PAYMENT_OVERDUE' | 'RECEIPT_SENT';
+export type NotificationType =
+  | 'INVOICE_ISSUED'
+  | 'PAYMENT_REMINDER'
+  | 'PAYMENT_RECEIVED'
+  | 'PAYMENT_OVERDUE'
+  | 'RECEIPT_SENT';
 export type RefundStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED' | 'REJECTED';
 
 export const PAYMENT_STATUSES = [
@@ -1030,25 +1053,60 @@ export interface PaymentMethodInfo {
 // Gateway to Payment Methods Mapping
 export const GATEWAY_PAYMENT_METHODS: Record<string, PaymentMethodInfo[]> = {
   stripe: [
-    { code: 'card', name: 'Credit/Debit Card', icon: 'CreditCard', description: 'Visa, Mastercard, Amex, Discover' },
-    { code: 'apple_pay', name: 'Apple Pay', icon: '🍎', description: 'Pay with Apple Pay on supported devices' },
-    { code: 'google_pay', name: 'Google Pay', icon: '🔵', description: 'Pay with Google Pay on supported devices' },
-    { code: 'link', name: 'Link', icon: 'Link', description: 'Stripe\'s express checkout' },
+    {
+      code: 'card',
+      name: 'Credit/Debit Card',
+      icon: 'CreditCard',
+      description: 'Visa, Mastercard, Amex, Discover',
+    },
+    {
+      code: 'apple_pay',
+      name: 'Apple Pay',
+      icon: '🍎',
+      description: 'Pay with Apple Pay on supported devices',
+    },
+    {
+      code: 'google_pay',
+      name: 'Google Pay',
+      icon: '🔵',
+      description: 'Pay with Google Pay on supported devices',
+    },
+    { code: 'link', name: 'Link', icon: 'Link', description: "Stripe's express checkout" },
   ],
   paymongo: [
-    { code: 'card', name: 'Credit/Debit Card', icon: 'CreditCard', description: 'Visa, Mastercard' },
+    {
+      code: 'card',
+      name: 'Credit/Debit Card',
+      icon: 'CreditCard',
+      description: 'Visa, Mastercard',
+    },
     { code: 'gcash', name: 'GCash', icon: '💚', description: 'Pay with GCash e-wallet' },
     { code: 'grab_pay', name: 'GrabPay', icon: '💳', description: 'Pay with GrabPay e-wallet' },
     { code: 'maya', name: 'Maya', icon: '💜', description: 'Pay with Maya (PayMaya) e-wallet' },
-    { code: 'bank_transfer', name: 'Bank Transfer', icon: 'AccountBalance', description: 'Direct bank transfer' },
+    {
+      code: 'bank_transfer',
+      name: 'Bank Transfer',
+      icon: 'AccountBalance',
+      description: 'Direct bank transfer',
+    },
   ],
   paypal: [
     { code: 'paypal', name: 'PayPal', icon: '💙', description: 'Pay with PayPal account' },
-    { code: 'card', name: 'Credit/Debit Card', icon: 'CreditCard', description: 'Pay with card via PayPal' },
+    {
+      code: 'card',
+      name: 'Credit/Debit Card',
+      icon: 'CreditCard',
+      description: 'Pay with card via PayPal',
+    },
   ],
   manual: [
     { code: 'cash', name: 'Cash', icon: 'Payments', description: 'Pay in cash' },
-    { code: 'bank_transfer', name: 'Bank Transfer', icon: 'AccountBalance', description: 'Manual bank transfer' },
+    {
+      code: 'bank_transfer',
+      name: 'Bank Transfer',
+      icon: 'AccountBalance',
+      description: 'Manual bank transfer',
+    },
     { code: 'check', name: 'Check', icon: 'Receipt', description: 'Pay by check' },
   ],
 };
@@ -1073,21 +1131,31 @@ export const getGatewayPaymentMethods = (gatewayCode: string): PaymentMethodInfo
 };
 
 // Helper to get gateway health color
-export const getHealthStatusColor = (status: GatewayHealthStatus): 'success' | 'warning' | 'error' | 'default' => {
+export const getHealthStatusColor = (
+  status: GatewayHealthStatus,
+): 'success' | 'warning' | 'error' | 'default' => {
   switch (status) {
-    case 'healthy': return 'success';
-    case 'degraded': return 'warning';
-    case 'unhealthy': return 'error';
-    default: return 'default';
+    case 'healthy':
+      return 'success';
+    case 'degraded':
+      return 'warning';
+    case 'unhealthy':
+      return 'error';
+    default:
+      return 'default';
   }
 };
 
 // Helper to get gateway health label
 export const getHealthStatusLabel = (status: GatewayHealthStatus): string => {
   switch (status) {
-    case 'healthy': return 'Healthy';
-    case 'degraded': return 'Degraded';
-    case 'unhealthy': return 'Unhealthy';
-    default: return 'Unknown';
+    case 'healthy':
+      return 'Healthy';
+    case 'degraded':
+      return 'Degraded';
+    case 'unhealthy':
+      return 'Unhealthy';
+    default:
+      return 'Unknown';
   }
 };

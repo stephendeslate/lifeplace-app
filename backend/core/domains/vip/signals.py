@@ -3,19 +3,19 @@
 VIP domain signals for automatic tier upgrades and points awarding.
 Connects to payment and event signals to track client activity.
 """
+
 import logging
-from decimal import Decimal
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from .models import VIPSettings, ClientVIPStatus
-from .services import VIPService, VIPPointsService
+from .models import VIPSettings
+from .services import VIPPointsService, VIPService
 
 logger = logging.getLogger(__name__)
 
 
-@receiver(post_save, sender='payments.Payment')
+@receiver(post_save, sender="payments.Payment")
 def handle_payment_completed(sender, instance, created, **kwargs):
     """
     Handle payment completion:
@@ -24,7 +24,7 @@ def handle_payment_completed(sender, instance, created, **kwargs):
     3. Check for tier upgrade eligibility
     """
     # Only process completed payments
-    if instance.status != 'COMPLETED':
+    if instance.status != "COMPLETED":
         return
 
     # Get settings
@@ -39,7 +39,7 @@ def handle_payment_completed(sender, instance, created, **kwargs):
         return
 
     client = instance.event.client
-    if client.role != 'CLIENT':
+    if client.role != "CLIENT":
         return
 
     try:
@@ -48,7 +48,7 @@ def handle_payment_completed(sender, instance, created, **kwargs):
 
         # Update total spent
         client_status.total_spent += instance.amount
-        client_status.save(update_fields=['total_spent', 'last_activity_at', 'updated_at'])
+        client_status.save(update_fields=["total_spent", "last_activity_at", "updated_at"])
 
         logger.info(f"Updated total spent for {client.email}: {client_status.total_spent}")
 
@@ -63,10 +63,10 @@ def handle_payment_completed(sender, instance, created, **kwargs):
                 logger.info(f"Client {client.email} was upgraded to {client_status.current_tier.name}")
 
     except Exception as e:
-        logger.error(f"Error processing VIP for payment {instance.id}: {str(e)}")
+        logger.error(f"Error processing VIP for payment {instance.id}: {e!s}")
 
 
-@receiver(post_save, sender='events.Event')
+@receiver(post_save, sender="events.Event")
 def handle_event_status_change(sender, instance, created, **kwargs):
     """
     Handle event status changes:
@@ -74,7 +74,7 @@ def handle_event_status_change(sender, instance, created, **kwargs):
     - Check for tier upgrade eligibility
     """
     # Only process completed events
-    if instance.status != 'COMPLETED':
+    if instance.status != "COMPLETED":
         return
 
     # Get settings
@@ -87,7 +87,7 @@ def handle_event_status_change(sender, instance, created, **kwargs):
         return
 
     client = instance.client
-    if client.role != 'CLIENT':
+    if client.role != "CLIENT":
         return
 
     try:
@@ -96,13 +96,11 @@ def handle_event_status_change(sender, instance, created, **kwargs):
 
         # Update completed bookings count
         from core.domains.events.models import Event
-        completed_count = Event.objects.filter(
-            client=client,
-            status='COMPLETED'
-        ).count()
+
+        completed_count = Event.objects.filter(client=client, status="COMPLETED").count()
 
         client_status.completed_bookings_count = completed_count
-        client_status.save(update_fields=['completed_bookings_count', 'last_activity_at', 'updated_at'])
+        client_status.save(update_fields=["completed_bookings_count", "last_activity_at", "updated_at"])
 
         logger.info(f"Updated completed bookings for {client.email}: {completed_count}")
 
@@ -113,5 +111,4 @@ def handle_event_status_change(sender, instance, created, **kwargs):
                 logger.info(f"Client {client.email} was upgraded to {client_status.current_tier.name}")
 
     except Exception as e:
-        logger.error(f"Error processing VIP for event {instance.id}: {str(e)}")
-
+        logger.error(f"Error processing VIP for event {instance.id}: {e!s}")

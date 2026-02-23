@@ -43,7 +43,7 @@ class Command(BaseCommand):
 
             self.stdout.write(
                 self.style.SUCCESS(
-                    f'{"Would delete" if dry_run else "Deleted"} '
+                    f"{'Would delete' if dry_run else 'Deleted'} "
                     f"{sessions_count} booking sessions"
                     + (f", {accounts_count} test accounts" if include_accounts else "")
                 )

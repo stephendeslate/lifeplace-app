@@ -19,14 +19,14 @@ export const shadowTokens = {
     light: '0 4px 16px rgba(31, 38, 135, 0.15)',
     medium: '0 8px 32px rgba(31, 38, 135, 0.25)',
     strong: '0 12px 48px rgba(31, 38, 135, 0.35)',
-    
+
     // Floating glass elements
     floating: '0 16px 40px rgba(31, 38, 135, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1)',
     elevated: '0 20px 60px rgba(31, 38, 135, 0.3), 0 8px 24px rgba(0, 0, 0, 0.15)',
-    
+
     // Colored glass shadows
     primary: '0 8px 32px rgba(0, 135, 255, 0.25)',
-    success: '0 8px 32px rgba(16, 185, 129, 0.25)', 
+    success: '0 8px 32px rgba(16, 185, 129, 0.25)',
     warning: '0 8px 32px rgba(245, 158, 11, 0.25)',
     error: '0 8px 32px rgba(239, 68, 68, 0.25)',
   },
@@ -68,11 +68,11 @@ export const backdropFilters = {
   medium: 'blur(16px)',
   strong: 'blur(24px)',
   intense: 'blur(40px)',
-  
+
   // Combined backdrop effects
   glass: 'blur(20px) saturate(1.2)',
   glassStrong: 'blur(40px) saturate(1.4)',
-  
+
   // Specialty effects
   frosted: 'blur(12px) contrast(1.1) brightness(1.1)',
   vivid: 'blur(16px) saturate(1.8) contrast(1.2)',
@@ -85,26 +85,28 @@ export const borders = {
   thin: '1px solid',
   medium: '2px solid',
   thick: '3px solid',
-  
+
   // Glass borders with transparency
   glass: {
     light: '1px solid rgba(255, 255, 255, 0.1)',
     medium: '1px solid rgba(255, 255, 255, 0.2)',
     strong: '1px solid rgba(255, 255, 255, 0.3)',
-    
+
     // Colored glass borders
     primary: '1px solid rgba(0, 135, 255, 0.3)',
     success: '1px solid rgba(16, 185, 129, 0.3)',
     warning: '1px solid rgba(245, 158, 11, 0.3)',
     error: '1px solid rgba(239, 68, 68, 0.3)',
   },
-  
+
   // Gradient borders
   gradient: {
     primary: '1px solid transparent',
-    primaryGradient: 'linear-gradient(135deg, rgba(0, 135, 255, 0.3) 0%, rgba(0, 102, 204, 0.3) 100%)',
+    primaryGradient:
+      'linear-gradient(135deg, rgba(0, 135, 255, 0.3) 0%, rgba(0, 102, 204, 0.3) 100%)',
     success: '1px solid transparent',
-    successGradient: 'linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(5, 150, 105, 0.3) 100%)',
+    successGradient:
+      'linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(5, 150, 105, 0.3) 100%)',
   },
 } as const;
 
@@ -116,13 +118,13 @@ export const shadowsCssVariables = {
   '--shadow-md': shadowTokens.elevation.md,
   '--shadow-lg': shadowTokens.elevation.lg,
   '--shadow-xl': shadowTokens.elevation.xl,
-  
+
   // Glass shadows
   '--shadow-glass-light': shadowTokens.glass.light,
   '--shadow-glass-medium': shadowTokens.glass.medium,
   '--shadow-glass-floating': shadowTokens.glass.floating,
   '--shadow-glass-primary': shadowTokens.glass.primary,
-  
+
   // Component shadows
   '--shadow-card': shadowTokens.component.card,
   '--shadow-card-hover': shadowTokens.component.cardHover,
@@ -135,7 +137,7 @@ export const shadowsCssVariables = {
   '--backdrop-blur-medium': backdropFilters.medium,
   '--backdrop-blur-strong': backdropFilters.strong,
   '--backdrop-glass': backdropFilters.glass,
-  
+
   // Borders
   '--border-glass-light': borders.glass.light,
   '--border-glass-medium': borders.glass.medium,
@@ -163,7 +165,7 @@ export const createGlassStyle = (
   background: string = 'rgba(255, 255, 255, 0.25)',
   backdropFilter: BackdropFilter = 'medium',
   border: string = borders.glass.medium,
-  shadow: string = shadowTokens.glass.medium
+  shadow: string = shadowTokens.glass.medium,
 ) => ({
   background,
   backdropFilter: getBackdropFilter(backdropFilter),
@@ -177,25 +179,25 @@ export const glassPresets = {
     'rgba(255, 255, 255, 0.15)',
     'light',
     borders.glass.light,
-    shadowTokens.glass.light
+    shadowTokens.glass.light,
   ),
   medium: createGlassStyle(
     'rgba(255, 255, 255, 0.25)',
     'medium',
     borders.glass.medium,
-    shadowTokens.glass.medium
+    shadowTokens.glass.medium,
   ),
   strong: createGlassStyle(
     'rgba(255, 255, 255, 0.35)',
-    'strong', 
+    'strong',
     borders.glass.strong,
-    shadowTokens.glass.strong
+    shadowTokens.glass.strong,
   ),
   primary: createGlassStyle(
     'rgba(0, 135, 255, 0.15)',
     'medium',
     borders.glass.primary,
-    shadowTokens.glass.primary
+    shadowTokens.glass.primary,
   ),
 } as const;
 

@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/types/events.types.ts
 
-import type { Client } from "./clients.types";
-import type { WorkflowStage } from "./workflows.types";
+import type { Client } from './clients.types';
+import type { WorkflowStage } from './workflows.types';
 
 export interface EventType {
   id: number;
@@ -28,7 +28,7 @@ export interface EventTask {
   id: number;
   workflow_stage: number;
   title: string;
-  status: "PENDING" | "COMPLETED" | "ACTIVE";
+  status: 'PENDING' | 'COMPLETED' | 'ACTIVE';
   completed_at: string | null;
   assigned_to: number | null;
   assigned_to_name: string | null;
@@ -36,17 +36,9 @@ export interface EventTask {
   due_date: string | null;
 }
 
-export type DateHoldStatus = "NONE" | "TEMPORARY_HOLD" | "PERMANENT_BLOCK";
-export type CheckInStatus =
-  | "PENDING"
-  | "CHECKED_IN"
-  | "CHECKED_OUT"
-  | "NO_SHOW";
-export type CancelledReason =
-  | "CLIENT_REQUEST"
-  | "PAYMENT_TIMEOUT"
-  | "DATE_TAKEN"
-  | "ADMIN";
+export type DateHoldStatus = 'NONE' | 'TEMPORARY_HOLD' | 'PERMANENT_BLOCK';
+export type CheckInStatus = 'PENDING' | 'CHECKED_IN' | 'CHECKED_OUT' | 'NO_SHOW';
+export type CancelledReason = 'CLIENT_REQUEST' | 'PAYMENT_TIMEOUT' | 'DATE_TAKEN' | 'ADMIN';
 
 export interface Event {
   id: number;
@@ -130,7 +122,7 @@ export interface Event {
 
 // Inquiry data stored in preferences when event is created from contact form
 export interface InquiryData {
-  type: "GENERAL" | "EVENT_QUESTION" | "PARTNERSHIP" | "PRICING" | "OTHER";
+  type: 'GENERAL' | 'EVENT_QUESTION' | 'PARTNERSHIP' | 'PRICING' | 'OTHER';
   message: string;
   phone?: string;
   submitted_at: string;
@@ -142,32 +134,32 @@ export interface EventPreferences {
 }
 
 export const DATE_HOLD_STATUSES = [
-  { value: "NONE", label: "No Hold" },
-  { value: "TEMPORARY_HOLD", label: "Temporary Hold" },
-  { value: "PERMANENT_BLOCK", label: "Permanently Blocked" },
+  { value: 'NONE', label: 'No Hold' },
+  { value: 'TEMPORARY_HOLD', label: 'Temporary Hold' },
+  { value: 'PERMANENT_BLOCK', label: 'Permanently Blocked' },
 ] as const;
 
 export const CHECK_IN_STATUSES = [
-  { value: "PENDING", label: "Pending" },
-  { value: "CHECKED_IN", label: "Checked In" },
-  { value: "CHECKED_OUT", label: "Checked Out" },
-  { value: "NO_SHOW", label: "No Show" },
+  { value: 'PENDING', label: 'Pending' },
+  { value: 'CHECKED_IN', label: 'Checked In' },
+  { value: 'CHECKED_OUT', label: 'Checked Out' },
+  { value: 'NO_SHOW', label: 'No Show' },
 ] as const;
 
-export type EventStatus = "LEAD" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
-export type PaymentStatus = "UNPAID" | "PARTIALLY_PAID" | "PAID";
+export type EventStatus = 'LEAD' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+export type PaymentStatus = 'UNPAID' | 'PARTIALLY_PAID' | 'PAID';
 
 export const EVENT_STATUSES = [
-  { value: "LEAD", label: "Lead" },
-  { value: "CONFIRMED", label: "Confirmed" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "CANCELLED", label: "Cancelled" },
+  { value: 'LEAD', label: 'Lead' },
+  { value: 'CONFIRMED', label: 'Confirmed' },
+  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'CANCELLED', label: 'Cancelled' },
 ] as const;
 
 export const PAYMENT_STATUSES = [
-  { value: "UNPAID", label: "Unpaid" },
-  { value: "PARTIALLY_PAID", label: "Partially Paid" },
-  { value: "PAID", label: "Paid" },
+  { value: 'UNPAID', label: 'Unpaid' },
+  { value: 'PARTIALLY_PAID', label: 'Partially Paid' },
+  { value: 'PAID', label: 'Paid' },
 ] as const;
 
 // Create/Update types
@@ -251,10 +243,7 @@ export interface EventTypeFormDialogProps {
   open: boolean;
   onClose: () => void;
   editingEventType?: EventType | null;
-  onSubmit: (
-    data: CreateEventTypeData | UpdateEventTypeData,
-    formData?: FormData,
-  ) => void;
+  onSubmit: (data: CreateEventTypeData | UpdateEventTypeData, formData?: FormData) => void;
   isLoading: boolean;
 }
 
@@ -276,22 +265,16 @@ export interface EventFormDialogProps {
 
 // File Categories
 export const FILE_CATEGORIES = [
-  { value: "CONTRACT", label: "Contract Document" },
-  { value: "QUOTE", label: "Quote/Proposal" },
-  { value: "PAYMENT", label: "Payment Document" },
-  { value: "REQUIREMENTS", label: "Requirements Doc" },
-  { value: "PHOTO", label: "Photo" },
-  { value: "OTHER", label: "Other" },
+  { value: 'CONTRACT', label: 'Contract Document' },
+  { value: 'QUOTE', label: 'Quote/Proposal' },
+  { value: 'PAYMENT', label: 'Payment Document' },
+  { value: 'REQUIREMENTS', label: 'Requirements Doc' },
+  { value: 'PHOTO', label: 'Photo' },
+  { value: 'OTHER', label: 'Other' },
 ] as const;
 
 // File category type
-export type FileCategory =
-  | "CONTRACT"
-  | "QUOTE"
-  | "PAYMENT"
-  | "REQUIREMENTS"
-  | "PHOTO"
-  | "OTHER";
+export type FileCategory = 'CONTRACT' | 'QUOTE' | 'PAYMENT' | 'REQUIREMENTS' | 'PHOTO' | 'OTHER';
 
 // Event File interface
 export interface EventFile {

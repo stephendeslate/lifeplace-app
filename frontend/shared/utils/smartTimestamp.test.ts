@@ -84,14 +84,18 @@ describe('formatSmartTimestamp', () => {
       // January 13, 2025 (Monday), 8:45 AM UTC
       const timestamp = new Date('2025-01-13T08:45:00.000Z').toISOString();
       const result = formatSmartTimestamp(timestamp);
-      expect(result).toMatch(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday) at \d{1,2}:\d{2} (AM|PM)$/);
+      expect(result).toMatch(
+        /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday) at \d{1,2}:\d{2} (AM|PM)$/,
+      );
     });
 
     it('should return weekday format for earlier this week', () => {
       // January 12, 2025 (Sunday), 8:45 AM UTC
       const timestamp = new Date('2025-01-12T08:45:00.000Z').toISOString();
       const result = formatSmartTimestamp(timestamp);
-      expect(result).toMatch(/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday) at \d{1,2}:\d{2} (AM|PM)$/);
+      expect(result).toMatch(
+        /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday) at \d{1,2}:\d{2} (AM|PM)$/,
+      );
     });
   });
 

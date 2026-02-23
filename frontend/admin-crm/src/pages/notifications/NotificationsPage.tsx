@@ -147,9 +147,7 @@ export const NotificationsPage: React.FC = () => {
 
   // Set breadcrumbs
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Notifications' },
-    ]);
+    setBreadcrumbs([{ label: 'Notifications' }]);
   }, [setBreadcrumbs]);
 
   // Hooks
@@ -205,14 +203,10 @@ export const NotificationsPage: React.FC = () => {
         No Notifications Yet
       </Typography>
       <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        You're all caught up! When you have new notifications, they'll appear here.
-        You can customize how you receive notifications in the preferences tab.
+        You're all caught up! When you have new notifications, they'll appear here. You can
+        customize how you receive notifications in the preferences tab.
       </Typography>
-      <Button
-        variant="contained"
-        startIcon={<SettingsIcon />}
-        onClick={() => setActiveTab(1)}
-      >
+      <Button variant="contained" startIcon={<SettingsIcon />} onClick={() => setActiveTab(1)}>
         Configure Preferences
       </Button>
     </Box>
@@ -238,9 +232,11 @@ export const NotificationsPage: React.FC = () => {
     </Box>
   );
 
-  const hasActiveFilters = Object.values(filters).some(value => value !== undefined && value !== '');
+  const hasActiveFilters = Object.values(filters).some(
+    (value) => value !== undefined && value !== '',
+  );
   const notificationCount = Array.isArray(notifications) ? notifications.length : 0;
-  const showMarkAllRead = activeTab === 0 && ((counts?.unread ?? 0) > 0);
+  const showMarkAllRead = activeTab === 0 && (counts?.unread ?? 0) > 0;
 
   return (
     <Box sx={{ p: 3 }}>
@@ -267,10 +263,7 @@ export const NotificationsPage: React.FC = () => {
               borderColor: 'divider',
             }}
           >
-            <NotificationCountsDisplay
-              counts={counts}
-              isLoading={isLoadingCounts}
-            />
+            <NotificationCountsDisplay counts={counts} isLoading={isLoadingCounts} />
           </Box>
         </Box>
       )}
@@ -282,16 +275,13 @@ export const NotificationsPage: React.FC = () => {
             severity="warning"
             icon={<NotificationsOff />}
             action={
-              <Button
-                color="inherit"
-                size="small"
-                onClick={() => setActiveTab(1)}
-              >
+              <Button color="inherit" size="small" onClick={() => setActiveTab(1)}>
                 Enable
               </Button>
             }
           >
-            In-app notifications are currently disabled. Enable them in preferences to receive notifications here.
+            In-app notifications are currently disabled. Enable them in preferences to receive
+            notifications here.
           </Alert>
         </Box>
       )}
@@ -381,7 +371,8 @@ export const NotificationsPage: React.FC = () => {
                   Unable to Load Preferences
                 </Typography>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                  There was an issue loading your notification preferences. Please try refreshing the page.
+                  There was an issue loading your notification preferences. Please try refreshing
+                  the page.
                 </Typography>
                 <Button
                   variant="contained"

@@ -6,27 +6,28 @@ export const transitions = {
   fast: '150ms ease-in-out',
   normal: '300ms ease-in-out',
   slow: '500ms ease-in-out',
-  
+
   // Cubic bezier easing curves
   easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
   easeOut: 'cubic-bezier(0.0, 0, 0.2, 1)',
   easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
   sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
-  
+
   // Nature-inspired easings
   organic: 'cubic-bezier(0.37, 0, 0.63, 1)',
   bounce: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)',
   smooth: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
-  
+
   // Specific property transitions
   all: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
   colors: 'background-color 300ms ease, color 300ms ease, border-color 300ms ease',
   transform: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
   opacity: 'opacity 300ms ease-in-out',
   shadow: 'box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-  
+
   // Complex transitions
-  elevate: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1)',
+  elevate:
+    'transform 300ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1)',
   glass: 'backdrop-filter 300ms ease, background-color 300ms ease',
 };
 
@@ -40,7 +41,7 @@ export const animations = {
     from: { opacity: 1 },
     to: { opacity: 0 },
   },
-  
+
   // Slide animations
   slideUp: {
     from: { transform: 'translateY(20px)', opacity: 0 },
@@ -58,7 +59,7 @@ export const animations = {
     from: { transform: 'translateX(-20px)', opacity: 0 },
     to: { transform: 'translateX(0)', opacity: 1 },
   },
-  
+
   // Scale animations
   scaleUp: {
     from: { transform: 'scale(0.95)', opacity: 0 },
@@ -68,7 +69,7 @@ export const animations = {
     from: { transform: 'scale(1.05)', opacity: 0 },
     to: { transform: 'scale(1)', opacity: 1 },
   },
-  
+
   // Nature-inspired animations
   float: {
     '0%': { transform: 'translateY(0px)' },
@@ -186,9 +187,9 @@ export const durations = {
   ripple: 600,
   collapse: 300,
   expand: 300,
-  fadeIn: 400,        // Slightly slower for elegance
+  fadeIn: 400, // Slightly slower for elegance
   fadeOut: 300,
   hover: 250,
   pageTransition: 400,
-  scroll: 800,        // For smooth scroll animations
+  scroll: 800, // For smooth scroll animations
 };

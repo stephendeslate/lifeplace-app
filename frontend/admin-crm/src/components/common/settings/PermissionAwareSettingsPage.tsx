@@ -20,8 +20,10 @@ import { SettingsPage, type SettingsPageProps, type SettingsPageConfig } from '.
 import { usePermissions } from '../../../hooks/usePermissions';
 import type { AdminPermissionKey } from '../../../types/permissions.types';
 
-export interface PermissionAwareSettingsPageProps<T = Record<string, unknown>>
-  extends Omit<SettingsPageProps<T>, 'config'> {
+export interface PermissionAwareSettingsPageProps<T = Record<string, unknown>> extends Omit<
+  SettingsPageProps<T>,
+  'config'
+> {
   /** The SettingsPage config */
   config: SettingsPageConfig<T>;
 

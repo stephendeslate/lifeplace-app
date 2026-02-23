@@ -20,12 +20,12 @@ Usage:
 
 import logging
 from datetime import datetime, timedelta
-from locust import HttpUser, task, between, events
 
 from config import config
-from utils import TokenManager, think_time, RateLimitTracker
-from load_booking_flow import BookingFlowBehavior
 from load_admin_dashboard import AdminDashboardBehavior
+from load_booking_flow import BookingFlowBehavior
+from locust import HttpUser, between, events, task
+from utils import RateLimitTracker, TokenManager, think_time
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -58,9 +58,7 @@ class BookingFlowSmokeUser(HttpUser):
 
         # Browse flows list
         with self.client.get(
-            "/api/bookingflow/public/flows/",
-            catch_response=True,
-            name="/api/bookingflow/public/flows/"
+            "/api/bookingflow/public/flows/", catch_response=True, name="/api/bookingflow/public/flows/"
         ) as response:
             self.rate_tracker.record_call()
             if response.status_code == 200:
@@ -72,11 +70,13 @@ class BookingFlowSmokeUser(HttpUser):
 
         # Check public availability (requires start_date & end_date)
         today = datetime.now()
-        avail_params = f"start_date={today.strftime('%Y-%m-%d')}&end_date={(today + timedelta(days=60)).strftime('%Y-%m-%d')}"
+        avail_params = (
+            f"start_date={today.strftime('%Y-%m-%d')}&end_date={(today + timedelta(days=60)).strftime('%Y-%m-%d')}"
+        )
         with self.client.get(
             f"/api/events/public/availability/?{avail_params}",
             catch_response=True,
-            name="/api/events/public/availability/"
+            name="/api/events/public/availability/",
         ) as response:
             self.rate_tracker.record_call()
             if response.status_code == 200:
@@ -88,9 +88,7 @@ class BookingFlowSmokeUser(HttpUser):
 
         # Browse event types
         with self.client.get(
-            "/api/events/event-types/",
-            catch_response=True,
-            name="/api/events/event-types/"
+            "/api/events/event-types/", catch_response=True, name="/api/events/event-types/"
         ) as response:
             self.rate_tracker.record_call()
             if response.status_code == 200:
@@ -155,13 +153,8 @@ class ClientPortalSmokeUser(HttpUser):
         ]
 
         all_passed = True
-        for path, label in endpoints:
-            with self.client.get(
-                path,
-                headers=headers,
-                catch_response=True,
-                name=f"{path} [client]"
-            ) as response:
+        for path, _label in endpoints:
+            with self.client.get(path, headers=headers, catch_response=True, name=f"{path} [client]") as response:
                 self.rate_tracker.record_call()
                 if response.status_code == 200:
                     response.success()
@@ -231,12 +224,9 @@ class AdminDashboardSmokeUser(HttpUser):
         ]
 
         crud_ok = True
-        for path, label in crud_endpoints:
+        for path, _label in crud_endpoints:
             with self.client.get(
-                path,
-                headers=headers,
-                catch_response=True,
-                name=f"{path.split('?')[0]} [admin]"
+                path, headers=headers, catch_response=True, name=f"{path.split('?')[0]} [admin]"
             ) as response:
                 self.rate_tracker.record_call()
                 if response.status_code == 200:
@@ -262,6 +252,7 @@ class AdminDashboardSmokeUser(HttpUser):
 # =============================================================================
 # REPORTING
 # =============================================================================
+
 
 @events.test_stop.add_listener
 def on_test_stop(environment, **kwargs):

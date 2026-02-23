@@ -11,11 +11,7 @@ interface PublicLayoutProps {
   fullHeight?: boolean;
 }
 
-export const PublicLayout: React.FC<PublicLayoutProps> = ({
-  children,
-  fullHeight = false,
-}) => {
-
+export const PublicLayout: React.FC<PublicLayoutProps> = ({ children, fullHeight = false }) => {
   return (
     <Box
       sx={{
@@ -57,11 +53,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
       }}
     >
       {/* Header */}
-      <Box
-        component="header"
-        role="banner"
-        sx={{ position: 'relative', zIndex: 2 }}
-      >
+      <Box component="header" role="banner" sx={{ position: 'relative', zIndex: 2 }}>
         <PublicHeader />
       </Box>
 
@@ -75,7 +67,7 @@ export const PublicLayout: React.FC<PublicLayoutProps> = ({
           flexDirection: 'column',
           // Use design system tokens for content offset - maintains exact spacing
           pt: {
-            xs: tokens.spacing.layoutComponents.contentOffset.mobile,  // 120px
+            xs: tokens.spacing.layoutComponents.contentOffset.mobile, // 120px
             md: tokens.spacing.layoutComponents.contentOffset.desktop, // 140px
           },
           pb: 0, // No bottom spacing - let sections control their own spacing

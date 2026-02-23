@@ -129,29 +129,32 @@ export const WalkthroughTooltip: React.FC<WalkthroughTooltipProps> = ({
   }, [targetRect, step.placement]);
 
   // Keyboard navigation
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    switch (e.key) {
-      case 'Escape':
-        e.preventDefault();
-        onClose();
-        break;
-      case 'ArrowRight':
-      case 'Enter':
-        e.preventDefault();
-        if (isLastStep) {
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'Escape':
+          e.preventDefault();
           onClose();
-        } else {
-          onNext();
-        }
-        break;
-      case 'ArrowLeft':
-        e.preventDefault();
-        if (!isFirstStep) {
-          onPrev();
-        }
-        break;
-    }
-  }, [onNext, onPrev, onClose, isFirstStep, isLastStep]);
+          break;
+        case 'ArrowRight':
+        case 'Enter':
+          e.preventDefault();
+          if (isLastStep) {
+            onClose();
+          } else {
+            onNext();
+          }
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          if (!isFirstStep) {
+            onPrev();
+          }
+          break;
+      }
+    },
+    [onNext, onPrev, onClose, isFirstStep, isLastStep],
+  );
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -181,7 +184,9 @@ export const WalkthroughTooltip: React.FC<WalkthroughTooltipProps> = ({
         overflow: 'hidden',
         visibility: isVisible ? 'visible' : 'hidden',
         opacity: isVisible ? 1 : 0,
-        transition: ['opacity', 'visibility'].map(prop => createTransition(prop, 'fast')).join(', '),
+        transition: ['opacity', 'visibility']
+          .map((prop) => createTransition(prop, 'fast'))
+          .join(', '),
       }}
       role="dialog"
       aria-modal="true"

@@ -7,7 +7,7 @@ import type {
   UpdateClientData,
   ClientFilters,
   AcceptInvitationData,
-  CreateClientData
+  CreateClientData,
 } from '../types/clients.types';
 import type { PaginationParams } from '../types/common.types';
 
@@ -29,7 +29,7 @@ export const useClients = (filters?: ClientFilters & PaginationParams) => {
     data: clientsData,
     isLoading: isLoadingClients,
     error: clientsError,
-    refetch: refetchClients
+    refetch: refetchClients,
   } = useQuery({
     queryKey: ['clients', filters],
     queryFn: () => clientsApi.getClients(filters),
@@ -67,7 +67,10 @@ export const useClients = (filters?: ClientFilters & PaginationParams) => {
     mutationFn: (data: CreateClientData) => clientsApi.createClient(data),
     onSuccess: (newClient) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
-      showSuccess('Client Created', `${newClient.first_name} ${newClient.last_name} has been added successfully.`);
+      showSuccess(
+        'Client Created',
+        `${newClient.first_name} ${newClient.last_name} has been added successfully.`,
+      );
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create client';
@@ -81,7 +84,10 @@ export const useClients = (filters?: ClientFilters & PaginationParams) => {
     onSuccess: (updatedClient) => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       queryClient.invalidateQueries({ queryKey: ['client', updatedClient.id] });
-      showSuccess('Client Updated', `${updatedClient.first_name} ${updatedClient.last_name} has been updated successfully.`);
+      showSuccess(
+        'Client Updated',
+        `${updatedClient.first_name} ${updatedClient.last_name} has been updated successfully.`,
+      );
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update client';
@@ -137,7 +143,7 @@ export const useClients = (filters?: ClientFilters & PaginationParams) => {
     pageSize: clientsData?.page_size || 25,
     hasNext: !!clientsData?.next,
     hasPrevious: !!clientsData?.previous,
-    
+
     // Loading states
     isLoadingClients,
     isCreatingClient: createClientMutation.isPending,
@@ -145,7 +151,7 @@ export const useClients = (filters?: ClientFilters & PaginationParams) => {
     isDeletingClient: deleteClientMutation.isPending,
     isSendingInvitation: sendInvitationMutation.isPending,
     isImportingClients: importClientsMutation.isPending,
-    
+
     // Error states
     clientsError,
     createError: createClientMutation.error,
@@ -153,7 +159,7 @@ export const useClients = (filters?: ClientFilters & PaginationParams) => {
     deleteError: deleteClientMutation.error,
     sendInvitationError: sendInvitationMutation.error,
     importError: importClientsMutation.error,
-    
+
     // Actions
     createClient: createClientMutation.mutate,
     updateClient: updateClientMutation.mutate,
@@ -161,7 +167,7 @@ export const useClients = (filters?: ClientFilters & PaginationParams) => {
     sendInvitation: sendInvitationMutation.mutate,
     importClients: importClientsMutation.mutate,
     refetchClients,
-    
+
     // Hooks for individual resources
     useClient,
     useClientEvents,

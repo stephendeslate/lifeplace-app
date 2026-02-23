@@ -4,7 +4,7 @@ import type {
   AvailabilityStatus,
   DateAvailabilityInfo,
   AvailabilityIndicator,
-  EventConflict
+  EventConflict,
 } from '../types/availability.types';
 import { tokens } from '../design-system';
 
@@ -12,7 +12,6 @@ import { tokens } from '../design-system';
  * Utility functions for availability system
  */
 export class AvailabilityUtils {
-
   /**
    * Get color theme for availability status
    */
@@ -36,7 +35,9 @@ export class AvailabilityUtils {
   /**
    * Get MUI color variant for availability status
    */
-  static getStatusMuiColor(status: AvailabilityStatus): 'success' | 'warning' | 'error' | 'info' | 'default' {
+  static getStatusMuiColor(
+    status: AvailabilityStatus,
+  ): 'success' | 'warning' | 'error' | 'info' | 'default' {
     switch (status) {
       case 'available':
         return 'success';
@@ -75,9 +76,7 @@ export class AvailabilityUtils {
   /**
    * Get availability indicator configuration
    */
-  static getAvailabilityIndicator(
-    availability: DateAvailabilityInfo
-  ): AvailabilityIndicator {
+  static getAvailabilityIndicator(availability: DateAvailabilityInfo): AvailabilityIndicator {
     const { status, can_book_event, can_create_lead } = availability;
 
     let tooltip = this.getStatusLabel(status);
@@ -123,15 +122,15 @@ export class AvailabilityUtils {
    */
   static formatConflicts(conflicts: EventConflict[]): string {
     if (conflicts.length === 0) return 'No conflicts';
-    
+
     if (conflicts.length === 1) {
       const conflict = conflicts[0];
       return `${conflict.event_name} (${conflict.status})`;
     }
 
-    const confirmed = conflicts.filter(c => c.status === 'CONFIRMED').length;
-    const leads = conflicts.filter(c => c.status === 'LEAD').length;
-    
+    const confirmed = conflicts.filter((c) => c.status === 'CONFIRMED').length;
+    const leads = conflicts.filter((c) => c.status === 'LEAD').length;
+
     let result = `${conflicts.length} conflicts`;
     if (confirmed > 0) result += ` (${confirmed} confirmed`;
     if (leads > 0) result += confirmed > 0 ? `, ${leads} leads)` : ` (${leads} leads)`;
@@ -145,8 +144,8 @@ export class AvailabilityUtils {
    */
   static getConflictSeverity(conflict: EventConflict): number {
     const baseScore = conflict.status === 'CONFIRMED' ? 10 : 5;
-    const typeMultiplier = conflict.severity === 'high' ? 2 : 
-                          conflict.severity === 'medium' ? 1.5 : 1;
+    const typeMultiplier =
+      conflict.severity === 'high' ? 2 : conflict.severity === 'medium' ? 1.5 : 1;
     return baseScore * typeMultiplier;
   }
 
@@ -154,18 +153,13 @@ export class AvailabilityUtils {
    * Sort conflicts by severity (most severe first)
    */
   static sortConflictsBySeverity(conflicts: EventConflict[]): EventConflict[] {
-    return [...conflicts].sort((a, b) => 
-      this.getConflictSeverity(b) - this.getConflictSeverity(a)
-    );
+    return [...conflicts].sort((a, b) => this.getConflictSeverity(b) - this.getConflictSeverity(a));
   }
 
   /**
    * Check if date is bookable based on business rules
    */
-  static isDateBookable(
-    availability: DateAvailabilityInfo,
-    isLead = false
-  ): boolean {
+  static isDateBookable(availability: DateAvailabilityInfo, isLead = false): boolean {
     return isLead ? availability.can_create_lead : availability.can_book_event;
   }
 
@@ -174,7 +168,7 @@ export class AvailabilityUtils {
    */
   static getBookingRestrictionMessage(
     availability: DateAvailabilityInfo,
-    isLead = false
+    isLead = false,
   ): string | null {
     if (this.isDateBookable(availability, isLead)) {
       return null;
@@ -194,9 +188,7 @@ export class AvailabilityUtils {
   /**
    * Generate availability summary text
    */
-  static generateAvailabilitySummary(
-    availabilityData: DateAvailabilityInfo[]
-  ): {
+  static generateAvailabilitySummary(availabilityData: DateAvailabilityInfo[]): {
     summary: string;
     details: string;
     stats: {
@@ -212,19 +204,19 @@ export class AvailabilityUtils {
       return {
         summary: 'No dates analyzed',
         details: '',
-        stats: { total: 0, available: 0, partiallyBooked: 0, fullyBooked: 0, blocked: 0 }
+        stats: { total: 0, available: 0, partiallyBooked: 0, fullyBooked: 0, blocked: 0 },
       };
     }
 
-    const available = availabilityData.filter(d => d.can_book_event).length;
-    const partiallyBooked = availabilityData.filter(d => d.status === 'partially_booked').length;
-    const fullyBooked = availabilityData.filter(d => d.status === 'fully_booked').length;
-    const blocked = availabilityData.filter(d => d.status === 'blocked').length;
+    const available = availabilityData.filter((d) => d.can_book_event).length;
+    const partiallyBooked = availabilityData.filter((d) => d.status === 'partially_booked').length;
+    const fullyBooked = availabilityData.filter((d) => d.status === 'fully_booked').length;
+    const blocked = availabilityData.filter((d) => d.status === 'blocked').length;
 
     const availabilityRate = Math.round((available / total) * 100);
 
     const summary = `${available} of ${total} dates available (${availabilityRate}%)`;
-    
+
     let details = '';
     if (partiallyBooked > 0) details += `${partiallyBooked} partially booked, `;
     if (fullyBooked > 0) details += `${fullyBooked} fully booked, `;
@@ -249,19 +241,17 @@ export class AvailabilityUtils {
    */
   static findOptimalBookingDates(
     availabilityData: DateAvailabilityInfo[],
-    duration = 1 // number of consecutive days needed
+    duration = 1, // number of consecutive days needed
   ): string[] {
     if (duration === 1) {
       // Single day booking - return all available dates
-      return availabilityData
-        .filter(d => d.can_book_event)
-        .map(d => d.date);
+      return availabilityData.filter((d) => d.can_book_event).map((d) => d.date);
     }
 
     // Multi-day booking - find consecutive available dates
     const availableDates = availabilityData
-      .filter(d => d.can_book_event)
-      .map(d => d.date)
+      .filter((d) => d.can_book_event)
+      .map((d) => d.date)
       .sort();
 
     const consecutiveRanges: string[][] = [];
@@ -292,16 +282,13 @@ export class AvailabilityUtils {
     }
 
     // Return start dates of valid ranges
-    return consecutiveRanges.map(range => range[0]);
+    return consecutiveRanges.map((range) => range[0]);
   }
 
   /**
    * Format date range for display
    */
-  static formatDateRange(
-    startDate: string,
-    endDate?: string
-  ): string {
+  static formatDateRange(startDate: string, endDate?: string): string {
     const start = new Date(startDate);
     const startFormatted = start.toLocaleDateString('en-US', {
       month: 'short',
@@ -331,11 +318,11 @@ export class AvailabilityUtils {
    */
   static validateDateRange(
     startDate: string,
-    endDate?: string
+    endDate?: string,
   ): { isValid: boolean; error?: string } {
     try {
       const start = new Date(startDate);
-      
+
       if (isNaN(start.getTime())) {
         return { isValid: false, error: 'Invalid start date' };
       }

@@ -20,23 +20,23 @@ export interface GlassCardProps extends Omit<BoxProps, 'component'> {
 }
 
 const StyledGlassCard = styled(Box, {
-  shouldForwardProp: (prop) => 
+  shouldForwardProp: (prop) =>
     !['variant', 'intensity', 'color', 'hoverable', 'elevated'].includes(prop as string),
-})<GlassCardProps>(({ 
-  theme, 
-  variant = 'light', 
-  intensity = 'medium', 
+})<GlassCardProps>(({
+  theme,
+  variant = 'light',
+  intensity = 'medium',
   color = 'neutral',
   hoverable = false,
-  elevated = false 
+  elevated = false,
 }) => {
   const isDark = theme.palette.mode === 'dark';
-  
+
   // Get glass effect based on theme mode and variant
   const getGlassEffect = () => {
     const themeVariant = isDark ? 'dark' : 'light';
     const glassEffect = designTokens.glass[themeVariant][intensity];
-    
+
     if (variant === 'colored' && color !== 'neutral') {
       return {
         ...glassEffect,
@@ -44,7 +44,7 @@ const StyledGlassCard = styled(Box, {
         border: `1px solid ${designTokens.glass.colored[color].border}`,
       };
     }
-    
+
     return {
       ...glassEffect,
       border: `1px solid ${glassEffect.border}`,
@@ -52,35 +52,34 @@ const StyledGlassCard = styled(Box, {
   };
 
   const glassEffect = getGlassEffect();
-  
+
   // Calculate enhanced hover effects
   const getHoverEffect = () => {
     if (!hoverable) return {};
-    
+
     const baseIntensity = intensity === 'subtle' ? 0.15 : intensity === 'medium' ? 0.2 : 0.3;
     const hoverOpacity = Math.min(baseIntensity + 0.05, 0.35);
-    
+
     return {
       '&:hover': {
         transform: 'translateY(-2px)',
         backdropFilter: 'blur(20px)',
-        backgroundColor: isDark 
-          ? `rgba(255, 255, 255, ${hoverOpacity * 0.4})` 
+        backgroundColor: isDark
+          ? `rgba(255, 255, 255, ${hoverOpacity * 0.4})`
           : `rgba(255, 255, 255, ${hoverOpacity})`,
-        boxShadow: elevated 
-          ? designTokens.shadows.glass.strong
-          : designTokens.shadows.glass.medium,
-        borderColor: variant === 'colored' && color !== 'neutral'
-          ? designTokens.glass.colored[color].border
-          : isDark 
-            ? 'rgba(255, 255, 255, 0.15)'
-            : 'rgba(255, 255, 255, 0.25)',
+        boxShadow: elevated ? designTokens.shadows.glass.strong : designTokens.shadows.glass.medium,
+        borderColor:
+          variant === 'colored' && color !== 'neutral'
+            ? designTokens.glass.colored[color].border
+            : isDark
+              ? 'rgba(255, 255, 255, 0.15)'
+              : 'rgba(255, 255, 255, 0.25)',
       },
     };
   };
 
-  const elevatedShadow = elevated 
-    ? designTokens.shadows.glass.medium 
+  const elevatedShadow = elevated
+    ? designTokens.shadows.glass.medium
     : designTokens.shadows.glass.light;
 
   return {
@@ -95,13 +94,13 @@ const StyledGlassCard = styled(Box, {
     transition: designTokens.animations.transitions.all,
     cursor: hoverable ? 'pointer' : 'default',
     overflow: 'hidden',
-    
+
     // Ensures content is positioned above the glass overlay
     '& > *': {
       position: 'relative',
       zIndex: 1,
     },
-    
+
     // Add subtle shimmer effect for enhanced glass appearance
     '&::before': {
       content: '""',
@@ -114,16 +113,16 @@ const StyledGlassCard = styled(Box, {
       transition: 'left 0.5s ease',
       zIndex: 0,
     },
-    
+
     // Shimmer animation on hover for interactive cards
     ...(hoverable && {
       '&:hover::before': {
         left: '100%',
       },
     }),
-    
+
     ...getHoverEffect(),
-    
+
     // Responsive adjustments
     [theme.breakpoints.down('sm')]: {
       padding: designTokens.spacing.space[3],
@@ -132,17 +131,17 @@ const StyledGlassCard = styled(Box, {
   };
 });
 
-export const GlassCard: React.FC<GlassCardProps> = ({ 
-  children, 
+export const GlassCard: React.FC<GlassCardProps> = ({
+  children,
   variant = 'light',
   intensity = 'medium',
   color = 'neutral',
   hoverable = false,
   elevated = false,
-  ...props 
+  ...props
 }) => {
   return (
-    <StyledGlassCard 
+    <StyledGlassCard
       variant={variant}
       intensity={intensity}
       color={color}

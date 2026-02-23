@@ -1,20 +1,7 @@
 // frontend/client-portal/src/components/contracts/EnhancedSignaturePad.tsx
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  useTheme,
-  Stack,
-  Alert,
-  Tooltip,
-  IconButton,
-} from '@mui/material';
-import {
-  Clear as ClearIcon,
-  Undo as UndoIcon,
-  Check as CheckIcon,
-} from '@mui/icons-material';
+import { Box, Typography, Paper, useTheme, Stack, Alert, Tooltip, IconButton } from '@mui/material';
+import { Clear as ClearIcon, Undo as UndoIcon, Check as CheckIcon } from '@mui/icons-material';
 import SignaturePad from 'signature_pad';
 import { DEFAULT_SIGNATURE_CONFIG } from '../../types/contracts.types';
 import type { SignaturePadConfig } from '../../types/contracts.types';
@@ -63,19 +50,22 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
   }, [onSignatureChange]);
 
   // Memoize config to prevent useEffect re-runs on every render
-  const finalConfig = useMemo(() => ({
-    ...DEFAULT_SIGNATURE_CONFIG,
-    ...config,
-  }), [
-    config?.width,
-    config?.height,
-    config?.backgroundColor,
-    config?.penColor,
-    config?.minWidth,
-    config?.maxWidth,
-    config?.throttle,
-    config?.minPointDistance,
-  ]);
+  const finalConfig = useMemo(
+    () => ({
+      ...DEFAULT_SIGNATURE_CONFIG,
+      ...config,
+    }),
+    [
+      config?.width,
+      config?.height,
+      config?.backgroundColor,
+      config?.penColor,
+      config?.minWidth,
+      config?.maxWidth,
+      config?.throttle,
+      config?.minPointDistance,
+    ],
+  );
 
   // Resize canvas to match display size
   const resizeCanvas = useCallback(() => {
@@ -137,8 +127,8 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
 
       // Check for minimum signature content (not just any pixel)
       const data = signaturePad.toData();
-      const hasMinimumContent = data.length >= 2 ||
-        (data.length === 1 && data[0].points.length >= 5);
+      const hasMinimumContent =
+        data.length >= 2 || (data.length === 1 && data[0].points.length >= 5);
       const currentIsEmpty = signaturePad.isEmpty() || !hasMinimumContent;
       setIsEmpty(currentIsEmpty);
 
@@ -187,7 +177,8 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
 
         // Re-check minimum content after undo
         const remainingData = padRef.current.toData();
-        const hasMinimumContent = remainingData.length >= 2 ||
+        const hasMinimumContent =
+          remainingData.length >= 2 ||
           (remainingData.length === 1 && remainingData[0].points.length >= 5);
         const currentIsEmpty = padRef.current.isEmpty() || !hasMinimumContent;
         setIsEmpty(currentIsEmpty);
@@ -206,8 +197,8 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
   const handleComplete = useCallback(() => {
     if (padRef.current && !isEmpty && onSignatureComplete) {
       const data = padRef.current.toData();
-      const hasMinimumContent = data.length >= 2 ||
-        (data.length === 1 && data[0].points.length >= 5);
+      const hasMinimumContent =
+        data.length >= 2 || (data.length === 1 && data[0].points.length >= 5);
       if (hasMinimumContent) {
         const signatureData = padRef.current.toDataURL('image/png');
         onSignatureComplete(signatureData);
@@ -217,7 +208,8 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
 
   // Validation
   const showError = error || (required && hasBeenTouched && isEmpty);
-  const displayErrorText = errorText || (required && hasBeenTouched && isEmpty ? 'Signature is required' : '');
+  const displayErrorText =
+    errorText || (required && hasBeenTouched && isEmpty ? 'Signature is required' : '');
 
   return (
     <Box className={className}>
@@ -291,9 +283,7 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
                 color: theme.palette.text.disabled,
               }}
             >
-              <Typography variant="body2">
-                Sign here
-              </Typography>
+              <Typography variant="body2">Sign here</Typography>
             </Box>
           )}
 
@@ -356,11 +346,7 @@ export const EnhancedSignaturePad: React.FC<EnhancedSignaturePadProps> = ({
 
       {/* Validation feedback */}
       {showError && displayErrorText && (
-        <Alert
-          severity="error"
-          sx={{ mt: 1 }}
-          variant="outlined"
-        >
+        <Alert severity="error" sx={{ mt: 1 }} variant="outlined">
           {displayErrorText}
         </Alert>
       )}

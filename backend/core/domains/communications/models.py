@@ -2,11 +2,13 @@
 import logging
 import re
 import uuid
+
 from django.conf import settings
-from core.utils.models import BaseModel
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
+
+from core.utils.models import BaseModel
 
 from .context_service import ContextType
 
@@ -25,14 +27,9 @@ class EmailLayout(BaseModel):
     """
 
     name = models.CharField(
-        max_length=100,
-        unique=True,
-        help_text="Unique identifier for this layout (e.g., 'Standard', 'Premium Client')"
+        max_length=100, unique=True, help_text="Unique identifier for this layout (e.g., 'Standard', 'Premium Client')"
     )
-    description = models.TextField(
-        blank=True,
-        help_text="Internal description of when to use this layout"
-    )
+    description = models.TextField(blank=True, help_text="Internal description of when to use this layout")
 
     # Layout Components (Django template syntax supported)
     header_template = models.TextField(
@@ -43,48 +40,37 @@ class EmailLayout(BaseModel):
     )
     wrapper_template = models.TextField(
         help_text="HTML wrapper for content area. MUST include {{ content }} placeholder.",
-        default='<div class="content-wrapper">{{ content }}</div>'
+        default='<div class="content-wrapper">{{ content }}</div>',
     )
 
     # Base CSS styles applied to entire email
     base_styles = models.TextField(
         blank=True,
-        help_text="CSS styles applied before content. Supports {{ primary_color }}, {{ secondary_color }} variables."
+        help_text="CSS styles applied before content. Supports {{ primary_color }}, {{ secondary_color }} variables.",
     )
 
     # Theme Configuration
     primary_color = models.CharField(
-        max_length=7,
-        default="#667eea",
-        help_text="Primary brand color (hex format, e.g., #667eea)"
+        max_length=7, default="#667eea", help_text="Primary brand color (hex format, e.g., #667eea)"
     )
     secondary_color = models.CharField(
-        max_length=7,
-        default="#764ba2",
-        help_text="Secondary brand color for gradients (hex format)"
+        max_length=7, default="#764ba2", help_text="Secondary brand color for gradients (hex format)"
     )
-    logo_url = models.URLField(
-        blank=True,
-        help_text="URL to company logo image"
-    )
+    logo_url = models.URLField(blank=True, help_text="URL to company logo image")
 
     # Status Flags
     is_default = models.BooleanField(
-        default=False,
-        help_text="If true, this layout is used when no layout is explicitly assigned"
+        default=False, help_text="If true, this layout is used when no layout is explicitly assigned"
     )
-    is_active = models.BooleanField(
-        default=True,
-        help_text="Inactive layouts cannot be assigned to templates"
-    )
+    is_active = models.BooleanField(default=True, help_text="Inactive layouts cannot be assigned to templates")
 
     class Meta:
-        verbose_name = 'Email Layout'
-        verbose_name_plural = 'Email Layouts'
-        ordering = ['name']
+        verbose_name = "Email Layout"
+        verbose_name_plural = "Email Layouts"
+        ordering = ["name"]
 
     def __str__(self):
-        default_suffix = ' (Default)' if self.is_default else ''
+        default_suffix = " (Default)" if self.is_default else ""
         return f"{self.name}{default_suffix}"
 
     def clean(self):
@@ -92,17 +78,17 @@ class EmailLayout(BaseModel):
         super().clean()
 
         # Ensure wrapper_template contains {{ content }} placeholder
-        if '{{ content }}' not in self.wrapper_template and '{{content}}' not in self.wrapper_template:
-            raise ValidationError({
-                'wrapper_template': 'Must contain {{ content }} placeholder for template content injection.'
-            })
+        if "{{ content }}" not in self.wrapper_template and "{{content}}" not in self.wrapper_template:
+            raise ValidationError(
+                {"wrapper_template": "Must contain {{ content }} placeholder for template content injection."}
+            )
 
         # Validate color format
-        hex_pattern = re.compile(r'^#[0-9A-Fa-f]{6}$')
+        hex_pattern = re.compile(r"^#[0-9A-Fa-f]{6}$")
         if not hex_pattern.match(self.primary_color):
-            raise ValidationError({'primary_color': 'Must be valid hex color (e.g., #667eea)'})
+            raise ValidationError({"primary_color": "Must be valid hex color (e.g., #667eea)"})
         if not hex_pattern.match(self.secondary_color):
-            raise ValidationError({'secondary_color': 'Must be valid hex color (e.g., #764ba2)'})
+            raise ValidationError({"secondary_color": "Must be valid hex color (e.g., #764ba2)"})
 
     def save(self, *args, **kwargs):
         # Ensure only one default layout
@@ -123,19 +109,13 @@ class EmailLayoutHistory(BaseModel):
     """
 
     REASON_CHOICES = [
-        ('CREATE', 'Initial Creation'),
-        ('UPDATE', 'Manual Update'),
-        ('ROLLBACK', 'Rollback to Previous Version'),
+        ("CREATE", "Initial Creation"),
+        ("UPDATE", "Manual Update"),
+        ("ROLLBACK", "Rollback to Previous Version"),
     ]
 
-    layout = models.ForeignKey(
-        EmailLayout,
-        on_delete=models.CASCADE,
-        related_name='history'
-    )
-    version = models.PositiveIntegerField(
-        help_text="Version number of this history entry"
-    )
+    layout = models.ForeignKey(EmailLayout, on_delete=models.CASCADE, related_name="history")
+    version = models.PositiveIntegerField(help_text="Version number of this history entry")
 
     # Snapshot of layout state
     name = models.CharField(max_length=100)
@@ -148,30 +128,23 @@ class EmailLayoutHistory(BaseModel):
     secondary_color = models.CharField(max_length=7)
     logo_url = models.URLField(blank=True)
 
-    reason = models.CharField(max_length=20, choices=REASON_CHOICES, default='UPDATE')
-    notes = models.TextField(
-        blank=True,
-        help_text="Additional notes about this change"
-    )
+    reason = models.CharField(max_length=20, choices=REASON_CHOICES, default="UPDATE")
+    notes = models.TextField(blank=True, help_text="Additional notes about this change")
     changed_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='layout_changes'
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="layout_changes"
     )
 
     class Meta:
-        verbose_name = 'Email Layout History'
-        verbose_name_plural = 'Email Layout Histories'
-        ordering = ['-created_at']
-        unique_together = ['layout', 'version']
+        verbose_name = "Email Layout History"
+        verbose_name_plural = "Email Layout Histories"
+        ordering = ["-created_at"]
+        unique_together = ["layout", "version"]
 
     def __str__(self):
         return f"{self.name} v{self.version} ({self.reason})"
 
     @classmethod
-    def create_snapshot(cls, layout, reason='UPDATE', changed_by=None, notes=''):
+    def create_snapshot(cls, layout, reason="UPDATE", changed_by=None, notes=""):
         """
         Create a history snapshot of the current layout state.
 
@@ -184,9 +157,9 @@ class EmailLayoutHistory(BaseModel):
         Returns:
             EmailLayoutHistory instance
         """
-        last_version = cls.objects.filter(layout=layout).aggregate(
-            max_version=models.Max('version')
-        )['max_version'] or 0
+        last_version = (
+            cls.objects.filter(layout=layout).aggregate(max_version=models.Max("version"))["max_version"] or 0
+        )
 
         return cls.objects.create(
             layout=layout,
@@ -202,27 +175,28 @@ class EmailLayoutHistory(BaseModel):
             logo_url=layout.logo_url,
             reason=reason,
             changed_by=changed_by,
-            notes=notes
+            notes=notes,
         )
 
 
 class CommunicationTemplate(BaseModel):
     """Template for communications across different channels"""
+
     name = models.CharField(max_length=100, unique=True)
 
     CHANNEL_CHOICES = (
-        ('EMAIL', 'Email'),
-        ('SMS', 'SMS'),
+        ("EMAIL", "Email"),
+        ("SMS", "SMS"),
     )
-    channel = models.CharField(max_length=10, choices=CHANNEL_CHOICES, default='EMAIL')
+    channel = models.CharField(max_length=10, choices=CHANNEL_CHOICES, default="EMAIL")
 
     CATEGORY_CHOICES = (
-        ('SYSTEM', 'System'),
-        ('MANUAL', 'Manual'),
-        ('AUTO', 'Auto'),
-        ('MARKETING', 'Marketing'),
+        ("SYSTEM", "System"),
+        ("MANUAL", "Manual"),
+        ("AUTO", "Auto"),
+        ("MARKETING", "Marketing"),
     )
-    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default='MANUAL')
+    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default="MANUAL")
 
     # Context type determines which variables are available and required objects at send time
     CONTEXT_TYPE_CHOICES = ContextType.CHOICES
@@ -230,17 +204,15 @@ class CommunicationTemplate(BaseModel):
         max_length=20,
         choices=CONTEXT_TYPE_CHOICES,
         default=ContextType.MANUAL,
-        help_text="Determines which variables are available and required objects at send time"
+        help_text="Determines which variables are available and required objects at send time",
     )
 
     # For MANUAL context type, optionally include client/event context
     include_client_context = models.BooleanField(
-        default=False,
-        help_text="For MANUAL templates: include client variables if client is provided"
+        default=False, help_text="For MANUAL templates: include client variables if client is provided"
     )
     include_event_context = models.BooleanField(
-        default=False,
-        help_text="For MANUAL templates: include event variables if event is provided"
+        default=False, help_text="For MANUAL templates: include event variables if event is provided"
     )
 
     subject_template = models.CharField(max_length=200, blank=True, null=True)  # For email only
@@ -249,17 +221,17 @@ class CommunicationTemplate(BaseModel):
 
     # Layout relationship - Email layouts wrap template content
     layout = models.ForeignKey(
-        'EmailLayout',
+        "EmailLayout",
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='templates',
-        help_text="Email layout to wrap content. Leave empty for SMS or legacy full-HTML templates."
+        related_name="templates",
+        help_text="Email layout to wrap content. Leave empty for SMS or legacy full-HTML templates.",
     )
 
     class Meta:
-        verbose_name = 'Communication Template'
-        verbose_name_plural = 'Communication Templates'
+        verbose_name = "Communication Template"
+        verbose_name_plural = "Communication Templates"
 
     def __str__(self):
         return f"{self.name} ({self.get_channel_display()})"
@@ -272,20 +244,14 @@ class CommunicationTemplateHistory(BaseModel):
     """
 
     REASON_CHOICES = [
-        ('CREATE', 'Initial Creation'),
-        ('UPDATE', 'Manual Update'),
-        ('ROLLBACK', 'Rollback to Previous Version'),
-        ('SYSTEM', 'System Update'),
+        ("CREATE", "Initial Creation"),
+        ("UPDATE", "Manual Update"),
+        ("ROLLBACK", "Rollback to Previous Version"),
+        ("SYSTEM", "System Update"),
     ]
 
-    template = models.ForeignKey(
-        CommunicationTemplate,
-        on_delete=models.CASCADE,
-        related_name='history'
-    )
-    version = models.PositiveIntegerField(
-        help_text="Version number of this history entry"
-    )
+    template = models.ForeignKey(CommunicationTemplate, on_delete=models.CASCADE, related_name="history")
+    version = models.PositiveIntegerField(help_text="Version number of this history entry")
 
     # Snapshot of template state at this version
     name = models.CharField(max_length=100)
@@ -297,35 +263,24 @@ class CommunicationTemplateHistory(BaseModel):
     subject_template = models.CharField(max_length=200, blank=True, null=True)
     body_template = models.TextField()
 
-    reason = models.CharField(
-        max_length=20,
-        choices=REASON_CHOICES,
-        default='UPDATE'
-    )
-    notes = models.TextField(
-        blank=True,
-        help_text="Additional notes about this change"
-    )
+    reason = models.CharField(max_length=20, choices=REASON_CHOICES, default="UPDATE")
+    notes = models.TextField(blank=True, help_text="Additional notes about this change")
 
     changed_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='template_changes'
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="template_changes"
     )
 
     class Meta:
-        verbose_name = 'Communication Template History'
-        verbose_name_plural = 'Communication Template Histories'
-        ordering = ['-created_at']
-        unique_together = ['template', 'version']
+        verbose_name = "Communication Template History"
+        verbose_name_plural = "Communication Template Histories"
+        ordering = ["-created_at"]
+        unique_together = ["template", "version"]
 
     def __str__(self):
         return f"{self.template.name} v{self.version} ({self.reason})"
 
     @classmethod
-    def create_snapshot(cls, template, reason='UPDATE', changed_by=None, notes=''):
+    def create_snapshot(cls, template, reason="UPDATE", changed_by=None, notes=""):
         """
         Create a history snapshot of the current template state.
 
@@ -339,9 +294,9 @@ class CommunicationTemplateHistory(BaseModel):
             CommunicationTemplateHistory instance
         """
         # Get the next version number
-        last_version = cls.objects.filter(template=template).aggregate(
-            max_version=models.Max('version')
-        )['max_version'] or 0
+        last_version = (
+            cls.objects.filter(template=template).aggregate(max_version=models.Max("version"))["max_version"] or 0
+        )
 
         return cls.objects.create(
             template=template,
@@ -356,7 +311,7 @@ class CommunicationTemplateHistory(BaseModel):
             body_template=template.body_template,
             reason=reason,
             changed_by=changed_by,
-            notes=notes
+            notes=notes,
         )
 
 
@@ -365,48 +320,54 @@ class CommunicationRecord(BaseModel):
 
     # Valid status transitions (state machine)
     VALID_STATUS_TRANSITIONS = {
-        'PENDING': ['SENT', 'FAILED'],
-        'SENT': ['DELIVERED', 'FAILED', 'BOUNCED'],
-        'DELIVERED': [],  # Terminal state (except for opens which don't change status)
-        'FAILED': ['PENDING'],  # Allow retry
-        'BOUNCED': [],  # Terminal state
+        "PENDING": ["SENT", "FAILED"],
+        "SENT": ["DELIVERED", "FAILED", "BOUNCED"],
+        "DELIVERED": [],  # Terminal state (except for opens which don't change status)
+        "FAILED": ["PENDING"],  # Allow retry
+        "BOUNCED": [],  # Terminal state
     }
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     template_name = models.CharField(max_length=100)
 
     CHANNEL_CHOICES = (
-        ('EMAIL', 'Email'),
-        ('SMS', 'SMS'),
+        ("EMAIL", "Email"),
+        ("SMS", "SMS"),
     )
-    channel = models.CharField(max_length=10, choices=CHANNEL_CHOICES, default='EMAIL')
+    channel = models.CharField(max_length=10, choices=CHANNEL_CHOICES, default="EMAIL")
 
     CATEGORY_CHOICES = (
-        ('SYSTEM', 'System'),
-        ('MANUAL', 'Manual'),
-        ('AUTO', 'Auto'),
-        ('MARKETING', 'Marketing'),
+        ("SYSTEM", "System"),
+        ("MANUAL", "Manual"),
+        ("AUTO", "Auto"),
+        ("MARKETING", "Marketing"),
     )
-    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default='MANUAL')
+    category = models.CharField(max_length=10, choices=CATEGORY_CHOICES, default="MANUAL")
 
     recipient = models.EmailField()  # Email or phone number
     subject = models.CharField(max_length=200, blank=True, null=True)
     body = models.TextField()
 
-    client = models.ForeignKey(User, on_delete=models.CASCADE, related_name='communication_records', null=True, blank=True)
-    sent_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='sent_communications')
-    event = models.ForeignKey('events.Event', on_delete=models.SET_NULL, null=True, blank=True, related_name='communication_records')
+    client = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="communication_records", null=True, blank=True
+    )
+    sent_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="sent_communications"
+    )
+    event = models.ForeignKey(
+        "events.Event", on_delete=models.SET_NULL, null=True, blank=True, related_name="communication_records"
+    )
 
     external_message_id = models.CharField(max_length=100, blank=True, null=True)
 
     DELIVERY_STATUS_CHOICES = (
-        ('PENDING', 'Pending'),
-        ('SENT', 'Sent'),
-        ('DELIVERED', 'Delivered'),
-        ('FAILED', 'Failed'),
-        ('BOUNCED', 'Bounced'),
+        ("PENDING", "Pending"),
+        ("SENT", "Sent"),
+        ("DELIVERED", "Delivered"),
+        ("FAILED", "Failed"),
+        ("BOUNCED", "Bounced"),
     )
-    delivery_status = models.CharField(max_length=20, choices=DELIVERY_STATUS_CHOICES, default='PENDING')
+    delivery_status = models.CharField(max_length=20, choices=DELIVERY_STATUS_CHOICES, default="PENDING")
 
     sent_at = models.DateTimeField(null=True, blank=True)
     delivered_at = models.DateTimeField(null=True, blank=True)
@@ -419,17 +380,13 @@ class CommunicationRecord(BaseModel):
     is_deleted = models.BooleanField(default=False, db_index=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
     deleted_by = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='deleted_communications'
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="deleted_communications"
     )
 
     class Meta:
-        verbose_name = 'Communication Record'
-        verbose_name_plural = 'Communication Records'
-        ordering = ['-created_at']
+        verbose_name = "Communication Record"
+        verbose_name_plural = "Communication Records"
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.template_name} to {self.recipient} - {self.delivery_status}"
@@ -455,12 +412,9 @@ class CommunicationRecord(BaseModel):
             valid_transitions = self.VALID_STATUS_TRANSITIONS.get(self.delivery_status, [])
             if new_status not in valid_transitions:
                 logger.warning(
-                    f"Invalid status transition attempted: {self.delivery_status} -> {new_status} "
-                    f"for record {self.id}"
+                    f"Invalid status transition attempted: {self.delivery_status} -> {new_status} for record {self.id}"
                 )
-                raise ValidationError(
-                    f"Cannot transition from {self.delivery_status} to {new_status}"
-                )
+                raise ValidationError(f"Cannot transition from {self.delivery_status} to {new_status}")
 
         old_status = self.delivery_status
         self.delivery_status = new_status
@@ -475,10 +429,11 @@ class CommunicationRecord(BaseModel):
             deleted_by: User who performed the deletion
         """
         from django.utils import timezone
+
         self.is_deleted = True
         self.deleted_at = timezone.now()
         self.deleted_by = deleted_by
-        self.save(update_fields=['is_deleted', 'deleted_at', 'deleted_by', 'updated_at'])
+        self.save(update_fields=["is_deleted", "deleted_at", "deleted_by", "updated_at"])
 
     def restore(self):
         """
@@ -487,7 +442,7 @@ class CommunicationRecord(BaseModel):
         self.is_deleted = False
         self.deleted_at = None
         self.deleted_by = None
-        self.save(update_fields=['is_deleted', 'deleted_at', 'deleted_by', 'updated_at'])
+        self.save(update_fields=["is_deleted", "deleted_at", "deleted_by", "updated_at"])
 
 
 class EmailUnsubscribeToken(BaseModel):
@@ -499,22 +454,15 @@ class EmailUnsubscribeToken(BaseModel):
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='unsubscribe_tokens'
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="unsubscribe_tokens")
 
     # Category determines what preferences to update on unsubscribe
     CATEGORY_CHOICES = (
-        ('MARKETING', 'Marketing'),  # Unsubscribe from marketing emails only
-        ('ALL', 'All'),  # Unsubscribe from all non-essential emails
+        ("MARKETING", "Marketing"),  # Unsubscribe from marketing emails only
+        ("ALL", "All"),  # Unsubscribe from all non-essential emails
     )
     category = models.CharField(
-        max_length=20,
-        choices=CATEGORY_CHOICES,
-        default='MARKETING',
-        help_text="Email category to unsubscribe from"
+        max_length=20, choices=CATEGORY_CHOICES, default="MARKETING", help_text="Email category to unsubscribe from"
     )
 
     is_used = models.BooleanField(default=False)
@@ -523,20 +471,16 @@ class EmailUnsubscribeToken(BaseModel):
 
     # Track which communication triggered this token
     communication_record = models.ForeignKey(
-        CommunicationRecord,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='unsubscribe_tokens'
+        CommunicationRecord, on_delete=models.SET_NULL, null=True, blank=True, related_name="unsubscribe_tokens"
     )
 
     class Meta:
-        verbose_name = 'Email Unsubscribe Token'
-        verbose_name_plural = 'Email Unsubscribe Tokens'
-        ordering = ['-created_at']
+        verbose_name = "Email Unsubscribe Token"
+        verbose_name_plural = "Email Unsubscribe Tokens"
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=['user', 'is_used']),
-            models.Index(fields=['expires_at']),
+            models.Index(fields=["user", "is_used"]),
+            models.Index(fields=["expires_at"]),
         ]
 
     def __str__(self):
@@ -545,6 +489,7 @@ class EmailUnsubscribeToken(BaseModel):
     def save(self, *args, **kwargs):
         """Set default expiration if not provided."""
         from datetime import timedelta
+
         from django.utils import timezone
 
         if not self.expires_at:
@@ -555,6 +500,7 @@ class EmailUnsubscribeToken(BaseModel):
     def is_expired(self) -> bool:
         """Check if the token has expired."""
         from django.utils import timezone
+
         return timezone.now() > self.expires_at
 
     def is_valid(self) -> bool:
@@ -573,8 +519,9 @@ class EmailUnsubscribeToken(BaseModel):
             operational/transactional notifications necessary for business
             operations. They can still unsubscribe from MARKETING emails.
         """
-        from django.utils import timezone
         from django.db import transaction
+        from django.utils import timezone
+
         from core.domains.notifications.models import NotificationPreference
 
         if not self.is_valid():
@@ -584,29 +531,27 @@ class EmailUnsubscribeToken(BaseModel):
             # Mark token as used
             self.is_used = True
             self.used_at = timezone.now()
-            self.save(update_fields=['is_used', 'used_at', 'updated_at'])
+            self.save(update_fields=["is_used", "used_at", "updated_at"])
 
             # Update user notification preferences
             prefs, _ = NotificationPreference.objects.get_or_create(user=self.user)
 
-            if self.category == 'MARKETING':
+            if self.category == "MARKETING":
                 prefs.marketing_email = False
                 prefs.marketing_sms = False
                 prefs.marketing_push = False
-                prefs.save(update_fields=['marketing_email', 'marketing_sms', 'marketing_push', 'updated_at'])
+                prefs.save(update_fields=["marketing_email", "marketing_sms", "marketing_push", "updated_at"])
                 logger.info(f"User {self.user.email} unsubscribed from MARKETING emails")
-            elif self.category == 'ALL':
+            elif self.category == "ALL":
                 # Protect admin users from accidentally disabling critical notifications
                 # Admin notifications (new leads, events, payments) are operational and
                 # fall under "legitimate interest" for GDPR - they're not marketing
-                if self.user.role == 'ADMIN':
+                if self.user.role == "ADMIN":
                     # For admins, only disable non-critical categories
                     prefs.marketing_email = False
                     prefs.communication_email = False  # General communications
                     prefs.workflow_email = False  # Workflow updates (less critical)
-                    prefs.save(update_fields=[
-                        'marketing_email', 'communication_email', 'workflow_email', 'updated_at'
-                    ])
+                    prefs.save(update_fields=["marketing_email", "communication_email", "workflow_email", "updated_at"])
                     logger.info(
                         f"Admin {self.user.email} unsubscribed from non-critical emails "
                         f"(marketing, communication, workflow). Critical notifications remain enabled."
@@ -614,13 +559,13 @@ class EmailUnsubscribeToken(BaseModel):
                 else:
                     # For non-admin users (clients), allow full unsubscribe
                     prefs.email_enabled = False
-                    prefs.save(update_fields=['email_enabled', 'updated_at'])
+                    prefs.save(update_fields=["email_enabled", "updated_at"])
                     logger.info(f"User {self.user.email} unsubscribed from ALL emails")
 
         return True
 
     @classmethod
-    def generate_for_user(cls, user, category: str = 'MARKETING', communication_record=None):
+    def generate_for_user(cls, user, category: str = "MARKETING", communication_record=None):
         """
         Generate a new unsubscribe token for a user.
 
@@ -632,8 +577,4 @@ class EmailUnsubscribeToken(BaseModel):
         Returns:
             EmailUnsubscribeToken instance
         """
-        return cls.objects.create(
-            user=user,
-            category=category,
-            communication_record=communication_record
-        )
+        return cls.objects.create(user=user, category=category, communication_record=communication_record)

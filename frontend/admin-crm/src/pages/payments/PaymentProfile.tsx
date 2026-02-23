@@ -79,13 +79,8 @@ interface TabPanelProps {
 }
 
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
-  return (
-    <div hidden={value !== index}>
-      {value === index && <Box>{children}</Box>}
-    </div>
-  );
+  return <div hidden={value !== index}>{value === index && <Box>{children}</Box>}</div>;
 };
-
 
 export const PaymentProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -124,15 +119,22 @@ export const PaymentProfile: React.FC = () => {
   } = usePaymentManagement(paymentId);
 
   // Currency formatting function that uses payment currency or system default
-  const formatPaymentAmount = useCallback((amount: string | number, currency?: string) => {
-    const paymentCurrency = currency || payment?.currency || currencySettings?.defaultCurrency || 'PHP';
-    return formatCurrency(amount, paymentCurrency, {
-      showSymbol: currencySettings?.displayFormat !== 'code',
-      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
-      minimumFractionDigits: currencySettings?.decimalPlaces ?? (paymentCurrency === 'PHP' ? 0 : 2),
-      maximumFractionDigits: currencySettings?.decimalPlaces ?? (paymentCurrency === 'PHP' ? 0 : 2),
-    });
-  }, [payment?.currency, currencySettings]);
+  const formatPaymentAmount = useCallback(
+    (amount: string | number, currency?: string) => {
+      const paymentCurrency =
+        currency || payment?.currency || currencySettings?.defaultCurrency || 'PHP';
+      return formatCurrency(amount, paymentCurrency, {
+        showSymbol: currencySettings?.displayFormat !== 'code',
+        showCode:
+          currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+        minimumFractionDigits:
+          currencySettings?.decimalPlaces ?? (paymentCurrency === 'PHP' ? 0 : 2),
+        maximumFractionDigits:
+          currencySettings?.decimalPlaces ?? (paymentCurrency === 'PHP' ? 0 : 2),
+      });
+    },
+    [payment?.currency, currencySettings],
+  );
 
   // Menu close handler
   const handleMenuClose = useCallback(() => {
@@ -168,54 +170,69 @@ export const PaymentProfile: React.FC = () => {
 
   const handleCreateRefund = useCallback(() => {
     if (!payment || !refundAmount) return;
-    createRefund({
-      payment: payment.id,
-      amount: refundAmount,
-      reason: refundReason || 'Refund requested',
-    }, {
-      onSuccess: () => {
-        setRefundDialogOpen(false);
-        setRefundAmount('');
-        setRefundReason('');
-        refetchPayment();
-      }
-    });
+    createRefund(
+      {
+        payment: payment.id,
+        amount: refundAmount,
+        reason: refundReason || 'Refund requested',
+      },
+      {
+        onSuccess: () => {
+          setRefundDialogOpen(false);
+          setRefundAmount('');
+          setRefundReason('');
+          refetchPayment();
+        },
+      },
+    );
   }, [payment, refundAmount, refundReason, createRefund, refetchPayment]);
 
   // Enhanced components data
   const quickActions: QuickAction[] = useMemo(() => {
     if (!payment) return [];
-    return createPaymentActions(payment.id, payment.status, (actionType: string, _paymentId: number) => {
-      switch (actionType) {
-        case 'process-payment':
-          handleProcessPayment();
-          break;
-        case 'send-receipt':
-          handleSendReceipt();
-          break;
-        case 'send-reminder':
-          handleSendReminder();
-          break;
-        case 'create-refund':
-          handleOpenRefundDialog();
-          break;
-        case 'add-note':
-          setTabValue(4); // Switch to notes tab
-          break;
-      }
-    });
-  }, [payment, handleProcessPayment, handleSendReceipt, handleSendReminder, handleOpenRefundDialog]);
+    return createPaymentActions(
+      payment.id,
+      payment.status,
+      (actionType: string, _paymentId: number) => {
+        switch (actionType) {
+          case 'process-payment':
+            handleProcessPayment();
+            break;
+          case 'send-receipt':
+            handleSendReceipt();
+            break;
+          case 'send-reminder':
+            handleSendReminder();
+            break;
+          case 'create-refund':
+            handleOpenRefundDialog();
+            break;
+          case 'add-note':
+            setTabValue(4); // Switch to notes tab
+            break;
+        }
+      },
+    );
+  }, [
+    payment,
+    handleProcessPayment,
+    handleSendReceipt,
+    handleSendReminder,
+    handleOpenRefundDialog,
+  ]);
 
   const relatedEntities = useMemo(() => {
     const entities = [];
     if (payment?.event_details) {
-      entities.push(createEventReference({
-        id: payment.event_details.id,
-        name: payment.event_details.name,
-        start_date: payment.event_details.start_date,
-        status: 'CONFIRMED', // Default status since it's not in payment details
-        client_name: payment.event_details.client_name,
-      }));
+      entities.push(
+        createEventReference({
+          id: payment.event_details.id,
+          name: payment.event_details.name,
+          start_date: payment.event_details.start_date,
+          status: 'CONFIRMED', // Default status since it's not in payment details
+          client_name: payment.event_details.client_name,
+        }),
+      );
     }
     return entities;
   }, [payment]);
@@ -267,7 +284,6 @@ export const PaymentProfile: React.FC = () => {
     return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [payment, formatPaymentAmount]);
 
-
   useEffect(() => {
     if (payment) {
       setBreadcrumbs([
@@ -276,8 +292,6 @@ export const PaymentProfile: React.FC = () => {
       ]);
     }
   }, [payment, setBreadcrumbs]);
-
-
 
   const handleEditPayment = () => {
     setEditDialogOpen(true);
@@ -294,7 +308,7 @@ export const PaymentProfile: React.FC = () => {
       onSuccess: () => {
         setEditDialogOpen(false);
         refetchPayment();
-      }
+      },
     });
   };
 
@@ -303,11 +317,13 @@ export const PaymentProfile: React.FC = () => {
       onSuccess: () => {
         setDeleteDialogOpen(false);
         navigate('/payments');
-      }
+      },
     });
   };
 
-  const getStatusColor = (status: PaymentStatus): 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
+  const getStatusColor = (
+    status: PaymentStatus,
+  ): 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (status) {
       case 'CREATED':
         return 'primary';
@@ -328,7 +344,6 @@ export const PaymentProfile: React.FC = () => {
     }
   };
 
-
   const getDaysRemaining = (dueDate: string) => {
     const due = new Date(dueDate);
     const today = new Date();
@@ -339,29 +354,28 @@ export const PaymentProfile: React.FC = () => {
       return {
         text: `${Math.abs(diffDays)} days overdue`,
         color: 'error.main',
-        severity: 'overdue'
+        severity: 'overdue',
       };
     } else if (diffDays === 0) {
       return {
         text: 'Due today',
         color: 'warning.main',
-        severity: 'today'
+        severity: 'today',
       };
     } else if (diffDays <= 7) {
       return {
         text: `${diffDays} days remaining`,
         color: 'warning.main',
-        severity: 'soon'
+        severity: 'soon',
       };
     } else {
       return {
         text: `${diffDays} days remaining`,
         color: 'text.secondary',
-        severity: 'normal'
+        severity: 'normal',
       };
     }
   };
-
 
   if (isLoadingPayment) {
     return (
@@ -384,8 +398,8 @@ export const PaymentProfile: React.FC = () => {
             {
               label: 'Back to Payments',
               onClick: () => navigate('/payments'),
-              icon: <ArrowBackIcon />
-            }
+              icon: <ArrowBackIcon />,
+            },
           ]}
         />
         <ModernEmptyState
@@ -396,7 +410,7 @@ export const PaymentProfile: React.FC = () => {
             label: 'Back to Payments',
             onClick: () => navigate('/payments'),
             icon: <ArrowBackIcon />,
-            color: 'primary'
+            color: 'primary',
           }}
           size="medium"
         />
@@ -414,12 +428,26 @@ export const PaymentProfile: React.FC = () => {
         subtitle={payment.event_details?.name || 'No Event Associated'}
         icon={<PaymentIcon />}
         primaryAction={{
-          label: payment.status === 'PENDING' && payment.payment_method ? 'Process Payment' :
-                 payment.status === 'COMPLETED' ? 'Send Receipt' : 'Edit Payment',
-          onClick: payment.status === 'PENDING' && payment.payment_method ? handleProcessPayment :
-                   payment.status === 'COMPLETED' ? handleSendReceipt : handleEditPayment,
-          icon: payment.status === 'PENDING' && payment.payment_method ? <PaymentIcon /> :
-                payment.status === 'COMPLETED' ? <SendIcon /> : <EditIcon />,
+          label:
+            payment.status === 'PENDING' && payment.payment_method
+              ? 'Process Payment'
+              : payment.status === 'COMPLETED'
+                ? 'Send Receipt'
+                : 'Edit Payment',
+          onClick:
+            payment.status === 'PENDING' && payment.payment_method
+              ? handleProcessPayment
+              : payment.status === 'COMPLETED'
+                ? handleSendReceipt
+                : handleEditPayment,
+          icon:
+            payment.status === 'PENDING' && payment.payment_method ? (
+              <PaymentIcon />
+            ) : payment.status === 'COMPLETED' ? (
+              <SendIcon />
+            ) : (
+              <EditIcon />
+            ),
           variant: 'contained',
           color: 'primary',
           disabled: isProcessingPayment || isSendingReceipt,
@@ -429,7 +457,7 @@ export const PaymentProfile: React.FC = () => {
             label: 'Back to Payments',
             onClick: () => navigate('/payments'),
             icon: <ArrowBackIcon />,
-            variant: 'outlined'
+            variant: 'outlined',
           },
           createRefreshAction(() => refetchPayment()),
           {
@@ -437,36 +465,36 @@ export const PaymentProfile: React.FC = () => {
             onClick: (e) => setAnchorEl(e?.currentTarget ?? null),
             icon: <MoreVertIcon />,
             variant: 'icon',
-          }
+          },
         ]}
         status={{
-          label: PAYMENT_STATUSES.find(s => s.value === payment.status)?.label || payment.status,
+          label: PAYMENT_STATUSES.find((s) => s.value === payment.status)?.label || payment.status,
           color: getStatusColor(payment.status),
-          variant: 'filled'
+          variant: 'filled',
         }}
         stats={[
           {
             label: 'Amount',
-            value: formatPaymentAmount(payment.amount)
+            value: formatPaymentAmount(payment.amount),
           },
           {
             label: 'Due Date',
-            value: new Date(payment.due_date).toLocaleDateString()
+            value: new Date(payment.due_date).toLocaleDateString(),
           },
-          ...(payment.paid_on ? [{
-            label: 'Paid On',
-            value: new Date(payment.paid_on).toLocaleDateString()
-          }] : [])
+          ...(payment.paid_on
+            ? [
+                {
+                  label: 'Paid On',
+                  value: new Date(payment.paid_on).toLocaleDateString(),
+                },
+              ]
+            : []),
         ]}
         size="medium"
       />
 
       {/* More Actions Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         <MenuItem onClick={handleEditPayment}>
           <ListItemIcon>
             <EditIcon />
@@ -499,7 +527,7 @@ export const PaymentProfile: React.FC = () => {
           display: 'flex',
           flexDirection: { xs: 'column', lg: 'row' },
           gap: 3,
-          mb: 4
+          mb: 4,
         }}
       >
         {/* Payment Details */}
@@ -534,8 +562,11 @@ export const PaymentProfile: React.FC = () => {
                     label={daysRemaining.text}
                     size="small"
                     color={
-                      daysRemaining.severity === 'overdue' ? 'error' :
-                      daysRemaining.severity === 'today' || daysRemaining.severity === 'soon' ? 'warning' : 'success'
+                      daysRemaining.severity === 'overdue'
+                        ? 'error'
+                        : daysRemaining.severity === 'today' || daysRemaining.severity === 'soon'
+                          ? 'warning'
+                          : 'success'
                     }
                     sx={{ mt: 1, fontWeight: 600 }}
                   />
@@ -613,7 +644,13 @@ export const PaymentProfile: React.FC = () => {
                     </Typography>
                     <Typography
                       variant="body2"
-                      sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1, border: 1, borderColor: 'divider' }}
+                      sx={{
+                        p: 2,
+                        bgcolor: 'action.hover',
+                        borderRadius: 1,
+                        border: 1,
+                        borderColor: 'divider',
+                      }}
                     >
                       {payment.description}
                     </Typography>
@@ -642,12 +679,18 @@ export const PaymentProfile: React.FC = () => {
                       Method
                     </Typography>
                     <Typography variant="body1" fontWeight="medium">
-                      {payment.payment_method_details.nickname || payment.payment_method_details.type_display}
+                      {payment.payment_method_details.nickname ||
+                        payment.payment_method_details.type_display}
                     </Typography>
                     {payment.payment_method_details.last_four && (
                       <Typography
                         variant="body2"
-                        sx={{ mt: 0.5, fontFamily: 'monospace', color: 'text.secondary', fontSize: '0.9rem' }}
+                        sx={{
+                          mt: 0.5,
+                          fontFamily: 'monospace',
+                          color: 'text.secondary',
+                          fontSize: '0.9rem',
+                        }}
                       >
                         **** **** **** {payment.payment_method_details.last_four}
                       </Typography>
@@ -710,11 +753,7 @@ export const PaymentProfile: React.FC = () => {
           {/* Quick Actions */}
           <Box sx={{ flex: 1 }}>
             <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-              <QuickActions
-                actions={quickActions}
-                title="Payment Actions"
-                compactMode={false}
-              />
+              <QuickActions actions={quickActions} title="Payment Actions" compactMode={false} />
             </Box>
           </Box>
 
@@ -759,28 +798,15 @@ export const PaymentProfile: React.FC = () => {
               icon={<EventIcon />}
               iconPosition="start"
             />
-            <Tab
-              label="Invoice Details"
-              icon={<ReceiptIcon />}
-              iconPosition="start"
-            />
-            <Tab
-              label="Contracts (0)"
-              icon={<ContractIcon />}
-              iconPosition="start"
-              disabled
-            />
+            <Tab label="Invoice Details" icon={<ReceiptIcon />} iconPosition="start" />
+            <Tab label="Contracts (0)" icon={<ContractIcon />} iconPosition="start" disabled />
             <Tab
               label="Questionnaires (0)"
               icon={<QuestionnaireIcon />}
               iconPosition="start"
               disabled
             />
-            <Tab
-              label="Notes"
-              icon={<NoteIcon />}
-              iconPosition="start"
-            />
+            <Tab label="Notes" icon={<NoteIcon />} iconPosition="start" />
           </Tabs>
         </Box>
 
@@ -811,27 +837,50 @@ export const PaymentProfile: React.FC = () => {
                       Invoice {invoice.invoice_id}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Issued: {new Date(invoice.issue_date).toLocaleDateString()} -
-                      Due: {new Date(invoice.due_date).toLocaleDateString()}
+                      Issued: {new Date(invoice.issue_date).toLocaleDateString()} - Due:{' '}
+                      {new Date(invoice.due_date).toLocaleDateString()}
                     </Typography>
                   </Box>
                   <Chip
                     label={invoice.status_display}
-                    color={invoice.status === 'PAID' ? 'success' : invoice.status === 'ISSUED' ? 'primary' : 'default'}
+                    color={
+                      invoice.status === 'PAID'
+                        ? 'success'
+                        : invoice.status === 'ISSUED'
+                          ? 'primary'
+                          : 'default'
+                    }
                     variant="outlined"
                   />
                 </Box>
 
                 {/* Invoice Summary */}
-                <Box sx={{ borderRadius: 1, p: 3, mb: 3, bgcolor: 'background.paper', border: 1, borderColor: 'divider' }}>
+                <Box
+                  sx={{
+                    borderRadius: 1,
+                    p: 3,
+                    mb: 3,
+                    bgcolor: 'background.paper',
+                    border: 1,
+                    borderColor: 'divider',
+                  }}
+                >
                   <Stack spacing={2}>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body1" fontWeight="medium">Subtotal:</Typography>
-                      <Typography variant="body1" fontWeight={600}>{formatPaymentAmount(invoice.subtotal)}</Typography>
+                      <Typography variant="body1" fontWeight="medium">
+                        Subtotal:
+                      </Typography>
+                      <Typography variant="body1" fontWeight={600}>
+                        {formatPaymentAmount(invoice.subtotal)}
+                      </Typography>
                     </Box>
                     <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body1" fontWeight="medium">Tax:</Typography>
-                      <Typography variant="body1" fontWeight={600}>{formatPaymentAmount(invoice.tax_amount)}</Typography>
+                      <Typography variant="body1" fontWeight="medium">
+                        Tax:
+                      </Typography>
+                      <Typography variant="body1" fontWeight={600}>
+                        {formatPaymentAmount(invoice.tax_amount)}
+                      </Typography>
                     </Box>
                     <Divider />
                     <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -852,10 +901,18 @@ export const PaymentProfile: React.FC = () => {
                       <TableHead>
                         <TableRow sx={{ bgcolor: 'action.hover' }}>
                           <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 600 }}>Qty</TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 600 }}>Unit Price</TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 600 }}>Tax Rate</TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 600 }}>Total</TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>
+                            Qty
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>
+                            Unit Price
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>
+                            Tax Rate
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 600 }}>
+                            Total
+                          </TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -863,9 +920,13 @@ export const PaymentProfile: React.FC = () => {
                           <TableRow key={item.id}>
                             <TableCell>{item.description}</TableCell>
                             <TableCell align="right">{item.quantity}</TableCell>
-                            <TableCell align="right">{formatPaymentAmount(item.unit_price)}</TableCell>
+                            <TableCell align="right">
+                              {formatPaymentAmount(item.unit_price)}
+                            </TableCell>
                             <TableCell align="right">{parseFloat(item.tax_rate)}%</TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 600 }}>{formatPaymentAmount(item.total)}</TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 600 }}>
+                              {formatPaymentAmount(item.total)}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -874,7 +935,16 @@ export const PaymentProfile: React.FC = () => {
                 )}
 
                 {invoice.notes && (
-                  <Box sx={{ mt: 3, p: 3, borderRadius: 1, bgcolor: 'info.50', border: 1, borderColor: 'info.200' }}>
+                  <Box
+                    sx={{
+                      mt: 3,
+                      p: 3,
+                      borderRadius: 1,
+                      bgcolor: 'info.50',
+                      border: 1,
+                      borderColor: 'info.200',
+                    }}
+                  >
                     <Typography variant="body1" fontWeight={600} color="info.main" sx={{ mb: 1 }}>
                       Notes:
                     </Typography>
@@ -904,7 +974,7 @@ export const PaymentProfile: React.FC = () => {
               size="small"
               tip={{
                 text: 'Contract management features will be available in the next update',
-                type: 'info'
+                type: 'info',
               }}
               sx={{ py: 4 }}
             />
@@ -919,7 +989,7 @@ export const PaymentProfile: React.FC = () => {
               size="small"
               tip={{
                 text: 'Questionnaire integration features will be available soon',
-                type: 'info'
+                type: 'info',
               }}
               sx={{ py: 4 }}
             />
@@ -958,15 +1028,12 @@ export const PaymentProfile: React.FC = () => {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-      >
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle color="error">Delete Payment</DialogTitle>
         <DialogContent sx={{ p: 3 }}>
           <DialogContentText>
-            Are you sure you want to delete payment <strong>{payment.payment_number}</strong>?
-            This action cannot be undone and will permanently remove all associated data.
+            Are you sure you want to delete payment <strong>{payment.payment_number}</strong>? This
+            action cannot be undone and will permanently remove all associated data.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ p: 3, pt: 0, gap: 2 }}>
@@ -995,8 +1062,8 @@ export const PaymentProfile: React.FC = () => {
         <DialogContent sx={{ p: 3 }}>
           <Stack spacing={3} sx={{ mt: 1 }}>
             <DialogContentText>
-              Create a refund for payment <strong>{payment.payment_number}</strong>.
-              The original payment amount was {formatPaymentAmount(payment.amount)}.
+              Create a refund for payment <strong>{payment.payment_number}</strong>. The original
+              payment amount was {formatPaymentAmount(payment.amount)}.
             </DialogContentText>
 
             <TextField
@@ -1009,7 +1076,7 @@ export const PaymentProfile: React.FC = () => {
               inputProps={{
                 min: 0,
                 max: parseFloat(payment.amount),
-                step: 0.01
+                step: 0.01,
               }}
               helperText={`Maximum refund amount: ${formatPaymentAmount(payment.amount)}`}
             />

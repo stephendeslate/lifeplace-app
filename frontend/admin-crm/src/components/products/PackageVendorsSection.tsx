@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/products/PackageVendorsSection.tsx
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -21,18 +21,14 @@ import {
   CircularProgress,
   Chip,
   Alert,
-} from "@mui/material";
-import {
-  Add as AddIcon,
-  Delete as DeleteIcon,
-  Store as VendorIcon,
-} from "@mui/icons-material";
-import { useVendors, usePackageVendors } from "../../hooks/useVendors";
+} from '@mui/material';
+import { Add as AddIcon, Delete as DeleteIcon, Store as VendorIcon } from '@mui/icons-material';
+import { useVendors, usePackageVendors } from '../../hooks/useVendors';
 import type {
   VendorListItem,
   PackageVendorInline,
   VendorServiceCategory,
-} from "../../types/vendors.types";
+} from '../../types/vendors.types';
 
 interface PackageVendorsSectionProps {
   packageId: number;
@@ -40,67 +36,50 @@ interface PackageVendorsSectionProps {
 
 const getCategoryLabel = (category: VendorServiceCategory): string => {
   const labels: Record<VendorServiceCategory, string> = {
-    CATERING: "Catering",
-    PHOTOGRAPHY: "Photography",
-    VIDEOGRAPHY: "Videography",
-    DJ: "DJ / Music",
-    FLORIST: "Florist",
-    DECORATOR: "Decorator",
-    ENTERTAINMENT: "Entertainment",
-    TRANSPORTATION: "Transportation",
-    MAKEUP: "Makeup & Styling",
-    RENTALS: "Equipment Rentals",
-    OFFICIANT: "Officiant",
-    COORDINATION: "Event Coordination",
-    OTHER: "Other",
+    CATERING: 'Catering',
+    PHOTOGRAPHY: 'Photography',
+    VIDEOGRAPHY: 'Videography',
+    DJ: 'DJ / Music',
+    FLORIST: 'Florist',
+    DECORATOR: 'Decorator',
+    ENTERTAINMENT: 'Entertainment',
+    TRANSPORTATION: 'Transportation',
+    MAKEUP: 'Makeup & Styling',
+    RENTALS: 'Equipment Rentals',
+    OFFICIANT: 'Officiant',
+    COORDINATION: 'Event Coordination',
+    OTHER: 'Other',
   };
-  return labels[category] || "Other";
+  return labels[category] || 'Other';
 };
 
 const getCategoryColor = (
   category: VendorServiceCategory,
-):
-  | "default"
-  | "primary"
-  | "secondary"
-  | "error"
-  | "info"
-  | "success"
-  | "warning" => {
+): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
   const colors: Record<
     VendorServiceCategory,
-    | "default"
-    | "primary"
-    | "secondary"
-    | "error"
-    | "info"
-    | "success"
-    | "warning"
+    'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'
   > = {
-    CATERING: "warning",
-    PHOTOGRAPHY: "info",
-    VIDEOGRAPHY: "info",
-    DJ: "secondary",
-    FLORIST: "success",
-    DECORATOR: "primary",
-    ENTERTAINMENT: "secondary",
-    TRANSPORTATION: "default",
-    MAKEUP: "error",
-    RENTALS: "default",
-    OFFICIANT: "primary",
-    COORDINATION: "warning",
-    OTHER: "default",
+    CATERING: 'warning',
+    PHOTOGRAPHY: 'info',
+    VIDEOGRAPHY: 'info',
+    DJ: 'secondary',
+    FLORIST: 'success',
+    DECORATOR: 'primary',
+    ENTERTAINMENT: 'secondary',
+    TRANSPORTATION: 'default',
+    MAKEUP: 'error',
+    RENTALS: 'default',
+    OFFICIANT: 'primary',
+    COORDINATION: 'warning',
+    OTHER: 'default',
   };
-  return colors[category] || "default";
+  return colors[category] || 'default';
 };
 
-export const PackageVendorsSection: React.FC<PackageVendorsSectionProps> = ({
-  packageId,
-}) => {
+export const PackageVendorsSection: React.FC<PackageVendorsSectionProps> = ({ packageId }) => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
-  const [selectedVendor, setSelectedVendor] = useState<VendorListItem | null>(
-    null,
-  );
+  const [selectedVendor, setSelectedVendor] = useState<VendorListItem | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [editingNotes, setEditingNotes] = useState<{
     id: number;
@@ -128,9 +107,7 @@ export const PackageVendorsSection: React.FC<PackageVendorsSectionProps> = ({
 
   // Filter out already-assigned vendors
   const availableVendors = useMemo(() => {
-    const assignedIds = new Set(
-      assignedVendors.map((v: PackageVendorInline) => v.vendor),
-    );
+    const assignedIds = new Set(assignedVendors.map((v: PackageVendorInline) => v.vendor));
     return allVendors.filter((v) => !assignedIds.has(v.id));
   }, [allVendors, assignedVendors]);
 
@@ -140,9 +117,7 @@ export const PackageVendorsSection: React.FC<PackageVendorsSectionProps> = ({
 
     const nextOrder =
       assignedVendors.length > 0
-        ? Math.max(
-            ...assignedVendors.map((v: PackageVendorInline) => v.sort_order),
-          ) + 1
+        ? Math.max(...assignedVendors.map((v: PackageVendorInline) => v.sort_order)) + 1
         : 1;
 
     createPackageVendor({
@@ -170,19 +145,11 @@ export const PackageVendorsSection: React.FC<PackageVendorsSectionProps> = ({
   };
 
   const isLoading = isLoadingVendors || isLoadingAssigned;
-  const isMutating =
-    isCreatingPackageVendor ||
-    isUpdatingPackageVendor ||
-    isDeletingPackageVendor;
+  const isMutating = isCreatingPackageVendor || isUpdatingPackageVendor || isDeletingPackageVendor;
 
   return (
     <Box>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={2}
-      >
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
         <Typography variant="h6">Included Vendors</Typography>
         <Button
           variant="outlined"
@@ -201,27 +168,24 @@ export const PackageVendorsSection: React.FC<PackageVendorsSectionProps> = ({
         </Box>
       ) : assignedVendors.length === 0 ? (
         <Alert severity="info">
-          No vendors assigned to this package yet. Add vendors to define which
-          service providers are included.
+          No vendors assigned to this package yet. Add vendors to define which service providers are
+          included.
         </Alert>
       ) : (
-        <TableContainer sx={{ overflowX: "auto" }}>
+        <TableContainer sx={{ overflowX: 'auto' }}>
           <Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell>Vendor</TableCell>
                 <TableCell width={150}>Category</TableCell>
-                <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
-                  Notes
-                </TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Notes</TableCell>
                 <TableCell width={60}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {assignedVendors
                 .sort(
-                  (a: PackageVendorInline, b: PackageVendorInline) =>
-                    a.sort_order - b.sort_order,
+                  (a: PackageVendorInline, b: PackageVendorInline) => a.sort_order - b.sort_order,
                 )
                 .map((pv: PackageVendorInline) => (
                   <TableRow key={pv.id}>
@@ -246,9 +210,7 @@ export const PackageVendorsSection: React.FC<PackageVendorsSectionProps> = ({
                         color={getCategoryColor(pv.vendor_service_category)}
                       />
                     </TableCell>
-                    <TableCell
-                      sx={{ display: { xs: "none", md: "table-cell" } }}
-                    >
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                       {editingNotes?.id === pv.id ? (
                         <TextField
                           size="small"
@@ -260,9 +222,7 @@ export const PackageVendorsSection: React.FC<PackageVendorsSectionProps> = ({
                             })
                           }
                           onBlur={handleSaveNotes}
-                          onKeyDown={(e) =>
-                            e.key === "Enter" && handleSaveNotes()
-                          }
+                          onKeyDown={(e) => e.key === 'Enter' && handleSaveNotes()}
                           placeholder="Add notes..."
                           fullWidth
                           autoFocus
@@ -270,19 +230,19 @@ export const PackageVendorsSection: React.FC<PackageVendorsSectionProps> = ({
                       ) : (
                         <Typography
                           variant="body2"
-                          color={pv.notes ? "text.primary" : "text.secondary"}
+                          color={pv.notes ? 'text.primary' : 'text.secondary'}
                           sx={{
-                            cursor: "pointer",
-                            "&:hover": { textDecoration: "underline" },
+                            cursor: 'pointer',
+                            '&:hover': { textDecoration: 'underline' },
                           }}
                           onClick={() =>
                             setEditingNotes({
                               id: pv.id,
-                              notes: pv.notes || "",
+                              notes: pv.notes || '',
                             })
                           }
                         >
-                          {pv.notes || "Click to add notes"}
+                          {pv.notes || 'Click to add notes'}
                         </Typography>
                       )}
                     </TableCell>
@@ -304,12 +264,7 @@ export const PackageVendorsSection: React.FC<PackageVendorsSectionProps> = ({
       )}
 
       {/* Add Vendor Dialog */}
-      <Dialog
-        open={addDialogOpen}
-        onClose={() => setAddDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Add Vendor to Package</DialogTitle>
         <DialogContent>
           <Box pt={1}>
@@ -325,9 +280,7 @@ export const PackageVendorsSection: React.FC<PackageVendorsSectionProps> = ({
                   label="Select Vendor"
                   placeholder="Search vendors..."
                   helperText={
-                    availableVendors.length === 0
-                      ? "All vendors are already assigned"
-                      : undefined
+                    availableVendors.length === 0 ? 'All vendors are already assigned' : undefined
                   }
                 />
               )}
@@ -363,11 +316,7 @@ export const PackageVendorsSection: React.FC<PackageVendorsSectionProps> = ({
             variant="contained"
             onClick={handleAddVendor}
             disabled={!selectedVendor || isCreatingPackageVendor}
-            startIcon={
-              isCreatingPackageVendor ? (
-                <CircularProgress size={16} />
-              ) : undefined
-            }
+            startIcon={isCreatingPackageVendor ? <CircularProgress size={16} /> : undefined}
           >
             Add Vendor
           </Button>
@@ -375,30 +324,19 @@ export const PackageVendorsSection: React.FC<PackageVendorsSectionProps> = ({
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteConfirmId !== null}
-        onClose={() => setDeleteConfirmId(null)}
-      >
+      <Dialog open={deleteConfirmId !== null} onClose={() => setDeleteConfirmId(null)}>
         <DialogTitle>Remove Vendor</DialogTitle>
         <DialogContent>
-          <Typography>
-            Are you sure you want to remove this vendor from the package?
-          </Typography>
+          <Typography>Are you sure you want to remove this vendor from the package?</Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
           <Button
             variant="contained"
             color="error"
-            onClick={() =>
-              deleteConfirmId && handleDeleteVendor(deleteConfirmId)
-            }
+            onClick={() => deleteConfirmId && handleDeleteVendor(deleteConfirmId)}
             disabled={isDeletingPackageVendor}
-            startIcon={
-              isDeletingPackageVendor ? (
-                <CircularProgress size={16} />
-              ) : undefined
-            }
+            startIcon={isDeletingPackageVendor ? <CircularProgress size={16} /> : undefined}
           >
             Remove
           </Button>

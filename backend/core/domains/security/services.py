@@ -1,18 +1,20 @@
 # core/domains/security/services.py
 
-from django.utils import timezone
-from django.core.mail import send_mail
-from django.conf import settings
-from .models import SecurityBreach, BreachNotification, AffectedUser
 import logging
 
-logger = logging.getLogger('security')
+from django.conf import settings
+from django.core.mail import send_mail
+from django.utils import timezone
+
+from .models import AffectedUser, BreachNotification, SecurityBreach
+
+logger = logging.getLogger("security")
 
 
 class BreachNotificationService:
     """Service for managing breach notifications"""
 
-    NPC_EMAIL = 'complaints@privacy.gov.ph'  # NPC official email
+    NPC_EMAIL = "complaints@privacy.gov.ph"  # NPC official email
 
     @classmethod
     def create_breach(cls, title, description, breach_type, severity, detected_at=None):
@@ -20,9 +22,7 @@ class BreachNotificationService:
 
         # Generate breach ID
         year = timezone.now().year
-        count = SecurityBreach.objects.filter(
-            detected_at__year=year
-        ).count() + 1
+        count = SecurityBreach.objects.filter(detected_at__year=year).count() + 1
         breach_id = f"BREACH-{year}-{count:03d}"
 
         breach = SecurityBreach.objects.create(
@@ -32,17 +32,13 @@ class BreachNotificationService:
             breach_type=breach_type,
             severity=severity,
             detected_at=detected_at or timezone.now(),
-            status='DETECTED'
+            status="DETECTED",
         )
 
         # Log the breach
         logger.critical(
             f"Security breach detected: {breach_id}",
-            extra={
-                'breach_id': breach_id,
-                'severity': severity,
-                'breach_type': breach_type
-            }
+            extra={"breach_id": breach_id, "severity": severity, "breach_type": breach_type},
         )
 
         # Alert security team
@@ -56,26 +52,19 @@ class BreachNotificationService:
         breach.affected_users_count = len(affected_user_ids)
         breach.data_types_affected = data_types
         breach.involves_spi = any(
-            dt in data_types for dt in [
-                'health', 'religion', 'political', 'genetic',
-                'government_id', 'criminal_record'
-            ]
+            dt in data_types
+            for dt in ["health", "religion", "political", "genetic", "government_id", "criminal_record"]
         )
         breach.save()
 
         # Create affected user records
         for user_id in affected_user_ids:
-            AffectedUser.objects.get_or_create(
-                breach=breach,
-                user_id=user_id,
-                defaults={'data_exposed': data_types}
-            )
+            AffectedUser.objects.get_or_create(breach=breach, user_id=user_id, defaults={"data_exposed": data_types})
 
         # Check if notification is required
         if breach.requires_notification():
             logger.warning(
-                f"Breach {breach.breach_id} requires NPC notification",
-                extra={'breach_id': breach.breach_id}
+                f"Breach {breach.breach_id} requires NPC notification", extra={"breach_id": breach.breach_id}
             )
 
         return breach
@@ -101,15 +90,15 @@ class BreachNotificationService:
 
         BreachNotification.objects.create(
             breach=breach,
-            notification_type='NPC_INITIAL',
+            notification_type="NPC_INITIAL",
             recipient=cls.NPC_EMAIL,
             content=content,
-            delivery_status='PENDING_MANUAL_SUBMISSION'
+            delivery_status="PENDING_MANUAL_SUBMISSION",
         )
 
         breach.npc_notified = True
         breach.npc_notified_at = timezone.now()
-        breach.status = 'NOTIFYING'
+        breach.status = "NOTIFYING"
         breach.save()
 
         logger.info(f"NPC notification prepared for breach {breach.breach_id}")
@@ -117,10 +106,7 @@ class BreachNotificationService:
     @classmethod
     def notify_affected_users(cls, breach):
         """Notify all affected users of the breach"""
-        affected = AffectedUser.objects.filter(
-            breach=breach,
-            notified=False
-        ).select_related('user')
+        affected = AffectedUser.objects.filter(breach=breach, notified=False).select_related("user")
 
         for affected_user in affected:
             user = affected_user.user
@@ -138,10 +124,10 @@ class BreachNotificationService:
 
                 BreachNotification.objects.create(
                     breach=breach,
-                    notification_type='USER_EMAIL',
+                    notification_type="USER_EMAIL",
                     recipient=user.email,
                     content=content,
-                    delivery_status='SENT'
+                    delivery_status="SENT",
                 )
 
                 affected_user.notified = True
@@ -170,15 +156,15 @@ Pursuant to NPC Circular No. 16-03
    DPO: [DPO Name]
 
 2. DATE AND TIME OF BREACH
-   Detected: {breach.detected_at.strftime('%Y-%m-%d %H:%M:%S')} PHT
+   Detected: {breach.detected_at.strftime("%Y-%m-%d %H:%M:%S")} PHT
 
 3. NATURE OF BREACH
    Type: {breach.get_breach_type_display()}
    Description: {breach.description}
 
 4. PERSONAL DATA INVOLVED
-   Data Types: {', '.join(breach.data_types_affected)}
-   Involves Sensitive Personal Information: {'Yes' if breach.involves_spi else 'No'}
+   Data Types: {", ".join(breach.data_types_affected)}
+   Involves Sensitive Personal Information: {"Yes" if breach.involves_spi else "No"}
 
 5. NUMBER OF AFFECTED DATA SUBJECTS
    Approximately {breach.affected_users_count} individuals
@@ -187,8 +173,8 @@ Pursuant to NPC Circular No. 16-03
    {breach.description}
 
 7. MEASURES TAKEN
-   Containment: {breach.containment_actions or 'Under investigation'}
-   Remediation: {breach.remediation_steps or 'To be determined'}
+   Containment: {breach.containment_actions or "Under investigation"}
+   Remediation: {breach.remediation_steps or "To be determined"}
 
 8. ASSISTANCE TO DATA SUBJECTS
    Affected users have been/will be notified via email with guidance on protective measures.
@@ -205,7 +191,7 @@ This is an initial notification. A full report will be submitted within 5 days.
     def _generate_user_notification(cls, breach, affected_user):
         """Generate user notification content"""
         user = affected_user.user
-        data_list = '\n'.join('- ' + dt.replace('_', ' ').title() for dt in affected_user.data_exposed)
+        data_list = "\n".join("- " + dt.replace("_", " ").title() for dt in affected_user.data_exposed)
         return f"""
 Dear {user.first_name},
 
@@ -219,7 +205,7 @@ The following types of your personal data may have been affected:
 {data_list}
 
 WHAT WE ARE DOING
-{breach.containment_actions or 'We have taken immediate steps to contain this incident and are working with security experts to investigate.'}
+{breach.containment_actions or "We have taken immediate steps to contain this incident and are working with security experts to investigate."}
 
 WHAT YOU CAN DO
 1. Monitor your accounts for suspicious activity

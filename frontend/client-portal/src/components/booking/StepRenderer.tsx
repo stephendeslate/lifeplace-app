@@ -31,85 +31,122 @@ import type {
   RentableVenue,
 } from '../../types/booking';
 
-
 export const StepRenderer: React.FC = () => {
   const { state, actions } = useBooking();
-  
+
   // Use session hooks for enhanced functionality
-  const { validateStep, validationErrors } = useBookingSession(
-    state.currentSession?.session_id
-  );
+  const { validateStep, validationErrors } = useBookingSession(state.currentSession?.session_id);
 
   // Get current step info
   const currentStep = state.currentSession?.current_step;
 
   // Simplified: Only use actions.updateStepData to avoid duplicate updates
-  const handleDataChange = useCallback(async (stepType: string, data: unknown) => {
-    if (!currentStep) return;
-    
-    try {
-      // Only use the context action to update data
-      // The context will handle both local state and backend updates
-      await actions.updateStepData(stepType, data as Record<string, unknown>);
-    } catch (error) {
-      if (import.meta.env.DEV) console.error('Failed to update step data:', error);
-    }
-  }, [currentStep, actions]);
+  const handleDataChange = useCallback(
+    async (stepType: string, data: unknown) => {
+      if (!currentStep) return;
 
-  const handleValidation = useCallback(async (data: unknown): Promise<StepValidationResult> => {
-    if (!currentStep) {
-      return { isValid: false, errors: [{ field: 'general', message: 'No current step' }] };
-    }
-    
-    try {
-      const result = await validateStep(currentStep.id as number, data as Record<string, unknown>);
-      return result || { isValid: false, errors: [{ field: 'general', message: 'Validation failed' }] };
-    } catch (error) {
-      if (import.meta.env.DEV) console.error('Failed to validate step:', error);
-      return { isValid: false, errors: [{ field: 'general', message: 'Validation failed' }] };
-    }
-  }, [currentStep, validateStep]);
+      try {
+        // Only use the context action to update data
+        // The context will handle both local state and backend updates
+        await actions.updateStepData(stepType, data as Record<string, unknown>);
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('Failed to update step data:', error);
+      }
+    },
+    [currentStep, actions],
+  );
 
-  const handleIntroductionChange = useCallback((data: unknown) => {
-    handleDataChange('introduction', data);
-  }, [handleDataChange]);
+  const handleValidation = useCallback(
+    async (data: unknown): Promise<StepValidationResult> => {
+      if (!currentStep) {
+        return { isValid: false, errors: [{ field: 'general', message: 'No current step' }] };
+      }
 
-  const handleVenueSelectionChange = useCallback((data: unknown) => {
-    handleDataChange('venue_selection', data);
-  }, [handleDataChange]);
+      try {
+        const result = await validateStep(
+          currentStep.id as number,
+          data as Record<string, unknown>,
+        );
+        return (
+          result || { isValid: false, errors: [{ field: 'general', message: 'Validation failed' }] }
+        );
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('Failed to validate step:', error);
+        return { isValid: false, errors: [{ field: 'general', message: 'Validation failed' }] };
+      }
+    },
+    [currentStep, validateStep],
+  );
 
-  const handleDateTimeChange = useCallback((data: unknown) => {
-    handleDataChange('date_time', data);
-  }, [handleDataChange]);
+  const handleIntroductionChange = useCallback(
+    (data: unknown) => {
+      handleDataChange('introduction', data);
+    },
+    [handleDataChange],
+  );
 
-  const handleQuestionnaireChange = useCallback((data: unknown) => {
-    handleDataChange('questionnaire', data);
-  }, [handleDataChange]);
+  const handleVenueSelectionChange = useCallback(
+    (data: unknown) => {
+      handleDataChange('venue_selection', data);
+    },
+    [handleDataChange],
+  );
 
-  const handleContactInfoChange = useCallback((data: unknown) => {
-    handleDataChange('contact_info', data);
-  }, [handleDataChange]);
+  const handleDateTimeChange = useCallback(
+    (data: unknown) => {
+      handleDataChange('date_time', data);
+    },
+    [handleDataChange],
+  );
 
-  const handlePaymentChange = useCallback((data: unknown) => {
-    handleDataChange('payment_info', data);
-  }, [handleDataChange]);
+  const handleQuestionnaireChange = useCallback(
+    (data: unknown) => {
+      handleDataChange('questionnaire', data);
+    },
+    [handleDataChange],
+  );
 
+  const handleContactInfoChange = useCallback(
+    (data: unknown) => {
+      handleDataChange('contact_info', data);
+    },
+    [handleDataChange],
+  );
 
-  const handleConfirmationChange = useCallback((data: unknown) => {
-    handleDataChange('confirmation', data);
-  }, [handleDataChange]);
+  const handlePaymentChange = useCallback(
+    (data: unknown) => {
+      handleDataChange('payment_info', data);
+    },
+    [handleDataChange],
+  );
 
-  const handlePackageSelectionChange = useCallback((data: unknown) => {
-    handleDataChange('package_selection', data);
-  }, [handleDataChange]);
+  const handleConfirmationChange = useCallback(
+    (data: unknown) => {
+      handleDataChange('confirmation', data);
+    },
+    [handleDataChange],
+  );
 
-  const handleAddonSelectionChange = useCallback((data: unknown) => {
-    handleDataChange('addon_selection', data);
-  }, [handleDataChange]);
+  const handlePackageSelectionChange = useCallback(
+    (data: unknown) => {
+      handleDataChange('package_selection', data);
+    },
+    [handleDataChange],
+  );
 
-  const handlePricingSummaryChange = useCallback((data: unknown) => {
-    handleDataChange('pricing_summary', data);
-  }, [handleDataChange]);
+  const handleAddonSelectionChange = useCallback(
+    (data: unknown) => {
+      handleDataChange('addon_selection', data);
+    },
+    [handleDataChange],
+  );
+
+  const handlePricingSummaryChange = useCallback(
+    (data: unknown) => {
+      handleDataChange('pricing_summary', data);
+    },
+    [handleDataChange],
+  );
 
   // Now we can have conditional returns after all hooks
   if (!currentStep) {
@@ -160,7 +197,9 @@ export const StepRenderer: React.FC = () => {
     case 'date_time': {
       // Get selectedPackageId from booking data (could come from venue_selection or package_selection)
       const bookingData = state.currentSession?.booking_data || {};
-      const selectedPackages = bookingData.selected_packages as Array<{ product_id: number }> | undefined;
+      const selectedPackages = bookingData.selected_packages as
+        | Array<{ product_id: number }>
+        | undefined;
       const selectedPackageId = selectedPackages?.[0]?.product_id || null;
 
       return (
@@ -206,20 +245,29 @@ export const StepRenderer: React.FC = () => {
     case 'addon_selection': {
       // Get selected venues from booking data
       const bookingData = state.currentSession?.booking_data || {};
-      const venueSelectionData = bookingData.venue_selection as { selected_venue_ids?: number[] } | undefined;
+      const venueSelectionData = bookingData.venue_selection as
+        | { selected_venue_ids?: number[] }
+        | undefined;
       const selectedVenueIds = venueSelectionData?.selected_venue_ids || [];
 
       // Get venue details from package selection step config or venue selection step config
       // We need to get the actual venue objects, not just IDs
       // This requires fetching from the available venues in the config
-      const venueConfig = state.currentFlow?.enabled_steps?.find((s: { step_type: string; configuration_data?: unknown }) => s.step_type === 'venue_selection')?.configuration_data as { available_venues_details?: RentableVenue[] } | undefined;
-      const selectedVenues = venueConfig?.available_venues_details?.filter(v => selectedVenueIds.includes(v.id)) || [];
+      const venueConfig = state.currentFlow?.enabled_steps?.find(
+        (s: { step_type: string; configuration_data?: unknown }) =>
+          s.step_type === 'venue_selection',
+      )?.configuration_data as { available_venues_details?: RentableVenue[] } | undefined;
+      const selectedVenues =
+        venueConfig?.available_venues_details?.filter((v) => selectedVenueIds.includes(v.id)) || [];
 
       // Get existing venue_additional_hours from multiple sources (step data, booking data)
       const packageSelectionData = state.stepData.package_selection;
       const addonSelectionData = state.stepData.addon_selection;
-      const bookingDataHours = state.currentSession?.booking_data?.venue_additional_hours as Record<string, number> | undefined;
-      const venueAdditionalHours = addonSelectionData?.venue_additional_hours ||
+      const bookingDataHours = state.currentSession?.booking_data?.venue_additional_hours as
+        | Record<string, number>
+        | undefined;
+      const venueAdditionalHours =
+        addonSelectionData?.venue_additional_hours ||
         packageSelectionData?.venue_additional_hours ||
         bookingDataHours ||
         {};

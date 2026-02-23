@@ -234,11 +234,7 @@ export const NotificationCenter: React.FC = () => {
           transition: 'all 0.2s ease',
         }}
       >
-        <Badge
-          badgeContent={isLoadingCounts ? 0 : unreadCount}
-          color="error"
-          max={99}
-        >
+        <Badge badgeContent={isLoadingCounts ? 0 : unreadCount} color="error" max={99}>
           <NotificationsIcon />
         </Badge>
       </IconButton>
@@ -278,14 +274,8 @@ export const NotificationCenter: React.FC = () => {
             }}
           >
             {/* Header */}
-            <Box
-              sx={{ p: 3, borderBottom: `1px solid ${alpha('#fff', 0.1)}` }}
-            >
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-              >
+            <Box sx={{ p: 3, borderBottom: `1px solid ${alpha('#fff', 0.1)}` }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center">
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Notifications
                 </Typography>
@@ -340,11 +330,7 @@ export const NotificationCenter: React.FC = () => {
               </Box>
 
               {unreadCount > 0 && (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mt: 1 }}
-                >
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                   You have {unreadCount} unread notification
                   {unreadCount !== 1 ? 's' : ''}
                 </Typography>
@@ -361,9 +347,7 @@ export const NotificationCenter: React.FC = () => {
                 </>
               ) : notifications.length === 0 ? (
                 <Box sx={{ p: 4, textAlign: 'center' }}>
-                  <NotificationsIcon
-                    sx={{ fontSize: 48, color: 'grey.400', mb: 2 }}
-                  />
+                  <NotificationsIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
                   <Typography variant="body2" color="text.secondary">
                     No notifications yet
                   </Typography>
@@ -376,16 +360,10 @@ export const NotificationCenter: React.FC = () => {
                   </Typography>
                 </Box>
               ) : (
-                <Stack
-                  divider={
-                    <Divider sx={{ borderColor: alpha('#fff', 0.1) }} />
-                  }
-                >
+                <Stack divider={<Divider sx={{ borderColor: alpha('#fff', 0.1) }} />}>
                   {notifications.map((notification, index) => {
-                    const category =
-                      notification.notification_type_details?.category;
-                    const priority =
-                      notification.notification_type_details?.priority;
+                    const category = notification.notification_type_details?.category;
+                    const priority = notification.notification_type_details?.priority;
                     const notificationColor = getPriorityColor(theme, priority);
                     const categoryColor = getCategoryColor(theme, category);
 
@@ -406,9 +384,7 @@ export const NotificationCenter: React.FC = () => {
                             },
                             transition: 'all 0.2s ease',
                             position: 'relative',
-                            cursor: notification.action_url
-                              ? 'pointer'
-                              : 'default',
+                            cursor: notification.action_url ? 'pointer' : 'default',
                           }}
                           onClick={() => handleNotificationClick(notification)}
                         >
@@ -450,26 +426,15 @@ export const NotificationCenter: React.FC = () => {
                                 <Typography
                                   variant="body2"
                                   sx={{
-                                    fontWeight: notification.is_read
-                                      ? 400
-                                      : 600,
-                                    color: notification.is_read
-                                      ? 'text.secondary'
-                                      : 'text.primary',
+                                    fontWeight: notification.is_read ? 400 : 600,
+                                    color: notification.is_read ? 'text.secondary' : 'text.primary',
                                   }}
                                 >
                                   {notification.title}
                                 </Typography>
-                                <Box
-                                  display="flex"
-                                  alignItems="center"
-                                  gap={0.5}
-                                >
+                                <Box display="flex" alignItems="center" gap={0.5}>
                                   {getPriorityIcon(priority)}
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
+                                  <Typography variant="caption" color="text.secondary">
                                     {notification.time_since_created}
                                   </Typography>
                                 </Box>
@@ -499,16 +464,10 @@ export const NotificationCenter: React.FC = () => {
                                 )}
                                 {category && (
                                   <Chip
-                                    label={
-                                      notification.notification_type_details
-                                        ?.name || category
-                                    }
+                                    label={notification.notification_type_details?.name || category}
                                     size="small"
                                     sx={{
-                                      backgroundColor: alpha(
-                                        categoryColor,
-                                        0.1
-                                      ),
+                                      backgroundColor: alpha(categoryColor, 0.1),
                                       color: categoryColor,
                                       border: `1px solid ${alpha(categoryColor, 0.3)}`,
                                     }}
@@ -539,11 +498,7 @@ export const NotificationCenter: React.FC = () => {
                                   )}
                                 </Box>
 
-                                <Box
-                                  display="flex"
-                                  gap={0.5}
-                                  onClick={(e) => e.stopPropagation()}
-                                >
+                                <Box display="flex" gap={0.5} onClick={(e) => e.stopPropagation()}>
                                   {!notification.is_read && (
                                     <IconButton
                                       size="small"
@@ -572,10 +527,7 @@ export const NotificationCenter: React.FC = () => {
                                     sx={{
                                       backgroundColor: alpha('#fff', 0.1),
                                       '&:hover': {
-                                        backgroundColor: alpha(
-                                          theme.palette.error.main,
-                                          0.1
-                                        ),
+                                        backgroundColor: alpha(theme.palette.error.main, 0.1),
                                         color: theme.palette.error.main,
                                       },
                                     }}
@@ -626,10 +578,7 @@ export const NotificationCenter: React.FC = () => {
       </Popover>
 
       {/* Notification Preferences Dialog */}
-      <NotificationPreferencesDialog
-        open={preferencesOpen}
-        onClose={handleClosePreferences}
-      />
+      <NotificationPreferencesDialog open={preferencesOpen} onClose={handleClosePreferences} />
     </>
   );
 };

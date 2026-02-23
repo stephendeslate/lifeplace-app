@@ -30,7 +30,7 @@ export const createQueryWrapper = (queryClient?: QueryClient) => {
 // Custom renderHook with React Query wrapper
 export function renderHookWithQuery<Result, Props>(
   render: (initialProps: Props) => Result,
-  options?: RenderHookOptions<Props> & { queryClient?: QueryClient }
+  options?: RenderHookOptions<Props> & { queryClient?: QueryClient },
 ): RenderHookResult<Result, Props> {
   const { queryClient, ...renderOptions } = options || {};
   const wrapper = createQueryWrapper(queryClient);

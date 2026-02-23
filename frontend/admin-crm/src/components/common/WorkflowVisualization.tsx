@@ -78,32 +78,48 @@ interface WorkflowVisualizationProps {
   onTaskClick?: (task: WorkflowTask, stage: WorkflowStage) => void;
 }
 
-const getStageColor = (status: string): 'success' | 'primary' | 'default' | 'error' | 'secondary' => {
+const getStageColor = (
+  status: string,
+): 'success' | 'primary' | 'default' | 'error' | 'secondary' => {
   switch (status) {
-    case 'completed': return 'success';
-    case 'active': return 'primary';
-    case 'blocked': return 'error';
-    case 'skipped': return 'secondary';
-    default: return 'default';
+    case 'completed':
+      return 'success';
+    case 'active':
+      return 'primary';
+    case 'blocked':
+      return 'error';
+    case 'skipped':
+      return 'secondary';
+    default:
+      return 'default';
   }
 };
 
 const getStageIcon = (status: string) => {
   switch (status) {
-    case 'completed': return <CompletedIcon />;
-    case 'active': return <StartIcon />;
-    case 'blocked': return <ErrorIcon />;
-    case 'pending': return <PendingIcon />;
-    default: return <PendingIcon />;
+    case 'completed':
+      return <CompletedIcon />;
+    case 'active':
+      return <StartIcon />;
+    case 'blocked':
+      return <ErrorIcon />;
+    case 'pending':
+      return <PendingIcon />;
+    default:
+      return <PendingIcon />;
   }
 };
 
 const getPriorityColor = (priority?: string): 'default' | 'primary' | 'warning' | 'error' => {
   switch (priority) {
-    case 'urgent': return 'error';
-    case 'high': return 'warning';
-    case 'medium': return 'primary';
-    default: return 'default';
+    case 'urgent':
+      return 'error';
+    case 'high':
+      return 'warning';
+    case 'medium':
+      return 'primary';
+    default:
+      return 'default';
   }
 };
 
@@ -147,27 +163,24 @@ const TaskItem: React.FC<{
       onClick={handleClick}
     >
       <Box display="flex" alignItems="center" gap={1.5} flex={1}>
-        <Box sx={{ color: getStageColor(task.status) + '.main' }}>
-          {getStageIcon(task.status)}
-        </Box>
+        <Box sx={{ color: getStageColor(task.status) + '.main' }}>{getStageIcon(task.status)}</Box>
         <Box flex={1}>
           <Typography variant="body2" fontWeight="medium">
             {task.name}
           </Typography>
           {task.dueDate && daysInfo && (
-            <Typography 
-              variant="caption" 
+            <Typography
+              variant="caption"
               color={daysInfo.isOverdue ? 'error.main' : 'text.secondary'}
             >
-              {daysInfo.isOverdue 
+              {daysInfo.isOverdue
                 ? `${daysInfo.days} days overdue`
-                : `Due in ${daysInfo.days} days`
-              }
+                : `Due in ${daysInfo.days} days`}
             </Typography>
           )}
         </Box>
       </Box>
-      
+
       <Stack direction="row" spacing={1} alignItems="center">
         {task.priority && (
           <Chip
@@ -179,10 +192,7 @@ const TaskItem: React.FC<{
         )}
         {task.assignedTo && (
           <Tooltip title={task.assignedTo.name}>
-            <Avatar 
-              src={task.assignedTo.avatar} 
-              sx={{ width: 24, height: 24, fontSize: '0.8rem' }}
-            >
+            <Avatar src={task.assignedTo.avatar} sx={{ width: 24, height: 24, fontSize: '0.8rem' }}>
               {task.assignedTo.name.charAt(0)}
             </Avatar>
           </Tooltip>
@@ -200,7 +210,7 @@ const StageCard: React.FC<{
   onTaskClick?: (task: WorkflowTask, stage: WorkflowStage) => void;
 }> = ({ stage, isActive = false, showTasks = false, onStageClick, onTaskClick }) => {
   const [expanded, setExpanded] = useState(isActive || stage.status === 'active');
-  
+
   const handleStageClick = () => {
     if (onStageClick) {
       onStageClick(stage);
@@ -210,16 +220,16 @@ const StageCard: React.FC<{
     }
   };
 
-  const completedTasks = stage.tasks?.filter(t => t.status === 'completed').length || 0;
+  const completedTasks = stage.tasks?.filter((t) => t.status === 'completed').length || 0;
   const totalTasks = stage.tasks?.length || 0;
   const taskProgress = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
   const daysInfo = stage.dueDate ? calculateDaysRemaining(stage.dueDate) : null;
 
   return (
-    <Card 
+    <Card
       variant={isActive ? 'elevation' : 'outlined'}
-      sx={{ 
+      sx={{
         cursor: onStageClick ? 'pointer' : 'default',
         borderColor: stage.status === 'active' ? 'primary.main' : 'divider',
         borderWidth: stage.status === 'active' ? 2 : 1,
@@ -242,7 +252,7 @@ const StageCard: React.FC<{
               )}
             </Box>
           </Box>
-          
+
           <Stack alignItems="flex-end" spacing={0.5}>
             <Chip
               label={stage.status.replace('_', ' ').toUpperCase()}
@@ -251,10 +261,13 @@ const StageCard: React.FC<{
               variant={stage.status === 'completed' ? 'filled' : 'outlined'}
             />
             {showTasks && stage.tasks && stage.tasks.length > 0 && (
-              <IconButton size="small" onClick={(e) => {
-                e.stopPropagation();
-                setExpanded(!expanded);
-              }}>
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setExpanded(!expanded);
+                }}
+              >
                 {expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
               </IconButton>
             )}
@@ -284,14 +297,13 @@ const StageCard: React.FC<{
           {stage.dueDate && !stage.completedAt && daysInfo && (
             <Box display="flex" alignItems="center" gap={1}>
               <EventIcon fontSize="small" color={daysInfo.isOverdue ? 'error' : 'action'} />
-              <Typography 
-                variant="body2" 
+              <Typography
+                variant="body2"
                 color={daysInfo.isOverdue ? 'error.main' : 'text.secondary'}
               >
-                {daysInfo.isOverdue 
+                {daysInfo.isOverdue
                   ? `${daysInfo.days} days overdue`
-                  : `Due in ${daysInfo.days} days`
-                }
+                  : `Due in ${daysInfo.days} days`}
               </Typography>
             </Box>
           )}
@@ -332,12 +344,7 @@ const StageCard: React.FC<{
               </Typography>
               <Stack spacing={1}>
                 {stage.tasks.map((task) => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    stage={stage}
-                    onTaskClick={onTaskClick}
-                  />
+                  <TaskItem key={task.id} task={task} stage={stage} onTaskClick={onTaskClick} />
                 ))}
               </Stack>
             </Box>
@@ -359,8 +366,8 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
   onTaskClick,
 }) => {
   const sortedStages = [...stages].sort((a, b) => a.order - b.order);
-  const activeStage = sortedStages.find(s => s.status === 'active');
-  const completedStages = sortedStages.filter(s => s.status === 'completed').length;
+  const activeStage = sortedStages.find((s) => s.status === 'active');
+  const completedStages = sortedStages.filter((s) => s.status === 'completed').length;
   const calculatedProgress = overallProgress || (completedStages / sortedStages.length) * 100;
 
   if (stages.length === 0) {
@@ -388,9 +395,7 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
           <Box display="flex" alignItems="center" gap={2}>
             <WorkflowIcon color="primary" />
             <Box>
-              <Typography variant="h6">
-                {workflowName || 'Workflow Progress'}
-              </Typography>
+              <Typography variant="h6">{workflowName || 'Workflow Progress'}</Typography>
               {activeStage && (
                 <Typography variant="body2" color="text.secondary">
                   Current: {activeStage.name}
@@ -461,8 +466,8 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
             ))}
           </Stepper>
         ) : (
-          <Box 
-            display="grid" 
+          <Box
+            display="grid"
             gridTemplateColumns={{ xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }}
             gap={2}
           >
@@ -480,7 +485,7 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
         )}
 
         {/* Alerts */}
-        {sortedStages.some(s => s.status === 'blocked') && (
+        {sortedStages.some((s) => s.status === 'blocked') && (
           <Alert severity="error" sx={{ mt: 2 }}>
             <Typography variant="body2">
               Some workflow stages are blocked and require attention.
@@ -491,7 +496,8 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
         {activeStage?.dueDate && calculateDaysRemaining(activeStage.dueDate).isOverdue && (
           <Alert severity="warning" sx={{ mt: 2 }}>
             <Typography variant="body2">
-              The current stage "{activeStage.name}" is overdue by {calculateDaysRemaining(activeStage.dueDate).days} days.
+              The current stage "{activeStage.name}" is overdue by{' '}
+              {calculateDaysRemaining(activeStage.dueDate).days} days.
             </Typography>
           </Alert>
         )}

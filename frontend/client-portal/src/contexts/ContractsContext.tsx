@@ -4,7 +4,12 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { contractsApi } from '../apis/contracts.api';
 import { useGlobalSignatureEvents } from '../hooks/contracts/useContractStatusUpdates';
 import { useAuth } from './AuthContext';
-import type { Contract, SignatureSubmission, PendingContractsResponse, SignatureRole } from '../types/contracts.types';
+import type {
+  Contract,
+  SignatureSubmission,
+  PendingContractsResponse,
+  SignatureRole,
+} from '../types/contracts.types';
 
 interface ContractsContextValue {
   // Data
@@ -13,21 +18,24 @@ interface ContractsContextValue {
   signedContracts: Contract[];
   expiredContracts: Contract[];
   pendingSignatures: PendingContractsResponse | undefined;
-  
+
   // Loading states
   isLoading: boolean;
   isRefreshing: boolean;
-  
+
   // Actions
   refreshContracts: () => Promise<void>;
   signContract: (contractId: string, signatureData: SignatureSubmission) => Promise<Contract>;
-  
+
   // Contract operations
   getContract: (contractId: string) => Promise<Contract>;
   downloadContract: (contractId: string) => Promise<Blob>;
-  
+
   // Real-time updates
-  simulateSignatureEvent: (contractId: string, eventType: 'signature_added' | 'contract_completed') => void;
+  simulateSignatureEvent: (
+    contractId: string,
+    eventType: 'signature_added' | 'contract_completed',
+  ) => void;
 }
 
 const ContractsContext = createContext<ContractsContextValue | null>(null);
@@ -47,7 +55,7 @@ interface ContractsProviderProps {
 export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }) => {
   const queryClient = useQueryClient();
   const { user, isLoading: authLoading } = useAuth();
-  
+
   // Initialize global signature events only when authenticated
   const { simulateSignatureEvent } = useGlobalSignatureEvents();
 
@@ -56,7 +64,8 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
 
   // Debug logging
   useEffect(() => {
-    if (import.meta.env.DEV) console.log('ContractsProvider auth state:', { user: !!user, authLoading, isAuthenticated });
+    if (import.meta.env.DEV)
+      console.log('ContractsProvider auth state:', { user: !!user, authLoading, isAuthenticated });
   }, [user, authLoading, isAuthenticated]);
 
   // Query for all contracts
@@ -101,8 +110,13 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
 
   // Mutation for signing contracts
   const signContractMutation = useMutation({
-    mutationFn: ({ contractId, signatureData }: { contractId: string; signatureData: SignatureSubmission }) =>
-      contractsApi.signContract(contractId, signatureData),
+    mutationFn: ({
+      contractId,
+      signatureData,
+    }: {
+      contractId: string;
+      signatureData: SignatureSubmission;
+    }) => contractsApi.signContract(contractId, signatureData),
     onSuccess: (signedContract, { contractId }) => {
       // Update the specific contract in cache
       queryClient.setQueryData(['contracts', contractId], signedContract);
@@ -110,9 +124,7 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
       // Update the contracts list
       queryClient.setQueryData(['contracts'], (oldData: Contract[] | undefined) => {
         if (!oldData) return [signedContract];
-        return oldData.map(contract =>
-          contract.id === contractId ? signedContract : contract
-        );
+        return oldData.map((contract) => (contract.id === contractId ? signedContract : contract));
       });
 
       // Invalidate related queries
@@ -133,38 +145,39 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
 
   // Derived data
   const contracts = contractsQuery.data || [];
-  const pendingContracts = contracts.filter(contract =>
-    ['SENT', 'PARTIALLY_SIGNED'].includes(contract.status)
+  const pendingContracts = contracts.filter((contract) =>
+    ['SENT', 'PARTIALLY_SIGNED'].includes(contract.status),
   );
-  const signedContracts = contracts.filter(contract =>
-    contract.status === 'SIGNED'
-  );
-  const expiredContracts = contracts.filter(contract =>
-    contract.status === 'EXPIRED' || contract.is_expired === true
+  const signedContracts = contracts.filter((contract) => contract.status === 'SIGNED');
+  const expiredContracts = contracts.filter(
+    (contract) => contract.status === 'EXPIRED' || contract.is_expired === true,
   );
 
   // Actions
   const refreshContracts = useCallback(async () => {
-    await Promise.all([
-      contractsQuery.refetch(),
-      pendingQuery.refetch(),
-    ]);
+    await Promise.all([contractsQuery.refetch(), pendingQuery.refetch()]);
   }, [contractsQuery, pendingQuery]);
 
-  const signContract = useCallback(async (contractId: string, signatureData: SignatureSubmission) => {
-    return signContractMutation.mutateAsync({ contractId, signatureData });
-  }, [signContractMutation]);
+  const signContract = useCallback(
+    async (contractId: string, signatureData: SignatureSubmission) => {
+      return signContractMutation.mutateAsync({ contractId, signatureData });
+    },
+    [signContractMutation],
+  );
 
-  const getContract = useCallback(async (contractId: string) => {
-    // Try to get from cache first
-    const cachedContract = queryClient.getQueryData<Contract>(['contracts', contractId]);
-    if (cachedContract) {
-      return cachedContract;
-    }
-    
-    // Otherwise fetch from API
-    return contractsApi.getContract(contractId);
-  }, [queryClient]);
+  const getContract = useCallback(
+    async (contractId: string) => {
+      // Try to get from cache first
+      const cachedContract = queryClient.getQueryData<Contract>(['contracts', contractId]);
+      if (cachedContract) {
+        return cachedContract;
+      }
+
+      // Otherwise fetch from API
+      return contractsApi.getContract(contractId);
+    },
+    [queryClient],
+  );
 
   const downloadContract = useCallback(async (contractId: string) => {
     return contractsApi.downloadContractPdf(contractId);
@@ -211,11 +224,12 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
     signedContracts,
     expiredContracts,
     pendingSignatures: pendingQuery.data,
-    
+
     // Loading states
     isLoading: contractsQuery.isLoading || pendingQuery.isLoading,
-    isRefreshing: contractsQuery.isFetching || pendingQuery.isFetching || signContractMutation.isPending,
-    
+    isRefreshing:
+      contractsQuery.isFetching || pendingQuery.isFetching || signContractMutation.isPending,
+
     // Actions
     refreshContracts,
     signContract,
@@ -224,11 +238,7 @@ export const ContractsProvider: React.FC<ContractsProviderProps> = ({ children }
     simulateSignatureEvent,
   };
 
-  return (
-    <ContractsContext.Provider value={contextValue}>
-      {children}
-    </ContractsContext.Provider>
-  );
+  return <ContractsContext.Provider value={contextValue}>{children}</ContractsContext.Provider>;
 };
 
 // Hook for contract-specific operations
@@ -243,11 +253,14 @@ export const useContract = (contractId: string) => {
     staleTime: 30000,
   });
 
-  const updateContract = useCallback((updater: (contract: Contract) => Contract) => {
-    queryClient.setQueryData(['contracts', contractId], (oldData: Contract | undefined) => {
-      return oldData ? updater(oldData) : undefined;
-    });
-  }, [contractId, queryClient]);
+  const updateContract = useCallback(
+    (updater: (contract: Contract) => Contract) => {
+      queryClient.setQueryData(['contracts', contractId], (oldData: Contract | undefined) => {
+        return oldData ? updater(oldData) : undefined;
+      });
+    },
+    [contractId, queryClient],
+  );
 
   return {
     contract: contractQuery.data,
@@ -262,57 +275,64 @@ export const useContract = (contractId: string) => {
 export const useOptimisticContractUpdates = () => {
   const queryClient = useQueryClient();
 
-  const optimisticallySignContract = useCallback((contractId: string, role: string) => {
-    // Optimistically update the contract
-    queryClient.setQueryData(['contracts', contractId], (oldData: Contract | undefined) => {
-      if (!oldData) return oldData;
+  const optimisticallySignContract = useCallback(
+    (contractId: string, role: string) => {
+      // Optimistically update the contract
+      queryClient.setQueryData(['contracts', contractId], (oldData: Contract | undefined) => {
+        if (!oldData) return oldData;
 
-      const newSignature = {
-        id: `temp-${Date.now()}`,
-        contract: contractId,
-        signer: { id: 'current-user', email: '', first_name: '', last_name: '' },
-        role: role as SignatureRole,
-        role_display: role,
-        signature_data: '',
-        signed_at: new Date().toISOString(),
-        signer_name: '',
-        signer_title: '',
-        signer_email: '',
-        is_verified: false,
-        verification_method: 'electronic_signature',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+        const newSignature = {
+          id: `temp-${Date.now()}`,
+          contract: contractId,
+          signer: { id: 'current-user', email: '', first_name: '', last_name: '' },
+          role: role as SignatureRole,
+          role_display: role,
+          signature_data: '',
+          signed_at: new Date().toISOString(),
+          signer_name: '',
+          signer_title: '',
+          signer_email: '',
+          is_verified: false,
+          verification_method: 'electronic_signature',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
 
-      const newContract = {
-        ...oldData,
-        signatures: [...oldData.signatures, newSignature],
-        status: oldData.signatures.length + 1 >= (oldData.template.signature_requirements?.length || 1) 
-          ? 'SIGNED' as const 
-          : 'PARTIALLY_SIGNED' as const,
-      };
+        const newContract = {
+          ...oldData,
+          signatures: [...oldData.signatures, newSignature],
+          status:
+            oldData.signatures.length + 1 >= (oldData.template.signature_requirements?.length || 1)
+              ? ('SIGNED' as const)
+              : ('PARTIALLY_SIGNED' as const),
+        };
 
-      return newContract;
-    });
-
-    // Also update the contracts list
-    queryClient.setQueryData(['contracts'], (oldData: Contract[] | undefined) => {
-      if (!oldData) return oldData;
-      
-      return oldData.map(contract => {
-        if (contract.id === contractId) {
-          const updatedContract = queryClient.getQueryData<Contract>(['contracts', contractId]);
-          return updatedContract || contract;
-        }
-        return contract;
+        return newContract;
       });
-    });
-  }, [queryClient]);
 
-  const revertOptimisticUpdate = useCallback((contractId: string) => {
-    queryClient.invalidateQueries({ queryKey: ['contracts', contractId] });
-    queryClient.invalidateQueries({ queryKey: ['contracts'] });
-  }, [queryClient]);
+      // Also update the contracts list
+      queryClient.setQueryData(['contracts'], (oldData: Contract[] | undefined) => {
+        if (!oldData) return oldData;
+
+        return oldData.map((contract) => {
+          if (contract.id === contractId) {
+            const updatedContract = queryClient.getQueryData<Contract>(['contracts', contractId]);
+            return updatedContract || contract;
+          }
+          return contract;
+        });
+      });
+    },
+    [queryClient],
+  );
+
+  const revertOptimisticUpdate = useCallback(
+    (contractId: string) => {
+      queryClient.invalidateQueries({ queryKey: ['contracts', contractId] });
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+    },
+    [queryClient],
+  );
 
   return {
     optimisticallySignContract,

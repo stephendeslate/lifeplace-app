@@ -13,9 +13,7 @@ import {
   CircularProgress,
   Stack,
 } from '@mui/material';
-import {
-  Warning as WarningIcon,
-} from '@mui/icons-material';
+import { Warning as WarningIcon } from '@mui/icons-material';
 
 interface QuoteRejectionDialogProps {
   open: boolean;
@@ -78,12 +76,12 @@ export const QuoteRejectionDialog: React.FC<QuoteRejectionDialogProps> = ({
           <Typography variant="body1">
             {quoteName
               ? `Are you sure you want to reject the quote for "${quoteName}"?`
-              : 'Are you sure you want to reject this quote?'
-            }
+              : 'Are you sure you want to reject this quote?'}
           </Typography>
 
           <Typography variant="body2" color="text.secondary">
-            Please provide a reason for rejecting this quote. This feedback helps us improve our services and better understand your needs.
+            Please provide a reason for rejecting this quote. This feedback helps us improve our
+            services and better understand your needs.
           </Typography>
 
           <TextField
@@ -102,10 +100,7 @@ export const QuoteRejectionDialog: React.FC<QuoteRejectionDialogProps> = ({
       </DialogContent>
 
       <DialogActions>
-        <Button
-          onClick={handleClose}
-          disabled={isLoading}
-        >
+        <Button onClick={handleClose} disabled={isLoading}>
           Cancel
         </Button>
         <Button

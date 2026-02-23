@@ -9,12 +9,7 @@
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
 import { KeyboardArrowDown } from '@mui/icons-material';
-import {
-  tokens,
-  HeroBackground,
-  AnimatedElement,
-  Container
-} from '../../../design-system';
+import { tokens, HeroBackground, AnimatedElement, Container } from '../../../design-system';
 
 export const ContactHero: React.FC = () => {
   const scrollToContent = () => {
@@ -96,8 +91,8 @@ export const ContactHero: React.FC = () => {
                     textShadow: tokens.shadow.text.medium,
                   }}
                 >
-                  Experience LifePlace Retreat and Events Center in Alfonso, near Tagaytay.
-                  We're here to help you plan your perfect event.
+                  Experience LifePlace Retreat and Events Center in Alfonso, near Tagaytay. We're
+                  here to help you plan your perfect event.
                 </Typography>
               </AnimatedElement>
 

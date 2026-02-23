@@ -1,17 +1,16 @@
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
-import { useNotes } from "./useNotes";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { useNotes } from './useNotes';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-describe("useNotes", () => {
-  describe("Query Operations", () => {
-    it("fetches notes with filters", async () => {
-      const { result } = renderHook(
-        () => useNotes({ content_type: "client", object_id: 1 }),
-        { wrapper: createTestWrapper() },
-      );
+describe('useNotes', () => {
+  describe('Query Operations', () => {
+    it('fetches notes with filters', async () => {
+      const { result } = renderHook(() => useNotes({ content_type: 'client', object_id: 1 }), {
+        wrapper: createTestWrapper(),
+      });
 
       expect(result.current.isLoadingNotes).toBe(true);
 
@@ -26,7 +25,7 @@ describe("useNotes", () => {
       expect(result.current.notesCount).toBeGreaterThan(0);
     });
 
-    it("query is disabled when no filters are provided", async () => {
+    it('query is disabled when no filters are provided', async () => {
       const { result } = renderHook(() => useNotes(), {
         wrapper: createTestWrapper(),
       });
@@ -36,17 +35,16 @@ describe("useNotes", () => {
       expect(result.current.notesCount).toBe(0);
     });
 
-    it("handles API error", async () => {
+    it('handles API error', async () => {
       server.use(
-        http.get("http://localhost:8000/api/notes/", () => {
-          return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+        http.get('http://localhost:8000/api/notes/', () => {
+          return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
         }),
       );
 
-      const { result } = renderHook(
-        () => useNotes({ content_type: "client" }),
-        { wrapper: createTestWrapper() },
-      );
+      const { result } = renderHook(() => useNotes({ content_type: 'client' }), {
+        wrapper: createTestWrapper(),
+      });
 
       await waitFor(
         () => {
@@ -57,13 +55,10 @@ describe("useNotes", () => {
     });
   });
 
-  describe("Mutation Operations", () => {
-    it("creates a note", async () => {
+  describe('Mutation Operations', () => {
+    it('creates a note', async () => {
       const wrapper = createTestWrapper();
-      const { result } = renderHook(
-        () => useNotes({ content_type: "client" }),
-        { wrapper },
-      );
+      const { result } = renderHook(() => useNotes({ content_type: 'client' }), { wrapper });
 
       await waitFor(
         () => {
@@ -74,8 +69,8 @@ describe("useNotes", () => {
 
       act(() => {
         result.current.createNote({
-          content: "New note content",
-          content_type_model: "client",
+          content: 'New note content',
+          content_type_model: 'client',
           object_id: 1,
         });
       });
@@ -90,12 +85,9 @@ describe("useNotes", () => {
       expect(result.current.createError).toBeFalsy();
     });
 
-    it("updates a note", async () => {
+    it('updates a note', async () => {
       const wrapper = createTestWrapper();
-      const { result } = renderHook(
-        () => useNotes({ content_type: "client" }),
-        { wrapper },
-      );
+      const { result } = renderHook(() => useNotes({ content_type: 'client' }), { wrapper });
 
       await waitFor(
         () => {
@@ -110,7 +102,7 @@ describe("useNotes", () => {
       act(() => {
         result.current.updateNote({
           id: noteToUpdate.id,
-          data: { content: "Updated content" },
+          data: { content: 'Updated content' },
         });
       });
 
@@ -124,12 +116,9 @@ describe("useNotes", () => {
       expect(result.current.updateError).toBeFalsy();
     });
 
-    it("deletes a note", async () => {
+    it('deletes a note', async () => {
       const wrapper = createTestWrapper();
-      const { result } = renderHook(
-        () => useNotes({ content_type: "client" }),
-        { wrapper },
-      );
+      const { result } = renderHook(() => useNotes({ content_type: 'client' }), { wrapper });
 
       await waitFor(
         () => {
@@ -155,21 +144,15 @@ describe("useNotes", () => {
       expect(result.current.deleteError).toBeFalsy();
     });
 
-    it("handles create error", async () => {
+    it('handles create error', async () => {
       server.use(
-        http.post("http://localhost:8000/api/notes/", () => {
-          return HttpResponse.json(
-            { detail: "Validation error" },
-            { status: 400 },
-          );
+        http.post('http://localhost:8000/api/notes/', () => {
+          return HttpResponse.json({ detail: 'Validation error' }, { status: 400 });
         }),
       );
 
       const wrapper = createTestWrapper();
-      const { result } = renderHook(
-        () => useNotes({ content_type: "client" }),
-        { wrapper },
-      );
+      const { result } = renderHook(() => useNotes({ content_type: 'client' }), { wrapper });
 
       await waitFor(
         () => {
@@ -180,8 +163,8 @@ describe("useNotes", () => {
 
       act(() => {
         result.current.createNote({
-          content: "Will fail",
-          content_type_model: "client",
+          content: 'Will fail',
+          content_type_model: 'client',
           object_id: 1,
         });
       });
@@ -195,13 +178,10 @@ describe("useNotes", () => {
     });
   });
 
-  describe("Nested Hooks", () => {
-    it("useNote fetches single note by ID", async () => {
+  describe('Nested Hooks', () => {
+    it('useNote fetches single note by ID', async () => {
       const wrapper = createTestWrapper();
-      const { result } = renderHook(
-        () => useNotes({ content_type: "client" }),
-        { wrapper },
-      );
+      const { result } = renderHook(() => useNotes({ content_type: 'client' }), { wrapper });
 
       await waitFor(
         () => {
@@ -210,10 +190,7 @@ describe("useNotes", () => {
         { timeout: 5000 },
       );
 
-      const { result: noteResult } = renderHook(
-        () => result.current.useNote(1),
-        { wrapper },
-      );
+      const { result: noteResult } = renderHook(() => result.current.useNote(1), { wrapper });
 
       await waitFor(
         () => {
@@ -226,12 +203,9 @@ describe("useNotes", () => {
       expect(noteResult.current.data?.id).toBe(1);
     });
 
-    it("useNote does not fetch when ID is 0", async () => {
+    it('useNote does not fetch when ID is 0', async () => {
       const wrapper = createTestWrapper();
-      const { result } = renderHook(
-        () => useNotes({ content_type: "client" }),
-        { wrapper },
-      );
+      const { result } = renderHook(() => useNotes({ content_type: 'client' }), { wrapper });
 
       await waitFor(
         () => {
@@ -240,21 +214,15 @@ describe("useNotes", () => {
         { timeout: 5000 },
       );
 
-      const { result: noteResult } = renderHook(
-        () => result.current.useNote(0),
-        { wrapper },
-      );
+      const { result: noteResult } = renderHook(() => result.current.useNote(0), { wrapper });
 
       expect(noteResult.current.data).toBeUndefined();
-      expect(noteResult.current.fetchStatus).toBe("idle");
+      expect(noteResult.current.fetchStatus).toBe('idle');
     });
 
-    it("useNotesForObject fetches notes for a specific object", async () => {
+    it('useNotesForObject fetches notes for a specific object', async () => {
       const wrapper = createTestWrapper();
-      const { result } = renderHook(
-        () => useNotes({ content_type: "client" }),
-        { wrapper },
-      );
+      const { result } = renderHook(() => useNotes({ content_type: 'client' }), { wrapper });
 
       await waitFor(
         () => {
@@ -264,7 +232,7 @@ describe("useNotes", () => {
       );
 
       const { result: objectNotesResult } = renderHook(
-        () => result.current.useNotesForObject("client", 1),
+        () => result.current.useNotesForObject('client', 1),
         { wrapper },
       );
 

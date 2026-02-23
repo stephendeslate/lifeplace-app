@@ -107,12 +107,7 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplatesTableProps> = ({
 
   if (isLoading) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-      >
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
         <CircularProgress />
       </Box>
     );
@@ -229,9 +224,7 @@ export const QuoteTemplatesTable: React.FC<QuoteTemplatesTableProps> = ({
                     {template.products?.length || 0} products
                   </Typography>
                 </TableCell>
-                <TableCell>
-                  {getStatusChip(template.is_active)}
-                </TableCell>
+                <TableCell>{getStatusChip(template.is_active)}</TableCell>
                 <TableCell>
                   <Typography variant="body2" color="text.secondary">
                     {template.default_validity_days} days

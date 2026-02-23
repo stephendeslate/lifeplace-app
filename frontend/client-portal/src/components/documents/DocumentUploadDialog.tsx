@@ -251,9 +251,7 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
             ) : (
               <Stack spacing={1} alignItems="center">
                 <UploadIcon color="action" sx={{ fontSize: 40 }} />
-                <Typography variant="body1">
-                  Click to select a file
-                </Typography>
+                <Typography variant="body1">Click to select a file</Typography>
                 <Typography variant="caption" color="text.secondary">
                   PDF, DOC, DOCX, JPG, PNG, TXT (max 10MB)
                 </Typography>
@@ -313,16 +311,15 @@ export const DocumentUploadDialog: React.FC<DocumentUploadDialogProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button
-          onClick={handleClose}
-          disabled={uploadMutation.isPending}
-        >
+        <Button onClick={handleClose} disabled={uploadMutation.isPending}>
           Cancel
         </Button>
         <Button
           variant="contained"
           onClick={handleUpload}
-          disabled={!selectedFile || !fileName.trim() || !selectedEventId || uploadMutation.isPending}
+          disabled={
+            !selectedFile || !fileName.trim() || !selectedEventId || uploadMutation.isPending
+          }
           startIcon={<UploadIcon />}
         >
           {uploadMutation.isPending ? 'Uploading...' : 'Upload'}

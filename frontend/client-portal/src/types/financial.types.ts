@@ -105,7 +105,12 @@ export interface PaymentNotification {
     payment_number: string;
     amount: string;
   };
-  notification_type: 'INVOICE_ISSUED' | 'PAYMENT_REMINDER' | 'PAYMENT_RECEIVED' | 'PAYMENT_OVERDUE' | 'RECEIPT_SENT';
+  notification_type:
+    | 'INVOICE_ISSUED'
+    | 'PAYMENT_REMINDER'
+    | 'PAYMENT_RECEIVED'
+    | 'PAYMENT_OVERDUE'
+    | 'RECEIPT_SENT';
   notification_type_display: string;
   sent_at: string; // ISO datetime string
   sent_to: string; // Email
@@ -492,8 +497,8 @@ export interface InstallmentAction {
 
 // Invoice payment operation types
 export interface InvoicePaymentRequest {
-  payment_type?: 'FULL' | 'DEPOSIT' | 'CUSTOM';  // Payment type - full, deposit, or custom (default: FULL)
-  amount?: string;  // Custom payment amount (required when payment_type is CUSTOM)
+  payment_type?: 'FULL' | 'DEPOSIT' | 'CUSTOM'; // Payment type - full, deposit, or custom (default: FULL)
+  amount?: string; // Custom payment amount (required when payment_type is CUSTOM)
   gateway_code?: string;
   gateway_id?: number;
   // For saved payment methods (PaymentMethod DB record) - backend expects 'payment_method'

@@ -28,10 +28,10 @@ import {
 import { useNotes } from '../../hooks/useNotes';
 import { NoteCard } from './NoteCard';
 import { NoteFormDialog } from './NoteFormDialog';
-import type { 
-  NotesListProps, 
-  Note, 
-  CreateNoteData, 
+import type {
+  NotesListProps,
+  Note,
+  CreateNoteData,
   UpdateNoteData,
   NoteFilters,
 } from '../../types/notes.types';
@@ -52,20 +52,14 @@ export const NotesList: React.FC<NotesListProps> = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
 
-  const {
-    createNote,
-    updateNote,
-    deleteNote,
-    isCreatingNote,
-    isUpdatingNote,
-    isDeletingNote,
-  } = useNotes();
+  const { createNote, updateNote, deleteNote, isCreatingNote, isUpdatingNote, isDeletingNote } =
+    useNotes();
 
   // Get notes for the specific object
   const filters: NoteFilters = searchFilter ? { search: searchFilter } : {};
-  const { 
-    data: notes = [], 
-    isLoading, 
+  const {
+    data: notes = [],
+    isLoading,
     error,
     refetch,
   } = useNotes().useNotesForObject(contentType, objectId, filters);
@@ -77,7 +71,7 @@ export const NotesList: React.FC<NotesListProps> = ({
         onSuccess: () => {
           setCreateDialogOpen(false);
           refetch();
-        }
+        },
       });
     }
   };
@@ -96,14 +90,14 @@ export const NotesList: React.FC<NotesListProps> = ({
             setEditDialogOpen(false);
             setEditingNote(null);
             refetch();
-          }
-        }
+          },
+        },
       );
     }
   };
 
   const handleDeleteClick = (noteId: number) => {
-    const note = notes.find(n => n.id === noteId);
+    const note = notes.find((n) => n.id === noteId);
     if (note) {
       setNoteToDelete(note);
       setDeleteDialogOpen(true);
@@ -117,7 +111,7 @@ export const NotesList: React.FC<NotesListProps> = ({
           setDeleteDialogOpen(false);
           setNoteToDelete(null);
           refetch();
-        }
+        },
       });
     }
   };
@@ -142,14 +136,14 @@ export const NotesList: React.FC<NotesListProps> = ({
   }
 
   const renderEmptyState = () => (
-    <Paper 
-      elevation={0} 
-      sx={{ 
-        p: 4, 
-        textAlign: 'center', 
+    <Paper
+      elevation={0}
+      sx={{
+        p: 4,
+        textAlign: 'center',
         bgcolor: 'grey.50',
         border: '2px dashed',
-        borderColor: 'grey.300'
+        borderColor: 'grey.300',
       }}
     >
       <NoteIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
@@ -157,12 +151,11 @@ export const NotesList: React.FC<NotesListProps> = ({
         No Notes Yet
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        {searchFilter 
+        {searchFilter
           ? 'No notes match your search criteria.'
-          : `Start adding notes ${objectName ? `for ${objectName}` : ''} to keep track of important information.`
-        }
+          : `Start adding notes ${objectName ? `for ${objectName}` : ''} to keep track of important information.`}
       </Typography>
-      
+
       {allowCreate && !searchFilter && (
         <Button
           variant="contained"
@@ -194,7 +187,7 @@ export const NotesList: React.FC<NotesListProps> = ({
             }}
             sx={{ width: 250 }}
           />
-          
+
           <Tooltip title="Refresh notes">
             <IconButton size="small" onClick={() => refetch()}>
               <RefreshIcon />
@@ -266,32 +259,27 @@ export const NotesList: React.FC<NotesListProps> = ({
       />
 
       {/* Delete Confirmation Dialog */}
-      <Dialog 
-        open={deleteDialogOpen} 
-        onClose={() => !isDeletingNote && setDeleteDialogOpen(false)}
-      >
+      <Dialog open={deleteDialogOpen} onClose={() => !isDeletingNote && setDeleteDialogOpen(false)}>
         <DialogTitle>Delete Note</DialogTitle>
         <DialogContent>
           <DialogContentText>
             Are you sure you want to delete this note? This action cannot be undone.
             {noteToDelete?.title && (
               <>
-                <br /><br />
+                <br />
+                <br />
                 <strong>"{noteToDelete.title}"</strong>
               </>
             )}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button 
-            onClick={() => setDeleteDialogOpen(false)}
-            disabled={isDeletingNote}
-          >
+          <Button onClick={() => setDeleteDialogOpen(false)} disabled={isDeletingNote}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleDeleteConfirm}
-            color="error" 
+            color="error"
             variant="contained"
             disabled={isDeletingNote}
           >

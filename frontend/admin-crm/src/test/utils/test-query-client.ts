@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/test/utils/test-query-client.ts
 
-import { QueryClient } from '@tanstack/react-query'
+import { QueryClient } from '@tanstack/react-query';
 
 /**
  * Creates a QueryClient configured for testing.
@@ -20,5 +20,5 @@ export function createTestQueryClient(): QueryClient {
         retry: false,
       },
     },
-  })
+  });
 }

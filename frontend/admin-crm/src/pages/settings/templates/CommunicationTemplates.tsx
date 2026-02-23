@@ -1,31 +1,23 @@
 // Communication Templates Settings Page - Standardized Version
 // Migrated to use the unified settings system with custom form for variable insertion
 
-import React, { useState } from "react";
-import {
-  Email as CommunicationIcon,
-  Preview as PreviewIcon,
-} from "@mui/icons-material";
+import React, { useState } from 'react';
+import { Email as CommunicationIcon, Preview as PreviewIcon } from '@mui/icons-material';
 import {
   PermissionAwareSettingsPage,
   type SettingsPageConfig,
   type SettingsTableColumn,
-} from "../../../components/common/settings";
-import {
-  TemplatePreviewDialog,
-  ModernDialog,
-} from "../../../components/common";
-import { TemplateForm } from "../../../components/communications";
-import { useCommunications } from "../../../hooks/useCommunications";
-import { useSettingsPagination } from "../../../hooks/useSettingsPagination";
-import { communicationsApi } from "../../../apis/communications.api";
-import type { CommunicationTemplate } from "../../../types/communications.types";
-import type { ModernFormSection } from "../../../components/common/ModernForm";
+} from '../../../components/common/settings';
+import { TemplatePreviewDialog, ModernDialog } from '../../../components/common';
+import { TemplateForm } from '../../../components/communications';
+import { useCommunications } from '../../../hooks/useCommunications';
+import { useSettingsPagination } from '../../../hooks/useSettingsPagination';
+import { communicationsApi } from '../../../apis/communications.api';
+import type { CommunicationTemplate } from '../../../types/communications.types';
+import type { ModernFormSection } from '../../../components/common/ModernForm';
 
 // Helper function to extract variables from template content
-const extractVariablesFromTemplate = (
-  template: CommunicationTemplate,
-): string[] => {
+const extractVariablesFromTemplate = (template: CommunicationTemplate): string[] => {
   const variablePattern = /\{\{\s*(\w+)\s*\}\}/g;
   const variables = new Set<string>();
 
@@ -49,93 +41,91 @@ const extractVariablesFromTemplate = (
 // Table columns configuration
 const columns: SettingsTableColumn<CommunicationTemplate>[] = [
   {
-    key: "name",
-    label: "Template Name",
+    key: 'name',
+    label: 'Template Name',
     sortable: true,
     searchable: true,
   },
   {
-    key: "channel",
-    label: "Channel",
-    align: "center",
+    key: 'channel',
+    label: 'Channel',
+    align: 'center',
     render: (value) => String(value),
   },
   {
-    key: "category",
-    label: "Category",
-    align: "center",
+    key: 'category',
+    label: 'Category',
+    align: 'center',
     render: (value) => String(value),
   },
   {
-    key: "is_system",
-    label: "System Template",
-    align: "center",
-    render: (value) => (value ? "Yes" : "No"),
+    key: 'is_system',
+    label: 'System Template',
+    align: 'center',
+    render: (value) => (value ? 'Yes' : 'No'),
   },
   {
-    key: "updated_at",
-    label: "Last Modified",
+    key: 'updated_at',
+    label: 'Last Modified',
     sortable: true,
-    render: (value) =>
-      value ? new Date(String(value)).toLocaleDateString() : "-",
+    render: (value) => (value ? new Date(String(value)).toLocaleDateString() : '-'),
   },
 ];
 
 // Form sections configuration
 const formSections: ModernFormSection[] = [
   {
-    title: "Basic Information",
+    title: 'Basic Information',
     fields: [
       {
-        name: "name",
-        label: "Template Name",
-        type: "text",
+        name: 'name',
+        label: 'Template Name',
+        type: 'text',
         required: true,
-        placeholder: "e.g., Booking Confirmation Email",
+        placeholder: 'e.g., Booking Confirmation Email',
       },
       {
-        name: "channel",
-        label: "Channel",
-        type: "select",
+        name: 'channel',
+        label: 'Channel',
+        type: 'select',
         required: true,
         options: [
-          { value: "EMAIL", label: "Email" },
-          { value: "SMS", label: "SMS" },
+          { value: 'EMAIL', label: 'Email' },
+          { value: 'SMS', label: 'SMS' },
         ],
       },
       {
-        name: "category",
-        label: "Category",
-        type: "select",
+        name: 'category',
+        label: 'Category',
+        type: 'select',
         required: true,
         options: [
-          { value: "SYSTEM", label: "System" },
-          { value: "MANUAL", label: "Manual" },
-          { value: "AUTO", label: "Automated" },
+          { value: 'SYSTEM', label: 'System' },
+          { value: 'MANUAL', label: 'Manual' },
+          { value: 'AUTO', label: 'Automated' },
         ],
       },
     ],
   },
   {
-    title: "Message Content",
+    title: 'Message Content',
     fields: [
       {
-        name: "subject_template",
-        label: "Subject Template",
-        type: "text",
-        placeholder: "e.g., Your booking is confirmed!",
-        helperText: "Subject line for email (ignored for SMS)",
+        name: 'subject_template',
+        label: 'Subject Template',
+        type: 'text',
+        placeholder: 'e.g., Your booking is confirmed!',
+        helperText: 'Subject line for email (ignored for SMS)',
       },
       {
-        name: "body_template",
-        label: "Body Template",
-        type: "textarea",
+        name: 'body_template',
+        label: 'Body Template',
+        type: 'textarea',
         multiline: true,
         rows: 8,
         required: true,
-        placeholder:
-          "Enter the message content here. Use {{variable_name}} for dynamic content...",
-        helperText: "Use {{variable_name}} syntax for dynamic variables",
+        placeholder: 'Enter the message content here. Use {{variable_name}} for dynamic content...',
+        helperText: 'Use {{variable_name}} syntax for dynamic variables',
       },
     ],
   },
@@ -144,51 +134,50 @@ const formSections: ModernFormSection[] = [
 // Default values for new communication templates
 const defaultCommunicationTemplate: CommunicationTemplate = {
   id: 0,
-  name: "",
-  channel: "EMAIL",
-  category: "MANUAL",
-  context_type: "MANUAL",
-  context_type_display: "Manual",
+  name: '',
+  channel: 'EMAIL',
+  category: 'MANUAL',
+  context_type: 'MANUAL',
+  context_type_display: 'Manual',
   include_client_context: false,
   include_event_context: false,
-  subject_template: "",
-  body_template: "",
+  subject_template: '',
+  body_template: '',
   is_system: false,
   layout: null,
-  created_at: "",
-  updated_at: "",
+  created_at: '',
+  updated_at: '',
 };
 
 // Settings page configuration
 const config: SettingsPageConfig<CommunicationTemplate> = {
   page: {
-    title: "Communication Templates",
-    subtitle: "Manage email and SMS templates for automated communications",
+    title: 'Communication Templates',
+    subtitle: 'Manage email and SMS templates for automated communications',
     icon: React.createElement(CommunicationIcon),
     breadcrumbs: [
-      { label: "Settings", href: "/settings" },
-      { label: "Templates", href: "/settings/templates" },
-      { label: "Communication Templates" },
+      { label: 'Settings', href: '/settings' },
+      { label: 'Templates', href: '/settings/templates' },
+      { label: 'Communication Templates' },
     ],
   },
 
   table: {
     columns,
-    searchFields: ["name"],
-    defaultSort: { key: "name", order: "asc" },
+    searchFields: ['name'],
+    defaultSort: { key: 'name', order: 'asc' },
     emptyState: {
       icon: React.createElement(CommunicationIcon),
-      title: "No Communication Templates Found",
-      description:
-        "Create your first template to start sending automated messages to clients.",
+      title: 'No Communication Templates Found',
+      description: 'Create your first template to start sending automated messages to clients.',
     },
   },
 
   form: {
-    title: "Communication Template",
-    subtitle: "Configure automated email and SMS messages.",
+    title: 'Communication Template',
+    subtitle: 'Configure automated email and SMS messages.',
     sections: formSections,
-    maxWidth: "lg",
+    maxWidth: 'lg',
   },
 
   features: {
@@ -204,8 +193,7 @@ const config: SettingsPageConfig<CommunicationTemplate> = {
 export const CommunicationTemplates = () => {
   // Preview dialog state
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] =
-    useState<CommunicationTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<CommunicationTemplate | null>(null);
 
   // Pagination state
   const paginationState = useSettingsPagination({ defaultPageSize: 25 });
@@ -264,17 +252,11 @@ export const CommunicationTemplates = () => {
     <ModernDialog
       open={open}
       onClose={onClose}
-      title={
-        item ? "Edit Communication Template" : "Create Communication Template"
-      }
+      title={item ? 'Edit Communication Template' : 'Create Communication Template'}
       maxWidth="lg"
       fullWidth
     >
-      <TemplateForm
-        template={item || undefined}
-        onSave={onSave}
-        onCancel={onClose}
-      />
+      <TemplateForm template={item || undefined} onSave={onSave} onCancel={onClose} />
     </ModernDialog>
   );
 
@@ -284,23 +266,18 @@ export const CommunicationTemplates = () => {
     setPreviewDialogOpen(true);
   };
 
-  const handlePreviewTemplate = async (
-    contextData: Record<string, unknown>,
-  ) => {
+  const handlePreviewTemplate = async (contextData: Record<string, unknown>) => {
     if (!selectedTemplate) {
-      throw new Error("No template selected");
+      throw new Error('No template selected');
     }
 
     const previewData = {
       template_id: selectedTemplate.id,
       context_data: contextData,
     };
-    const result = await communicationsApi.previewTemplate(
-      selectedTemplate.id,
-      previewData,
-    );
+    const result = await communicationsApi.previewTemplate(selectedTemplate.id, previewData);
     return {
-      rendered_content: result.body || "",
+      rendered_content: result.body || '',
       template_name: selectedTemplate.name,
       variables: [],
     };
@@ -309,10 +286,10 @@ export const CommunicationTemplates = () => {
   // Custom table actions
   const customTableActions = [
     {
-      label: "Preview",
+      label: 'Preview',
       icon: React.createElement(PreviewIcon),
       onClick: (template: CommunicationTemplate) => handlePreview(template),
-      color: "primary" as const,
+      color: 'primary' as const,
     },
   ];
 
@@ -320,7 +297,7 @@ export const CommunicationTemplates = () => {
     <>
       <PermissionAwareSettingsPage
         config={config}
-        requiredPermissions={["can_manage_templates"]}
+        requiredPermissions={['can_manage_templates']}
         data={communicationTemplates}
         defaultValues={defaultCommunicationTemplate}
         isLoading={isLoading}

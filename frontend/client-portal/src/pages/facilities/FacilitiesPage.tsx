@@ -1,26 +1,16 @@
 // pages/facilities/FacilitiesPage.tsx
 
-import React, { useMemo } from "react";
-import { Box, Typography, Stack } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import {
-  tokens,
-  Section,
-  Container,
-  AnimatedElement,
-} from "../../design-system";
-import { FacilitiesHero } from "./components/FacilitiesHero";
-import {
-  FacilitiesVenueCard,
-  FacilitiesVenueCardSkeleton,
-} from "./components/FacilitiesVenueCard";
-import { LocationContact } from "../about/components/LocationContact";
-import { useVenueGallery } from "../../hooks/useGallery";
-import type { FacilitiesPageProps } from "./types/facilities.types";
+import React, { useMemo } from 'react';
+import { Box, Typography, Stack } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
+import { tokens, Section, Container, AnimatedElement } from '../../design-system';
+import { FacilitiesHero } from './components/FacilitiesHero';
+import { FacilitiesVenueCard, FacilitiesVenueCardSkeleton } from './components/FacilitiesVenueCard';
+import { LocationContact } from '../about/components/LocationContact';
+import { useVenueGallery } from '../../hooks/useGallery';
+import type { FacilitiesPageProps } from './types/facilities.types';
 
-const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
-  onNavigateToBooking,
-}) => {
+const FacilitiesPage: React.FC<FacilitiesPageProps> = ({ onNavigateToBooking }) => {
   const navigate = useNavigate();
   const { data: venues, isLoading, isError } = useVenueGallery();
 
@@ -33,13 +23,13 @@ const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
     if (onNavigateToBooking) {
       onNavigateToBooking();
     } else {
-      navigate("/booking");
+      navigate('/booking');
     }
   };
 
   return (
     <>
-      <Box sx={{ minHeight: "100vh", width: "100%" }}>
+      <Box sx={{ minHeight: '100vh', width: '100%' }}>
         <FacilitiesHero />
 
         {/* Venue Showcase Section */}
@@ -48,7 +38,7 @@ const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
             <Stack spacing={{ xs: 4, md: 6 }}>
               {/* Section Header */}
               <AnimatedElement animation="fadeIn" delay={0}>
-                <Box sx={{ textAlign: "center", mb: { xs: 1, md: 2 } }}>
+                <Box sx={{ textAlign: 'center', mb: { xs: 1, md: 2 } }}>
                   <Typography
                     sx={{
                       ...tokens.typography.styles.h2,
@@ -62,12 +52,12 @@ const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
                     sx={{
                       ...tokens.typography.styles.bodyLarge,
                       color: tokens.color.base.neutral[600],
-                      maxWidth: "700px",
-                      mx: "auto",
+                      maxWidth: '700px',
+                      mx: 'auto',
                     }}
                   >
-                    Explore our thoughtfully designed spaces, each offering a
-                    unique setting for your celebration.
+                    Explore our thoughtfully designed spaces, each offering a unique setting for
+                    your celebration.
                   </Typography>
                 </Box>
               </AnimatedElement>
@@ -86,7 +76,7 @@ const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
                 <AnimatedElement animation="fadeIn">
                   <Box
                     sx={{
-                      textAlign: "center",
+                      textAlign: 'center',
                       py: { xs: 6, md: 8 },
                     }}
                   >
@@ -130,7 +120,7 @@ const FacilitiesPage: React.FC<FacilitiesPageProps> = ({
                 <AnimatedElement animation="fadeIn">
                   <Box
                     sx={{
-                      textAlign: "center",
+                      textAlign: 'center',
                       py: { xs: 6, md: 8 },
                     }}
                   >

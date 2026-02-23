@@ -5,7 +5,14 @@ import React, { forwardRef, type ReactNode } from 'react';
 import { Button as MuiButton, type ButtonProps as MuiButtonProps } from '@mui/material';
 import { tokens } from '../tokens';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'terracotta' | 'sage' | 'gold' | 'text' | 'outlined';
+export type ButtonVariant =
+  | 'primary'
+  | 'secondary'
+  | 'terracotta'
+  | 'sage'
+  | 'gold'
+  | 'text'
+  | 'outlined';
 export type ButtonSize = 'small' | 'medium' | 'large';
 
 export interface ButtonProps extends Omit<MuiButtonProps, 'variant' | 'size'> {
@@ -35,7 +42,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       sx,
       ...otherProps
     },
-    ref
+    ref,
   ) => {
     // Map custom variants to MUI styles
     const getVariantStyles = () => {
@@ -170,7 +177,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {children}
       </MuiButton>
     );
-  }
+  },
 );
 
 Button.displayName = 'Button';

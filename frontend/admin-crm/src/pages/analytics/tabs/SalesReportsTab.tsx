@@ -1,5 +1,5 @@
 // frontend/admin-crm/src/pages/analytics/tabs/SalesReportsTab.tsx
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -13,17 +13,12 @@ import {
   ToggleButtonGroup,
   Button,
   Skeleton,
-} from "@mui/material";
-import { ModernCard } from "../../../components/common/ModernCard";
-import DownloadIcon from "@mui/icons-material/Download";
+} from '@mui/material';
+import { ModernCard } from '../../../components/common/ModernCard';
+import DownloadIcon from '@mui/icons-material/Download';
 
-import {
-  KPICard,
-  KPIGrid,
-  RevenueChart,
-  PipelineChart,
-} from "../../../components/analytics";
-import { formatCurrency } from "../../../utils/currency";
+import { KPICard, KPIGrid, RevenueChart, PipelineChart } from '../../../components/analytics';
+import { formatCurrency } from '../../../utils/currency';
 import {
   useBookingsSummary,
   useReservationPipeline,
@@ -31,42 +26,34 @@ import {
   usePaymentTracking,
   exportBookingsSummary,
   exportRevenueReport,
-} from "../../../hooks/useAnalytics";
-import type { DateRange, PeriodType } from "../../../types/analytics.types";
+} from '../../../hooks/useAnalytics';
+import type { DateRange, PeriodType } from '../../../types/analytics.types';
 
 interface SalesReportsTabProps {
   dateRange: DateRange;
 }
 
-export const SalesReportsTab: React.FC<SalesReportsTabProps> = ({
-  dateRange,
-}) => {
-  const [period, setPeriod] = useState<PeriodType>("daily");
+export const SalesReportsTab: React.FC<SalesReportsTabProps> = ({ dateRange }) => {
+  const [period, setPeriod] = useState<PeriodType>('daily');
 
-  const { data: bookings, isLoading: bookingsLoading } = useBookingsSummary(
-    dateRange,
-    period,
-  );
-  const { data: pipeline, isLoading: pipelineLoading } =
-    useReservationPipeline(dateRange);
-  const { data: revenue, isLoading: revenueLoading } =
-    useRevenueByType(dateRange);
-  const { data: payments, isLoading: paymentsLoading } =
-    usePaymentTracking(dateRange);
+  const { data: bookings, isLoading: bookingsLoading } = useBookingsSummary(dateRange, period);
+  const { data: pipeline, isLoading: pipelineLoading } = useReservationPipeline(dateRange);
+  const { data: revenue, isLoading: revenueLoading } = useRevenueByType(dateRange);
+  const { data: payments, isLoading: paymentsLoading } = usePaymentTracking(dateRange);
 
   const handleExportBookings = async () => {
     try {
-      await exportBookingsSummary(dateRange, period, "csv");
+      await exportBookingsSummary(dateRange, period, 'csv');
     } catch (error) {
-      console.error("Export failed:", error);
+      console.error('Export failed:', error);
     }
   };
 
   const handleExportRevenue = async () => {
     try {
-      await exportRevenueReport(dateRange, "csv");
+      await exportRevenueReport(dateRange, 'csv');
     } catch (error) {
-      console.error("Export failed:", error);
+      console.error('Export failed:', error);
     }
   };
 
@@ -74,12 +61,7 @@ export const SalesReportsTab: React.FC<SalesReportsTabProps> = ({
     <Box>
       {/* Bookings Summary */}
       <Box mb={4}>
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={2}
-        >
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
           <Typography variant="h6">Bookings Summary</Typography>
           <Box display="flex" gap={2}>
             <ToggleButtonGroup
@@ -102,11 +84,7 @@ export const SalesReportsTab: React.FC<SalesReportsTabProps> = ({
             </Button>
           </Box>
         </Box>
-        <RevenueChart
-          data={bookings || []}
-          isLoading={bookingsLoading}
-          title="Revenue Trend"
-        />
+        <RevenueChart data={bookings || []} isLoading={bookingsLoading} title="Revenue Trend" />
       </Box>
 
       {/* Pipeline */}
@@ -152,12 +130,7 @@ export const SalesReportsTab: React.FC<SalesReportsTabProps> = ({
 
       {/* Revenue by Type */}
       <Box>
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={2}
-        >
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
           <Typography variant="h6">Revenue by Package/Product</Typography>
           <Button
             variant="outlined"
@@ -172,28 +145,20 @@ export const SalesReportsTab: React.FC<SalesReportsTabProps> = ({
           <Skeleton variant="rectangular" height={300} />
         ) : (
           <ModernCard variant="flat" size="medium">
-            <TableContainer sx={{ overflowX: "auto" }}>
+            <TableContainer sx={{ overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
                     <TableCell>Name</TableCell>
-                    <TableCell
-                      sx={{ display: { xs: "none", md: "table-cell" } }}
-                    >
+                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                       Category
                     </TableCell>
                     <TableCell align="right">Bookings</TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{ display: { xs: "none", md: "table-cell" } }}
-                    >
+                    <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                       Participants
                     </TableCell>
                     <TableCell align="right">Revenue</TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{ display: { xs: "none", lg: "table-cell" } }}
-                    >
+                    <TableCell align="right" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                       Avg. Revenue
                     </TableCell>
                   </TableRow>
@@ -202,25 +167,15 @@ export const SalesReportsTab: React.FC<SalesReportsTabProps> = ({
                   {revenue?.map((item, index) => (
                     <TableRow key={index}>
                       <TableCell>{item.name}</TableCell>
-                      <TableCell
-                        sx={{ display: { xs: "none", md: "table-cell" } }}
-                      >
+                      <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                         {item.category}
                       </TableCell>
                       <TableCell align="right">{item.booking_count}</TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{ display: { xs: "none", md: "table-cell" } }}
-                      >
+                      <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                         {item.total_participants}
                       </TableCell>
-                      <TableCell align="right">
-                        {formatCurrency(item.total_revenue)}
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{ display: { xs: "none", lg: "table-cell" } }}
-                      >
+                      <TableCell align="right">{formatCurrency(item.total_revenue)}</TableCell>
+                      <TableCell align="right" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                         {formatCurrency(item.avg_revenue)}
                       </TableCell>
                     </TableRow>

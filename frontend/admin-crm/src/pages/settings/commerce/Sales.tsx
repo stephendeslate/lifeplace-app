@@ -1,17 +1,8 @@
 // frontend/admin-crm/src/pages/settings/commerce/Sales.tsx
 
 import React, { useState, useMemo, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Alert,
-  TextField,
-  InputAdornment,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Assignment as TemplateIcon,
-} from '@mui/icons-material';
+import { Box, Typography, Alert, TextField, InputAdornment } from '@mui/material';
+import { Search as SearchIcon, Assignment as TemplateIcon } from '@mui/icons-material';
 import { useLayout } from '../../../contexts/LayoutContext';
 import {
   useQuoteTemplates,
@@ -23,7 +14,7 @@ import {
   ModernPageHeader,
   ModernDialog,
   createDeleteActions,
-  ModernSettingsLayout
+  ModernSettingsLayout,
 } from '../../../components/common';
 import { createAddAction, createRefreshAction } from '../../../components/common/ModernPageHeader';
 import { QuoteTemplatesTable } from '../../../components/sales/QuoteTemplatesTable';
@@ -40,7 +31,9 @@ export const Sales: React.FC = () => {
 
   // Quote Templates state
   const [templateSearch, setTemplateSearch] = useState('');
-  const [templateActiveFilter, _setTemplateActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [templateActiveFilter, _setTemplateActiveFilter] = useState<'all' | 'active' | 'inactive'>(
+    'all',
+  );
   const [showSearchField, setShowSearchField] = useState(false);
 
   // Dialog states
@@ -54,21 +47,21 @@ export const Sales: React.FC = () => {
 
   // Set breadcrumbs
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Settings' },
-      { label: 'Commerce' },
-      { label: 'Sales' },
-    ]);
+    setBreadcrumbs([{ label: 'Settings' }, { label: 'Commerce' }, { label: 'Sales' }]);
   }, [setBreadcrumbs]);
 
   // Create filters for API calls
-  const templateFilters = useMemo((): QuoteTemplateFilters => ({
-    search: templateSearch || undefined,
-    is_active: templateActiveFilter === 'all' ? undefined : templateActiveFilter === 'active',
-  }), [templateSearch, templateActiveFilter]);
+  const templateFilters = useMemo(
+    (): QuoteTemplateFilters => ({
+      search: templateSearch || undefined,
+      is_active: templateActiveFilter === 'all' ? undefined : templateActiveFilter === 'active',
+    }),
+    [templateSearch, templateActiveFilter],
+  );
 
   // Quote Templates hooks
-  const { data: templates = [], isLoading: isLoadingTemplates } = useQuoteTemplates(templateFilters);
+  const { data: templates = [], isLoading: isLoadingTemplates } =
+    useQuoteTemplates(templateFilters);
   const { mutate: createTemplate, isPending: isCreatingTemplate } = useCreateQuoteTemplate();
   const { mutate: updateTemplate, isPending: isUpdatingTemplate } = useUpdateQuoteTemplate();
   const { mutate: deleteTemplate, isPending: isDeletingTemplate } = useDeleteQuoteTemplate();
@@ -100,11 +93,11 @@ export const Sales: React.FC = () => {
   };
 
   const handleDeleteTemplate = (id: number) => {
-    const template = templates.find(t => t.id === id);
+    const template = templates.find((t) => t.id === id);
     if (template) {
       setItemToDelete({
         id,
-        name: template.name
+        name: template.name,
       });
       setDeleteDialogOpen(true);
     }
@@ -154,17 +147,13 @@ export const Sales: React.FC = () => {
         title="Quote Templates"
         subtitle="Create and manage standardized quote templates for your events"
         icon={<TemplateIcon />}
-        breadcrumbs={[
-          { label: 'Settings' },
-          { label: 'Commerce' },
-          { label: 'Sales' },
-        ]}
+        breadcrumbs={[{ label: 'Settings' }, { label: 'Commerce' }, { label: 'Sales' }]}
         primaryAction={primaryAction}
         secondaryActions={headerActions}
         stats={[
           { label: 'Total Templates', value: templates.length },
-          { label: 'Active Templates', value: templates.filter(t => t.is_active).length },
-          { label: 'Inactive Templates', value: templates.filter(t => !t.is_active).length },
+          { label: 'Active Templates', value: templates.filter((t) => t.is_active).length },
+          { label: 'Inactive Templates', value: templates.filter((t) => !t.is_active).length },
         ]}
         size="medium"
       />
@@ -202,8 +191,8 @@ export const Sales: React.FC = () => {
       <Box sx={{ mb: 3, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
         {/* Templates Alert */}
         <Alert severity="info" sx={{ mb: 3 }}>
-          Quote templates allow you to create standardized quotes quickly.
-          Define products, pricing, terms, and workflows that can be applied to events.
+          Quote templates allow you to create standardized quotes quickly. Define products, pricing,
+          terms, and workflows that can be applied to events.
         </Alert>
 
         {/* Templates Table */}

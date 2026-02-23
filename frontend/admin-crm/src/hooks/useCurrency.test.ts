@@ -1,23 +1,23 @@
 // frontend/admin-crm/src/hooks/useCurrency.test.ts
 
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor } from "@testing-library/react";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
 import {
   useCurrencySettings,
   useCurrencyRates,
   useSupportedCurrencies,
   useCurrencyValidation,
   useCurrencyManagement,
-} from "./useCurrency";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+} from './useCurrency';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
-describe("useCurrency", () => {
-  describe("useCurrencySettings", () => {
-    it("fetches currency settings successfully", async () => {
+describe('useCurrency', () => {
+  describe('useCurrencySettings', () => {
+    it('fetches currency settings successfully', async () => {
       const { result } = renderHook(() => useCurrencySettings(), {
         wrapper: createTestWrapper(),
       });
@@ -35,10 +35,10 @@ describe("useCurrency", () => {
       expect(result.current.displayFormat).toBeDefined();
     });
 
-    it("handles API error with localStorage fallback", async () => {
+    it('handles API error with localStorage fallback', async () => {
       server.use(
         http.get(`${BASE_URL}/settings/currency/`, () => {
-          return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+          return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
         }),
       );
 
@@ -58,7 +58,7 @@ describe("useCurrency", () => {
       expect(result.current.defaultCurrency).toBeDefined();
     });
 
-    it("provides update and reset mutations", async () => {
+    it('provides update and reset mutations', async () => {
       const { result } = renderHook(() => useCurrencySettings(), {
         wrapper: createTestWrapper(),
       });
@@ -70,15 +70,15 @@ describe("useCurrency", () => {
         { timeout: 5000 },
       );
 
-      expect(result.current.updateSettings).toBeTypeOf("function");
-      expect(result.current.resetSettings).toBeTypeOf("function");
+      expect(result.current.updateSettings).toBeTypeOf('function');
+      expect(result.current.resetSettings).toBeTypeOf('function');
       expect(result.current.isUpdating).toBe(false);
       expect(result.current.isResetting).toBe(false);
     });
   });
 
-  describe("useCurrencyRates", () => {
-    it("fetches currency rates", async () => {
+  describe('useCurrencyRates', () => {
+    it('fetches currency rates', async () => {
       const { result } = renderHook(() => useCurrencyRates(), {
         wrapper: createTestWrapper(),
       });
@@ -94,7 +94,7 @@ describe("useCurrency", () => {
       expect(Array.isArray(result.current.rates)).toBe(true);
     });
 
-    it("getExchangeRate returns 1 for same currency", async () => {
+    it('getExchangeRate returns 1 for same currency', async () => {
       const { result } = renderHook(() => useCurrencyRates(), {
         wrapper: createTestWrapper(),
       });
@@ -106,12 +106,12 @@ describe("useCurrency", () => {
         { timeout: 5000 },
       );
 
-      expect(result.current.getExchangeRate("PHP", "PHP")).toBe(1);
+      expect(result.current.getExchangeRate('PHP', 'PHP')).toBe(1);
     });
   });
 
-  describe("useSupportedCurrencies", () => {
-    it("fetches supported currencies list", async () => {
+  describe('useSupportedCurrencies', () => {
+    it('fetches supported currencies list', async () => {
       const { result } = renderHook(() => useSupportedCurrencies(), {
         wrapper: createTestWrapper(),
       });
@@ -126,15 +126,15 @@ describe("useCurrency", () => {
       expect(result.current.data).toBeDefined();
       expect(Array.isArray(result.current.data)).toBe(true);
       if (result.current.data && result.current.data.length > 0) {
-        expect(result.current.data[0]).toHaveProperty("code");
-        expect(result.current.data[0]).toHaveProperty("name");
-        expect(result.current.data[0]).toHaveProperty("symbol");
+        expect(result.current.data[0]).toHaveProperty('code');
+        expect(result.current.data[0]).toHaveProperty('name');
+        expect(result.current.data[0]).toHaveProperty('symbol');
       }
     });
   });
 
-  describe("useCurrencyValidation", () => {
-    it("validates valid amount", async () => {
+  describe('useCurrencyValidation', () => {
+    it('validates valid amount', async () => {
       const { result } = renderHook(() => useCurrencyValidation(), {
         wrapper: createTestWrapper(),
       });
@@ -142,7 +142,7 @@ describe("useCurrency", () => {
       // Wait for settings to load (used by validation)
       await waitFor(
         () => {
-          expect(result.current.validateAmount).toBeTypeOf("function");
+          expect(result.current.validateAmount).toBeTypeOf('function');
         },
         { timeout: 5000 },
       );
@@ -151,14 +151,14 @@ describe("useCurrency", () => {
       expect(validResult.isValid).toBe(true);
     });
 
-    it("rejects negative amounts", async () => {
+    it('rejects negative amounts', async () => {
       const { result } = renderHook(() => useCurrencyValidation(), {
         wrapper: createTestWrapper(),
       });
 
       await waitFor(
         () => {
-          expect(result.current.validateAmount).toBeTypeOf("function");
+          expect(result.current.validateAmount).toBeTypeOf('function');
         },
         { timeout: 5000 },
       );
@@ -168,26 +168,26 @@ describe("useCurrency", () => {
       expect(invalidResult.error).toBeDefined();
     });
 
-    it("rejects invalid string amounts", async () => {
+    it('rejects invalid string amounts', async () => {
       const { result } = renderHook(() => useCurrencyValidation(), {
         wrapper: createTestWrapper(),
       });
 
       await waitFor(
         () => {
-          expect(result.current.validateAmount).toBeTypeOf("function");
+          expect(result.current.validateAmount).toBeTypeOf('function');
         },
         { timeout: 5000 },
       );
 
-      const invalidResult = result.current.validateAmount("not-a-number");
+      const invalidResult = result.current.validateAmount('not-a-number');
       expect(invalidResult.isValid).toBe(false);
-      expect(invalidResult.error).toContain("valid number");
+      expect(invalidResult.error).toContain('valid number');
     });
   });
 
-  describe("useCurrencyManagement", () => {
-    it("provides comprehensive currency management functionality", async () => {
+  describe('useCurrencyManagement', () => {
+    it('provides comprehensive currency management functionality', async () => {
       const { result } = renderHook(() => useCurrencyManagement(), {
         wrapper: createTestWrapper(),
       });
@@ -201,14 +201,14 @@ describe("useCurrency", () => {
 
       // Settings
       expect(result.current.settings).toBeDefined();
-      expect(result.current.updateSettings).toBeTypeOf("function");
+      expect(result.current.updateSettings).toBeTypeOf('function');
 
       // Rates
       expect(result.current.rates).toBeDefined();
-      expect(result.current.getExchangeRate).toBeTypeOf("function");
+      expect(result.current.getExchangeRate).toBeTypeOf('function');
 
       // Validation
-      expect(result.current.validateAmount).toBeTypeOf("function");
+      expect(result.current.validateAmount).toBeTypeOf('function');
     });
   });
 });

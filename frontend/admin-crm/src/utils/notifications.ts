@@ -80,8 +80,10 @@ export const getPriorityWeight = (priority: NotificationPriority): number => {
   return weightMap[priority] || 2;
 };
 
-export const sortNotificationsByPriority = <T extends { notification_type_details?: { priority: NotificationPriority } }>(
-  notifications: T[]
+export const sortNotificationsByPriority = <
+  T extends { notification_type_details?: { priority: NotificationPriority } },
+>(
+  notifications: T[],
 ): T[] => {
   return [...notifications].sort((a, b) => {
     const aPriority = a.notification_type_details?.priority || 'NORMAL';
@@ -90,46 +92,54 @@ export const sortNotificationsByPriority = <T extends { notification_type_detail
   });
 };
 
-export const groupNotificationsByCategory = <T extends { notification_type_details?: { category: NotificationCategory } }>(
-  notifications: T[]
+export const groupNotificationsByCategory = <
+  T extends { notification_type_details?: { category: NotificationCategory } },
+>(
+  notifications: T[],
 ): Record<NotificationCategory, T[]> => {
   const groups: Partial<Record<NotificationCategory, T[]>> = {};
-  
-  notifications.forEach(notification => {
+
+  notifications.forEach((notification) => {
     const category = notification.notification_type_details?.category || 'SYSTEM';
     if (!groups[category]) {
       groups[category] = [];
     }
     groups[category]!.push(notification);
   });
-  
+
   return groups as Record<NotificationCategory, T[]>;
 };
 
 export const getNotificationSummary = (
-  notifications: Array<{ 
+  notifications: Array<{
     is_read: boolean;
-    notification_type_details?: { 
+    notification_type_details?: {
       category: NotificationCategory;
       priority: NotificationPriority;
     };
-  }>
+  }>,
 ) => {
   const total = notifications.length;
-  const unread = notifications.filter(n => !n.is_read).length;
-  
+  const unread = notifications.filter((n) => !n.is_read).length;
+
   const byCategory = groupNotificationsByCategory(notifications);
-  const categoryCounts = Object.entries(byCategory).reduce((acc, [category, items]) => {
-    acc[category as NotificationCategory] = items.length;
-    return acc;
-  }, {} as Record<NotificationCategory, number>);
-  
-  const byPriority = notifications.reduce((acc, notification) => {
-    const priority = notification.notification_type_details?.priority || 'NORMAL';
-    acc[priority] = (acc[priority] || 0) + 1;
-    return acc;
-  }, {} as Record<NotificationPriority, number>);
-  
+  const categoryCounts = Object.entries(byCategory).reduce(
+    (acc, [category, items]) => {
+      acc[category as NotificationCategory] = items.length;
+      return acc;
+    },
+    {} as Record<NotificationCategory, number>,
+  );
+
+  const byPriority = notifications.reduce(
+    (acc, notification) => {
+      const priority = notification.notification_type_details?.priority || 'NORMAL';
+      acc[priority] = (acc[priority] || 0) + 1;
+      return acc;
+    },
+    {} as Record<NotificationPriority, number>,
+  );
+
   return {
     total,
     unread,
@@ -143,7 +153,7 @@ export const getNotificationSummary = (
  */
 export const createTestNotification = (
   recipientIds: number[],
-  type: 'system' | 'event' | 'task' | 'payment' = 'system'
+  type: 'system' | 'event' | 'task' | 'payment' = 'system',
 ) => {
   const typeMap = {
     system: 'SYSTEM_NOTIFICATION',

@@ -281,7 +281,7 @@ export interface MatchedPackage {
   base_price: string;
   included_hours: number;
   excess_hour_price: string | null;
-  match_type: "exact" | "superset" | "subset" | "partial";
+  match_type: 'exact' | 'superset' | 'subset' | 'partial';
   venues: MatchedPackageVenue[];
   bonus_venues: MatchedPackageVenue[];
   savings_vs_custom: string;

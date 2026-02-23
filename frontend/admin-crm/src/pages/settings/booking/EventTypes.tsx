@@ -1,21 +1,21 @@
 // Event Types Settings Page - Standardized Version
 // Migrated to use the unified settings system with custom form for image uploads
 
-import React from "react";
-import { Description as EventTypeIcon } from "@mui/icons-material";
+import React from 'react';
+import { Description as EventTypeIcon } from '@mui/icons-material';
 import {
   PermissionAwareSettingsPage,
   type SettingsPageConfig,
   type SettingsTableColumn,
-} from "../../../components/common/settings";
-import { useEventTypes } from "../../../hooks/useEvents";
-import { EventTypeFormDialog } from "../../../components/events/EventTypeFormDialog";
+} from '../../../components/common/settings';
+import { useEventTypes } from '../../../hooks/useEvents';
+import { EventTypeFormDialog } from '../../../components/events/EventTypeFormDialog';
 import type {
   EventType,
   CreateEventTypeData,
   UpdateEventTypeData,
-} from "../../../types/events.types";
-import type { ModernFormSection } from "../../../components/common/ModernForm";
+} from '../../../types/events.types';
+import type { ModernFormSection } from '../../../components/common/ModernForm';
 
 // Local interface for table row display (subset of EventType)
 interface EventTypeRow {
@@ -33,66 +33,63 @@ interface EventTypeRow {
 // Table columns configuration
 const columns: SettingsTableColumn<EventTypeRow>[] = [
   {
-    key: "name",
-    label: "Event Type",
+    key: 'name',
+    label: 'Event Type',
     sortable: true,
     searchable: true,
   },
   {
-    key: "description",
-    label: "Description",
+    key: 'description',
+    label: 'Description',
     searchable: true,
-    render: (value) => String(value) || "-",
+    render: (value) => String(value) || '-',
   },
   {
-    key: "is_active",
-    label: "Status",
-    align: "center",
-    render: (value) => (value ? "Active" : "Inactive"),
+    key: 'is_active',
+    label: 'Status',
+    align: 'center',
+    render: (value) => (value ? 'Active' : 'Inactive'),
   },
   {
-    key: "updated_at",
-    label: "Last Modified",
+    key: 'updated_at',
+    label: 'Last Modified',
     sortable: true,
-    render: (value) =>
-      value ? new Date(String(value)).toLocaleDateString() : "-",
+    render: (value) => (value ? new Date(String(value)).toLocaleDateString() : '-'),
   },
 ];
 
 // Form sections configuration (kept for SettingsPage config, but overridden by customFormRenderer)
 const formSections: ModernFormSection[] = [
   {
-    title: "Basic Information",
+    title: 'Basic Information',
     fields: [
       {
-        name: "name",
-        label: "Event Type Name",
-        type: "text",
+        name: 'name',
+        label: 'Event Type Name',
+        type: 'text',
         required: true,
-        placeholder: "e.g., Wedding, Corporate Event, Birthday Party",
-        helperText: "A descriptive name for this type of event",
+        placeholder: 'e.g., Wedding, Corporate Event, Birthday Party',
+        helperText: 'A descriptive name for this type of event',
       },
       {
-        name: "description",
-        label: "Description",
-        type: "textarea",
+        name: 'description',
+        label: 'Description',
+        type: 'textarea',
         multiline: true,
         rows: 3,
-        placeholder: "Describe this event type and when it would be used...",
-        helperText:
-          "Optional description to help staff understand when to use this event type",
+        placeholder: 'Describe this event type and when it would be used...',
+        helperText: 'Optional description to help staff understand when to use this event type',
       },
     ],
   },
   {
-    title: "Settings",
+    title: 'Settings',
     fields: [
       {
-        name: "is_active",
-        label: "Active",
-        type: "switch",
-        helperText:
-          "Active event types are available for selection when creating new events",
+        name: 'is_active',
+        label: 'Active',
+        type: 'switch',
+        helperText: 'Active event types are available for selection when creating new events',
       },
     ],
   },
@@ -101,8 +98,8 @@ const formSections: ModernFormSection[] = [
 // Default values for new event types
 const defaultEventType: EventTypeRow = {
   id: 0,
-  name: "",
-  description: "",
+  name: '',
+  description: '',
   is_active: true,
   featured_image: null,
   gallery_images: [],
@@ -112,33 +109,32 @@ const defaultEventType: EventTypeRow = {
 // Settings page configuration
 const config: SettingsPageConfig<EventTypeRow> = {
   page: {
-    title: "Event Types",
-    subtitle: "Manage the types of events your business offers",
+    title: 'Event Types',
+    subtitle: 'Manage the types of events your business offers',
     icon: React.createElement(EventTypeIcon),
     breadcrumbs: [
-      { label: "Settings", href: "/settings" },
-      { label: "Booking", href: "/settings/booking" },
-      { label: "Event Types" },
+      { label: 'Settings', href: '/settings' },
+      { label: 'Booking', href: '/settings/booking' },
+      { label: 'Event Types' },
     ],
   },
 
   table: {
     columns,
-    searchFields: ["name", "description"],
-    defaultSort: { key: "name", order: "asc" },
+    searchFields: ['name', 'description'],
+    defaultSort: { key: 'name', order: 'asc' },
     emptyState: {
       icon: React.createElement(EventTypeIcon),
-      title: "No Event Types Found",
-      description:
-        "Create your first event type to start organizing your events.",
+      title: 'No Event Types Found',
+      description: 'Create your first event type to start organizing your events.',
     },
   },
 
   form: {
-    title: "Event Type",
-    subtitle: "Configure the event type settings and availability.",
+    title: 'Event Type',
+    subtitle: 'Configure the event type settings and availability.',
     sections: formSections,
-    maxWidth: "md",
+    maxWidth: 'md',
   },
 
   features: {
@@ -221,10 +217,8 @@ export const EventTypes = () => {
   };
 
   // Fetch fresh event type data before editing to ensure we have the latest values
-  const handleFetchItem = async (
-    id: string | number,
-  ): Promise<EventTypeRow> => {
-    const { eventsApi } = await import("../../../apis/events.api");
+  const handleFetchItem = async (id: string | number): Promise<EventTypeRow> => {
+    const { eventsApi } = await import('../../../apis/events.api');
     return eventsApi.getEventType(Number(id));
   };
 
@@ -288,7 +282,7 @@ export const EventTypes = () => {
   return (
     <PermissionAwareSettingsPage
       config={config}
-      requiredPermissions={["can_manage_booking_flows"]}
+      requiredPermissions={['can_manage_booking_flows']}
       data={eventTypes}
       defaultValues={defaultEventType}
       isLoading={isLoadingEventTypes}

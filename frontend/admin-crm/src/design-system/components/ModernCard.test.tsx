@@ -19,14 +19,17 @@ describe('ModernCard', () => {
   });
 
   it('renders all variants without errors', () => {
-    const variants: CardVariant[] = ['subtle', 'elevated', 'warm', 'terracotta', 'sage', 'outlined'];
+    const variants: CardVariant[] = [
+      'subtle',
+      'elevated',
+      'warm',
+      'terracotta',
+      'sage',
+      'outlined',
+    ];
 
     variants.forEach((variant) => {
-      const { container } = render(
-        <ModernCard variant={variant}>
-          {variant} content
-        </ModernCard>
-      );
+      const { container } = render(<ModernCard variant={variant}>{variant} content</ModernCard>);
       expect(container.firstChild).toBeInTheDocument();
     });
   });
@@ -35,22 +38,14 @@ describe('ModernCard', () => {
     const sizes: CardSize[] = ['small', 'medium', 'large'];
 
     sizes.forEach((size) => {
-      const { container } = render(
-        <ModernCard size={size}>
-          {size} content
-        </ModernCard>
-      );
+      const { container } = render(<ModernCard size={size}>{size} content</ModernCard>);
       expect(container.firstChild).toBeInTheDocument();
     });
   });
 
   it('calls onClick handler when clicked', () => {
     const handleClick = vi.fn();
-    render(
-      <ModernCard onClick={handleClick}>
-        Clickable Content
-      </ModernCard>
-    );
+    render(<ModernCard onClick={handleClick}>Clickable Content</ModernCard>);
 
     const card = screen.getByRole('button');
     fireEvent.click(card);
@@ -59,11 +54,7 @@ describe('ModernCard', () => {
   });
 
   it('adds role="button" when clickable', () => {
-    const { container } = render(
-      <ModernCard clickable>
-        Content
-      </ModernCard>
-    );
+    const { container } = render(<ModernCard clickable>Content</ModernCard>);
 
     const card = container.firstChild as HTMLElement;
     expect(card.getAttribute('role')).toBe('button');
@@ -71,11 +62,7 @@ describe('ModernCard', () => {
 
   it('handles Enter key press when clickable', () => {
     const handleClick = vi.fn();
-    render(
-      <ModernCard onClick={handleClick}>
-        Content
-      </ModernCard>
-    );
+    render(<ModernCard onClick={handleClick}>Content</ModernCard>);
 
     const card = screen.getByRole('button');
     fireEvent.keyDown(card, { key: 'Enter', code: 'Enter' });
@@ -85,11 +72,7 @@ describe('ModernCard', () => {
 
   it('handles Space key press when clickable', () => {
     const handleClick = vi.fn();
-    render(
-      <ModernCard onClick={handleClick}>
-        Content
-      </ModernCard>
-    );
+    render(<ModernCard onClick={handleClick}>Content</ModernCard>);
 
     const card = screen.getByRole('button');
     fireEvent.keyDown(card, { key: ' ', code: 'Space' });
@@ -98,33 +81,21 @@ describe('ModernCard', () => {
   });
 
   it('does not add button role when not clickable', () => {
-    const { container } = render(
-      <ModernCard>
-        Content
-      </ModernCard>
-    );
+    const { container } = render(<ModernCard>Content</ModernCard>);
 
     const card = container.firstChild as HTMLElement;
     expect(card.getAttribute('role')).toBeNull();
   });
 
   it('applies custom className', () => {
-    const { container } = render(
-      <ModernCard className="custom-class">
-        Content
-      </ModernCard>
-    );
+    const { container } = render(<ModernCard className="custom-class">Content</ModernCard>);
 
     const card = container.firstChild as HTMLElement;
     expect(card.classList.contains('custom-class')).toBe(true);
   });
 
   it('merges custom sx styles', () => {
-    const { container } = render(
-      <ModernCard sx={{ backgroundColor: 'red' }}>
-        Content
-      </ModernCard>
-    );
+    const { container } = render(<ModernCard sx={{ backgroundColor: 'red' }}>Content</ModernCard>);
 
     const card = container.firstChild as HTMLElement;
     expect(card).toBeInTheDocument();

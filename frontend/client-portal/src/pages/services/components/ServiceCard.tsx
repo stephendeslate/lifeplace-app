@@ -1,18 +1,13 @@
 // pages/services/components/ServiceCard.tsx
 // Modern Organic Luxury redesigned service card with optional featured image
 
-import React from "react";
-import { Box, Typography, Stack } from "@mui/material";
-import { ArrowForward, Collections } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
-import {
-  ModernCard,
-  AnimatedElement,
-  ImageWithOverlay,
-  tokens,
-} from "../../../design-system";
-import { Button } from "../../../design-system";
-import type { ServiceCardProps as BaseServiceCardProps } from "../types/services.types";
+import React from 'react';
+import { Box, Typography, Stack } from '@mui/material';
+import { ArrowForward, Collections } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { ModernCard, AnimatedElement, ImageWithOverlay, tokens } from '../../../design-system';
+import { Button } from '../../../design-system';
+import type { ServiceCardProps as BaseServiceCardProps } from '../types/services.types';
 
 /** Extended props adding featured image and booking navigation to the base ServiceCardProps */
 interface ServiceCardWithImageProps extends BaseServiceCardProps {
@@ -28,13 +23,13 @@ interface ServiceCardWithImageProps extends BaseServiceCardProps {
  */
 const getGalleryCategoryParam = (name: string): string => {
   const categoryMap: Record<string, string> = {
-    Wedding: "weddings",
-    "Team Building": "team-building",
-    "Camps & Retreats": "camps-retreats",
-    Workshop: "workshops",
+    Wedding: 'weddings',
+    'Team Building': 'team-building',
+    'Camps & Retreats': 'camps-retreats',
+    Workshop: 'workshops',
   };
 
-  return categoryMap[name] || name.toLowerCase().replace(/\s+/g, "-");
+  return categoryMap[name] || name.toLowerCase().replace(/\s+/g, '-');
 };
 
 /**
@@ -43,11 +38,11 @@ const getGalleryCategoryParam = (name: string): string => {
  */
 const getServiceAccentColor = (serviceId: string) => {
   const colorMap: Record<string, { icon: string; bg: string }> = {
-    "camps-retreats": {
+    'camps-retreats': {
       icon: tokens.color.base.sage[600],
       bg: tokens.color.base.neutral[100],
     },
-    "team-building": {
+    'team-building': {
       icon: tokens.color.base.terracotta[600],
       bg: tokens.color.base.neutral[100],
     },
@@ -61,7 +56,7 @@ const getServiceAccentColor = (serviceId: string) => {
     },
   };
 
-  return colorMap[serviceId] || colorMap["camps-retreats"];
+  return colorMap[serviceId] || colorMap['camps-retreats'];
 };
 
 /**
@@ -102,18 +97,18 @@ export const ServiceCard: React.FC<ServiceCardWithImageProps> = ({
         size="large"
         hover
         sx={{
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
         }}
       >
         <Stack
           spacing={3}
           sx={{
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           {/* Featured Image or Icon Fallback */}
@@ -124,7 +119,7 @@ export const ServiceCard: React.FC<ServiceCardWithImageProps> = ({
                 alt={`${service.name} at LifePlace Alfonso`}
                 overlay="gradient"
                 overlayOpacity={0.35}
-                height={{ xs: "200px", md: "240px" }}
+                height={{ xs: '200px', md: '240px' }}
                 sx={{
                   borderRadius: 0,
                 }}
@@ -133,10 +128,10 @@ export const ServiceCard: React.FC<ServiceCardWithImageProps> = ({
                   variant="h4"
                   component="span"
                   sx={{
-                    color: "#FFFFFF",
+                    color: '#FFFFFF',
                     fontWeight: tokens.typography.weights.semibold,
-                    textShadow: "0 2px 8px rgba(0,0,0,0.3)",
-                    position: "absolute",
+                    textShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                    position: 'absolute',
                     bottom: tokens.spacing.space[4],
                     left: tokens.spacing.space[4],
                   }}
@@ -148,11 +143,11 @@ export const ServiceCard: React.FC<ServiceCardWithImageProps> = ({
           ) : (
             <Box
               sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "80px",
-                height: "80px",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '80px',
+                height: '80px',
                 borderRadius: tokens.spacing.radius.full,
                 backgroundColor: accentColors.bg,
                 transition: tokens.animation.transition.all,
@@ -203,20 +198,20 @@ export const ServiceCard: React.FC<ServiceCardWithImageProps> = ({
               <Box
                 key={idx}
                 sx={{
-                  display: "flex",
-                  alignItems: "flex-start",
+                  display: 'flex',
+                  alignItems: 'flex-start',
                   gap: tokens.spacing.space[2],
                 }}
               >
                 {/* Bullet Point */}
                 <Box
                   sx={{
-                    width: "6px",
-                    height: "6px",
+                    width: '6px',
+                    height: '6px',
                     borderRadius: tokens.spacing.radius.full,
                     backgroundColor: accentColors.icon,
                     flexShrink: 0,
-                    mt: "8px", // Align with first line of text
+                    mt: '8px', // Align with first line of text
                   }}
                   aria-hidden="true"
                 />
@@ -236,7 +231,7 @@ export const ServiceCard: React.FC<ServiceCardWithImageProps> = ({
 
           {/* CTA Buttons */}
           <Stack
-            direction={{ xs: "column", sm: "row" }}
+            direction={{ xs: 'column', sm: 'row' }}
             spacing={2}
             sx={{ pt: tokens.spacing.space[3] }}
           >

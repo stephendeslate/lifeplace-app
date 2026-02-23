@@ -44,7 +44,7 @@ class Storage {
    */
   private safeJsonParse<T>(value: string | null, fallback: T): T {
     if (!value) return fallback;
-    
+
     try {
       return JSON.parse(value);
     } catch (error) {
@@ -172,7 +172,7 @@ class Storage {
 
   // Clear all app data
   clearAll(): void {
-    Object.values(STORAGE_KEYS).forEach(key => {
+    Object.values(STORAGE_KEYS).forEach((key) => {
       localStorage.removeItem(key);
     });
   }
@@ -186,28 +186,31 @@ class Storage {
   // Export data for backup
   exportData(): Record<string, unknown> {
     const data: Record<string, unknown> = {};
-    
+
     Object.entries(STORAGE_KEYS).forEach(([key, storageKey]) => {
       const value = localStorage.getItem(storageKey);
       if (value) {
         data[key] = this.safeJsonParse(value, null);
       }
     });
-    
+
     return data;
   }
 
   // Import data from backup (excluding sensitive auth data)
   importData(data: Record<string, unknown>): void {
     // Don't import tokens for security reasons
-    const allowedKeys = ['PREFERENCES', 'THEME_MODE', 'SIDEBAR_COLLAPSED', 'TABLE_SETTINGS', 'WALKTHROUGH_PREFERENCES'];
-    
-    allowedKeys.forEach(key => {
+    const allowedKeys = [
+      'PREFERENCES',
+      'THEME_MODE',
+      'SIDEBAR_COLLAPSED',
+      'TABLE_SETTINGS',
+      'WALKTHROUGH_PREFERENCES',
+    ];
+
+    allowedKeys.forEach((key) => {
       if (data[key] && STORAGE_KEYS[key as keyof typeof STORAGE_KEYS]) {
-        this.safeJsonStringify(
-          STORAGE_KEYS[key as keyof typeof STORAGE_KEYS], 
-          data[key]
-        );
+        this.safeJsonStringify(STORAGE_KEYS[key as keyof typeof STORAGE_KEYS], data[key]);
       }
     });
   }

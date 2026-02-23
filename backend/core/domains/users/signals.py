@@ -1,9 +1,10 @@
 # backend/core/domains/users/signals.py
-from django.db.models.signals import post_save, post_delete
-from django.dispatch import receiver
 import logging
 
-from .models import User, UserProfile, AdminInvitation
+from django.db.models.signals import post_delete, post_save
+from django.dispatch import receiver
+
+from .models import AdminInvitation, User, UserProfile
 
 logger = logging.getLogger(__name__)
 
@@ -17,21 +18,20 @@ def create_user_profile(sender, instance, created, **kwargs):
 
 # === CACHE INVALIDATION SIGNALS ===
 
+
 @receiver([post_save, post_delete], sender=User)
 def invalidate_user_caches(sender, instance, **kwargs):
     """Invalidate user-related caches when users are modified"""
     # Use post_save created flag to avoid cache invalidation on new users
     # New users don't have cache entries yet
-    if kwargs.get('created', False):
+    if kwargs.get("created", False):
         logger.debug(f"Skipping cache invalidation for new user: {instance.email}")
         return
 
     try:
         from .cache_service import users_cache_service
-        users_cache_service.invalidate_user_caches(
-            user_id=instance.id,
-            email=instance.email
-        )
+
+        users_cache_service.invalidate_user_caches(user_id=instance.id, email=instance.email)
         logger.debug(f"Invalidated user caches for: {instance.email}")
     except Exception as e:
         # Don't let cache failures block user operations
@@ -42,16 +42,14 @@ def invalidate_user_caches(sender, instance, **kwargs):
 def invalidate_profile_caches(sender, instance, **kwargs):
     """Invalidate user profile caches when profiles are modified"""
     # Skip cache invalidation for newly created profiles (no cache yet)
-    if kwargs.get('created', False):
+    if kwargs.get("created", False):
         logger.debug(f"Skipping cache invalidation for new profile: {instance.user.email}")
         return
 
     try:
         from .cache_service import users_cache_service
-        users_cache_service.invalidate_user_caches(
-            user_id=instance.user.id,
-            email=instance.user.email
-        )
+
+        users_cache_service.invalidate_user_caches(user_id=instance.user.id, email=instance.user.email)
         logger.debug(f"Invalidated profile caches for: {instance.user.email}")
     except Exception as e:
         # Don't let cache failures block user operations
@@ -63,10 +61,8 @@ def invalidate_invitation_caches(sender, instance, **kwargs):
     """Invalidate admin invitation caches when invitations are modified"""
     try:
         from .cache_service import users_cache_service
-        users_cache_service.invalidate_invitation_caches(
-            invitation_id=str(instance.id),
-            email=instance.email
-        )
+
+        users_cache_service.invalidate_invitation_caches(invitation_id=str(instance.id), email=instance.email)
         logger.info(f"Invalidated invitation caches for: {instance.email}")
     except Exception as e:
         logger.error(f"Failed to invalidate invitation caches: {e}")

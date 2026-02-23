@@ -4,7 +4,8 @@
 export const typographyTokens = {
   // Font families with fallbacks
   fontFamily: {
-    display: '"SF Pro Display", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    display:
+      '"SF Pro Display", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     body: '"Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     mono: '"SF Mono", "Fira Code", "JetBrains Mono", Consolas, "Liberation Mono", Menlo, Courier, monospace',
   },
@@ -26,38 +27,38 @@ export const typographyTokens = {
   fontSize: {
     // Display sizes for heroes and large headings
     display: {
-      xs: '3rem',     // 48px
-      sm: '3.5rem',   // 56px  
-      md: '4rem',     // 64px
-      lg: '4.5rem',   // 72px
-      xl: '5rem',     // 80px
+      xs: '3rem', // 48px
+      sm: '3.5rem', // 56px
+      md: '4rem', // 64px
+      lg: '4.5rem', // 72px
+      xl: '5rem', // 80px
     },
 
     // Heading sizes with proper hierarchy
     heading: {
-      h1: '2.5rem',   // 40px
-      h2: '2rem',     // 32px
-      h3: '1.75rem',  // 28px
-      h4: '1.5rem',   // 24px
-      h5: '1.25rem',  // 20px
+      h1: '2.5rem', // 40px
+      h2: '2rem', // 32px
+      h3: '1.75rem', // 28px
+      h4: '1.5rem', // 24px
+      h5: '1.25rem', // 20px
       h6: '1.125rem', // 18px
     },
 
     // Body text sizes
     body: {
-      xl: '1.25rem',  // 20px - Large body
+      xl: '1.25rem', // 20px - Large body
       lg: '1.125rem', // 18px - Medium body
-      md: '1rem',     // 16px - Default body
+      md: '1rem', // 16px - Default body
       sm: '0.875rem', // 14px - Small body
-      xs: '0.75rem',  // 12px - Tiny body
+      xs: '0.75rem', // 12px - Tiny body
     },
 
     // UI element sizes
     ui: {
-      button: '0.875rem',   // 14px - Button text
-      caption: '0.75rem',   // 12px - Captions
-      overline: '0.75rem',  // 12px - Overlines
-      label: '0.875rem',    // 14px - Form labels
+      button: '0.875rem', // 14px - Button text
+      caption: '0.75rem', // 12px - Captions
+      overline: '0.75rem', // 12px - Overlines
+      label: '0.875rem', // 14px - Form labels
     },
   },
 
@@ -65,7 +66,7 @@ export const typographyTokens = {
   lineHeight: {
     none: '1',
     tight: '1.1',
-    snug: '1.2', 
+    snug: '1.2',
     normal: '1.4',
     relaxed: '1.5',
     loose: '1.6',
@@ -75,7 +76,7 @@ export const typographyTokens = {
   // Letter spacing for different contexts
   letterSpacing: {
     tighter: '-0.05em',
-    tight: '-0.025em', 
+    tight: '-0.025em',
     normal: '0em',
     wide: '0.025em',
     wider: '0.05em',
@@ -95,7 +96,7 @@ export const typographyTokens = {
 
     displayLg: {
       fontFamily: '"SF Pro Display", "Inter", system-ui, sans-serif',
-      fontSize: '4.5rem', 
+      fontSize: '4.5rem',
       fontWeight: 700,
       lineHeight: '1.1',
       letterSpacing: '-0.025em',
@@ -112,7 +113,7 @@ export const typographyTokens = {
     displaySm: {
       fontFamily: '"SF Pro Display", "Inter", system-ui, sans-serif',
       fontSize: '3.5rem',
-      fontWeight: 600, 
+      fontWeight: 600,
       lineHeight: '1.15',
       letterSpacing: '0em',
     },
@@ -135,7 +136,7 @@ export const typographyTokens = {
     },
 
     h2: {
-      fontFamily: '"Inter", system-ui, sans-serif', 
+      fontFamily: '"Inter", system-ui, sans-serif',
       fontSize: '2rem',
       fontWeight: 600,
       lineHeight: '1.25',
@@ -155,7 +156,7 @@ export const typographyTokens = {
       fontSize: '1.5rem',
       fontWeight: 600,
       lineHeight: '1.35',
-      letterSpacing: '0em', 
+      letterSpacing: '0em',
     },
 
     h5: {
@@ -185,7 +186,7 @@ export const typographyTokens = {
 
     bodyLg: {
       fontFamily: '"Inter", system-ui, sans-serif',
-      fontSize: '1.125rem', 
+      fontSize: '1.125rem',
       fontWeight: 400,
       lineHeight: '1.5',
       letterSpacing: '0em',
@@ -195,7 +196,7 @@ export const typographyTokens = {
       fontFamily: '"Inter", system-ui, sans-serif',
       fontSize: '1rem',
       fontWeight: 400,
-      lineHeight: '1.5', 
+      lineHeight: '1.5',
       letterSpacing: '0em',
     },
 
@@ -254,7 +255,7 @@ export const typographyTokens = {
     buttonLarge: {
       fontFamily: '"Inter", system-ui, sans-serif',
       fontSize: '1rem',
-      fontWeight: 600, 
+      fontWeight: 600,
       lineHeight: '1.25',
       letterSpacing: '0.025em',
       textTransform: 'none' as const,
@@ -305,7 +306,7 @@ export const typographyTokens = {
 
     codeSmall: {
       fontFamily: '"SF Mono", "Fira Code", "JetBrains Mono", monospace',
-      fontSize: '0.75rem', 
+      fontSize: '0.75rem',
       fontWeight: 400,
       lineHeight: '1.33',
       letterSpacing: '0em',
@@ -322,7 +323,7 @@ export const typographyCssVariables = {
 
   // Font weights
   '--font-weight-normal': typographyTokens.fontWeight.normal.toString(),
-  '--font-weight-medium': typographyTokens.fontWeight.medium.toString(), 
+  '--font-weight-medium': typographyTokens.fontWeight.medium.toString(),
   '--font-weight-semibold': typographyTokens.fontWeight.semiBold.toString(),
   '--font-weight-bold': typographyTokens.fontWeight.bold.toString(),
 
@@ -354,7 +355,7 @@ export const getTypographyStyle = (styleName: TypographyStyle) => {
 export const createResponsiveTypography = (
   mobile: TypographyStyle,
   tablet?: TypographyStyle,
-  desktop?: TypographyStyle
+  desktop?: TypographyStyle,
 ) => {
   const baseStyle = getTypographyStyle(mobile);
   const tabletStyle = tablet ? getTypographyStyle(tablet) : baseStyle;

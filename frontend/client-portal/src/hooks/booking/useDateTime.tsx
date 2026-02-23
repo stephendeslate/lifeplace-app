@@ -3,21 +3,16 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { DateTimeApi } from '../../apis/booking/datetime.api';
 import { ErrorHandler } from '../../utils/errorHandler';
-import type {
-  DateTimeStepData,
-  DateTimeStepConfiguration,
-} from '../../types/booking';
+import type { DateTimeStepData, DateTimeStepConfiguration } from '../../types/booking';
 
 // Hook for managing date/time step data and interactions
 export const useDateTime = (
   sessionId?: string,
   stepId?: number,
   initialData?: DateTimeStepData,
-  config?: DateTimeStepConfiguration | null
+  config?: DateTimeStepConfiguration | null,
 ) => {
-  const [data, setData] = useState<DateTimeStepData>(
-    initialData || DateTimeApi.getDefaultData()
-  );
+  const [data, setData] = useState<DateTimeStepData>(initialData || DateTimeApi.getDefaultData());
   const [loading] = useState(false);
   const [validating, setValidating] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -30,24 +25,27 @@ export const useDateTime = (
   } | null>(null);
 
   // Update step data locally
-  const updateData = useCallback((newData: Partial<DateTimeStepData>) => {
-    setData(prev => ({ ...prev, ...newData }));
+  const updateData = useCallback(
+    (newData: Partial<DateTimeStepData>) => {
+      setData((prev) => ({ ...prev, ...newData }));
 
-    // Clear validation errors when data changes
-    if (Object.keys(validationErrors).length > 0) {
-      setValidationErrors({});
-    }
+      // Clear validation errors when data changes
+      if (Object.keys(validationErrors).length > 0) {
+        setValidationErrors({});
+      }
 
-    // Clear general error
-    if (error) {
-      setError(null);
-    }
+      // Clear general error
+      if (error) {
+        setError(null);
+      }
 
-    // Clear availability status when date changes
-    if (newData.start_date) {
-      setAvailabilityStatus(null);
-    }
-  }, [validationErrors, error]);
+      // Clear availability status when date changes
+      if (newData.start_date) {
+        setAvailabilityStatus(null);
+      }
+    },
+    [validationErrors, error],
+  );
 
   // Validate data client-side
   const validateClientSide = useCallback(() => {
@@ -69,20 +67,20 @@ export const useDateTime = (
 
     try {
       const result = await DateTimeApi.validateStepData(sessionId, stepId, data);
-      
+
       if (!result.isValid) {
         const errors: Record<string, string[]> = {};
-        result.errors.forEach(error => {
+        result.errors.forEach((error) => {
           errors[error.field] = [error.message];
         });
         setValidationErrors(errors);
       }
-      
+
       return result.isValid;
     } catch (err) {
       const errorMessage = ErrorHandler.extractMessage(err);
       const apiErrors = ErrorHandler.extractValidationErrorsAsRecord(err);
-      
+
       setError(errorMessage);
       setValidationErrors(apiErrors);
       return false;
@@ -107,7 +105,7 @@ export const useDateTime = (
       const errorMessage = ErrorHandler.extractMessage(err);
       setAvailabilityStatus({
         available: false,
-        message: errorMessage
+        message: errorMessage,
       });
       return false;
     } finally {
@@ -116,67 +114,81 @@ export const useDateTime = (
   }, [sessionId, data]);
 
   // Save data to server
-  const saveData = useCallback(async (markCompleted: boolean = false): Promise<boolean> => {
-    if (!sessionId || !stepId) {
-      setError('Session or step information missing');
-      return false;
-    }
-
-    setSaving(true);
-    setError(null);
-    setValidationErrors({});
-
-    try {
-      const formattedData = DateTimeApi.formatStepData(data);
-      const result = await DateTimeApi.updateStepData(
-        sessionId,
-        stepId,
-        formattedData,
-        markCompleted
-      );
-      
-      // Handle any validation errors from the response
-      if (result.validation_errors && Object.keys(result.validation_errors).length > 0) {
-        setValidationErrors(result.validation_errors as Record<string, string[]>);
+  const saveData = useCallback(
+    async (markCompleted: boolean = false): Promise<boolean> => {
+      if (!sessionId || !stepId) {
+        setError('Session or step information missing');
         return false;
       }
-      
-      return true;
-    } catch (err) {
-      const errorMessage = ErrorHandler.extractMessage(err);
-      const apiErrors = ErrorHandler.extractValidationErrorsAsRecord(err);
-      
-      setError(errorMessage);
-      setValidationErrors(apiErrors);
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  }, [sessionId, stepId, data]);
+
+      setSaving(true);
+      setError(null);
+      setValidationErrors({});
+
+      try {
+        const formattedData = DateTimeApi.formatStepData(data);
+        const result = await DateTimeApi.updateStepData(
+          sessionId,
+          stepId,
+          formattedData,
+          markCompleted,
+        );
+
+        // Handle any validation errors from the response
+        if (result.validation_errors && Object.keys(result.validation_errors).length > 0) {
+          setValidationErrors(result.validation_errors as Record<string, string[]>);
+          return false;
+        }
+
+        return true;
+      } catch (err) {
+        const errorMessage = ErrorHandler.extractMessage(err);
+        const apiErrors = ErrorHandler.extractValidationErrorsAsRecord(err);
+
+        setError(errorMessage);
+        setValidationErrors(apiErrors);
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [sessionId, stepId, data],
+  );
 
   // Handle date change
-  const handleDateChange = useCallback((date: Date | null) => {
-    const dateString = date ? date.toISOString().split('T')[0] : '';
-    updateData({ start_date: dateString });
-  }, [updateData]);
+  const handleDateChange = useCallback(
+    (date: Date | null) => {
+      const dateString = date ? date.toISOString().split('T')[0] : '';
+      updateData({ start_date: dateString });
+    },
+    [updateData],
+  );
 
   // Handle end date change (for multi-day events)
-  const handleEndDateChange = useCallback((date: Date | null) => {
-    const dateString = date ? date.toISOString().split('T')[0] : undefined;
-    updateData({ end_date: dateString });
-  }, [updateData]);
+  const handleEndDateChange = useCallback(
+    (date: Date | null) => {
+      const dateString = date ? date.toISOString().split('T')[0] : undefined;
+      updateData({ end_date: dateString });
+    },
+    [updateData],
+  );
 
   // Handle resource requirements change
-  const handleResourceRequirementsChange = useCallback((requirements: string[]) => {
-    updateData({ resource_requirements: requirements });
-  }, [updateData]);
+  const handleResourceRequirementsChange = useCallback(
+    (requirements: string[]) => {
+      updateData({ resource_requirements: requirements });
+    },
+    [updateData],
+  );
 
   // Auto-check availability when date changes (if enabled)
   useEffect(() => {
-    if (config?.enable_real_time_availability &&
-        config?.auto_check_conflicts &&
-        data.start_date &&
-        sessionId) {
+    if (
+      config?.enable_real_time_availability &&
+      config?.auto_check_conflicts &&
+      data.start_date &&
+      sessionId
+    ) {
       const timeoutId = setTimeout(() => {
         checkAvailability();
       }, 1000); // Debounce for 1 second
@@ -199,20 +211,29 @@ export const useDateTime = (
   }, [config]);
 
   // Get field error
-  const getFieldError = useCallback((fieldName: string) => {
-    return validationErrors[fieldName]?.[0];
-  }, [validationErrors]);
+  const getFieldError = useCallback(
+    (fieldName: string) => {
+      return validationErrors[fieldName]?.[0];
+    },
+    [validationErrors],
+  );
 
   // Check if field has error
-  const hasFieldError = useCallback((fieldName: string) => {
-    return !!(validationErrors[fieldName]?.length > 0);
-  }, [validationErrors]);
+  const hasFieldError = useCallback(
+    (fieldName: string) => {
+      return !!(validationErrors[fieldName]?.length > 0);
+    },
+    [validationErrors],
+  );
 
   // Format display values
-  const formattedValues = useMemo(() => ({
-    startDate: DateTimeApi.formatDate(data.start_date),
-    endDate: data.end_date ? DateTimeApi.formatDate(data.end_date) : '',
-  }), [data]);
+  const formattedValues = useMemo(
+    () => ({
+      startDate: DateTimeApi.formatDate(data.start_date),
+      endDate: data.end_date ? DateTimeApi.formatDate(data.end_date) : '',
+    }),
+    [data],
+  );
 
   // Reset data to default
   const resetData = useCallback(() => {
@@ -263,23 +284,20 @@ export const useDateTime = (
 
     // Status checks
     isComplete: !!data.start_date,
-    hasChanges: JSON.stringify(data) !== JSON.stringify(initialData || DateTimeApi.getDefaultData()),
+    hasChanges:
+      JSON.stringify(data) !== JSON.stringify(initialData || DateTimeApi.getDefaultData()),
     isAvailable: availabilityStatus?.available,
     showAvailabilityStatus: config?.show_availability_status && !!availabilityStatus,
   };
 };
 
 // Hook for managing date/time step in isolation (without session)
-export const useDateTimeData = (
-  initialData?: DateTimeStepData
-) => {
-  const [data, setData] = useState<DateTimeStepData>(
-    initialData || DateTimeApi.getDefaultData()
-  );
+export const useDateTimeData = (initialData?: DateTimeStepData) => {
+  const [data, setData] = useState<DateTimeStepData>(initialData || DateTimeApi.getDefaultData());
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
   const updateData = useCallback((newData: Partial<DateTimeStepData>) => {
-    setData(prev => ({ ...prev, ...newData }));
+    setData((prev) => ({ ...prev, ...newData }));
     setValidationErrors({});
   }, []);
 
@@ -289,18 +307,27 @@ export const useDateTimeData = (
     return validation.isValid;
   }, [data]);
 
-  const getFieldError = useCallback((fieldName: string) => {
-    return validationErrors[fieldName]?.[0];
-  }, [validationErrors]);
+  const getFieldError = useCallback(
+    (fieldName: string) => {
+      return validationErrors[fieldName]?.[0];
+    },
+    [validationErrors],
+  );
 
-  const hasFieldError = useCallback((fieldName: string) => {
-    return !!(validationErrors[fieldName]?.length > 0);
-  }, [validationErrors]);
+  const hasFieldError = useCallback(
+    (fieldName: string) => {
+      return !!(validationErrors[fieldName]?.length > 0);
+    },
+    [validationErrors],
+  );
 
-  const formattedValues = useMemo(() => ({
-    startDate: DateTimeApi.formatDate(data.start_date),
-    endDate: data.end_date ? DateTimeApi.formatDate(data.end_date) : '',
-  }), [data]);
+  const formattedValues = useMemo(
+    () => ({
+      startDate: DateTimeApi.formatDate(data.start_date),
+      endDate: data.end_date ? DateTimeApi.formatDate(data.end_date) : '',
+    }),
+    [data],
+  );
 
   return {
     data,

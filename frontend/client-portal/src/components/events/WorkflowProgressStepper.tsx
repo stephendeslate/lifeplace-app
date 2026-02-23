@@ -50,28 +50,31 @@ export const WorkflowProgressStepper: React.FC<WorkflowProgressStepperProps> = (
 
   const getStageTypeColor = (stageType: string) => {
     const colors: Record<string, string> = {
-      'LEAD': theme.palette.info.main,
-      'PRODUCTION': theme.palette.warning.main,
-      'POST_PRODUCTION': theme.palette.success.main,
+      LEAD: theme.palette.info.main,
+      PRODUCTION: theme.palette.warning.main,
+      POST_PRODUCTION: theme.palette.success.main,
     };
     return colors[stageType] || theme.palette.grey[500];
   };
 
   const getStageTypeLabel = (stageType: string) => {
     const labels: Record<string, string> = {
-      'LEAD': 'Planning',
-      'PRODUCTION': 'Preparation',
-      'POST_PRODUCTION': 'Follow-up',
+      LEAD: 'Planning',
+      PRODUCTION: 'Preparation',
+      POST_PRODUCTION: 'Follow-up',
     };
     return labels[stageType] || stageType;
   };
 
   // Group stages by type
-  const groupedStages = progress.stages.reduce((acc, stage) => {
-    if (!acc[stage.stage]) acc[stage.stage] = [];
-    acc[stage.stage].push(stage);
-    return acc;
-  }, {} as Record<string, WorkflowStageProgress[]>);
+  const groupedStages = progress.stages.reduce(
+    (acc, stage) => {
+      if (!acc[stage.stage]) acc[stage.stage] = [];
+      acc[stage.stage].push(stage);
+      return acc;
+    },
+    {} as Record<string, WorkflowStageProgress[]>,
+  );
 
   if (variant === 'linear') {
     return (
@@ -104,11 +107,12 @@ export const WorkflowProgressStepper: React.FC<WorkflowProgressStepperProps> = (
                 flex: 1,
                 height: 4,
                 borderRadius: 2,
-                bgcolor: stage.status === 'completed'
-                  ? 'success.main'
-                  : stage.status === 'current'
-                    ? 'primary.main'
-                    : 'grey.300',
+                bgcolor:
+                  stage.status === 'completed'
+                    ? 'success.main'
+                    : stage.status === 'current'
+                      ? 'primary.main'
+                      : 'grey.300',
                 transition: 'background-color 0.3s ease',
               }}
             />
@@ -179,11 +183,12 @@ export const WorkflowProgressStepper: React.FC<WorkflowProgressStepperProps> = (
                     sx={{
                       '& .MuiStepLabel-label': {
                         fontWeight: stage.status === 'current' ? 600 : 400,
-                        color: stage.status === 'current'
-                          ? theme.palette.primary.main
-                          : stage.status === 'completed'
-                            ? theme.palette.success.main
-                            : theme.palette.text.secondary,
+                        color:
+                          stage.status === 'current'
+                            ? theme.palette.primary.main
+                            : stage.status === 'completed'
+                              ? theme.palette.success.main
+                              : theme.palette.text.secondary,
                       },
                     }}
                   >

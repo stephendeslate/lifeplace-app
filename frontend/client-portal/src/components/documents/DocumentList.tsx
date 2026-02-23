@@ -1,19 +1,9 @@
 // frontend/client-portal/src/components/documents/DocumentList.tsx
 
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  Skeleton,
-  Button,
-  Stack,
-} from '@mui/material';
+import { Box, Typography, Paper, Skeleton, Button, Stack } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import {
-  FolderOpen as EmptyIcon,
-  CloudUpload as UploadIcon,
-} from '@mui/icons-material';
+import { FolderOpen as EmptyIcon, CloudUpload as UploadIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { DocumentCard } from './DocumentCard';
 import type { DocumentItem } from '../../types/documents.types';
@@ -65,18 +55,11 @@ const EmptyState: React.FC<{ onUpload?: () => void }> = ({ onUpload }) => {
       </Typography>
       <Stack direction="row" spacing={2} justifyContent="center">
         {onUpload && (
-          <Button
-            variant="contained"
-            startIcon={<UploadIcon />}
-            onClick={onUpload}
-          >
+          <Button variant="contained" startIcon={<UploadIcon />} onClick={onUpload}>
             Upload Document
           </Button>
         )}
-        <Button
-          variant="outlined"
-          onClick={() => navigate('/events')}
-        >
+        <Button variant="outlined" onClick={() => navigate('/events')}>
           View Events
         </Button>
       </Stack>
@@ -115,11 +98,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({
     <Grid container spacing={2}>
       {documents.map((document) => (
         <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={document.id}>
-          <DocumentCard
-            document={document}
-            onDownload={onDownload}
-            onPreview={onPreview}
-          />
+          <DocumentCard document={document} onDownload={onDownload} onPreview={onPreview} />
         </Grid>
       ))}
     </Grid>

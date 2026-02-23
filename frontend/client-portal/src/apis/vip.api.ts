@@ -40,13 +40,8 @@ export class VIPApi {
   /**
    * Redeem a benefit for a specific event
    */
-  static async redeemBenefit(
-    request: VIPRedemptionRequest
-  ): Promise<VIPRedemptionResponse> {
-    const response = await api.post<VIPRedemptionResponse>(
-      '/vip/client/redeem-benefit/',
-      request
-    );
+  static async redeemBenefit(request: VIPRedemptionRequest): Promise<VIPRedemptionResponse> {
+    const response = await api.post<VIPRedemptionResponse>('/vip/client/redeem-benefit/', request);
     return response.data;
   }
 

@@ -33,10 +33,7 @@ import type {
 /**
  * Hook for checking single date availability
  */
-export const useDateAvailability = (
-  request: AvailabilityRequest,
-  enabled = true
-) => {
+export const useDateAvailability = (request: AvailabilityRequest, enabled = true) => {
   return useQuery({
     queryKey: ['availability', 'date', request],
     queryFn: () => availabilityApi.checkDateAvailability(request),
@@ -56,7 +53,7 @@ export const useDateRangeAvailability = (
     event_type_id?: number;
     booking_flow_id?: number;
   },
-  enabled = true
+  enabled = true,
 ) => {
   return useQuery({
     queryKey: ['availability', 'range', startDate, endDate, options],
@@ -74,16 +71,16 @@ export const useCalendarAvailability = (
   startDate: string,
   endDate: string,
   filters?: AvailabilityFilters,
-  enabled = true
+  enabled = true,
 ) => {
-
   const query = useQuery({
     queryKey: ['availability', 'calendar', startDate, endDate, filters],
-    queryFn: () => availabilityApi.getCalendarAvailability(startDate, endDate, {
-      event_type_id: filters?.event_type_id,
-      booking_flow_id: filters?.booking_flow_id,
-      include_weekends: true,
-    }),
+    queryFn: () =>
+      availabilityApi.getCalendarAvailability(startDate, endDate, {
+        event_type_id: filters?.event_type_id,
+        booking_flow_id: filters?.booking_flow_id,
+        include_weekends: true,
+      }),
     enabled: enabled && !!startDate && !!endDate,
     staleTime: 1 * 60 * 1000, // 1 minute for calendar
     gcTime: 3 * 60 * 1000,
@@ -129,11 +126,20 @@ export const useCalendarAvailability = (
 
     const total = query.data.length;
     const available = query.data.filter((d: DateAvailabilityInfo) => d.can_book_event).length;
-    const partiallyBooked = query.data.filter((d: DateAvailabilityInfo) => d.status === 'partially_booked').length;
-    const fullyBooked = query.data.filter((d: DateAvailabilityInfo) => d.status === 'fully_booked').length;
+    const partiallyBooked = query.data.filter(
+      (d: DateAvailabilityInfo) => d.status === 'partially_booked',
+    ).length;
+    const fullyBooked = query.data.filter(
+      (d: DateAvailabilityInfo) => d.status === 'fully_booked',
+    ).length;
     const blocked = query.data.filter((d: DateAvailabilityInfo) => d.status === 'blocked').length;
-    const withConflicts = query.data.filter((d: DateAvailabilityInfo) => d.conflicts?.length > 0).length;
-    const totalConflicts = query.data.reduce((sum: number, d: DateAvailabilityInfo) => sum + (d.conflicts?.length || 0), 0);
+    const withConflicts = query.data.filter(
+      (d: DateAvailabilityInfo) => d.conflicts?.length > 0,
+    ).length;
+    const totalConflicts = query.data.reduce(
+      (sum: number, d: DateAvailabilityInfo) => sum + (d.conflicts?.length || 0),
+      0,
+    );
 
     return {
       totalDaysChecked: total,
@@ -152,9 +158,12 @@ export const useCalendarAvailability = (
     calendarData,
     stats,
     // Helper functions
-    getDateAvailability: useCallback((date: string) => {
-      return calendarData.find(item => item.date === date);
-    }, [calendarData]),
+    getDateAvailability: useCallback(
+      (date: string) => {
+        return calendarData.find((item) => item.date === date);
+      },
+      [calendarData],
+    ),
     getAvailabilityColor: useCallback((status: AvailabilityStatus) => {
       switch (status) {
         case 'available':
@@ -181,7 +190,7 @@ export const useBookingValidation = () => {
   const { showSuccess, showError } = useToastActions();
 
   return useMutation({
-    mutationFn: (request: BookingValidationRequest) => 
+    mutationFn: (request: BookingValidationRequest) =>
       availabilityApi.validateBookingRequest(request),
     onSuccess: (result) => {
       if (result.is_valid) {
@@ -200,10 +209,7 @@ export const useBookingValidation = () => {
 /**
  * Hook for finding next available date
  */
-export const useNextAvailableDate = (
-  request: NextAvailableDateRequest,
-  enabled = true
-) => {
+export const useNextAvailableDate = (request: NextAvailableDateRequest, enabled = true) => {
   return useQuery({
     queryKey: ['availability', 'next', request],
     queryFn: () => availabilityApi.getNextAvailableDate(request),
@@ -219,19 +225,26 @@ export const useBatchAvailability = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ dates, options }: { 
-      dates: string[], 
-      options?: { event_type_id?: number; booking_flow_id?: number; }
+    mutationFn: ({
+      dates,
+      options,
+    }: {
+      dates: string[];
+      options?: { event_type_id?: number; booking_flow_id?: number };
     }) => availabilityApi.batchCheckAvailability(dates, options),
     onSuccess: (results, variables) => {
       // Cache individual results
-      results.forEach(result => {
+      results.forEach((result) => {
         queryClient.setQueryData(
-          ['availability', 'date', { 
-            start_date: result.date,
-            ...variables.options 
-          }],
-          result
+          [
+            'availability',
+            'date',
+            {
+              start_date: result.date,
+              ...variables.options,
+            },
+          ],
+          result,
         );
       });
     },
@@ -248,7 +261,7 @@ export const useMonthlyAvailability = (
     event_type_id?: number;
     booking_flow_id?: number;
   },
-  enabled = true
+  enabled = true,
 ) => {
   return useQuery({
     queryKey: ['availability', 'monthly', year, month, options],
@@ -267,7 +280,7 @@ export const useAvailabilityCache = () => {
   const { showSuccess } = useToastActions();
 
   const invalidateCacheMutation = useMutation({
-    mutationFn: (dateRange?: { start_date: string; end_date: string }) => 
+    mutationFn: (dateRange?: { start_date: string; end_date: string }) =>
       availabilityApi.invalidateCache(dateRange),
     onSuccess: () => {
       // Invalidate all availability queries
@@ -280,12 +293,15 @@ export const useAvailabilityCache = () => {
     invalidateCacheMutation.mutate(dateRange);
   };
 
-  const refreshCalendar = useCallback(async (startDate: string, endDate: string) => {
-    // Invalidate specific calendar queries
-    await queryClient.invalidateQueries({ 
-      queryKey: ['availability', 'calendar', startDate, endDate] 
-    });
-  }, [queryClient]);
+  const refreshCalendar = useCallback(
+    async (startDate: string, endDate: string) => {
+      // Invalidate specific calendar queries
+      await queryClient.invalidateQueries({
+        queryKey: ['availability', 'calendar', startDate, endDate],
+      });
+    },
+    [queryClient],
+  );
 
   return {
     invalidateCache,
@@ -293,17 +309,20 @@ export const useAvailabilityCache = () => {
     refreshCalendar,
     // Programmatic cache operations
     clearAllCache: () => queryClient.removeQueries({ queryKey: ['availability'] }),
-    prefetchDateRange: useCallback(async (
-      startDate: string, 
-      endDate: string, 
-      options?: { event_type_id?: number; booking_flow_id?: number; }
-    ) => {
-      await queryClient.prefetchQuery({
-        queryKey: ['availability', 'range', startDate, endDate, options],
-        queryFn: () => availabilityApi.checkDateRangeAvailability(startDate, endDate, options),
-        staleTime: 2 * 60 * 1000,
-      });
-    }, [queryClient]),
+    prefetchDateRange: useCallback(
+      async (
+        startDate: string,
+        endDate: string,
+        options?: { event_type_id?: number; booking_flow_id?: number },
+      ) => {
+        await queryClient.prefetchQuery({
+          queryKey: ['availability', 'range', startDate, endDate, options],
+          queryFn: () => availabilityApi.checkDateRangeAvailability(startDate, endDate, options),
+          staleTime: 2 * 60 * 1000,
+        });
+      },
+      [queryClient],
+    ),
   };
 };
 
@@ -317,16 +336,17 @@ export const useRealTimeAvailability = (
     event_type_id?: number;
     booking_flow_id?: number;
     refreshInterval?: number; // milliseconds
-  }
+  },
 ) => {
   const refreshInterval = options?.refreshInterval || 30000; // 30 seconds default
 
   return useQuery({
     queryKey: ['availability', 'realtime', startDate, endDate, options],
-    queryFn: () => availabilityApi.getCalendarAvailability(startDate, endDate, {
-      event_type_id: options?.event_type_id,
-      booking_flow_id: options?.booking_flow_id,
-    }),
+    queryFn: () =>
+      availabilityApi.getCalendarAvailability(startDate, endDate, {
+        event_type_id: options?.event_type_id,
+        booking_flow_id: options?.booking_flow_id,
+      }),
     enabled: !!startDate && !!endDate,
     refetchInterval: refreshInterval,
     staleTime: 0, // Always fetch fresh data

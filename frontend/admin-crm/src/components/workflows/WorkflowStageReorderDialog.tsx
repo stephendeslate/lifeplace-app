@@ -42,9 +42,7 @@ interface TabPanelProps {
 }
 
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => (
-  <div hidden={value !== index}>
-    {value === index && <Box sx={{ py: 2 }}>{children}</Box>}
-  </div>
+  <div hidden={value !== index}>{value === index && <Box sx={{ py: 2 }}>{children}</Box>}</div>
 );
 
 export const WorkflowStageReorderDialog: React.FC<WorkflowStageReorderDialogProps> = ({
@@ -64,12 +62,12 @@ export const WorkflowStageReorderDialog: React.FC<WorkflowStageReorderDialogProp
     POST_PRODUCTION: 'Post Production',
   };
 
-  const getStagesByType = (type: StageType) => 
-    stages.filter(stage => stage.stage === type).sort((a, b) => a.order - b.order);
+  const getStagesByType = (type: StageType) =>
+    stages.filter((stage) => stage.stage === type).sort((a, b) => a.order - b.order);
 
   const handleReorder = async (reorderedStages: WorkflowStage[], stageType: StageType) => {
     const orderMapping: Record<string, number> = {};
-    
+
     reorderedStages.forEach((stage, index) => {
       orderMapping[stage.id.toString()] = index + 1;
     });
@@ -109,7 +107,7 @@ export const WorkflowStageReorderDialog: React.FC<WorkflowStageReorderDialogProp
     <Box display="flex" alignItems="center" gap={2}>
       {/* Automation Icon */}
       {stage.is_automated && getAutomationIcon(stage.automation_type)}
-      
+
       {/* Stage Info */}
       <Box sx={{ flexGrow: 1 }}>
         <Box display="flex" alignItems="center" gap={1} mb={0.5}>
@@ -122,18 +120,18 @@ export const WorkflowStageReorderDialog: React.FC<WorkflowStageReorderDialogProp
             <Chip label="Manual" size="small" variant="outlined" />
           )}
         </Box>
-        
+
         <Stack direction="row" spacing={1} flexWrap="wrap">
           <Typography variant="caption" color="text.secondary">
             {stage.stage_display}
           </Typography>
-          
+
           {stage.trigger_time && (
             <Typography variant="caption" color="text.secondary">
               • Trigger: {stage.trigger_time}
             </Typography>
           )}
-          
+
           {stage.email_template_name && (
             <Typography variant="caption" color="text.secondary">
               • Email: {stage.email_template_name}
@@ -168,21 +166,18 @@ export const WorkflowStageReorderDialog: React.FC<WorkflowStageReorderDialogProp
         <Typography variant="body2" color="text.secondary" gutterBottom>
           Drag and drop stages within each category to change their execution order.
         </Typography>
-        
+
         {availableTabs.length > 1 && (
           <Tabs value={activeTab} onChange={(_, val) => setActiveTab(val)} sx={{ mb: 2 }}>
             {availableTabs.map((type) => (
-              <Tab 
-                key={type} 
-                label={`${stageLabels[type]} (${getStagesByType(type).length})`}
-              />
+              <Tab key={type} label={`${stageLabels[type]} (${getStagesByType(type).length})`} />
             ))}
           </Tabs>
         )}
 
         {availableTabs.map((type, index) => {
           const stagesForType = getStagesByType(type);
-          
+
           return (
             <TabPanel key={type} value={activeTab} index={index}>
               {stagesForType.length === 0 ? (
@@ -218,10 +213,7 @@ export const WorkflowStageReorderDialog: React.FC<WorkflowStageReorderDialogProp
         )}
       </DialogContent>
       <DialogActions>
-        <Button 
-          onClick={onClose}
-          disabled={isReorderingStages}
-        >
+        <Button onClick={onClose} disabled={isReorderingStages}>
           Close
         </Button>
       </DialogActions>

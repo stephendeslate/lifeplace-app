@@ -19,10 +19,10 @@ export const queryKeys = {
   websocket: {
     connection: () => ['websocket', 'connection'] as const,
     metrics: () => ['websocket', 'metrics'] as const,
-  }
+  },
 } as const;
 
 // Helper function to invalidate query patterns
 export const createInvalidationPattern = (pattern: readonly string[]) => ({
-  queryKey: pattern
+  queryKey: pattern,
 });

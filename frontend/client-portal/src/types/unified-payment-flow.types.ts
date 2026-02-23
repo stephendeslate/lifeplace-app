@@ -12,7 +12,7 @@ import type {
   SetupIntentResponse,
   PaymentIntentResponse,
   Payment,
-  Invoice
+  Invoice,
 } from './financial.types';
 
 // ===========================

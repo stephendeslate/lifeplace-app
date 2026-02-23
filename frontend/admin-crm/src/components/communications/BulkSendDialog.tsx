@@ -1,7 +1,7 @@
 // Bulk Communication Sending Dialog
 // Allows admins to send emails/SMS to multiple clients at once using templates
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -16,12 +16,12 @@ import {
   Alert,
   CircularProgress,
   Divider,
-} from "@mui/material";
-import { Send as SendIcon } from "@mui/icons-material";
-import { ModernDialog } from "../common";
-import { useCommunications } from "../../hooks/useCommunications";
-import { useClients } from "../../hooks/useClients";
-import type { Client } from "../../types/clients.types";
+} from '@mui/material';
+import { Send as SendIcon } from '@mui/icons-material';
+import { ModernDialog } from '../common';
+import { useCommunications } from '../../hooks/useCommunications';
+import { useClients } from '../../hooks/useClients';
+import type { Client } from '../../types/clients.types';
 
 interface BulkSendDialogProps {
   open: boolean;
@@ -29,15 +29,11 @@ interface BulkSendDialogProps {
   onSuccess?: () => void;
 }
 
-export const BulkSendDialog: React.FC<BulkSendDialogProps> = ({
-  open,
-  onClose,
-  onSuccess,
-}) => {
+export const BulkSendDialog: React.FC<BulkSendDialogProps> = ({ open, onClose, onSuccess }) => {
   const [selectedClients, setSelectedClients] = useState<Client[]>([]);
-  const [templateId, setTemplateId] = useState<number | "">("");
-  const [channel, setChannel] = useState<"EMAIL" | "SMS">("EMAIL");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [templateId, setTemplateId] = useState<number | ''>('');
+  const [channel, setChannel] = useState<'EMAIL' | 'SMS'>('EMAIL');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { useTemplates, useSendBulk } = useCommunications();
   const { data: templateData } = useTemplates();
@@ -49,9 +45,7 @@ export const BulkSendDialog: React.FC<BulkSendDialogProps> = ({
 
   // Filter templates by selected channel
   const filteredTemplates = useMemo(() => {
-    return templates.filter(
-      (t) => t.channel === channel && t.category === "MANUAL",
-    );
+    return templates.filter((t) => t.channel === channel && t.category === 'MANUAL');
   }, [templates, channel]);
 
   const selectedTemplate = useMemo(() => {
@@ -63,16 +57,15 @@ export const BulkSendDialog: React.FC<BulkSendDialogProps> = ({
     if (!templateId || selectedClients.length === 0) return;
 
     const recipients = selectedClients.map((client) => ({
-      recipient:
-        channel === "EMAIL" ? client.email : client.profile?.phone || "",
+      recipient: channel === 'EMAIL' ? client.email : client.profile?.phone || '',
       client_id: client.id,
       context_data: {
         first_name: client.first_name,
         last_name: client.last_name,
         full_name: `${client.first_name} ${client.last_name}`,
         email: client.email,
-        company: client.profile?.company || "",
-        phone: client.profile?.phone || "",
+        company: client.profile?.company || '',
+        phone: client.profile?.phone || '',
       },
     }));
 
@@ -89,17 +82,17 @@ export const BulkSendDialog: React.FC<BulkSendDialogProps> = ({
 
   const handleClose = () => {
     setSelectedClients([]);
-    setTemplateId("");
-    setChannel("EMAIL");
-    setSearchQuery("");
+    setTemplateId('');
+    setChannel('EMAIL');
+    setSearchQuery('');
     onClose();
   };
 
-  const canSend = selectedClients.length > 0 && templateId !== "" && !isSending;
+  const canSend = selectedClients.length > 0 && templateId !== '' && !isSending;
 
   // Warn about clients missing contact info for selected channel
   const clientsWithMissingInfo = useMemo(() => {
-    if (channel === "SMS") {
+    if (channel === 'SMS') {
       return selectedClients.filter((c) => !c.profile?.phone);
     }
     return selectedClients.filter((c) => !c.email);
@@ -113,27 +106,27 @@ export const BulkSendDialog: React.FC<BulkSendDialogProps> = ({
       maxWidth="md"
       fullWidth
       actions={[
-        { label: "Cancel", onClick: handleClose, variant: "outlined" as const },
+        { label: 'Cancel', onClick: handleClose, variant: 'outlined' as const },
         {
           label: isSending
-            ? "Sending..."
-            : `Send to ${selectedClients.length} recipient${selectedClients.length !== 1 ? "s" : ""}`,
+            ? 'Sending...'
+            : `Send to ${selectedClients.length} recipient${selectedClients.length !== 1 ? 's' : ''}`,
           onClick: handleSend,
-          variant: "contained" as const,
+          variant: 'contained' as const,
           disabled: !canSend,
         },
       ]}
     >
       <Stack spacing={3}>
         {/* Channel Selection */}
-        <Box sx={{ display: "flex", gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
           <FormControl size="small" sx={{ minWidth: 150 }}>
             <InputLabel>Channel</InputLabel>
             <Select
               value={channel}
               onChange={(e) => {
-                setChannel(e.target.value as "EMAIL" | "SMS");
-                setTemplateId("");
+                setChannel(e.target.value as 'EMAIL' | 'SMS');
+                setTemplateId('');
               }}
               label="Channel"
             >
@@ -150,9 +143,7 @@ export const BulkSendDialog: React.FC<BulkSendDialogProps> = ({
               label="Template"
             >
               {filteredTemplates.length === 0 && (
-                <MenuItem disabled>
-                  No manual {channel.toLowerCase()} templates available
-                </MenuItem>
+                <MenuItem disabled>No manual {channel.toLowerCase()} templates available</MenuItem>
               )}
               {filteredTemplates.map((t) => (
                 <MenuItem key={t.id} value={t.id}>
@@ -170,11 +161,7 @@ export const BulkSendDialog: React.FC<BulkSendDialogProps> = ({
               Template: {selectedTemplate.name}
             </Typography>
             {selectedTemplate.subject_template && (
-              <Typography
-                variant="caption"
-                display="block"
-                color="text.secondary"
-              >
+              <Typography variant="caption" display="block" color="text.secondary">
                 Subject: {selectedTemplate.subject_template}
               </Typography>
             )}
@@ -245,18 +232,18 @@ export const BulkSendDialog: React.FC<BulkSendDialogProps> = ({
         {selectedClients.length > 0 && (
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
+              display: 'flex',
+              alignItems: 'center',
               gap: 1,
               p: 1.5,
-              bgcolor: "primary.50",
+              bgcolor: 'primary.50',
               borderRadius: 1,
             }}
           >
             <SendIcon fontSize="small" color="primary" />
             <Typography variant="body2">
               <strong>{selectedClients.length}</strong> recipient
-              {selectedClients.length !== 1 ? "s" : ""} selected
+              {selectedClients.length !== 1 ? 's' : ''} selected
             </Typography>
           </Box>
         )}
@@ -266,11 +253,9 @@ export const BulkSendDialog: React.FC<BulkSendDialogProps> = ({
           <Alert severity="warning" sx={{ py: 0.5 }}>
             <Typography variant="caption">
               {clientsWithMissingInfo.length} client
-              {clientsWithMissingInfo.length !== 1 ? "s" : ""} missing{" "}
-              {channel === "SMS" ? "phone number" : "email address"}:{" "}
-              {clientsWithMissingInfo
-                .map((c) => `${c.first_name} ${c.last_name}`)
-                .join(", ")}
+              {clientsWithMissingInfo.length !== 1 ? 's' : ''} missing{' '}
+              {channel === 'SMS' ? 'phone number' : 'email address'}:{' '}
+              {clientsWithMissingInfo.map((c) => `${c.first_name} ${c.last_name}`).join(', ')}
             </Typography>
           </Alert>
         )}
@@ -278,10 +263,10 @@ export const BulkSendDialog: React.FC<BulkSendDialogProps> = ({
         {isSending && (
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
+              display: 'flex',
+              alignItems: 'center',
               gap: 2,
-              justifyContent: "center",
+              justifyContent: 'center',
               py: 2,
             }}
           >

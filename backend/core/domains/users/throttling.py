@@ -6,8 +6,8 @@ These classes provide rate limiting for DPA compliance endpoints to prevent abus
 while still allowing legitimate access to personal data rights.
 """
 
-from rest_framework.throttling import UserRateThrottle
 from django.conf import settings
+from rest_framework.throttling import UserRateThrottle
 
 
 class DSRBaseThrottle(UserRateThrottle):
@@ -25,7 +25,8 @@ class DataAccessThrottle(DSRBaseThrottle):
     Throttle for Right to Access endpoint.
     Rate: 10/hour
     """
-    scope = 'data_access'
+
+    scope = "data_access"
 
 
 class DataExportThrottle(DSRBaseThrottle):
@@ -33,7 +34,8 @@ class DataExportThrottle(DSRBaseThrottle):
     Throttle for Right to Portability (export) endpoint.
     Rate: 1/day
     """
-    scope = 'data_export'
+
+    scope = "data_export"
 
 
 class AccountDeletionThrottle(DSRBaseThrottle):
@@ -41,7 +43,8 @@ class AccountDeletionThrottle(DSRBaseThrottle):
     Throttle for Right to Erasure endpoint.
     Rate: 1/day
     """
-    scope = 'account_deletion'
+
+    scope = "account_deletion"
 
 
 class DataCorrectionThrottle(DSRBaseThrottle):
@@ -49,7 +52,8 @@ class DataCorrectionThrottle(DSRBaseThrottle):
     Throttle for Right to Correction endpoint.
     Rate: 5/day
     """
-    scope = 'data_correction'
+
+    scope = "data_correction"
 
 
 class ProcessingObjectionThrottle(DSRBaseThrottle):
@@ -57,7 +61,8 @@ class ProcessingObjectionThrottle(DSRBaseThrottle):
     Throttle for Right to Object endpoint.
     Rate: 3/day
     """
-    scope = 'processing_objection'
+
+    scope = "processing_objection"
 
 
 class ConsentManagementThrottle(DSRBaseThrottle):
@@ -65,4 +70,5 @@ class ConsentManagementThrottle(DSRBaseThrottle):
     Throttle for consent management endpoints.
     Rate: 20/hour
     """
-    scope = 'consent_management'
+
+    scope = "consent_management"

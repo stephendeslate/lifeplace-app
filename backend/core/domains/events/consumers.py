@@ -14,12 +14,13 @@ Use Case:
 import json
 import logging
 import time
+
 from channels.generic.websocket import AsyncWebsocketConsumer
 
 logger = logging.getLogger(__name__)
 
 # Group name for all availability subscribers
-AVAILABILITY_GROUP = 'availability_updates'
+AVAILABILITY_GROUP = "availability_updates"
 
 # Rate limiting settings
 MAX_MESSAGES_PER_SECOND = 10
@@ -58,28 +59,21 @@ class AvailabilityConsumer(AsyncWebsocketConsumer):
         # Join the global availability updates group
         self.group_name = AVAILABILITY_GROUP
 
-        await self.channel_layer.group_add(
-            self.group_name,
-            self.channel_name
-        )
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
 
         await self.accept()
 
         # Send connection success message
-        await self.send(text_data=json.dumps({
-            'type': 'connection_established',
-            'message': 'Connected to availability updates'
-        }))
+        await self.send(
+            text_data=json.dumps({"type": "connection_established", "message": "Connected to availability updates"})
+        )
 
         logger.debug(f"Availability WebSocket connected: {self.channel_name}")
 
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection"""
         # Leave the availability group
-        await self.channel_layer.group_discard(
-            self.group_name,
-            self.channel_name
-        )
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
         logger.debug(f"Availability WebSocket disconnected: {self.channel_name} (code: {close_code})")
 
@@ -105,46 +99,31 @@ class AvailabilityConsumer(AsyncWebsocketConsumer):
         # Check message size limit
         if len(text_data) > MAX_MESSAGE_SIZE:
             logger.warning(f"WebSocket message too large: {len(text_data)} bytes")
-            await self.send(text_data=json.dumps({
-                'type': 'error',
-                'message': 'Message too large'
-            }))
+            await self.send(text_data=json.dumps({"type": "error", "message": "Message too large"}))
             return
 
         # Check rate limit
         if not self._check_rate_limit():
             logger.warning(f"WebSocket rate limit exceeded for {self.channel_name}")
-            await self.send(text_data=json.dumps({
-                'type': 'error',
-                'message': 'Rate limit exceeded'
-            }))
+            await self.send(text_data=json.dumps({"type": "error", "message": "Rate limit exceeded"}))
             return
 
         try:
             data = json.loads(text_data)
-            message_type = data.get('type')
+            message_type = data.get("type")
 
-            if message_type == 'ping':
+            if message_type == "ping":
                 # Respond to heartbeat
-                await self.send(text_data=json.dumps({'type': 'pong'}))
+                await self.send(text_data=json.dumps({"type": "pong"}))
             else:
                 # Unknown message type - just acknowledge
-                await self.send(text_data=json.dumps({
-                    'type': 'ack',
-                    'received_type': message_type
-                }))
+                await self.send(text_data=json.dumps({"type": "ack", "received_type": message_type}))
 
         except json.JSONDecodeError:
-            await self.send(text_data=json.dumps({
-                'type': 'error',
-                'message': 'Invalid JSON format'
-            }))
+            await self.send(text_data=json.dumps({"type": "error", "message": "Invalid JSON format"}))
         except Exception as e:
             logger.error(f"Error in AvailabilityConsumer.receive: {e}")
-            await self.send(text_data=json.dumps({
-                'type': 'error',
-                'message': 'Error processing message'
-            }))
+            await self.send(text_data=json.dumps({"type": "error", "message": "Error processing message"}))
 
     # === Group Message Handlers ===
     # These are called when messages are broadcast to the group
@@ -165,13 +144,17 @@ class AvailabilityConsumer(AsyncWebsocketConsumer):
             'reason': 'PAYMENT_COMPLETED'  # Optional
         }
         """
-        await self.send(text_data=json.dumps({
-            'type': 'date_blocked',
-            'date': event.get('date'),
-            'event_id': event.get('event_id'),
-            'reason': event.get('reason', 'PAYMENT_COMPLETED'),
-            'timestamp': event.get('timestamp')
-        }))
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "date_blocked",
+                    "date": event.get("date"),
+                    "event_id": event.get("event_id"),
+                    "reason": event.get("reason", "PAYMENT_COMPLETED"),
+                    "timestamp": event.get("timestamp"),
+                }
+            )
+        )
 
         logger.debug(f"Sent date_blocked for {event.get('date')} to {self.channel_name}")
 
@@ -191,12 +174,16 @@ class AvailabilityConsumer(AsyncWebsocketConsumer):
             'reason': 'EVENT_CANCELLED'  # Optional
         }
         """
-        await self.send(text_data=json.dumps({
-            'type': 'date_released',
-            'date': event.get('date'),
-            'reason': event.get('reason', 'RELEASED'),
-            'timestamp': event.get('timestamp')
-        }))
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "date_released",
+                    "date": event.get("date"),
+                    "reason": event.get("reason", "RELEASED"),
+                    "timestamp": event.get("timestamp"),
+                }
+            )
+        )
 
         logger.debug(f"Sent date_released for {event.get('date')} to {self.channel_name}")
 
@@ -215,12 +202,16 @@ class AvailabilityConsumer(AsyncWebsocketConsumer):
             'expires_at': '2025-03-15T10:05:00Z'
         }
         """
-        await self.send(text_data=json.dumps({
-            'type': 'reservation_created',
-            'date': event.get('date'),
-            'expires_at': event.get('expires_at'),
-            'timestamp': event.get('timestamp')
-        }))
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "reservation_created",
+                    "date": event.get("date"),
+                    "expires_at": event.get("expires_at"),
+                    "timestamp": event.get("timestamp"),
+                }
+            )
+        )
 
     async def reservation_released(self, event):
         """
@@ -236,9 +227,13 @@ class AvailabilityConsumer(AsyncWebsocketConsumer):
             'reason': 'EXPIRED' or 'PAYMENT_FAILED' or 'USER_CANCELLED'
         }
         """
-        await self.send(text_data=json.dumps({
-            'type': 'reservation_released',
-            'date': event.get('date'),
-            'reason': event.get('reason', 'RELEASED'),
-            'timestamp': event.get('timestamp')
-        }))
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "type": "reservation_released",
+                    "date": event.get("date"),
+                    "reason": event.get("reason", "RELEASED"),
+                    "timestamp": event.get("timestamp"),
+                }
+            )
+        )

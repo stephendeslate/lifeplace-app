@@ -15,7 +15,6 @@ import { LayoutProvider } from '../contexts/LayoutContext';
 import { ConfirmDialogProvider } from '../components/common/ConfirmDialog';
 import { BrandingProvider } from '../contexts/BrandingContext';
 
-
 interface AppProvidersProps {
   children: React.ReactNode;
 }
@@ -28,7 +27,10 @@ const queryClient = new QueryClient({
       gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
       retry: (failureCount, error: unknown) => {
         // Don't retry on 401/403 errors
-        if ((error as { response?: { status?: number } })?.response?.status === 401 || (error as { response?: { status?: number } })?.response?.status === 403) {
+        if (
+          (error as { response?: { status?: number } })?.response?.status === 401 ||
+          (error as { response?: { status?: number } })?.response?.status === 403
+        ) {
           return false;
         }
         // Retry up to 3 times for other errors
@@ -68,9 +70,7 @@ const ThemedApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <CssBaseline enableColorScheme />
       <LocalizationProvider dateAdapter={AdapterDateFns}>
         <AuthProvider>
-          <CoreApp>
-            {children}
-          </CoreApp>
+          <CoreApp>{children}</CoreApp>
         </AuthProvider>
       </LocalizationProvider>
     </MuiThemeProvider>
@@ -81,9 +81,7 @@ export const AppProviders: React.FC<AppProvidersProps> = ({ children }) => {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <ThemedApp>
-          {children}
-        </ThemedApp>
+        <ThemedApp>{children}</ThemedApp>
       </ThemeProvider>
     </QueryClientProvider>
   );

@@ -34,7 +34,11 @@ const SupportPage: React.FC = () => {
 
   const { useSupportStats, useSupportInquiries } = useSupport();
   const { data: stats, isLoading: statsLoading } = useSupportStats();
-  const { data: inquiries, isLoading: inquiriesLoading, error: inquiriesError } = useSupportInquiries(filters);
+  const {
+    data: inquiries,
+    isLoading: inquiriesLoading,
+    error: inquiriesError,
+  } = useSupportInquiries(filters);
 
   const handleInquirySelect = (inquiry: SupportInquiry) => {
     setSelectedInquiry(inquiry);
@@ -45,7 +49,7 @@ const SupportPage: React.FC = () => {
   };
 
   const handleFilterChange = (field: keyof SupportFilters, value: string) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       [field]: value || undefined,
     }));
@@ -53,12 +57,7 @@ const SupportPage: React.FC = () => {
 
   // Show detail view if inquiry is selected
   if (selectedInquiry) {
-    return (
-      <InquiryDetail
-        inquiryId={selectedInquiry.id}
-        onBack={handleBackToList}
-      />
-    );
+    return <InquiryDetail inquiryId={selectedInquiry.id} onBack={handleBackToList} />;
   }
 
   return (
@@ -130,7 +129,7 @@ const SupportPage: React.FC = () => {
           </Box>
           <Box>
             <Typography variant="h5" sx={{ fontWeight: 600 }}>
-              {statsLoading ? '-' : (stats?.by_priority?.urgent || 0)}
+              {statsLoading ? '-' : stats?.by_priority?.urgent || 0}
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Urgent Priority
@@ -239,7 +238,16 @@ const SupportPage: React.FC = () => {
 
       {/* Inquiry List */}
       <Paper sx={{ p: 0 }}>
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box
+          sx={{
+            p: 2,
+            borderBottom: 1,
+            borderColor: 'divider',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
             Inquiries
           </Typography>
@@ -262,10 +270,7 @@ const SupportPage: React.FC = () => {
             Failed to load inquiries. Please try again.
           </Alert>
         ) : inquiries && inquiries.length > 0 ? (
-          <InquiryList
-            inquiries={inquiries}
-            onSelect={handleInquirySelect}
-          />
+          <InquiryList inquiries={inquiries} onSelect={handleInquirySelect} />
         ) : (
           <Box sx={{ textAlign: 'center', py: 6 }}>
             <Typography variant="body1" color="text.secondary">

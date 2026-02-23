@@ -15,10 +15,7 @@ import {
   Checkbox,
   alpha,
 } from '@mui/material';
-import {
-  Close as CloseIcon,
-  CheckCircle as SuccessIcon,
-} from '@mui/icons-material';
+import { Close as CloseIcon, CheckCircle as SuccessIcon } from '@mui/icons-material';
 import { PaymentGatewaySelector } from './PaymentGatewaySelector';
 import { UnifiedStripePaymentFlow } from './UnifiedStripePaymentFlow';
 import { GlassCard } from '../../design-system';
@@ -65,18 +62,23 @@ export const AddPaymentMethodDialog: React.FC<AddPaymentMethodDialogProps> = ({
     onClose();
   }, [onClose]);
 
-  const handleSuccess = useCallback((result: PaymentFlowResult) => {
-    if (result.mode === 'save' && result.saveResult) {
-      setSuccess(true);
-      setSuccessMessage('Payment method added successfully! You can now use it for future payments.');
+  const handleSuccess = useCallback(
+    (result: PaymentFlowResult) => {
+      if (result.mode === 'save' && result.saveResult) {
+        setSuccess(true);
+        setSuccessMessage(
+          'Payment method added successfully! You can now use it for future payments.',
+        );
 
-      // Close dialog and notify parent after showing success briefly
-      setTimeout(() => {
-        onSuccess?.();
-        handleClose();
-      }, 2000);
-    }
-  }, [onSuccess, handleClose]);
+        // Close dialog and notify parent after showing success briefly
+        setTimeout(() => {
+          onSuccess?.();
+          handleClose();
+        }, 2000);
+      }
+    },
+    [onSuccess, handleClose],
+  );
 
   const handleError = useCallback((error: PaymentFlowError) => {
     setError(error.message);
@@ -88,12 +90,14 @@ export const AddPaymentMethodDialog: React.FC<AddPaymentMethodDialogProps> = ({
     return (
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogContent>
-          <Box sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            py: 4
-          }}>
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              py: 4,
+            }}
+          >
             <SuccessIcon sx={{ fontSize: 64, color: 'success.main', mb: 2 }} />
             <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
               Payment Method Added!
@@ -118,7 +122,7 @@ export const AddPaymentMethodDialog: React.FC<AddPaymentMethodDialogProps> = ({
         sx: {
           backgroundColor: alpha('#fff', 0.95),
           backdropFilter: 'blur(10px)',
-        }
+        },
       }}
     >
       <DialogTitle>
@@ -131,11 +135,7 @@ export const AddPaymentMethodDialog: React.FC<AddPaymentMethodDialogProps> = ({
               Save a payment method for faster checkout
             </Typography>
           </Box>
-          <Button
-            onClick={handleClose}
-            sx={{ minWidth: 'auto', p: 1 }}
-            disabled={loading}
-          >
+          <Button onClick={handleClose} sx={{ minWidth: 'auto', p: 1 }} disabled={loading}>
             <CloseIcon />
           </Button>
         </Stack>
@@ -179,7 +179,7 @@ export const AddPaymentMethodDialog: React.FC<AddPaymentMethodDialogProps> = ({
                     '& .MuiFormControlLabel-label': {
                       fontSize: '0.875rem',
                       color: 'text.secondary',
-                    }
+                    },
                   }}
                 />
               </Stack>
@@ -194,11 +194,13 @@ export const AddPaymentMethodDialog: React.FC<AddPaymentMethodDialogProps> = ({
               </Typography>
 
               <UnifiedStripePaymentFlow
-                config={{
-                  mode: 'save',
-                  save_as_default: saveAsDefault,
-                  nickname: nickname || undefined,
-                } as SaveModeConfig}
+                config={
+                  {
+                    mode: 'save',
+                    save_as_default: saveAsDefault,
+                    nickname: nickname || undefined,
+                  } as SaveModeConfig
+                }
                 gateway={selectedGateway}
                 onSuccess={handleSuccess}
                 onError={handleError}
@@ -223,11 +225,7 @@ export const AddPaymentMethodDialog: React.FC<AddPaymentMethodDialogProps> = ({
           <Button onClick={handleClose} disabled={loading}>
             Cancel
           </Button>
-          <Button
-            variant="contained"
-            disabled={!selectedGateway}
-            sx={{ minWidth: 120 }}
-          >
+          <Button variant="contained" disabled={!selectedGateway} sx={{ minWidth: 120 }}>
             Continue
           </Button>
         </DialogActions>

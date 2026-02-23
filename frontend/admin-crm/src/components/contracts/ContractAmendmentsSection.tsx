@@ -12,7 +12,11 @@ import {
 import { ContractAmendmentsTable } from './ContractAmendmentsTable';
 import { ContractAmendmentRequestDialog } from './ContractAmendmentRequestDialog';
 import { AmendmentApprovalDialog } from './AmendmentApprovalDialog';
-import type { EventContract, ContractAmendment, CreateContractAmendmentData } from '../../types/contracts.types';
+import type {
+  EventContract,
+  ContractAmendment,
+  CreateContractAmendmentData,
+} from '../../types/contracts.types';
 import { tokens } from '../../design-system/tokens';
 
 interface ContractAmendmentsSectionProps {
@@ -42,7 +46,7 @@ export const ContractAmendmentsSection: React.FC<ContractAmendmentsSectionProps>
         onSuccess: () => {
           setRequestDialogOpen(false);
         },
-      }
+      },
     );
   };
 
@@ -73,7 +77,7 @@ export const ContractAmendmentsSection: React.FC<ContractAmendmentsSectionProps>
           setApprovalDialogOpen(false);
           setSelectedAmendment(null);
         },
-      }
+      },
     );
   };
 
@@ -85,7 +89,7 @@ export const ContractAmendmentsSection: React.FC<ContractAmendmentsSectionProps>
           setApprovalDialogOpen(false);
           setSelectedAmendment(null);
         },
-      }
+      },
     );
   };
 

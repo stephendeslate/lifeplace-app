@@ -1,43 +1,44 @@
 # backend/core/domains/contracts/client_views.py
-from django.db.models import Q
 from django.http import HttpResponse
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import EventContract, ContractSignature
+
+from .models import ContractSignature, EventContract
+from .pdf_service import ContractPDFService
 from .serializers import (
-    EventContractDetailSerializer,
-    EventContractSerializer,
     ContractSignatureCreateSerializer,
     ContractSignatureSerializer,
+    EventContractDetailSerializer,
+    EventContractSerializer,
 )
-from .services import ContractSignatureService, EventContractService
-from .pdf_service import ContractPDFService
+from .services import ContractSignatureService
 
 
 class ClientContractPermission(IsAuthenticated):
     """
     Custom permission for client contract access
     """
+
     def has_permission(self, request, view):
         if not super().has_permission(request, view):
             return False
-        
+
         # Only allow authenticated users with client role
-        return hasattr(request.user, 'role') and request.user.role in ['CLIENT', 'ADMIN']
-    
+        return hasattr(request.user, "role") and request.user.role in ["CLIENT", "ADMIN"]
+
     def has_object_permission(self, request, view, obj):
         # Admin can access all contracts
-        if hasattr(request.user, 'role') and request.user.role == 'ADMIN':
+        if hasattr(request.user, "role") and request.user.role == "ADMIN":
             return True
-        
+
         # Clients can only access contracts from their own events
         if isinstance(obj, EventContract):
             return obj.event.client == request.user
         elif isinstance(obj, ContractSignature):
             return obj.contract.event.client == request.user
-        
+
         return False
 
 
@@ -45,37 +46,34 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Client-facing contract viewset with restricted permissions and functionality
     """
+
     permission_classes = [ClientContractPermission]
     serializer_class = EventContractSerializer
-    
+
     def get_queryset(self):
         """Get contracts accessible to the current client"""
         user = self.request.user
 
         # Admin users can see all contracts
-        if hasattr(user, 'role') and user.role == 'ADMIN':
-            queryset = EventContract.objects.select_related(
-                'event', 'template'
-            ).prefetch_related(
-                'signatures__signer',
-                'documents',
-                'notes'
-            ).order_by('-created_at')
+        if hasattr(user, "role") and user.role == "ADMIN":
+            queryset = (
+                EventContract.objects.select_related("event", "template")
+                .prefetch_related("signatures__signer", "documents", "notes")
+                .order_by("-created_at")
+            )
         else:
             # Client users see contracts from their events (including expired for visibility)
-            queryset = EventContract.objects.filter(
-                event__client=user,
-                status__in=['SENT', 'PARTIALLY_SIGNED', 'SIGNED', 'EXPIRED']
-            ).select_related(
-                'event', 'template'
-            ).prefetch_related(
-                'signatures__signer',
-                'documents',
-                'notes'
-            ).order_by('-created_at')
+            queryset = (
+                EventContract.objects.filter(
+                    event__client=user, status__in=["SENT", "PARTIALLY_SIGNED", "SIGNED", "EXPIRED"]
+                )
+                .select_related("event", "template")
+                .prefetch_related("signatures__signer", "documents", "notes")
+                .order_by("-created_at")
+            )
 
         # Apply event filter from query params (server-side filtering)
-        event_id = self.request.query_params.get('event')
+        event_id = self.request.query_params.get("event")
         if event_id:
             try:
                 queryset = queryset.filter(event_id=int(event_id))
@@ -83,42 +81,42 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
                 pass  # Invalid event_id, skip filtering
 
         # Apply status filter from query params
-        status_filter = self.request.query_params.get('status')
+        status_filter = self.request.query_params.get("status")
         if status_filter:
             queryset = queryset.filter(status=status_filter)
 
         return queryset
-    
+
     def get_serializer_class(self):
-        # Use detailed serializer for both list and retrieve to ensure 
+        # Use detailed serializer for both list and retrieve to ensure
         # accurate signature progress data is available to client
         return EventContractDetailSerializer
-    
+
     def list(self, request, *args, **kwargs):
         """Enhanced list with calculated signature fields for all contracts"""
         queryset = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(queryset)
-        
+
         contracts = page if page is not None else queryset
-        
+
         # Add calculated fields for each contract
         for contract in contracts:
             contract.is_fully_signed = contract.is_fully_signed()
             contract.missing_signatures = contract.get_missing_signatures()
             contract.can_client_sign = self._can_client_sign(contract, request.user)
             contract.sign_disabled_reason = self._get_sign_disabled_reason(contract, request.user)
-        
+
         serializer = self.get_serializer(contracts, many=True)
-        
+
         if page is not None:
             return self.get_paginated_response(serializer.data)
-        
+
         return Response(serializer.data)
-    
+
     def retrieve(self, request, *args, **kwargs):
         """Enhanced retrieve with calculated signature fields"""
         instance = self.get_object()
-        
+
         # Add calculated fields for client display
         instance.is_fully_signed = instance.is_fully_signed()
         instance.missing_signatures = instance.get_missing_signatures()
@@ -127,58 +125,60 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
 
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
-    
+
     def _can_client_sign(self, contract, user):
         """Check if the current client can sign this contract"""
-        if contract.status not in ['SENT', 'PARTIALLY_SIGNED']:
+        if contract.status not in ["SENT", "PARTIALLY_SIGNED"]:
             return False
 
         # Check if contract has expired (even if status not yet updated)
         if contract.valid_until:
             from datetime import date
+
             if date.today() > contract.valid_until:
                 return False
 
         # Check if client signature already exists
-        if contract.signatures.filter(role='CLIENT').exists():
+        if contract.signatures.filter(role="CLIENT").exists():
             return False
 
         # Check if CLIENT role is required
         required_roles = contract.template.get_signature_requirements()
-        return 'CLIENT' in required_roles
+        return "CLIENT" in required_roles
 
     def _get_sign_disabled_reason(self, contract, user):
         """Get the reason why signing is disabled for this contract"""
         # Status-based reasons
-        if contract.status == 'SIGNED':
-            return 'Contract is already fully signed'
-        if contract.status == 'VOID':
-            return 'Contract has been voided'
-        if contract.status == 'AMENDED':
-            return 'Contract has been amended - please sign the new version'
-        if contract.status == 'EXPIRED':
-            return 'Contract has expired'
-        if contract.status == 'DRAFT':
-            return 'Contract has not been sent yet'
+        if contract.status == "SIGNED":
+            return "Contract is already fully signed"
+        if contract.status == "VOID":
+            return "Contract has been voided"
+        if contract.status == "AMENDED":
+            return "Contract has been amended - please sign the new version"
+        if contract.status == "EXPIRED":
+            return "Contract has expired"
+        if contract.status == "DRAFT":
+            return "Contract has not been sent yet"
 
         # Check if expired by date (even if status not yet updated)
         if contract.valid_until:
             from datetime import date
+
             if date.today() > contract.valid_until:
-                return 'Contract validity period has passed'
+                return "Contract validity period has passed"
 
         # Check if already signed by client
-        if contract.signatures.filter(role='CLIENT').exists():
-            return 'You have already signed this contract'
+        if contract.signatures.filter(role="CLIENT").exists():
+            return "You have already signed this contract"
 
         # Check if CLIENT role is required
         required_roles = contract.template.get_signature_requirements()
-        if 'CLIENT' not in required_roles:
-            return 'Client signature is not required for this contract'
+        if "CLIENT" not in required_roles:
+            return "Client signature is not required for this contract"
 
         return None
-    
-    @action(detail=True, methods=['post'])
+
+    @action(detail=True, methods=["post"])
     def sign(self, request, pk=None):
         """
         Submit a client signature for the contract
@@ -187,39 +187,37 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
 
         # Validate that client can sign
         if not self._can_client_sign(contract, request.user):
-            return Response(
-                {'error': 'You cannot sign this contract at this time'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": "You cannot sign this contract at this time"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Prepare signature data
         signature_data = {
-            'contract': contract.id,
-            'signer': request.user.id,
-            'role': 'CLIENT',
-            'signature_data': request.data.get('signature_data', ''),
-            'signer_name': request.data.get('signer_name', ''),
-            'signer_title': request.data.get('signer_title', ''),
-            'signer_email': request.data.get('signer_email', request.user.email),
-            'verification_method': request.data.get('verification_method', 'electronic_signature'),
+            "contract": contract.id,
+            "signer": request.user.id,
+            "role": "CLIENT",
+            "signature_data": request.data.get("signature_data", ""),
+            "signer_name": request.data.get("signer_name", ""),
+            "signer_title": request.data.get("signer_title", ""),
+            "signer_email": request.data.get("signer_email", request.user.email),
+            "verification_method": request.data.get("verification_method", "electronic_signature"),
         }
 
         # Parse electronic consent timestamp from signature_timestamp
         electronic_consent_timestamp = None
-        signature_timestamp_str = request.data.get('signature_timestamp', '')
+        signature_timestamp_str = request.data.get("signature_timestamp", "")
         if signature_timestamp_str:
             try:
                 from django.utils.dateparse import parse_datetime
+
                 electronic_consent_timestamp = parse_datetime(signature_timestamp_str)
             except (ValueError, TypeError):
                 pass
 
         # Additional metadata - stored in signature_metadata JSON field
         signature_metadata = {
-            'user_agent': request.META.get('HTTP_USER_AGENT', ''),
-            'ip_address': request.META.get('REMOTE_ADDR', ''),
-            'screen_resolution': request.data.get('screen_resolution', ''),
-            'signature_timestamp': signature_timestamp_str,
+            "user_agent": request.META.get("HTTP_USER_AGENT", ""),
+            "ip_address": request.META.get("REMOTE_ADDR", ""),
+            "screen_resolution": request.data.get("screen_resolution", ""),
+            "signature_timestamp": signature_timestamp_str,
         }
 
         # Validate signature data
@@ -229,46 +227,41 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
 
         try:
             # Create the signature with all security/compliance fields
-            signature = ContractSignatureService.add_signature(
+            ContractSignatureService.add_signature(
                 contract_id=contract.id,
                 user_id=request.user.id,
-                signature_data=signature_data['signature_data'],
-                role='CLIENT',
-                signer_name=signature_data['signer_name'],
-                signer_title=signature_data['signer_title'],
-                signer_email=signature_data['signer_email'],
-                verification_method=signature_data['verification_method'],
-                ip_address=request.META.get('REMOTE_ADDR', ''),
-                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                signature_data=signature_data["signature_data"],
+                role="CLIENT",
+                signer_name=signature_data["signer_name"],
+                signer_title=signature_data["signer_title"],
+                signer_email=signature_data["signer_email"],
+                verification_method=signature_data["verification_method"],
+                ip_address=request.META.get("REMOTE_ADDR", ""),
+                user_agent=request.META.get("HTTP_USER_AGENT", ""),
                 # Security/compliance fields
-                device_fingerprint=request.data.get('device_fingerprint', ''),
-                legal_disclosure_accepted=request.data.get('legal_disclosure_accepted', False),
+                device_fingerprint=request.data.get("device_fingerprint", ""),
+                legal_disclosure_accepted=request.data.get("legal_disclosure_accepted", False),
                 electronic_consent_timestamp=electronic_consent_timestamp,
-                signature_intent_confirmed=request.data.get('signature_intent_confirmed', False),
+                signature_intent_confirmed=request.data.get("signature_intent_confirmed", False),
                 signature_metadata=signature_metadata,
             )
-            
+
             # Re-render contract content with the new signature
             from .services import ContractTemplateService
+
             ContractTemplateService.render_contract_with_signatures(contract.id)
-            
+
             # Return updated contract with signature
             contract.refresh_from_db()
             contract.is_fully_signed = contract.is_fully_signed()
             contract.missing_signatures = contract.get_missing_signatures()
-            
-            return Response(
-                EventContractDetailSerializer(contract).data,
-                status=status.HTTP_201_CREATED
-            )
-            
+
+            return Response(EventContractDetailSerializer(contract).data, status=status.HTTP_201_CREATED)
+
         except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-    
-    @action(detail=True, methods=['get'])
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=["get"])
     def status(self, request, pk=None):
         """
         Get detailed signature status for a contract
@@ -276,85 +269,85 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
         contract = self.get_object()
         required_roles = contract.template.get_signature_requirements()
         signatures = contract.signatures.all()
-        
+
         signature_status = {}
         for role in required_roles:
             signature = signatures.filter(role=role).first()
             signature_status[role] = {
-                'required': True,
-                'signed': signature is not None,
-                'signed_at': signature.signed_at if signature else None,
-                'signer_name': signature.signer_name if signature else None,
-                'is_current_user': signature and signature.signer == request.user if signature else False
+                "required": True,
+                "signed": signature is not None,
+                "signed_at": signature.signed_at if signature else None,
+                "signer_name": signature.signer_name if signature else None,
+                "is_current_user": signature and signature.signer == request.user if signature else False,
             }
-        
-        return Response({
-            'contract_id': contract.id,
-            'status': contract.status,
-            'is_fully_signed': contract.is_fully_signed(),
-            'signature_progress': {
-                'total_required': len(required_roles),
-                'completed': len([s for s in signature_status.values() if s['signed']]),
-                'percentage': (len([s for s in signature_status.values() if s['signed']]) / len(required_roles)) * 100 if required_roles else 0
-            },
-            'signatures': signature_status,
-            'can_client_sign': self._can_client_sign(contract, request.user),
-            'sign_disabled_reason': self._get_sign_disabled_reason(contract, request.user),
-            'expires_at': contract.valid_until.isoformat() if contract.valid_until else None
-        })
-    
-    @action(detail=False, methods=['get'])
+
+        return Response(
+            {
+                "contract_id": contract.id,
+                "status": contract.status,
+                "is_fully_signed": contract.is_fully_signed(),
+                "signature_progress": {
+                    "total_required": len(required_roles),
+                    "completed": len([s for s in signature_status.values() if s["signed"]]),
+                    "percentage": (len([s for s in signature_status.values() if s["signed"]]) / len(required_roles))
+                    * 100
+                    if required_roles
+                    else 0,
+                },
+                "signatures": signature_status,
+                "can_client_sign": self._can_client_sign(contract, request.user),
+                "sign_disabled_reason": self._get_sign_disabled_reason(contract, request.user),
+                "expires_at": contract.valid_until.isoformat() if contract.valid_until else None,
+            }
+        )
+
+    @action(detail=False, methods=["get"])
     def pending_signatures(self, request):
         """
         Get contracts that require the client's signature
         """
         user = request.user
-        
+
         # Get contracts where client signature is required and missing
         pending_contracts = []
         for contract in self.get_queryset():
             if self._can_client_sign(contract, user):
                 pending_contracts.append(contract)
-        
+
         serializer = EventContractSerializer(pending_contracts, many=True)
-        return Response({
-            'count': len(pending_contracts),
-            'contracts': serializer.data
-        })
-    
-    @action(detail=True, methods=['get'])
+        return Response({"count": len(pending_contracts), "contracts": serializer.data})
+
+    @action(detail=True, methods=["get"])
     def download_pdf(self, request, pk=None):
         """
         Download signed contract as PDF
         """
         contract = self.get_object()
-        
-        if contract.status != 'SIGNED':
+
+        if contract.status != "SIGNED":
             return Response(
-                {'error': 'Contract must be fully signed before download'},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Contract must be fully signed before download"}, status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             # Generate PDF
             pdf_buffer = ContractPDFService.generate_contract_pdf(contract)
-            
+
             # Create HTTP response with PDF
-            response = HttpResponse(pdf_buffer, content_type='application/pdf')
+            response = HttpResponse(pdf_buffer, content_type="application/pdf")
             filename = f"Contract_{contract.id}_{contract.event.name if hasattr(contract.event, 'name') else f'Event_{contract.event.id}'}.pdf"
             # Clean filename to remove unsafe characters
-            filename = "".join(c for c in filename if c.isalnum() or c in (' ', '-', '_', '.')).rstrip()
-            response['Content-Disposition'] = f'attachment; filename="{filename}"'
-            
+            filename = "".join(c for c in filename if c.isalnum() or c in (" ", "-", "_", ".")).rstrip()
+            response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
             return response
-            
+
         except Exception as e:
             return Response(
-                {'error': f'Failed to generate PDF: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": f"Failed to generate PDF: {e!s}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=["get"])
     def amendments(self, request, pk=None):
         """
         Get amendments for a contract (read-only for clients)
@@ -366,16 +359,16 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
         from .serializers import ContractAmendmentSerializer
 
         # Get amendments for this contract
-        amendments = ContractAmendment.objects.filter(
-            original_contract=contract
-        ).select_related(
-            'requested_by', 'reviewed_by'
-        ).order_by('-requested_at')
+        amendments = (
+            ContractAmendment.objects.filter(original_contract=contract)
+            .select_related("requested_by", "reviewed_by")
+            .order_by("-requested_at")
+        )
 
         serializer = ContractAmendmentSerializer(amendments, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=["get"])
     def documents(self, request, pk=None):
         """
         Get documents for a contract (read-only for clients)
@@ -388,10 +381,11 @@ class ClientContractViewSet(viewsets.ReadOnlyModelViewSet):
         from .serializers import ContractDocumentSerializer
 
         # Get active documents for this contract
-        documents = ContractDocument.objects.filter(
-            contract=contract,
-            is_active=True
-        ).select_related('uploaded_by').order_by('-created_at')
+        documents = (
+            ContractDocument.objects.filter(contract=contract, is_active=True)
+            .select_related("uploaded_by")
+            .order_by("-created_at")
+        )
 
         serializer = ContractDocumentSerializer(documents, many=True)
         return Response(serializer.data)
@@ -401,34 +395,32 @@ class ClientSignatureViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Client-facing signature viewset for viewing signature history
     """
+
     permission_classes = [ClientContractPermission]
     serializer_class = ContractSignatureSerializer
-    
+
     def get_queryset(self):
         """Get signatures accessible to the current client"""
         user = self.request.user
-        
+
         # Admin users can see all signatures
-        if hasattr(user, 'role') and user.role == 'ADMIN':
-            return ContractSignature.objects.select_related(
-                'contract', 'contract__event', 'signer'
-            ).order_by('-signed_at')
-        
+        if hasattr(user, "role") and user.role == "ADMIN":
+            return ContractSignature.objects.select_related("contract", "contract__event", "signer").order_by(
+                "-signed_at"
+            )
+
         # Client users only see signatures from their contracts
-        return ContractSignature.objects.filter(
-            contract__event__client=user
-        ).select_related(
-            'contract', 'contract__event', 'signer'
-        ).order_by('-signed_at')
-    
-    @action(detail=False, methods=['get'])
+        return (
+            ContractSignature.objects.filter(contract__event__client=user)
+            .select_related("contract", "contract__event", "signer")
+            .order_by("-signed_at")
+        )
+
+    @action(detail=False, methods=["get"])
     def my_signatures(self, request):
         """
         Get signatures created by the current user
         """
         signatures = self.get_queryset().filter(signer=request.user)
         serializer = ContractSignatureSerializer(signatures, many=True)
-        return Response({
-            'count': signatures.count(),
-            'signatures': serializer.data
-        })
+        return Response({"count": signatures.count(), "signatures": serializer.data})

@@ -1,12 +1,12 @@
 // pages/facilities/components/FacilitiesVenueCard.tsx
 
-import React, { useState, useCallback, useMemo } from "react";
-import { Box, Typography, Chip, Skeleton, Stack } from "@mui/material";
-import { People, LocationOn, Collections } from "@mui/icons-material";
-import { tokens, ModernCard, AnimatedElement } from "../../../design-system";
-import { Button } from "../../../design-system/components/Button";
-import { ImageCarousel, ImageLightbox } from "../../../components/gallery";
-import type { GalleryImage } from "../../../types/gallery.types";
+import React, { useState, useCallback, useMemo } from 'react';
+import { Box, Typography, Chip, Skeleton, Stack } from '@mui/material';
+import { People, LocationOn, Collections } from '@mui/icons-material';
+import { tokens, ModernCard, AnimatedElement } from '../../../design-system';
+import { Button } from '../../../design-system/components/Button';
+import { ImageCarousel, ImageLightbox } from '../../../components/gallery';
+import type { GalleryImage } from '../../../types/gallery.types';
 
 /**
  * Extended venue type for gallery display.
@@ -49,9 +49,7 @@ export const FacilitiesVenueCard: React.FC<FacilitiesVenueCardProps> = ({
 
   // Build gallery images array from featured + gallery images
   const galleryImages: GalleryImage[] = useMemo(() => {
-    const urls = [venue.featured_image, ...venue.gallery_images].filter(
-      Boolean,
-    ) as string[];
+    const urls = [venue.featured_image, ...venue.gallery_images].filter(Boolean) as string[];
     return urls.map((src, index) => ({
       src,
       alt: `${venue.name} - Photo ${index + 1}`,
@@ -79,30 +77,30 @@ export const FacilitiesVenueCard: React.FC<FacilitiesVenueCardProps> = ({
         variant="elevated"
         hover
         sx={{
-          overflow: "hidden",
+          overflow: 'hidden',
           p: 0,
         }}
       >
         <Box
           sx={{
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
           }}
         >
           {/* Image Carousel Section */}
           <Box
             sx={{
-              width: { xs: "100%", md: "50%" },
+              width: { xs: '100%', md: '50%' },
               minHeight: { xs: 250, md: 350 },
               flexShrink: 0,
-              position: "relative",
+              position: 'relative',
             }}
           >
             {galleryImages.length > 0 ? (
               <>
                 <ImageCarousel
                   images={galleryImages}
-                  height={{ xs: "250px", md: "350px" }}
+                  height={{ xs: '250px', md: '350px' }}
                   showArrows={galleryImages.length > 1}
                   showThumbnails={false}
                   onImageClick={(index) => openLightbox(index)}
@@ -114,18 +112,18 @@ export const FacilitiesVenueCard: React.FC<FacilitiesVenueCardProps> = ({
                     size="small"
                     onClick={() => openLightbox(0)}
                     sx={{
-                      position: "absolute",
+                      position: 'absolute',
                       bottom: 12,
                       left: 12,
                       zIndex: 2,
-                      backgroundColor: "rgba(0, 0, 0, 0.6)",
-                      color: "#fff",
+                      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                      color: '#fff',
                       fontSize: tokens.typography.sizes.xs,
                       height: 28,
-                      cursor: "pointer",
-                      "& .MuiChip-icon": { color: "#fff" },
-                      "&:hover": {
-                        backgroundColor: "rgba(0, 0, 0, 0.8)",
+                      cursor: 'pointer',
+                      '& .MuiChip-icon': { color: '#fff' },
+                      '&:hover': {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
                       },
                     }}
                   />
@@ -134,11 +132,11 @@ export const FacilitiesVenueCard: React.FC<FacilitiesVenueCardProps> = ({
             ) : (
               <Box
                 sx={{
-                  width: "100%",
+                  width: '100%',
                   height: { xs: 250, md: 350 },
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   background: tokens.color.base.sage[100],
                 }}
               >
@@ -158,9 +156,9 @@ export const FacilitiesVenueCard: React.FC<FacilitiesVenueCardProps> = ({
           <Box
             sx={{
               flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
               p: { xs: 3, md: 4 },
             }}
           >
@@ -170,7 +168,7 @@ export const FacilitiesVenueCard: React.FC<FacilitiesVenueCardProps> = ({
                 fontFamily: tokens.typography.families.heading,
                 fontSize: {
                   xs: tokens.typography.sizes.xl,
-                  md: tokens.typography.sizes["2xl"],
+                  md: tokens.typography.sizes['2xl'],
                 },
                 fontWeight: tokens.typography.weights.semibold,
                 color: tokens.color.base.neutral[900],
@@ -199,7 +197,7 @@ export const FacilitiesVenueCard: React.FC<FacilitiesVenueCardProps> = ({
               direction="row"
               spacing={1}
               sx={{
-                flexWrap: "wrap",
+                flexWrap: 'wrap',
                 gap: 1,
                 mb: 3,
               }}
@@ -213,7 +211,7 @@ export const FacilitiesVenueCard: React.FC<FacilitiesVenueCardProps> = ({
                   fontSize: tokens.typography.sizes.xs,
                   backgroundColor: tokens.color.base.sage[50],
                   color: tokens.color.base.sage[800],
-                  "& .MuiChip-icon": {
+                  '& .MuiChip-icon': {
                     color: tokens.color.base.sage[600],
                   },
                 }}
@@ -228,7 +226,7 @@ export const FacilitiesVenueCard: React.FC<FacilitiesVenueCardProps> = ({
                     fontSize: tokens.typography.sizes.xs,
                     backgroundColor: tokens.color.base.neutral[100],
                     color: tokens.color.base.neutral[700],
-                    "& .MuiChip-icon": {
+                    '& .MuiChip-icon': {
                       color: tokens.color.base.neutral[500],
                     },
                   }}
@@ -239,19 +237,11 @@ export const FacilitiesVenueCard: React.FC<FacilitiesVenueCardProps> = ({
             {/* Action Buttons */}
             <Stack direction="row" spacing={1.5}>
               {galleryImages.length > 0 && (
-                <Button
-                  variant="outlined"
-                  size="medium"
-                  onClick={() => openLightbox(0)}
-                >
+                <Button variant="outlined" size="medium" onClick={() => openLightbox(0)}>
                   View Gallery
                 </Button>
               )}
-              <Button
-                variant="terracotta"
-                size="medium"
-                onClick={handleBookNow}
-              >
+              <Button variant="terracotta" size="medium" onClick={handleBookNow}>
                 Book This Venue
               </Button>
             </Stack>
@@ -272,7 +262,7 @@ export const FacilitiesVenueCard: React.FC<FacilitiesVenueCardProps> = ({
         ctaButton={
           onNavigateToBooking
             ? {
-                label: "Book This Venue",
+                label: 'Book This Venue',
                 onClick: () => {
                   closeLightbox();
                   onNavigateToBooking();
@@ -292,21 +282,21 @@ export const FacilitiesVenueCardSkeleton: React.FC = () => (
   <Box
     sx={{
       borderRadius: tokens.spacing.radius.card,
-      overflow: "hidden",
-      backgroundColor: "#FFFFFF",
+      overflow: 'hidden',
+      backgroundColor: '#FFFFFF',
       boxShadow: tokens.shadow.elevation.sm,
     }}
   >
     <Box
       sx={{
-        display: "flex",
-        flexDirection: { xs: "column", md: "row" },
+        display: 'flex',
+        flexDirection: { xs: 'column', md: 'row' },
       }}
     >
       <Skeleton
         variant="rectangular"
         sx={{
-          width: { xs: "100%", md: "50%" },
+          width: { xs: '100%', md: '50%' },
           height: { xs: 250, md: 350 },
           backgroundColor: tokens.color.base.sage[100],
         }}
@@ -315,16 +305,16 @@ export const FacilitiesVenueCardSkeleton: React.FC = () => (
         sx={{
           flex: 1,
           p: { xs: 3, md: 4 },
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
         }}
       >
         <Skeleton
           variant="text"
           width="60%"
           sx={{
-            fontSize: "2rem",
+            fontSize: '2rem',
             mb: 1.5,
             backgroundColor: tokens.color.base.sage[100],
           }}
@@ -339,7 +329,7 @@ export const FacilitiesVenueCardSkeleton: React.FC = () => (
           width="75%"
           sx={{ mb: 2.5, backgroundColor: tokens.color.base.sage[100] }}
         />
-        <Box sx={{ display: "flex", gap: 1, mb: 3 }}>
+        <Box sx={{ display: 'flex', gap: 1, mb: 3 }}>
           <Skeleton
             variant="rounded"
             width={120}
@@ -353,7 +343,7 @@ export const FacilitiesVenueCardSkeleton: React.FC = () => (
             sx={{ backgroundColor: tokens.color.base.sage[100] }}
           />
         </Box>
-        <Box sx={{ display: "flex", gap: 1.5 }}>
+        <Box sx={{ display: 'flex', gap: 1.5 }}>
           <Skeleton
             variant="rounded"
             width={120}

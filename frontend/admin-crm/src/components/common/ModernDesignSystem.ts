@@ -2,18 +2,10 @@
 // Central export file for all modern design system components
 
 // Layout Components
-export {
-  ModernPageLayout,
-  ModernSettingsLayout,
-  ModernOverviewLayout,
-} from './ModernPageLayout';
+export { ModernPageLayout, ModernSettingsLayout, ModernOverviewLayout } from './ModernPageLayout';
 
 // Card Components
-export {
-  ModernCard,
-  ModernGlassCard,
-  ModernMetricCard,
-} from './ModernCard';
+export { ModernCard, ModernGlassCard, ModernMetricCard } from './ModernCard';
 
 // Empty State Components
 export {
@@ -59,17 +51,9 @@ export type {
 // Design System Utilities
 export const modernDesignSystem = {
   // Component categories
-  layouts: [
-    'ModernPageLayout',
-    'ModernSettingsLayout',
-    'ModernOverviewLayout',
-  ],
+  layouts: ['ModernPageLayout', 'ModernSettingsLayout', 'ModernOverviewLayout'],
 
-  cards: [
-    'ModernCard',
-    'ModernGlassCard',
-    'ModernMetricCard',
-  ],
+  cards: ['ModernCard', 'ModernGlassCard', 'ModernMetricCard'],
 
   emptyStates: [
     'ModernEmptyState',
@@ -79,11 +63,8 @@ export const modernDesignSystem = {
     'ModernLoadingState',
   ],
 
-  headers: [
-    'ModernPageHeader',
-    'ModernOverviewHeader',
-  ],
-  
+  headers: ['ModernPageHeader', 'ModernOverviewHeader'],
+
   loading: [
     'ModernSkeleton',
     'ModernHeaderSkeleton',
@@ -94,16 +75,16 @@ export const modernDesignSystem = {
     'ModernLoadingSpinner',
     'ModernPageLoadingSkeleton',
   ],
-  
+
   // Quick component builders
   builders: {
     refreshAction: 'createRefreshAction',
-    filterAction: 'createFilterAction', 
+    filterAction: 'createFilterAction',
     exportAction: 'createExportAction',
     settingsAction: 'createSettingsAction',
     addAction: 'createAddAction',
   },
-  
+
   // Usage patterns
   patterns: {
     dashboardPage: {
@@ -136,7 +117,7 @@ export const modernDesignSystem = {
       loading: 'ModernListSkeleton',
     },
   },
-  
+
   // Design principles
   principles: [
     'Glassmorphic effects for modern aesthetics',
@@ -148,10 +129,11 @@ export const modernDesignSystem = {
     'Intuitive user interactions',
     'Loading states for all async operations',
   ],
-  
+
   // Component guidelines
   guidelines: {
-    cards: 'Use glass variants for primary content, elevated for secondary content, outlined for forms',
+    cards:
+      'Use glass variants for primary content, elevated for secondary content, outlined for forms',
     emptyStates: 'Always provide helpful actions and tips for empty states',
     headers: 'Include breadcrumbs for deep navigation, use appropriate actions for page context',
     loading: 'Match skeleton structure to actual content layout',

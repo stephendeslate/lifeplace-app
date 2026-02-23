@@ -4,12 +4,12 @@ from rest_framework.routers import DefaultRouter
 
 from . import views
 
-app_name = 'clients'
+app_name = "clients"
 
 router = DefaultRouter()
-router.register(r'', views.ClientViewSet, basename='client')
-router.register(r'invitations', views.ClientInvitationViewSet, basename='invitation')
+router.register(r"", views.ClientViewSet, basename="client")
+router.register(r"invitations", views.ClientInvitationViewSet, basename="invitation")
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", include(router.urls)),
 ]

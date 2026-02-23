@@ -65,7 +65,7 @@ export interface EventQuote {
   is_expired?: boolean;
   is_expiring_soon?: boolean;
   days_until_expiry?: number | null;
-  expiry_urgency?: "CRITICAL" | "HIGH" | "NORMAL" | null;
+  expiry_urgency?: 'CRITICAL' | 'HIGH' | 'NORMAL' | null;
   sent_at: string | null;
   accepted_at: string | null;
   rejected_at: string | null;
@@ -92,7 +92,7 @@ export interface QuoteLineItem {
   product: number | null;
   notes: string;
   // Enhanced pricing fields for excess hours
-  item_type?: "PACKAGE" | "ADDON";
+  item_type?: 'PACKAGE' | 'ADDON';
   base_unit_price?: string;
   excess_hours?: number | null;
   excess_hour_price?: string | null;
@@ -147,39 +147,34 @@ export interface QuoteReminder {
   updated_at: string;
 }
 
-export type QuoteStatus =
-  | "DRAFT"
-  | "SENT"
-  | "ACCEPTED"
-  | "REJECTED"
-  | "EXPIRED";
+export type QuoteStatus = 'DRAFT' | 'SENT' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
 export type QuoteAction =
-  | "CREATED"
-  | "UPDATED"
-  | "SENT"
-  | "VIEWED"
-  | "ACCEPTED"
-  | "REJECTED"
-  | "EXPIRED"
-  | "REMINDER_SENT";
+  | 'CREATED'
+  | 'UPDATED'
+  | 'SENT'
+  | 'VIEWED'
+  | 'ACCEPTED'
+  | 'REJECTED'
+  | 'EXPIRED'
+  | 'REMINDER_SENT';
 
 export const QUOTE_STATUSES = [
-  { value: "DRAFT", label: "Draft" },
-  { value: "SENT", label: "Sent" },
-  { value: "ACCEPTED", label: "Accepted" },
-  { value: "REJECTED", label: "Rejected" },
-  { value: "EXPIRED", label: "Expired" },
+  { value: 'DRAFT', label: 'Draft' },
+  { value: 'SENT', label: 'Sent' },
+  { value: 'ACCEPTED', label: 'Accepted' },
+  { value: 'REJECTED', label: 'Rejected' },
+  { value: 'EXPIRED', label: 'Expired' },
 ] as const;
 
 export const QUOTE_ACTIONS = [
-  { value: "CREATED", label: "Created" },
-  { value: "UPDATED", label: "Updated" },
-  { value: "SENT", label: "Sent" },
-  { value: "VIEWED", label: "Viewed by client" },
-  { value: "ACCEPTED", label: "Accepted" },
-  { value: "REJECTED", label: "Rejected" },
-  { value: "EXPIRED", label: "Expired" },
-  { value: "REMINDER_SENT", label: "Reminder sent" },
+  { value: 'CREATED', label: 'Created' },
+  { value: 'UPDATED', label: 'Updated' },
+  { value: 'SENT', label: 'Sent' },
+  { value: 'VIEWED', label: 'Viewed by client' },
+  { value: 'ACCEPTED', label: 'Accepted' },
+  { value: 'REJECTED', label: 'Rejected' },
+  { value: 'EXPIRED', label: 'Expired' },
+  { value: 'REMINDER_SENT', label: 'Reminder sent' },
 ] as const;
 
 // Create/Update types
@@ -206,8 +201,7 @@ export interface CreateQuoteTemplateProductData {
   is_required?: boolean;
 }
 
-export type UpdateQuoteTemplateProductData =
-  Partial<CreateQuoteTemplateProductData>;
+export type UpdateQuoteTemplateProductData = Partial<CreateQuoteTemplateProductData>;
 
 export interface CreateEventQuoteData {
   event: number;

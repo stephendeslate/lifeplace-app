@@ -21,9 +21,9 @@ import {
   AutoAwesome as AutoIcon,
   Visibility as PreviewIcon,
 } from '@mui/icons-material';
-import type { 
-  BookingFlowStep, 
-  ConfirmationStepConfiguration 
+import type {
+  BookingFlowStep,
+  ConfirmationStepConfiguration,
 } from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 
@@ -47,7 +47,8 @@ interface ConfirmationConfigFormData {
 
 const defaultFormData: ConfirmationConfigFormData = {
   title: 'Booking Confirmed!',
-  message: 'Thank you for your booking. We\'ve received your request and will be in touch soon with next steps.',
+  message:
+    "Thank you for your booking. We've received your request and will be in touch soon with next steps.",
   show_booking_summary: true,
   show_next_steps: true,
   next_steps_content: '',
@@ -65,17 +66,16 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
   const [formData, setFormData] = useState<ConfirmationConfigFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const {
-    updateConfiguration,
-    isUpdatingConfiguration,
-    updateConfigurationError,
-  } = useBookingFlowStepConfiguration();
+  const { updateConfiguration, isUpdatingConfiguration, updateConfigurationError } =
+    useBookingFlowStepConfiguration();
 
   useEffect(() => {
     if (config) {
       setFormData({
         title: config.title || 'Booking Confirmed!',
-        message: config.message || 'Thank you for your booking. We\'ve received your request and will be in touch soon with next steps.',
+        message:
+          config.message ||
+          "Thank you for your booking. We've received your request and will be in touch soon with next steps.",
         show_booking_summary: config.show_booking_summary ?? true,
         show_next_steps: config.show_next_steps ?? true,
         next_steps_content: config.next_steps_content || '',
@@ -86,32 +86,31 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
     }
   }, [config]);
 
-  const handleInputChange = (field: keyof ConfirmationConfigFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
+  const handleInputChange =
+    (field: keyof ConfirmationConfigFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
         ...prev,
-        [field]: '',
+        [field]: value,
       }));
-    }
-  };
 
-  const handleSwitchChange = (field: keyof ConfirmationConfigFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.checked,
-    }));
-  };
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: '',
+        }));
+      }
+    };
+
+  const handleSwitchChange =
+    (field: keyof ConfirmationConfigFormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: event.target.checked,
+      }));
+    };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -144,7 +143,7 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
           send_confirmation_email: formData.send_confirmation_email,
           send_calendar_invite: formData.send_calendar_invite,
           create_event_immediately: formData.create_event_immediately,
-        }
+        },
       });
 
       // Create an updated step object to pass back to parent
@@ -160,7 +159,7 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
           send_confirmation_email: formData.send_confirmation_email,
           send_calendar_invite: formData.send_calendar_invite,
           create_event_immediately: formData.create_event_immediately,
-        } as ConfirmationStepConfiguration
+        } as ConfirmationStepConfiguration,
       };
 
       // Call the onUpdate callback to notify parent component
@@ -177,9 +176,10 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
       <Typography variant="h6" gutterBottom>
         Confirmation Step Configuration
       </Typography>
-      
+
       <Alert severity="info" sx={{ mb: 3 }}>
-        Configure the confirmation message and automated actions that occur when a booking is completed.
+        Configure the confirmation message and automated actions that occur when a booking is
+        completed.
       </Alert>
 
       {/* Display API errors */}
@@ -195,32 +195,32 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
           <Typography variant="subtitle1" gutterBottom>
             Confirmation Message
           </Typography>
-            
-            <Stack spacing={2}>
-              <TextField
-                fullWidth
-                label="Confirmation Title"
-                value={formData.title}
-                onChange={handleInputChange('title')}
-                error={!!errors.title}
-                helperText={errors.title || 'Main heading displayed after successful booking'}
-                required
-                disabled={isSubmitting}
-              />
-              
-              <TextField
-                fullWidth
-                label="Confirmation Message"
-                value={formData.message}
-                onChange={handleInputChange('message')}
-                error={!!errors.message}
-                helperText={errors.message || 'Thank you message displayed to clients'}
-                multiline
-                rows={4}
-                required
-                disabled={isSubmitting}
-              />
-            </Stack>
+
+          <Stack spacing={2}>
+            <TextField
+              fullWidth
+              label="Confirmation Title"
+              value={formData.title}
+              onChange={handleInputChange('title')}
+              error={!!errors.title}
+              helperText={errors.title || 'Main heading displayed after successful booking'}
+              required
+              disabled={isSubmitting}
+            />
+
+            <TextField
+              fullWidth
+              label="Confirmation Message"
+              value={formData.message}
+              onChange={handleInputChange('message')}
+              error={!!errors.message}
+              helperText={errors.message || 'Thank you message displayed to clients'}
+              multiline
+              rows={4}
+              required
+              disabled={isSubmitting}
+            />
+          </Stack>
         </Box>
 
         {/* Display Options */}
@@ -228,56 +228,56 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
           <Typography variant="subtitle1" gutterBottom>
             Display Options
           </Typography>
-            
-            <Stack spacing={2}>
-              <Box display="flex" alignItems="center" gap={1}>
-                <ConfirmIcon color="primary" />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_booking_summary}
-                      onChange={handleSwitchChange('show_booking_summary')}
-                      disabled={isSubmitting}
-                    />
-                  }
-                  label="Show Booking Summary"
-                />
-              </Box>
-              <Typography variant="caption" color="text.secondary">
-                Display a summary of the booking details on the confirmation page
-              </Typography>
 
-              <Box display="flex" alignItems="center" gap={1}>
-                <AutoIcon color="primary" />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_next_steps}
-                      onChange={handleSwitchChange('show_next_steps')}
-                      disabled={isSubmitting}
-                    />
-                  }
-                  label="Show Next Steps"
-                />
-              </Box>
-              <Typography variant="caption" color="text.secondary">
-                Display information about what happens next in the process
-              </Typography>
+          <Stack spacing={2}>
+            <Box display="flex" alignItems="center" gap={1}>
+              <ConfirmIcon color="primary" />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_booking_summary}
+                    onChange={handleSwitchChange('show_booking_summary')}
+                    disabled={isSubmitting}
+                  />
+                }
+                label="Show Booking Summary"
+              />
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Display a summary of the booking details on the confirmation page
+            </Typography>
 
-              {formData.show_next_steps && (
-                <TextField
-                  fullWidth
-                  label="Next Steps Content"
-                  value={formData.next_steps_content}
-                  onChange={handleInputChange('next_steps_content')}
-                  multiline
-                  rows={3}
-                  helperText="Information about next steps (leave empty for default content)"
-                  placeholder="What happens next:&#10;1. We'll review your booking request&#10;2. You'll receive a detailed proposal within 24 hours&#10;3. Once approved, we'll send a contract for signature"
-                  disabled={isSubmitting}
-                />
-              )}
-            </Stack>
+            <Box display="flex" alignItems="center" gap={1}>
+              <AutoIcon color="primary" />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_next_steps}
+                    onChange={handleSwitchChange('show_next_steps')}
+                    disabled={isSubmitting}
+                  />
+                }
+                label="Show Next Steps"
+              />
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Display information about what happens next in the process
+            </Typography>
+
+            {formData.show_next_steps && (
+              <TextField
+                fullWidth
+                label="Next Steps Content"
+                value={formData.next_steps_content}
+                onChange={handleInputChange('next_steps_content')}
+                multiline
+                rows={3}
+                helperText="Information about next steps (leave empty for default content)"
+                placeholder="What happens next:&#10;1. We'll review your booking request&#10;2. You'll receive a detailed proposal within 24 hours&#10;3. Once approved, we'll send a contract for signature"
+                disabled={isSubmitting}
+              />
+            )}
+          </Stack>
         </Box>
 
         {/* Automated Actions */}
@@ -285,117 +285,113 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
           <Typography variant="subtitle1" gutterBottom>
             Automated Actions
           </Typography>
-            
-            <Stack spacing={2}>
-              <Box display="flex" alignItems="center" gap={1}>
-                <EmailIcon color="primary" />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.send_confirmation_email}
-                      onChange={handleSwitchChange('send_confirmation_email')}
-                      disabled={isSubmitting}
-                    />
-                  }
-                  label="Send Confirmation Email"
-                />
-              </Box>
-              <Typography variant="caption" color="text.secondary">
-                Automatically send a confirmation email to the client
-              </Typography>
 
-              <Box display="flex" alignItems="center" gap={1}>
-                <CalendarIcon color="action" />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.send_calendar_invite}
-                      onChange={handleSwitchChange('send_calendar_invite')}
-                      disabled={isSubmitting}
-                    />
-                  }
-                  label="Send Calendar Invite"
-                />
-              </Box>
-              <Typography variant="caption" color="text.secondary">
-                Send a calendar invitation for the event date/time (if specified)
-              </Typography>
+          <Stack spacing={2}>
+            <Box display="flex" alignItems="center" gap={1}>
+              <EmailIcon color="primary" />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.send_confirmation_email}
+                    onChange={handleSwitchChange('send_confirmation_email')}
+                    disabled={isSubmitting}
+                  />
+                }
+                label="Send Confirmation Email"
+              />
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Automatically send a confirmation email to the client
+            </Typography>
 
-              <Divider sx={{ my: 1 }} />
+            <Box display="flex" alignItems="center" gap={1}>
+              <CalendarIcon color="action" />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.send_calendar_invite}
+                    onChange={handleSwitchChange('send_calendar_invite')}
+                    disabled={isSubmitting}
+                  />
+                }
+                label="Send Calendar Invite"
+              />
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Send a calendar invitation for the event date/time (if specified)
+            </Typography>
 
-              <Box display="flex" alignItems="center" gap={1}>
-                <AutoIcon color="success" />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.create_event_immediately}
-                      onChange={handleSwitchChange('create_event_immediately')}
-                      disabled={isSubmitting}
-                    />
-                  }
-                  label="Create Event Immediately"
-                />
-              </Box>
-              <Typography variant="caption" color="text.secondary">
-                Automatically create an event record in the system upon booking completion
-              </Typography>
-            </Stack>
+            <Divider sx={{ my: 1 }} />
+
+            <Box display="flex" alignItems="center" gap={1}>
+              <AutoIcon color="success" />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.create_event_immediately}
+                    onChange={handleSwitchChange('create_event_immediately')}
+                    disabled={isSubmitting}
+                  />
+                }
+                label="Create Event Immediately"
+              />
+            </Box>
+            <Typography variant="caption" color="text.secondary">
+              Automatically create an event record in the system upon booking completion
+            </Typography>
+          </Stack>
         </Box>
 
         {/* Preview */}
         <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
           <Box display="flex" alignItems="center" gap={1} mb={2}>
             <PreviewIcon color="primary" />
-            <Typography variant="subtitle1">
-              Live Preview
-            </Typography>
+            <Typography variant="subtitle1">Live Preview</Typography>
           </Box>
-            
-            <Box 
-              sx={{ 
-                p: 3, 
-                border: 1, 
-                borderColor: 'divider', 
-                borderRadius: 1,
-                backgroundColor: 'grey.50',
-                textAlign: 'center'
-              }}
-            >
-              <ConfirmIcon 
-                sx={{ fontSize: 48, color: 'success.main', mb: 2 }} 
-              />
-              
-              <Typography variant="h5" gutterBottom color="success.main">
-                {formData.title || 'Confirmation Title'}
-              </Typography>
-              
-              <Typography variant="body1" paragraph>
-                {formData.message || 'Confirmation message will appear here...'}
-              </Typography>
-              
-              {formData.show_booking_summary && (
-                <Box sx={{ mt: 2, p: 2, backgroundColor: 'background.paper', borderRadius: 1 }}>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Booking Summary
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Event details, packages, pricing, and contact information will be displayed here
-                  </Typography>
-                </Box>
-              )}
-              
-              {formData.show_next_steps && (
-                <Box sx={{ mt: 2, p: 2, backgroundColor: 'info.50', borderRadius: 1 }}>
-                  <Typography variant="subtitle2" gutterBottom color="info.main">
-                    What Happens Next
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line' }}>
-                    {formData.next_steps_content || 
-                     "• We'll review your booking request\n• You'll receive a detailed proposal within 24 hours\n• Once approved, we'll send a contract for signature"}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
+
+          <Box
+            sx={{
+              p: 3,
+              border: 1,
+              borderColor: 'divider',
+              borderRadius: 1,
+              backgroundColor: 'grey.50',
+              textAlign: 'center',
+            }}
+          >
+            <ConfirmIcon sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
+
+            <Typography variant="h5" gutterBottom color="success.main">
+              {formData.title || 'Confirmation Title'}
+            </Typography>
+
+            <Typography variant="body1" paragraph>
+              {formData.message || 'Confirmation message will appear here...'}
+            </Typography>
+
+            {formData.show_booking_summary && (
+              <Box sx={{ mt: 2, p: 2, backgroundColor: 'background.paper', borderRadius: 1 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Booking Summary
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Event details, packages, pricing, and contact information will be displayed here
+                </Typography>
+              </Box>
+            )}
+
+            {formData.show_next_steps && (
+              <Box sx={{ mt: 2, p: 2, backgroundColor: 'info.50', borderRadius: 1 }}>
+                <Typography variant="subtitle2" gutterBottom color="info.main">
+                  What Happens Next
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'pre-line' }}>
+                  {formData.next_steps_content ||
+                    "• We'll review your booking request\n• You'll receive a detailed proposal within 24 hours\n• Once approved, we'll send a contract for signature"}
+                </Typography>
+              </Box>
+            )}
+          </Box>
         </Box>
 
         {/* Configuration Summary */}
@@ -403,31 +399,35 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
           <Typography variant="subtitle1" gutterBottom>
             Configuration Summary
           </Typography>
-            
-            <Stack spacing={1}>
+
+          <Stack spacing={1}>
+            <Typography variant="body2">
+              <strong>Display:</strong>{' '}
+              {[
+                formData.show_booking_summary && 'Booking Summary',
+                formData.show_next_steps && 'Next Steps',
+              ]
+                .filter(Boolean)
+                .join(', ') || 'Basic confirmation only'}
+            </Typography>
+
+            <Typography variant="body2">
+              <strong>Automated Actions:</strong>{' '}
+              {[
+                formData.send_confirmation_email && 'Confirmation Email',
+                formData.send_calendar_invite && 'Calendar Invite',
+                formData.create_event_immediately && 'Create Event',
+              ]
+                .filter(Boolean)
+                .join(', ') || 'None'}
+            </Typography>
+
+            {formData.next_steps_content && (
               <Typography variant="body2">
-                <strong>Display:</strong>{' '}
-                {[
-                  formData.show_booking_summary && 'Booking Summary',
-                  formData.show_next_steps && 'Next Steps'
-                ].filter(Boolean).join(', ') || 'Basic confirmation only'}
+                <strong>Custom Next Steps:</strong> Configured
               </Typography>
-              
-              <Typography variant="body2">
-                <strong>Automated Actions:</strong>{' '}
-                {[
-                  formData.send_confirmation_email && 'Confirmation Email',
-                  formData.send_calendar_invite && 'Calendar Invite',
-                  formData.create_event_immediately && 'Create Event'
-                ].filter(Boolean).join(', ') || 'None'}
-              </Typography>
-              
-              {formData.next_steps_content && (
-                <Typography variant="body2">
-                  <strong>Custom Next Steps:</strong> Configured
-                </Typography>
-              )}
-            </Stack>
+            )}
+          </Stack>
         </Box>
 
         {/* Actions */}
@@ -440,7 +440,7 @@ export const ConfirmationStepConfig: React.FC<ConfirmationStepConfigProps> = ({
           >
             {isSubmitting ? 'Saving...' : 'Save Configuration'}
           </Button>
-          
+
           <Button
             variant="outlined"
             onClick={() => setFormData(defaultFormData)}

@@ -276,8 +276,15 @@ export interface UpdateNotificationPreferenceData {
  * Category preference keys for dynamic access
  */
 export type CategoryPreferenceKey =
-  | 'system' | 'event' | 'task' | 'payment'
-  | 'client' | 'contract' | 'workflow' | 'communication' | 'marketing';
+  | 'system'
+  | 'event'
+  | 'task'
+  | 'payment'
+  | 'client'
+  | 'contract'
+  | 'workflow'
+  | 'communication'
+  | 'marketing';
 
 /**
  * Delivery method types
@@ -289,7 +296,7 @@ export type DeliveryMethod = 'email' | 'sms' | 'in_app' | 'push';
  */
 export const getCategoryPreferenceKey = (
   category: CategoryPreferenceKey,
-  method: DeliveryMethod
+  method: DeliveryMethod,
 ): keyof NotificationPreference => {
   return `${category}_${method}` as keyof NotificationPreference;
 };
@@ -298,7 +305,7 @@ export const getCategoryPreferenceKey = (
  * Map backend priority to display color
  */
 export const getPriorityColor = (priority: NotificationPriority): string => {
-  const priorityInfo = NOTIFICATION_PRIORITIES.find(p => p.value === priority);
+  const priorityInfo = NOTIFICATION_PRIORITIES.find((p) => p.value === priority);
   return priorityInfo?.color ?? '#9e9e9e';
 };
 
@@ -306,9 +313,11 @@ export const getPriorityColor = (priority: NotificationPriority): string => {
  * Map backend category to display info
  */
 export const getCategoryInfo = (category: NotificationCategory) => {
-  return NOTIFICATION_CATEGORIES.find(c => c.value === category) ?? {
-    value: category,
-    label: category,
-    icon: 'Notifications',
-  };
+  return (
+    NOTIFICATION_CATEGORIES.find((c) => c.value === category) ?? {
+      value: category,
+      label: category,
+      icon: 'Notifications',
+    }
+  );
 };

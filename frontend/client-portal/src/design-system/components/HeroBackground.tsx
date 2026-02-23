@@ -84,7 +84,9 @@ interface StyledBackgroundProps {
 
 const StyledHeroBackground = styled(Box, {
   shouldForwardProp: (prop) =>
-    !['$gradient', '$animated', '$overlay', '$hasVideo', '$hasImage', '$minHeight'].includes(prop as string),
+    !['$gradient', '$animated', '$overlay', '$hasVideo', '$hasImage', '$minHeight'].includes(
+      prop as string,
+    ),
 })<StyledBackgroundProps>(({
   $gradient,
   $animated,
@@ -133,35 +135,38 @@ const StyledHeroBackground = styled(Box, {
     justifyContent: 'center',
 
     // Animation for gradients (GPU accelerated)
-    ...($animated && !$hasVideo && !$hasImage && {
-      animation: 'heroGradientShift 15s ease infinite',
-      '@keyframes heroGradientShift': {
-        '0%': {
-          backgroundPosition: '0% 50%',
+    ...($animated &&
+      !$hasVideo &&
+      !$hasImage && {
+        animation: 'heroGradientShift 15s ease infinite',
+        '@keyframes heroGradientShift': {
+          '0%': {
+            backgroundPosition: '0% 50%',
+          },
+          '50%': {
+            backgroundPosition: '100% 50%',
+          },
+          '100%': {
+            backgroundPosition: '0% 50%',
+          },
         },
-        '50%': {
-          backgroundPosition: '100% 50%',
-        },
-        '100%': {
-          backgroundPosition: '0% 50%',
-        },
-      },
-    }),
+      }),
 
     // Radial gradient overlay for depth (when not using video/image)
-    ...(!$hasVideo && !$hasImage && {
-      '&::after': {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: tokens.color.gradients.radialWarm,
-        pointerEvents: 'none',
-        zIndex: 0,
-      },
-    }),
+    ...(!$hasVideo &&
+      !$hasImage && {
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: tokens.color.gradients.radialWarm,
+          pointerEvents: 'none',
+          zIndex: 0,
+        },
+      }),
 
     // Overlay styles
     ...getOverlayStyles(),
@@ -255,9 +260,8 @@ export const HeroBackground: React.FC<HeroBackgroundProps> = ({
 
   // Handle responsive minHeight through sx
   const minHeightValue = typeof minHeight === 'string' ? minHeight : '100vh';
-  const combinedSx = typeof minHeight === 'object' && minHeight
-    ? { ...(sx as object || {}), minHeight }
-    : sx;
+  const combinedSx =
+    typeof minHeight === 'object' && minHeight ? { ...((sx as object) || {}), minHeight } : sx;
 
   return (
     <StyledHeroBackground
@@ -271,21 +275,13 @@ export const HeroBackground: React.FC<HeroBackgroundProps> = ({
     >
       {/* Video Background */}
       {video && (
-        <VideoBackground
-          autoPlay
-          muted
-          loop
-          playsInline
-          aria-hidden="true"
-        >
+        <VideoBackground autoPlay muted loop playsInline aria-hidden="true">
           <source src={video} type="video/mp4" />
         </VideoBackground>
       )}
 
       {/* Image Background */}
-      {image && !video && (
-        <ImageBackground $imageUrl={image} aria-hidden="true" />
-      )}
+      {image && !video && <ImageBackground $imageUrl={image} aria-hidden="true" />}
 
       {/* Gradient Fallback for Video/Image */}
       {(video || image) && (
@@ -303,9 +299,7 @@ export const HeroBackground: React.FC<HeroBackgroundProps> = ({
       )}
 
       {/* Content */}
-      <ContentWrapper>
-        {children}
-      </ContentWrapper>
+      <ContentWrapper>{children}</ContentWrapper>
     </StyledHeroBackground>
   );
 };

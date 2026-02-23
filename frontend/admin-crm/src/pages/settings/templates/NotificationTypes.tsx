@@ -1,11 +1,8 @@
 // Notification Types Management Page
 // Allows admins to manage notification type configurations: templates, priorities, channels
 
-import React, { useState } from "react";
-import {
-  Notifications as NotificationTypeIcon,
-  Edit as EditIcon,
-} from "@mui/icons-material";
+import React, { useState } from 'react';
+import { Notifications as NotificationTypeIcon, Edit as EditIcon } from '@mui/icons-material';
 import {
   Box,
   Chip,
@@ -14,79 +11,72 @@ import {
   TextField,
   MenuItem,
   Typography,
-} from "@mui/material";
+} from '@mui/material';
 import {
   PermissionAwareSettingsPage,
   type SettingsPageConfig,
   type SettingsTableColumn,
-} from "../../../components/common/settings";
-import { ModernDialog } from "../../../components/common";
-import { useNotificationTypes } from "../../../hooks/useNotifications";
-import { useSettingsPagination } from "../../../hooks/useSettingsPagination";
+} from '../../../components/common/settings';
+import { ModernDialog } from '../../../components/common';
+import { useNotificationTypes } from '../../../hooks/useNotifications';
+import { useSettingsPagination } from '../../../hooks/useSettingsPagination';
 import type {
   NotificationType,
   NotificationCategory,
   NotificationPriority,
   CreateNotificationTypeData,
   UpdateNotificationTypeData,
-} from "../../../types/notifications.types";
+} from '../../../types/notifications.types';
 import {
   NOTIFICATION_CATEGORIES,
   NOTIFICATION_PRIORITIES,
-} from "../../../types/notifications.types";
+} from '../../../types/notifications.types';
 
-const priorityColorMap: Record<
-  NotificationPriority,
-  "default" | "info" | "warning" | "error"
-> = {
-  LOW: "default",
-  NORMAL: "info",
-  HIGH: "warning",
-  URGENT: "error",
+const priorityColorMap: Record<NotificationPriority, 'default' | 'info' | 'warning' | 'error'> = {
+  LOW: 'default',
+  NORMAL: 'info',
+  HIGH: 'warning',
+  URGENT: 'error',
 };
 
 const categoryColorMap: Record<NotificationCategory, string> = {
-  SYSTEM: "#9e9e9e",
-  EVENT: "#2196f3",
-  TASK: "#ff9800",
-  PAYMENT: "#4caf50",
-  CLIENT: "#9c27b0",
-  CONTRACT: "#795548",
-  WORKFLOW: "#00bcd4",
-  COMMUNICATION: "#3f51b5",
-  MARKETING: "#e91e63",
+  SYSTEM: '#9e9e9e',
+  EVENT: '#2196f3',
+  TASK: '#ff9800',
+  PAYMENT: '#4caf50',
+  CLIENT: '#9c27b0',
+  CONTRACT: '#795548',
+  WORKFLOW: '#00bcd4',
+  COMMUNICATION: '#3f51b5',
+  MARKETING: '#e91e63',
 };
 
 // Table columns
 const columns: SettingsTableColumn<NotificationType>[] = [
   {
-    key: "name",
-    label: "Name",
+    key: 'name',
+    label: 'Name',
     sortable: true,
     searchable: true,
   },
   {
-    key: "code",
-    label: "Code",
+    key: 'code',
+    label: 'Code',
     sortable: true,
     searchable: true,
     render: (value) => (
-      <Typography
-        variant="body2"
-        sx={{ fontFamily: "monospace", fontSize: "0.8rem" }}
-      >
+      <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
         {String(value)}
       </Typography>
     ),
   },
   {
-    key: "category",
-    label: "Category",
-    align: "center",
+    key: 'category',
+    label: 'Category',
+    align: 'center',
     render: (value) => {
       const cat = String(value) as NotificationCategory;
-      const label =
-        NOTIFICATION_CATEGORIES.find((c) => c.value === cat)?.label || cat;
+      const label = NOTIFICATION_CATEGORIES.find((c) => c.value === cat)?.label || cat;
       return (
         <Chip
           label={label}
@@ -101,31 +91,31 @@ const columns: SettingsTableColumn<NotificationType>[] = [
     },
   },
   {
-    key: "priority",
-    label: "Priority",
-    align: "center",
+    key: 'priority',
+    label: 'Priority',
+    align: 'center',
     render: (value) => {
       const p = String(value) as NotificationPriority;
       return <Chip label={p} size="small" color={priorityColorMap[p]} />;
     },
   },
   {
-    key: "is_active",
-    label: "Active",
-    align: "center",
+    key: 'is_active',
+    label: 'Active',
+    align: 'center',
     render: (value) => (
       <Chip
-        label={value ? "Active" : "Inactive"}
+        label={value ? 'Active' : 'Inactive'}
         size="small"
-        color={value ? "success" : "default"}
-        variant={value ? "filled" : "outlined"}
+        color={value ? 'success' : 'default'}
+        variant={value ? 'filled' : 'outlined'}
       />
     ),
   },
   {
-    key: "is_system",
-    label: "System",
-    align: "center",
+    key: 'is_system',
+    label: 'System',
+    align: 'center',
     render: (value) =>
       value ? (
         <Chip label="System" size="small" variant="outlined" color="warning" />
@@ -140,66 +130,65 @@ const columns: SettingsTableColumn<NotificationType>[] = [
 // Default values for new notification type
 const defaultNotificationType: NotificationType = {
   id: 0,
-  code: "",
-  name: "",
-  description: "",
-  category: "SYSTEM",
-  icon: "notifications",
-  color: "#2196f3",
-  priority: "NORMAL",
-  default_title_template: "",
-  default_content_template: "",
-  default_email_template: "",
-  default_sms_template: "",
+  code: '',
+  name: '',
+  description: '',
+  category: 'SYSTEM',
+  icon: 'notifications',
+  color: '#2196f3',
+  priority: 'NORMAL',
+  default_title_template: '',
+  default_content_template: '',
+  default_email_template: '',
+  default_sms_template: '',
   is_active: true,
   is_system: false,
   supports_email: true,
   supports_sms: false,
   supports_push: true,
   auto_read_after_days: null,
-  created_at: "",
-  updated_at: "",
+  created_at: '',
+  updated_at: '',
 };
 
 // Config
 const config: SettingsPageConfig<NotificationType> = {
   page: {
-    title: "Notification Types",
-    subtitle:
-      "Manage notification types, templates, and delivery channel settings",
+    title: 'Notification Types',
+    subtitle: 'Manage notification types, templates, and delivery channel settings',
     icon: React.createElement(NotificationTypeIcon),
     breadcrumbs: [
-      { label: "Settings", href: "/settings" },
-      { label: "Templates", href: "/settings/templates" },
-      { label: "Notification Types" },
+      { label: 'Settings', href: '/settings' },
+      { label: 'Templates', href: '/settings/templates' },
+      { label: 'Notification Types' },
     ],
   },
   table: {
     columns,
-    searchFields: ["name", "code"],
+    searchFields: ['name', 'code'],
     filters: [
       {
-        key: "category",
-        label: "Category",
+        key: 'category',
+        label: 'Category',
         options: NOTIFICATION_CATEGORIES.map((c) => ({
           value: c.value,
           label: c.label,
         })),
       },
     ],
-    defaultSort: { key: "name", order: "asc" },
+    defaultSort: { key: 'name', order: 'asc' },
     emptyState: {
       icon: React.createElement(NotificationTypeIcon),
-      title: "No Notification Types Found",
+      title: 'No Notification Types Found',
       description:
-        "Notification types are auto-seeded on first deployment. If none appear, check backend setup.",
+        'Notification types are auto-seeded on first deployment. If none appear, check backend setup.',
     },
   },
   form: {
-    title: "Notification Type",
-    subtitle: "Configure notification type properties and message templates.",
+    title: 'Notification Type',
+    subtitle: 'Configure notification type properties and message templates.',
     sections: [],
-    maxWidth: "md",
+    maxWidth: 'md',
   },
   features: {
     create: true,
@@ -218,16 +207,12 @@ const NotificationTypeForm: React.FC<{
   isNew: boolean;
 }> = ({ item, onChange, isNew }) => {
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 3, p: 1 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, p: 1 }}>
       {/* Basic Info */}
-      <Typography
-        variant="subtitle2"
-        color="text.secondary"
-        sx={{ fontWeight: 600 }}
-      >
+      <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600 }}>
         Basic Information
       </Typography>
-      <Box sx={{ display: "flex", gap: 2 }}>
+      <Box sx={{ display: 'flex', gap: 2 }}>
         <TextField
           label="Name"
           value={item.name}
@@ -241,7 +226,7 @@ const NotificationTypeForm: React.FC<{
           value={item.code}
           onChange={(e) =>
             onChange({
-              code: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, "_"),
+              code: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '_'),
             })
           }
           required
@@ -250,10 +235,10 @@ const NotificationTypeForm: React.FC<{
           placeholder="e.g., EVENT_BOOKING_CONFIRMED"
           helperText={
             !isNew && item.is_system
-              ? "System type codes cannot be changed"
-              : "Uppercase, underscores only"
+              ? 'System type codes cannot be changed'
+              : 'Uppercase, underscores only'
           }
-          slotProps={{ htmlInput: { style: { fontFamily: "monospace" } } }}
+          slotProps={{ htmlInput: { style: { fontFamily: 'monospace' } } }}
         />
       </Box>
       <TextField
@@ -265,14 +250,12 @@ const NotificationTypeForm: React.FC<{
         rows={2}
         placeholder="Brief description of when this notification is triggered"
       />
-      <Box sx={{ display: "flex", gap: 2 }}>
+      <Box sx={{ display: 'flex', gap: 2 }}>
         <TextField
           select
           label="Category"
           value={item.category}
-          onChange={(e) =>
-            onChange({ category: e.target.value as NotificationCategory })
-          }
+          onChange={(e) => onChange({ category: e.target.value as NotificationCategory })}
           required
           fullWidth
         >
@@ -286,9 +269,7 @@ const NotificationTypeForm: React.FC<{
           select
           label="Priority"
           value={item.priority}
-          onChange={(e) =>
-            onChange({ priority: e.target.value as NotificationPriority })
-          }
+          onChange={(e) => onChange({ priority: e.target.value as NotificationPriority })}
           required
           fullWidth
         >
@@ -299,7 +280,7 @@ const NotificationTypeForm: React.FC<{
           ))}
         </TextField>
       </Box>
-      <Box sx={{ display: "flex", gap: 2 }}>
+      <Box sx={{ display: 'flex', gap: 2 }}>
         <TextField
           label="Icon"
           value={item.icon}
@@ -319,14 +300,10 @@ const NotificationTypeForm: React.FC<{
       </Box>
 
       {/* Delivery Channels */}
-      <Typography
-        variant="subtitle2"
-        color="text.secondary"
-        sx={{ fontWeight: 600, mt: 1 }}
-      >
+      <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mt: 1 }}>
         Delivery Channels
       </Typography>
-      <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+      <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
         <FormControlLabel
           control={
             <Switch
@@ -367,12 +344,10 @@ const NotificationTypeForm: React.FC<{
       <TextField
         label="Auto-read after (days)"
         type="number"
-        value={item.auto_read_after_days ?? ""}
+        value={item.auto_read_after_days ?? ''}
         onChange={(e) =>
           onChange({
-            auto_read_after_days: e.target.value
-              ? Number(e.target.value)
-              : null,
+            auto_read_after_days: e.target.value ? Number(e.target.value) : null,
           })
         }
         fullWidth
@@ -381,16 +356,12 @@ const NotificationTypeForm: React.FC<{
       />
 
       {/* Message Templates */}
-      <Typography
-        variant="subtitle2"
-        color="text.secondary"
-        sx={{ fontWeight: 600, mt: 1 }}
-      >
+      <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, mt: 1 }}>
         Message Templates
       </Typography>
       <Typography variant="caption" color="text.secondary">
-        Use {"{{variable_name}}"} syntax for dynamic content. Common variables:
-        user_name, event_name, client_name, action_url
+        Use {'{{variable_name}}'} syntax for dynamic content. Common variables: user_name,
+        event_name, client_name, action_url
       </Typography>
       <TextField
         label="Title Template"
@@ -437,9 +408,7 @@ const NotificationTypeForm: React.FC<{
 export const NotificationTypes: React.FC = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<NotificationType | null>(null);
-  const [formData, setFormData] = useState<NotificationType>(
-    defaultNotificationType,
-  );
+  const [formData, setFormData] = useState<NotificationType>(defaultNotificationType);
   const paginationState = useSettingsPagination({ defaultPageSize: 25 });
 
   const {
@@ -570,30 +539,26 @@ export const NotificationTypes: React.FC = () => {
           setEditingItem(null);
           onClose();
         }}
-        title={
-          item
-            ? `Edit Notification Type: ${item.name}`
-            : "Create Notification Type"
-        }
+        title={item ? `Edit Notification Type: ${item.name}` : 'Create Notification Type'}
         maxWidth="md"
         fullWidth
         actions={[
           {
-            label: "Cancel",
+            label: 'Cancel',
             onClick: () => {
               setEditDialogOpen(false);
               setEditingItem(null);
               onClose();
             },
-            variant: "outlined" as const,
+            variant: 'outlined' as const,
           },
           {
-            label: item ? "Save Changes" : "Create Type",
+            label: item ? 'Save Changes' : 'Create Type',
             onClick: () => {
               handleFormSave();
               onSave();
             },
-            variant: "contained" as const,
+            variant: 'contained' as const,
             disabled:
               !formData.name ||
               !formData.code ||
@@ -602,11 +567,7 @@ export const NotificationTypes: React.FC = () => {
           },
         ]}
       >
-        <NotificationTypeForm
-          item={formData}
-          onChange={handleFormChange}
-          isNew={!item}
-        />
+        <NotificationTypeForm item={formData} onChange={handleFormChange} isNew={!item} />
       </ModernDialog>
     );
   };
@@ -614,21 +575,21 @@ export const NotificationTypes: React.FC = () => {
   // Custom edit action for table rows
   const customTableActions = [
     {
-      label: "Edit",
+      label: 'Edit',
       icon: React.createElement(EditIcon),
       onClick: (item: NotificationType) => {
         setEditingItem(item);
         setFormData(item);
         setEditDialogOpen(true);
       },
-      color: "primary" as const,
+      color: 'primary' as const,
     },
   ];
 
   return (
     <PermissionAwareSettingsPage
       config={config}
-      requiredPermissions={["can_manage_templates"]}
+      requiredPermissions={['can_manage_templates']}
       data={notificationTypes}
       defaultValues={defaultNotificationType}
       isLoading={isLoadingTypes}

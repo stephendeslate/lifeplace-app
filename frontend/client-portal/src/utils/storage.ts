@@ -76,7 +76,7 @@ class Storage {
    */
   private safeJsonParse<T>(value: string | null, fallback: T): T {
     if (!value) return fallback;
-    
+
     try {
       return JSON.parse(value);
     } catch (error) {
@@ -155,8 +155,8 @@ class Storage {
 
   setPreferences(preferences: Partial<UserPreferences>): void {
     const current = this.getPreferences();
-    const updated = { 
-      ...current, 
+    const updated = {
+      ...current,
       ...preferences,
       notifications: { ...current.notifications, ...preferences.notifications },
       privacy: { ...current.privacy, ...preferences.privacy },
@@ -188,12 +188,10 @@ class Storage {
       id: `${item.type}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       addedAt: new Date().toISOString(),
     };
-    
+
     // Check if already exists
-    const exists = favorites.some(fav => 
-      fav.type === item.type && fav.title === item.title
-    );
-    
+    const exists = favorites.some((fav) => fav.type === item.type && fav.title === item.title);
+
     if (!exists) {
       favorites.unshift(newFavorite);
       // Keep only last 100 favorites
@@ -206,13 +204,13 @@ class Storage {
 
   removeFavorite(id: string): void {
     const favorites = this.getFavorites();
-    const updated = favorites.filter(fav => fav.id !== id);
+    const updated = favorites.filter((fav) => fav.id !== id);
     this.safeJsonStringify(STORAGE_KEYS.FAVORITES, updated);
   }
 
   isFavorite(type: string, title: string): boolean {
     const favorites = this.getFavorites();
-    return favorites.some(fav => fav.type === type && fav.title === title);
+    return favorites.some((fav) => fav.type === type && fav.title === title);
   }
 
   // Search history management
@@ -221,12 +219,16 @@ class Storage {
     return this.safeJsonParse(history, []);
   }
 
-  addSearchHistory(query: string, filters?: Record<string, string | number | boolean | string[]>, resultCount?: number): void {
+  addSearchHistory(
+    query: string,
+    filters?: Record<string, string | number | boolean | string[]>,
+    resultCount?: number,
+  ): void {
     const history = this.getSearchHistory();
-    
+
     // Remove existing entry for same query
-    const filtered = history.filter(item => item.query !== query);
-    
+    const filtered = history.filter((item) => item.query !== query);
+
     const newItem: SearchHistoryItem = {
       id: `search_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       query,
@@ -234,14 +236,14 @@ class Storage {
       searchedAt: new Date().toISOString(),
       resultCount,
     };
-    
+
     filtered.unshift(newItem);
-    
+
     // Keep only last 50 searches
     if (filtered.length > 50) {
       filtered.splice(50);
     }
-    
+
     this.safeJsonStringify(STORAGE_KEYS.SEARCH_HISTORY, filtered);
   }
 
@@ -269,9 +271,7 @@ class Storage {
 
     // Filter out expired items
     const now = new Date().toISOString();
-    const validItems = items.filter((item: CartItem) =>
-      !item.expiresAt || item.expiresAt > now
-    );
+    const validItems = items.filter((item: CartItem) => !item.expiresAt || item.expiresAt > now);
 
     // Update storage if items were filtered
     if (validItems.length !== items.length) {
@@ -285,8 +285,8 @@ class Storage {
     await this.withCartLock(() => {
       const cart = this.getCart();
 
-      const existingIndex = cart.findIndex(cartItem =>
-        cartItem.eventId === item.eventId && cartItem.ticketType === item.ticketType
+      const existingIndex = cart.findIndex(
+        (cartItem) => cartItem.eventId === item.eventId && cartItem.ticketType === item.ticketType,
       );
 
       if (existingIndex >= 0) {
@@ -307,7 +307,7 @@ class Storage {
   async updateCartItem(id: string, updates: Partial<CartItem>): Promise<void> {
     await this.withCartLock(() => {
       const cart = this.getCart();
-      const index = cart.findIndex(item => item.id === id);
+      const index = cart.findIndex((item) => item.id === id);
 
       if (index >= 0) {
         cart[index] = { ...cart[index], ...updates };
@@ -319,7 +319,7 @@ class Storage {
   async removeFromCart(id: string): Promise<void> {
     await this.withCartLock(() => {
       const cart = this.getCart();
-      const updated = cart.filter(item => item.id !== id);
+      const updated = cart.filter((item) => item.id !== id);
       this.safeJsonStringify(STORAGE_KEYS.CART, updated);
     });
   }
@@ -330,7 +330,7 @@ class Storage {
 
   getCartTotal(): number {
     const cart = this.getCart();
-    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
   }
 
   getCartItemCount(): number {
@@ -350,7 +350,7 @@ class Storage {
 
   // Clear all app data
   clearAll(): void {
-    Object.values(STORAGE_KEYS).forEach(key => {
+    Object.values(STORAGE_KEYS).forEach((key) => {
       localStorage.removeItem(key);
     });
   }
@@ -373,33 +373,25 @@ class Storage {
   // Export data for backup
   exportData(): Record<string, unknown> {
     const data: Record<string, unknown> = {};
-    
+
     Object.entries(STORAGE_KEYS).forEach(([key, storageKey]) => {
       const value = localStorage.getItem(storageKey);
       if (value) {
         data[key] = this.safeJsonParse(value, null);
       }
     });
-    
+
     return data;
   }
 
   // Import data from backup (excluding sensitive auth data)
   importData(data: Record<string, unknown>): void {
     // Don't import tokens for security reasons
-    const allowedKeys = [
-      'PREFERENCES', 
-      'THEME_MODE', 
-      'FAVORITES', 
-      'SEARCH_HISTORY'
-    ];
-    
-    allowedKeys.forEach(key => {
+    const allowedKeys = ['PREFERENCES', 'THEME_MODE', 'FAVORITES', 'SEARCH_HISTORY'];
+
+    allowedKeys.forEach((key) => {
       if (data[key] && STORAGE_KEYS[key as keyof typeof STORAGE_KEYS]) {
-        this.safeJsonStringify(
-          STORAGE_KEYS[key as keyof typeof STORAGE_KEYS], 
-          data[key]
-        );
+        this.safeJsonStringify(STORAGE_KEYS[key as keyof typeof STORAGE_KEYS], data[key]);
       }
     });
   }

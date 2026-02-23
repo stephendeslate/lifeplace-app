@@ -182,7 +182,7 @@ export type ResponsiveSize = {
   xl?: ComponentSize;
 };
 
-export type ConditionalProps<T, K extends keyof T> = T[K] extends true 
+export type ConditionalProps<T, K extends keyof T> = T[K] extends true
   ? Required<Pick<T, K>>
   : Partial<Pick<T, K>>;
 
@@ -255,10 +255,10 @@ export interface ListPagePattern {
   loading: 'ModernListSkeleton';
 }
 
-export type PagePattern = 
-  | DashboardPagePattern 
-  | SettingsPagePattern 
-  | OverviewPagePattern 
+export type PagePattern =
+  | DashboardPagePattern
+  | SettingsPagePattern
+  | OverviewPagePattern
   | ListPagePattern;
 
 // Export component prop types for external use

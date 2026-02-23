@@ -96,10 +96,7 @@ export const WorkflowWebhooks: React.FC = () => {
 
   const handleSubmitConfig = (data: CreateWorkflowWebhookData | UpdateWorkflowWebhookData) => {
     if (editingWebhook) {
-      updateWebhook(
-        { id: editingWebhook.id, data },
-        { onSuccess: handleCloseConfig }
-      );
+      updateWebhook({ id: editingWebhook.id, data }, { onSuccess: handleCloseConfig });
     } else {
       createWebhook(data as CreateWorkflowWebhookData, { onSuccess: handleCloseConfig });
     }
@@ -153,7 +150,11 @@ export const WorkflowWebhooks: React.FC = () => {
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Box>
-          <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography
+            variant="h5"
+            gutterBottom
+            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+          >
             <WebhookIcon />
             Workflow Webhooks
           </Typography>
@@ -161,20 +162,16 @@ export const WorkflowWebhooks: React.FC = () => {
             Configure webhooks to send workflow events to external services
           </Typography>
         </Box>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleOpenCreate}
-        >
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleOpenCreate}>
           Add Webhook
         </Button>
       </Box>
 
       {/* Info Alert */}
       <Alert severity="info" sx={{ mb: 3 }}>
-        Webhooks allow you to integrate LifePlace workflows with external services like Zapier,
-        Make (Integromat), custom APIs, and more. When workflow events occur, a signed HTTP
-        request will be sent to your endpoint.
+        Webhooks allow you to integrate LifePlace workflows with external services like Zapier, Make
+        (Integromat), custom APIs, and more. When workflow events occur, a signed HTTP request will
+        be sent to your endpoint.
       </Alert>
 
       {/* Webhooks Table */}
@@ -288,8 +285,8 @@ export const WorkflowWebhooks: React.FC = () => {
                             (webhook.success_rate || 0) >= 0.9
                               ? 'success'
                               : (webhook.success_rate || 0) >= 0.5
-                              ? 'warning'
-                              : 'error'
+                                ? 'warning'
+                                : 'error'
                           }
                           variant="outlined"
                         />
@@ -314,10 +311,7 @@ export const WorkflowWebhooks: React.FC = () => {
                     )}
                   </TableCell>
                   <TableCell align="right">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleOpenMenu(e, webhook)}
-                    >
+                    <IconButton size="small" onClick={(e) => handleOpenMenu(e, webhook)}>
                       <MoreVertIcon />
                     </IconButton>
                   </TableCell>
@@ -329,11 +323,7 @@ export const WorkflowWebhooks: React.FC = () => {
       </TableContainer>
 
       {/* Actions Menu */}
-      <Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={handleCloseMenu}
-      >
+      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleCloseMenu}>
         <MenuItem onClick={() => menuWebhook && handleTest(menuWebhook)}>
           <ListItemIcon>
             {isTestingWebhook ? <CircularProgress size={20} /> : <TestIcon fontSize="small" />}

@@ -2,15 +2,7 @@
 // Reusable empty state component with simple flat styling
 
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Button,
-  Stack,
-  Grow,
-  Fade,
-  Chip,
-} from '@mui/material';
+import { Box, Typography, Button, Stack, Grow, Fade, Chip } from '@mui/material';
 import {
   Add as AddIcon,
   Refresh as RefreshIcon,
@@ -64,37 +56,53 @@ export const ModernEmptyState: React.FC<ModernEmptyStateProps> = ({
 }) => {
   const getIconSize = () => {
     switch (size) {
-      case 'small': return 64;
-      case 'medium': return 80;
-      case 'large': return 100;
-      default: return 80;
+      case 'small':
+        return 64;
+      case 'medium':
+        return 80;
+      case 'large':
+        return 100;
+      default:
+        return 80;
     }
   };
 
   const getPadding = () => {
     switch (size) {
-      case 'small': return 4;
-      case 'medium': return 6;
-      case 'large': return 8;
-      default: return 6;
+      case 'small':
+        return 4;
+      case 'medium':
+        return 6;
+      case 'large':
+        return 8;
+      default:
+        return 6;
     }
   };
 
   const getTitleVariant = () => {
     switch (size) {
-      case 'small': return 'h6' as const;
-      case 'medium': return 'h5' as const;
-      case 'large': return 'h4' as const;
-      default: return 'h5' as const;
+      case 'small':
+        return 'h6' as const;
+      case 'medium':
+        return 'h5' as const;
+      case 'large':
+        return 'h4' as const;
+      default:
+        return 'h5' as const;
     }
   };
 
   const getDefaultIcon = () => {
     switch (variant) {
-      case 'error': return ErrorIcon;
-      case 'search': return SearchIcon;
-      case 'loading': return RefreshIcon;
-      default: return HelpIcon;
+      case 'error':
+        return ErrorIcon;
+      case 'search':
+        return SearchIcon;
+      case 'loading':
+        return RefreshIcon;
+      default:
+        return HelpIcon;
     }
   };
 
@@ -110,9 +118,10 @@ export const ModernEmptyState: React.FC<ModernEmptyStateProps> = ({
           textAlign: 'center',
           bgcolor: 'background.paper',
           borderRadius: tokens.spacing.radius.lg,
-          border: variant === 'error'
-            ? `1px dashed ${tokens.color.error[300]}`
-            : `1px dashed ${tokens.color.borders.subtle}`,
+          border:
+            variant === 'error'
+              ? `1px dashed ${tokens.color.error[300]}`
+              : `1px dashed ${tokens.color.borders.subtle}`,
           minHeight: size === 'small' ? 240 : size === 'large' ? 400 : 320,
           display: 'flex',
           flexDirection: 'column',
@@ -136,16 +145,17 @@ export const ModernEmptyState: React.FC<ModernEmptyStateProps> = ({
                 mb: 3,
               }}
             >
-              {React.isValidElement(FinalIcon) ? (
-                FinalIcon
-              ) : typeof FinalIcon === 'function' ? (
-                React.createElement(FinalIcon as React.ComponentType<{ sx?: object }>, {
-                  sx: {
-                    fontSize: iconSize,
-                    color: variant === 'error' ? tokens.color.error[500] : tokens.color[color][500],
-                  }
-                })
-              ) : null}
+              {React.isValidElement(FinalIcon)
+                ? FinalIcon
+                : typeof FinalIcon === 'function'
+                  ? React.createElement(FinalIcon as React.ComponentType<{ sx?: object }>, {
+                      sx: {
+                        fontSize: iconSize,
+                        color:
+                          variant === 'error' ? tokens.color.error[500] : tokens.color[color][500],
+                      },
+                    })
+                  : null}
             </Box>
           </Fade>
 
@@ -184,13 +194,14 @@ export const ModernEmptyState: React.FC<ModernEmptyStateProps> = ({
             <Fade in timeout={1400}>
               <Box
                 sx={{
-                  bgcolor: tip.type === 'pro'
-                    ? tokens.color.warning[50]
-                    : tip.type === 'success'
-                      ? tokens.color.success[50]
-                      : tip.type === 'warning'
-                        ? tokens.color.warning[50]
-                        : tokens.color.info[50],
+                  bgcolor:
+                    tip.type === 'pro'
+                      ? tokens.color.warning[50]
+                      : tip.type === 'success'
+                        ? tokens.color.success[50]
+                        : tip.type === 'warning'
+                          ? tokens.color.warning[50]
+                          : tokens.color.info[50],
                   borderRadius: tokens.spacing.radius.md,
                   p: 2,
                   maxWidth: size === 'large' ? 500 : 400,
@@ -202,13 +213,14 @@ export const ModernEmptyState: React.FC<ModernEmptyStateProps> = ({
                   <LightbulbIcon
                     sx={{
                       fontSize: 18,
-                      color: tip.type === 'pro'
-                        ? tokens.color.warning[600]
-                        : tip.type === 'success'
-                          ? tokens.color.success[600]
-                          : tip.type === 'warning'
-                            ? tokens.color.warning[600]
-                            : tokens.color.info[600],
+                      color:
+                        tip.type === 'pro'
+                          ? tokens.color.warning[600]
+                          : tip.type === 'success'
+                            ? tokens.color.success[600]
+                            : tip.type === 'warning'
+                              ? tokens.color.warning[600]
+                              : tokens.color.info[600],
                       mt: 0.1,
                       flexShrink: 0,
                     }}
@@ -219,16 +231,23 @@ export const ModernEmptyState: React.FC<ModernEmptyStateProps> = ({
                         variant="body2"
                         fontWeight="600"
                         sx={{
-                          color: tip.type === 'pro'
-                            ? tokens.color.warning[700]
-                            : tip.type === 'success'
-                              ? tokens.color.success[700]
-                              : tip.type === 'warning'
-                                ? tokens.color.warning[700]
-                                : tokens.color.info[700]
+                          color:
+                            tip.type === 'pro'
+                              ? tokens.color.warning[700]
+                              : tip.type === 'success'
+                                ? tokens.color.success[700]
+                                : tip.type === 'warning'
+                                  ? tokens.color.warning[700]
+                                  : tokens.color.info[700],
                         }}
                       >
-                        {tip.type === 'pro' ? 'Pro Tip' : tip.type === 'success' ? 'Success' : tip.type === 'warning' ? 'Note' : 'Tip'}
+                        {tip.type === 'pro'
+                          ? 'Pro Tip'
+                          : tip.type === 'success'
+                            ? 'Success'
+                            : tip.type === 'warning'
+                              ? 'Note'
+                              : 'Tip'}
                       </Typography>
                       {tip.type === 'pro' && (
                         <Chip
@@ -247,13 +266,14 @@ export const ModernEmptyState: React.FC<ModernEmptyStateProps> = ({
                     <Typography
                       variant="body2"
                       sx={{
-                        color: tip.type === 'pro'
-                          ? tokens.color.warning[700]
-                          : tip.type === 'success'
-                            ? tokens.color.success[700]
-                            : tip.type === 'warning'
-                              ? tokens.color.warning[700]
-                              : tokens.color.info[700],
+                        color:
+                          tip.type === 'pro'
+                            ? tokens.color.warning[700]
+                            : tip.type === 'success'
+                              ? tokens.color.success[700]
+                              : tip.type === 'warning'
+                                ? tokens.color.warning[700]
+                                : tokens.color.info[700],
                         lineHeight: 1.5,
                       }}
                     >
@@ -287,7 +307,7 @@ export const ModernEmptyState: React.FC<ModernEmptyStateProps> = ({
                       fontWeight: 600,
                       '&:hover': {
                         bgcolor: tokens.color[primaryAction.color || color][600],
-                      }
+                      },
                     }}
                   >
                     {primaryAction.label}
@@ -309,7 +329,7 @@ export const ModernEmptyState: React.FC<ModernEmptyStateProps> = ({
                       '&:hover': {
                         bgcolor: tokens.color.neutral[50],
                         borderColor: tokens.color.neutral[400],
-                      }
+                      },
                     }}
                   >
                     {secondaryAction.label}
@@ -325,45 +345,32 @@ export const ModernEmptyState: React.FC<ModernEmptyStateProps> = ({
 };
 
 // Specialized empty state variants
-export const ModernNoDataState: React.FC<Omit<ModernEmptyStateProps, 'variant' | 'title' | 'description'> & {
-  title?: string;
-  description?: string;
-  entityName?: string;
-}> = ({
-  title,
-  description,
-  entityName = 'data',
-  ...props
-}) => (
+export const ModernNoDataState: React.FC<
+  Omit<ModernEmptyStateProps, 'variant' | 'title' | 'description'> & {
+    title?: string;
+    description?: string;
+    entityName?: string;
+  }
+> = ({ title, description, entityName = 'data', ...props }) => (
   <ModernEmptyState
     {...props}
     variant="default"
     title={title || `No ${entityName} yet`}
-    description={description || `You haven't created any ${entityName} yet. Get started by adding your first ${entityName}.`}
+    description={
+      description ||
+      `You haven't created any ${entityName} yet. Get started by adding your first ${entityName}.`
+    }
   />
 );
 
-export const ModernErrorState: React.FC<Omit<ModernEmptyStateProps, 'variant' | 'color'>> = (props) => (
-  <ModernEmptyState
-    {...props}
-    variant="error"
-    color="error"
-    icon={ErrorIcon}
-  />
-);
+export const ModernErrorState: React.FC<Omit<ModernEmptyStateProps, 'variant' | 'color'>> = (
+  props,
+) => <ModernEmptyState {...props} variant="error" color="error" icon={ErrorIcon} />;
 
-export const ModernSearchEmptyState: React.FC<Omit<ModernEmptyStateProps, 'variant' | 'icon'>> = (props) => (
-  <ModernEmptyState
-    {...props}
-    variant="search"
-    icon={SearchIcon}
-  />
-);
+export const ModernSearchEmptyState: React.FC<Omit<ModernEmptyStateProps, 'variant' | 'icon'>> = (
+  props,
+) => <ModernEmptyState {...props} variant="search" icon={SearchIcon} />;
 
-export const ModernLoadingState: React.FC<Omit<ModernEmptyStateProps, 'variant' | 'icon'>> = (props) => (
-  <ModernEmptyState
-    {...props}
-    variant="loading"
-    icon={RefreshIcon}
-  />
-);
+export const ModernLoadingState: React.FC<Omit<ModernEmptyStateProps, 'variant' | 'icon'>> = (
+  props,
+) => <ModernEmptyState {...props} variant="loading" icon={RefreshIcon} />;

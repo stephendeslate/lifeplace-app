@@ -69,7 +69,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
           )}
         </Box>
       );
-      
+
     case 'list':
       return (
         <Box>
@@ -87,21 +87,17 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
                 backdropFilter: tokens.color.glass.lightGlass.backdropFilter,
               }}
             >
-              {showAvatar && (
-                <StyledSkeleton variant="circular" width={40} height={40} />
-              )}
+              {showAvatar && <StyledSkeleton variant="circular" width={40} height={40} />}
               <Box flex={1}>
                 <StyledSkeleton variant="text" width="30%" sx={{ mb: 0.5 }} />
                 <StyledSkeleton variant="text" width="70%" />
               </Box>
-              {showActions && (
-                <StyledSkeleton variant="rounded" width={80} height={32} />
-              )}
+              {showActions && <StyledSkeleton variant="rounded" width={80} height={32} />}
             </Box>
           ))}
         </Box>
       );
-      
+
     case 'calendar':
       return (
         <Box
@@ -117,22 +113,14 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
             <StyledSkeleton variant="text" width={150} sx={{ fontSize: '1.25rem' }} />
             <StyledSkeleton variant="circular" width={32} height={32} />
           </Box>
-          <Box
-            display="grid"
-            gridTemplateColumns="repeat(7, 1fr)"
-            gap={1}
-          >
+          <Box display="grid" gridTemplateColumns="repeat(7, 1fr)" gap={1}>
             {Array.from({ length: 35 }).map((_, i) => (
-              <StyledSkeleton
-                key={i}
-                variant="rounded"
-                sx={{ aspectRatio: '1', width: '100%' }}
-              />
+              <StyledSkeleton key={i} variant="rounded" sx={{ aspectRatio: '1', width: '100%' }} />
             ))}
           </Box>
         </Box>
       );
-      
+
     case 'venue':
       return (
         <Box
@@ -144,23 +132,15 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
           }}
         >
           <StyledSkeleton variant="text" sx={{ fontSize: '1.5rem', mb: 2 }} />
-          <StyledSkeleton
-            variant="rectangular"
-            sx={{ width: '100%', height: 400, mb: 2 }}
-          />
+          <StyledSkeleton variant="rectangular" sx={{ width: '100%', height: 400, mb: 2 }} />
           <Box display="flex" gap={2}>
             {Array.from({ length: 3 }).map((_, i) => (
-              <StyledSkeleton
-                key={i}
-                variant="rounded"
-                width={100}
-                height={32}
-              />
+              <StyledSkeleton key={i} variant="rounded" width={100} height={32} />
             ))}
           </Box>
         </Box>
       );
-      
+
     case 'text':
       return (
         <Box>
@@ -174,7 +154,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
           ))}
         </Box>
       );
-      
+
     case 'avatar':
       return (
         <Box display="flex" alignItems="center" gap={2}>
@@ -185,10 +165,10 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
           </Box>
         </Box>
       );
-      
+
     case 'button':
       return <StyledSkeleton variant="rounded" width={120} height={40} {...props} />;
-      
+
     default:
       return <StyledSkeleton {...props} />;
   }
@@ -200,19 +180,19 @@ export const PageSkeletons = {
     <Box>
       {/* Hero Section */}
       <StyledSkeleton variant="rectangular" height={500} sx={{ mb: 4 }} />
-      
+
       {/* Feature Cards */}
       <Box display="grid" gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))" gap={3} mb={4}>
         {Array.from({ length: 3 }).map((_, i) => (
           <SkeletonLoader key={i} type="card" lines={2} showActions />
         ))}
       </Box>
-      
+
       {/* Calendar Section */}
       <SkeletonLoader type="calendar" />
     </Box>
   ),
-  
+
   BookingPage: () => (
     <Box>
       {/* Progress Bar */}
@@ -221,7 +201,7 @@ export const PageSkeletons = {
           <StyledSkeleton key={i} variant="rounded" height={4} sx={{ flex: 1 }} />
         ))}
       </Box>
-      
+
       {/* Form Content */}
       <Box display="grid" gridTemplateColumns="2fr 1fr" gap={3}>
         <Box>
@@ -236,13 +216,13 @@ export const PageSkeletons = {
             ))}
           </Box>
         </Box>
-        
+
         {/* Sidebar */}
         <SkeletonLoader type="card" lines={5} showActions={false} />
       </Box>
     </Box>
   ),
-  
+
   DashboardPage: () => (
     <Box>
       {/* Stats Cards */}
@@ -261,7 +241,7 @@ export const PageSkeletons = {
           </Box>
         ))}
       </Box>
-      
+
       {/* Recent Activity */}
       <SkeletonLoader type="list" lines={5} showAvatar showActions />
     </Box>

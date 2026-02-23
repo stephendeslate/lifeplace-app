@@ -32,9 +32,7 @@ import {
 import type { WorkflowVisualizationProps, WorkflowStage } from '../../types/workflows.types';
 import { tokens } from '../../design-system';
 
-export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
-  template,
-}) => {
+export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({ template }) => {
   const getAutomationIcon = (automationType: string) => {
     const icons = {
       EMAIL: <EmailIcon />,
@@ -61,16 +59,16 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
 
   const getTriggerTimeDisplay = (triggerTime: string) => {
     const triggerMap: Record<string, string> = {
-      'ON_CREATION': 'Immediately',
-      'AFTER_1_HOUR': 'After 1 Hour',
-      'AFTER_3_HOURS': 'After 3 Hours',
-      'AFTER_6_HOURS': 'After 6 Hours',
-      'AFTER_12_HOURS': 'After 12 Hours',
-      'AFTER_1_DAY': 'After 1 Day',
-      'AFTER_2_DAYS': 'After 2 Days',
-      'AFTER_3_DAYS': 'After 3 Days',
-      'AFTER_1_WEEK': 'After 1 Week',
-      'AFTER_2_WEEKS': 'After 2 Weeks',
+      ON_CREATION: 'Immediately',
+      AFTER_1_HOUR: 'After 1 Hour',
+      AFTER_3_HOURS: 'After 3 Hours',
+      AFTER_6_HOURS: 'After 6 Hours',
+      AFTER_12_HOURS: 'After 12 Hours',
+      AFTER_1_DAY: 'After 1 Day',
+      AFTER_2_DAYS: 'After 2 Days',
+      AFTER_3_DAYS: 'After 3 Days',
+      AFTER_1_WEEK: 'After 1 Week',
+      AFTER_2_WEEKS: 'After 2 Weeks',
       // Before event triggers
       '30_DAYS_BEFORE_EVENT': '30 Days Before Event',
       '14_DAYS_BEFORE_EVENT': '14 Days Before Event',
@@ -117,7 +115,7 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
   }, {});
 
   // Sort stages within each type by order
-  Object.keys(stagesByType).forEach(type => {
+  Object.keys(stagesByType).forEach((type) => {
     stagesByType[type].sort((a, b) => a.order - b.order);
   });
 
@@ -146,12 +144,7 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
                     variant="outlined"
                   />
                 ) : (
-                  <Chip
-                    label="Any Event Type"
-                    size="small"
-                    variant="outlined"
-                    color="default"
-                  />
+                  <Chip label="Any Event Type" size="small" variant="outlined" color="default" />
                 )}
                 <Chip
                   label={template.is_active ? 'Active' : 'Inactive'}
@@ -180,18 +173,18 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
           return (
             <Card key={stageType}>
               <CardContent>
-                <Typography 
-                  variant="h6" 
-                  sx={{ 
+                <Typography
+                  variant="h6"
+                  sx={{
                     color: getStageColor(stageType),
                     mb: 2,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 1
+                    gap: 1,
                   }}
                 >
                   {stageType.replace('_', ' ')} STAGES
-                  <Chip 
+                  <Chip
                     label={`${stages.length} stage${stages.length !== 1 ? 's' : ''}`}
                     size="small"
                     variant="outlined"
@@ -268,20 +261,22 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
                                       variant="outlined"
                                     />
                                   )}
-                                  {stage.automation_type === 'TASK' && stage.metadata?.task_priority != null && (
-                                    <Chip
-                                      label={`Priority: ${String(stage.metadata.task_priority)}`}
-                                      size="small"
-                                      variant="outlined"
-                                    />
-                                  )}
-                                  {stage.automation_type === 'CONTRACT' && stage.metadata?.signature_deadline_hours != null && (
-                                    <Chip
-                                      label={`Deadline: ${String(stage.metadata.signature_deadline_hours)}h`}
-                                      size="small"
-                                      variant="outlined"
-                                    />
-                                  )}
+                                  {stage.automation_type === 'TASK' &&
+                                    stage.metadata?.task_priority != null && (
+                                      <Chip
+                                        label={`Priority: ${String(stage.metadata.task_priority)}`}
+                                        size="small"
+                                        variant="outlined"
+                                      />
+                                    )}
+                                  {stage.automation_type === 'CONTRACT' &&
+                                    stage.metadata?.signature_deadline_hours != null && (
+                                      <Chip
+                                        label={`Deadline: ${String(stage.metadata.signature_deadline_hours)}h`}
+                                        size="small"
+                                        variant="outlined"
+                                      />
+                                    )}
                                 </Stack>
                               </Box>
                             )}
@@ -293,24 +288,53 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
                               stage.trigger_on_contract_signed ||
                               stage.trigger_on_payment_received) && (
                               <Box>
-                                <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Typography
+                                  variant="subtitle2"
+                                  gutterBottom
+                                  sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                                >
                                   <TriggerIcon fontSize="small" /> Event Triggers:
                                 </Typography>
                                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                                   {stage.trigger_on_event_created && (
-                                    <Chip label="Event Created" size="small" color="info" variant="outlined" />
+                                    <Chip
+                                      label="Event Created"
+                                      size="small"
+                                      color="info"
+                                      variant="outlined"
+                                    />
                                   )}
                                   {stage.trigger_on_quote_sent && (
-                                    <Chip label="Quote Sent" size="small" color="info" variant="outlined" />
+                                    <Chip
+                                      label="Quote Sent"
+                                      size="small"
+                                      color="info"
+                                      variant="outlined"
+                                    />
                                   )}
                                   {stage.trigger_on_quote_accepted && (
-                                    <Chip label="Quote Accepted" size="small" color="info" variant="outlined" />
+                                    <Chip
+                                      label="Quote Accepted"
+                                      size="small"
+                                      color="info"
+                                      variant="outlined"
+                                    />
                                   )}
                                   {stage.trigger_on_contract_signed && (
-                                    <Chip label="Contract Signed" size="small" color="info" variant="outlined" />
+                                    <Chip
+                                      label="Contract Signed"
+                                      size="small"
+                                      color="info"
+                                      variant="outlined"
+                                    />
                                   )}
                                   {stage.trigger_on_payment_received && (
-                                    <Chip label="Payment Received" size="small" color="success" variant="outlined" />
+                                    <Chip
+                                      label="Payment Received"
+                                      size="small"
+                                      color="success"
+                                      variant="outlined"
+                                    />
                                   )}
                                 </Stack>
                               </Box>
@@ -354,21 +378,18 @@ export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({
             Workflow Summary
           </Typography>
           <Box display="flex" gap={2} flexWrap="wrap">
-            <Chip 
-              label={`${template.stages.length} Total Stages`}
-              variant="outlined"
-            />
-            <Chip 
-              label={`${template.stages.filter(s => s.is_automated).length} Automated`}
+            <Chip label={`${template.stages.length} Total Stages`} variant="outlined" />
+            <Chip
+              label={`${template.stages.filter((s) => s.is_automated).length} Automated`}
               color="secondary"
               variant="outlined"
             />
-            <Chip 
-              label={`${template.stages.filter(s => !s.is_automated).length} Manual`}
+            <Chip
+              label={`${template.stages.filter((s) => !s.is_automated).length} Manual`}
               variant="outlined"
             />
-            <Chip 
-              label={`${template.stages.filter(s => s.progression_condition).length} Auto-Progress`}
+            <Chip
+              label={`${template.stages.filter((s) => s.progression_condition).length} Auto-Progress`}
               color="info"
               variant="outlined"
             />

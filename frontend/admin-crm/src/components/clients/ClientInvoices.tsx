@@ -32,7 +32,11 @@ import {
   Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useInvoicesForClient, useSendInvoice, useDownloadInvoicePdf } from '../../hooks/usePayments';
+import {
+  useInvoicesForClient,
+  useSendInvoice,
+  useDownloadInvoicePdf,
+} from '../../hooks/usePayments';
 import type { Invoice } from '../../types/payments.types';
 import type { Client } from '../../types/clients.types';
 import { formatCurrency } from '../../utils/currency';
@@ -87,13 +91,16 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
     const currency = invoiceCurrency || currencySettings?.defaultCurrency || 'PHP';
     return formatCurrency(amount, currency, {
       showSymbol: currencySettings?.displayFormat !== 'code',
-      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      showCode:
+        currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
       minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
       maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
     });
   };
 
-  const getStatusColor = (status: string): "default" | "primary" | "success" | "warning" | "error" => {
+  const getStatusColor = (
+    status: string,
+  ): 'default' | 'primary' | 'success' | 'warning' | 'error' => {
     switch (status) {
       case 'DRAFT':
         return 'default';
@@ -187,9 +194,13 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <Typography 
+                  <Typography
                     variant="body2"
-                    color={new Date(invoice.due_date) < new Date() && invoice.status !== 'PAID' ? 'error' : 'text.primary'}
+                    color={
+                      new Date(invoice.due_date) < new Date() && invoice.status !== 'PAID'
+                        ? 'error'
+                        : 'text.primary'
+                    }
                   >
                     {new Date(invoice.due_date).toLocaleDateString()}
                   </Typography>
@@ -209,17 +220,11 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
                 <TableCell>
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
                     <Tooltip title="View">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleViewInvoice(invoice)}
-                      >
+                      <IconButton size="small" onClick={() => handleViewInvoice(invoice)}>
                         <ViewIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleMenuOpen(e, invoice)}
-                    >
+                    <IconButton size="small" onClick={(e) => handleMenuOpen(e, invoice)}>
                       <MoreVertIcon fontSize="small" />
                     </IconButton>
                   </Stack>
@@ -230,11 +235,7 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
         </Table>
       </TableContainer>
 
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         <MenuItem onClick={() => selectedInvoice && handleViewInvoice(selectedInvoice)}>
           <ListItemIcon>
             <ViewIcon fontSize="small" />
@@ -249,9 +250,7 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
             <ListItemIcon>
               <SendIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText>
-              {isSendingInvoice ? 'Sending...' : 'Send Invoice'}
-            </ListItemText>
+            <ListItemText>{isSendingInvoice ? 'Sending...' : 'Send Invoice'}</ListItemText>
           </MenuItem>
         )}
         {selectedInvoice?.status !== 'PAID' && selectedInvoice?.status !== 'CANCELLED' && (
@@ -269,9 +268,7 @@ export const ClientInvoices: React.FC<ClientInvoicesProps> = ({ client }) => {
           <ListItemIcon>
             <DownloadIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>
-            {isDownloadingPdf ? 'Downloading...' : 'Download PDF'}
-          </ListItemText>
+          <ListItemText>{isDownloadingPdf ? 'Downloading...' : 'Download PDF'}</ListItemText>
         </MenuItem>
       </Menu>
 

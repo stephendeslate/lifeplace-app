@@ -1,7 +1,7 @@
 // Push Notification Device Management Page
 // Allows admins to view registered devices and send test push notifications
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -18,7 +18,7 @@ import {
   TableHead,
   TableRow,
   Paper,
-} from "@mui/material";
+} from '@mui/material';
 import {
   PhoneAndroid as AndroidIcon,
   PhoneIphone as IosIcon,
@@ -26,21 +26,21 @@ import {
   Delete as DeleteIcon,
   Send as SendIcon,
   Refresh as RefreshIcon,
-} from "@mui/icons-material";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { notificationsApi } from "../../../apis/notifications.api";
-import { useToastActions } from "../../../contexts/ToastContext";
-import { ModernPageHeader } from "../../../components/common/ModernPageHeader";
-import { ModernSettingsLayout } from "../../../components/common/ModernPageLayout";
-import type { DevicePushToken } from "../../../types/notifications.types";
+} from '@mui/icons-material';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { notificationsApi } from '../../../apis/notifications.api';
+import { useToastActions } from '../../../contexts/ToastContext';
+import { ModernPageHeader } from '../../../components/common/ModernPageHeader';
+import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
+import type { DevicePushToken } from '../../../types/notifications.types';
 
 const deviceTypeIcon = (type: string) => {
   switch (type) {
-    case "ios":
+    case 'ios':
       return <IosIcon fontSize="small" />;
-    case "android":
+    case 'android':
       return <AndroidIcon fontSize="small" />;
-    case "web":
+    case 'web':
       return <WebIcon fontSize="small" />;
     default:
       return <AndroidIcon fontSize="small" />;
@@ -48,24 +48,22 @@ const deviceTypeIcon = (type: string) => {
 };
 
 const formatDate = (dateStr: string | null) => {
-  if (!dateStr) return "Never";
+  if (!dateStr) return 'Never';
   return new Date(dateStr).toLocaleString();
 };
 
 export const PushDevices: React.FC = () => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToastActions();
-  const [testTitle, setTestTitle] = useState("Test Notification");
-  const [testBody, setTestBody] = useState(
-    "This is a test push notification from LifePlace.",
-  );
+  const [testTitle, setTestTitle] = useState('Test Notification');
+  const [testBody, setTestBody] = useState('This is a test push notification from LifePlace.');
 
   const {
     data: devicesData,
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ["push-devices"],
+    queryKey: ['push-devices'],
     queryFn: notificationsApi.getMyDevices,
     staleTime: 60 * 1000,
   });
@@ -75,11 +73,11 @@ export const PushDevices: React.FC = () => {
   const deleteMutation = useMutation({
     mutationFn: (id: number) => notificationsApi.deleteDevice(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["push-devices"] });
-      showSuccess("Device Removed", "Push token has been unregistered.");
+      queryClient.invalidateQueries({ queryKey: ['push-devices'] });
+      showSuccess('Device Removed', 'Push token has been unregistered.');
     },
     onError: () => {
-      showError("Delete Failed", "Failed to remove device.");
+      showError('Delete Failed', 'Failed to remove device.');
     },
   });
 
@@ -87,10 +85,10 @@ export const PushDevices: React.FC = () => {
     mutationFn: (data: { title?: string; body?: string; device_id?: string }) =>
       notificationsApi.sendTestPush(data),
     onSuccess: (result) => {
-      showSuccess("Test Sent", result.message);
+      showSuccess('Test Sent', result.message);
     },
     onError: () => {
-      showError("Test Failed", "Failed to send test push notification.");
+      showError('Test Failed', 'Failed to send test push notification.');
     },
   });
 
@@ -119,13 +117,12 @@ export const PushDevices: React.FC = () => {
 
       <Stack spacing={3}>
         {/* Send Test Push */}
-        <Box sx={{ bgcolor: "background.paper", borderRadius: 1, p: 3 }}>
+        <Box sx={{ bgcolor: 'background.paper', borderRadius: 1, p: 3 }}>
           <Typography variant="h6" gutterBottom>
             Send Test Push Notification
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            Send a test push notification to verify delivery to your registered
-            devices.
+            Send a test push notification to verify delivery to your registered devices.
           </Typography>
           <Stack spacing={2}>
             <Box display="flex" gap={2}>
@@ -163,23 +160,16 @@ export const PushDevices: React.FC = () => {
           </Stack>
           {devices.length === 0 && !isLoading && (
             <Alert severity="info" sx={{ mt: 2 }}>
-              No devices registered. Install the LifePlace mobile app and enable
-              push notifications to register a device.
+              No devices registered. Install the LifePlace mobile app and enable push notifications
+              to register a device.
             </Alert>
           )}
         </Box>
 
         {/* Registered Devices */}
-        <Box sx={{ bgcolor: "background.paper", borderRadius: 1, p: 3 }}>
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            mb={2}
-          >
-            <Typography variant="h6">
-              Registered Devices ({devices.length})
-            </Typography>
+        <Box sx={{ bgcolor: 'background.paper', borderRadius: 1, p: 3 }}>
+          <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+            <Typography variant="h6">Registered Devices ({devices.length})</Typography>
             <Button
               variant="outlined"
               size="small"
@@ -195,12 +185,7 @@ export const PushDevices: React.FC = () => {
               <CircularProgress />
             </Box>
           ) : devices.length === 0 ? (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              textAlign="center"
-              py={4}
-            >
+            <Typography variant="body2" color="text.secondary" textAlign="center" py={4}>
               No push notification devices registered.
             </Typography>
           ) : (
@@ -225,12 +210,9 @@ export const PushDevices: React.FC = () => {
                           {deviceTypeIcon(device.device_type)}
                           <Box>
                             <Typography variant="body2">
-                              {device.device_name || "Unknown Device"}
+                              {device.device_name || 'Unknown Device'}
                             </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
+                            <Typography variant="caption" color="text.secondary">
                               {device.token.substring(0, 30)}...
                             </Typography>
                           </Box>
@@ -245,32 +227,24 @@ export const PushDevices: React.FC = () => {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={device.is_active ? "Active" : "Inactive"}
+                          label={device.is_active ? 'Active' : 'Inactive'}
                           size="small"
-                          color={device.is_active ? "success" : "default"}
+                          color={device.is_active ? 'success' : 'default'}
                         />
                       </TableCell>
                       <TableCell>
-                        <Typography variant="caption">
-                          {formatDate(device.last_used_at)}
-                        </Typography>
+                        <Typography variant="caption">{formatDate(device.last_used_at)}</Typography>
                       </TableCell>
                       <TableCell>
                         <Typography
                           variant="body2"
-                          color={
-                            device.failure_count > 0
-                              ? "error.main"
-                              : "text.secondary"
-                          }
+                          color={device.failure_count > 0 ? 'error.main' : 'text.secondary'}
                         >
                           {device.failure_count}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography variant="caption">
-                          {device.app_version || "—"}
-                        </Typography>
+                        <Typography variant="caption">{device.app_version || '—'}</Typography>
                       </TableCell>
                       <TableCell align="right">
                         <Box display="flex" gap={1} justifyContent="flex-end">

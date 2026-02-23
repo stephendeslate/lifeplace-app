@@ -46,19 +46,19 @@ export const useContractStatusUpdates = ({
     if (!contractStatus || !onStatusChange) return;
 
     const previousStatus = previousStatusRef.current;
-    
+
     if (previousStatus && previousStatus.status !== contractStatus.status) {
       const update: ContractStatusUpdate = {
         contractId,
         status: {
           ...contractStatus,
-          status: contractStatus.status as ContractStatus
+          status: contractStatus.status as ContractStatus,
         },
         timestamp: new Date().toISOString(),
       };
-      
+
       onStatusChange(update);
-      
+
       // Also invalidate related queries to ensure data consistency
       queryClient.invalidateQueries({ queryKey: ['contracts', contractId] });
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
@@ -78,7 +78,7 @@ export const useContractStatusUpdates = ({
 
     // In a real implementation, you would connect to a WebSocket here
     // const ws = new WebSocket(`ws://localhost:8000/ws/contracts/${contractId}/`);
-    // 
+    //
     // ws.onmessage = (event) => {
     //   const data = JSON.parse(event.data);
     //   if (data.type === 'contract_status_update') {
@@ -126,9 +126,9 @@ export const useMultipleContractStatus = ({
     queryKey: ['contracts', 'multiple-status', contractIds],
     queryFn: async () => {
       const results = await Promise.allSettled(
-        contractIds.map(id => contractsApi.getContractStatus(id))
+        contractIds.map((id) => contractsApi.getContractStatus(id)),
       );
-      
+
       return results.map((result, index) => ({
         contractId: contractIds[index],
         status: result.status === 'fulfilled' ? result.value : null,
@@ -176,11 +176,12 @@ export const useContractSigningProgress = (contractId: string) => {
             verification_method: 'electronic_signature',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-          }
+          },
         ],
-        status: oldData.signatures.length + 1 >= (oldData.template.signature_requirements?.length || 1) 
-          ? 'SIGNED' as const 
-          : 'PARTIALLY_SIGNED' as const,
+        status:
+          oldData.signatures.length + 1 >= (oldData.template.signature_requirements?.length || 1)
+            ? ('SIGNED' as const)
+            : ('PARTIALLY_SIGNED' as const),
       };
     });
   };
@@ -211,19 +212,24 @@ export const useRealTimeContractUpdates = ({
 
   const startListening = useCallback(() => {
     setIsConnected(true);
-    if (import.meta.env.DEV) console.log(`Started listening for real-time updates on contract ${contractId}`);
+    if (import.meta.env.DEV)
+      console.log(`Started listening for real-time updates on contract ${contractId}`);
   }, [contractId]);
 
   const stopListening = useCallback(() => {
     setIsConnected(false);
-    if (import.meta.env.DEV) console.log(`Stopped listening for real-time updates on contract ${contractId}`);
+    if (import.meta.env.DEV)
+      console.log(`Stopped listening for real-time updates on contract ${contractId}`);
   }, [contractId]);
 
-  const simulateUpdate = useCallback((eventType: string, data: unknown) => {
-    if (onUpdate) {
-      onUpdate(eventType, data);
-    }
-  }, [onUpdate]);
+  const simulateUpdate = useCallback(
+    (eventType: string, data: unknown) => {
+      if (onUpdate) {
+        onUpdate(eventType, data);
+      }
+    },
+    [onUpdate],
+  );
 
   // Auto-connect if requested
   useEffect(() => {
@@ -254,12 +260,12 @@ export const useGlobalSignatureEvents = () => {
   useEffect(() => {
     // In a real implementation, this would connect to a global WebSocket
     // that listens for any signature events across all user contracts
-    
+
     // const globalWs = new WebSocket('ws://localhost:8000/ws/signatures/');
-    // 
+    //
     // globalWs.onmessage = (event) => {
     //   const data = JSON.parse(event.data);
-    //   
+    //
     //   switch (data.type) {
     //     case 'signature_added':
     //       // Invalidate contract-specific queries
@@ -267,14 +273,14 @@ export const useGlobalSignatureEvents = () => {
     //       // Update contracts list
     //       queryClient.invalidateQueries({ queryKey: ['contracts'] });
     //       break;
-    //     
+    //
     //     case 'contract_completed':
     //       // Show notification and refresh all contract data
     //       queryClient.invalidateQueries({ queryKey: ['contracts'] });
     //       break;
     //   }
     // };
-    
+
     // return () => {
     //   globalWs.close();
     // };
@@ -289,7 +295,10 @@ export const useGlobalSignatureEvents = () => {
   const eventListeners = useRef<{ [key: string]: ((event: unknown) => void)[] }>({});
 
   // Manual trigger for testing
-  const simulateSignatureEvent = (contractId: string, eventType: 'signature_added' | 'contract_completed') => {
+  const simulateSignatureEvent = (
+    contractId: string,
+    eventType: 'signature_added' | 'contract_completed',
+  ) => {
     switch (eventType) {
       case 'signature_added':
         queryClient.invalidateQueries({ queryKey: ['contracts', contractId] });
@@ -303,7 +312,7 @@ export const useGlobalSignatureEvents = () => {
     const listeners = eventListeners.current[eventType];
     if (listeners) {
       const event = { type: eventType, contractId, timestamp: new Date().toISOString() };
-      listeners.forEach(callback => callback(event));
+      listeners.forEach((callback) => callback(event));
     }
   };
 
@@ -316,7 +325,9 @@ export const useGlobalSignatureEvents = () => {
 
   const removeEventListener = (eventType: string, callback: (event: unknown) => void) => {
     if (!eventListeners.current[eventType]) return;
-    eventListeners.current[eventType] = eventListeners.current[eventType].filter(cb => cb !== callback);
+    eventListeners.current[eventType] = eventListeners.current[eventType].filter(
+      (cb) => cb !== callback,
+    );
   };
 
   return {

@@ -113,8 +113,8 @@ export const RatesHero: React.FC = () => {
                     textAlign: 'center',
                   }}
                 >
-                  Transparent pricing for all our services. Choose the package that best fits
-                  your event needs and budget.
+                  Transparent pricing for all our services. Choose the package that best fits your
+                  event needs and budget.
                 </Typography>
               </Box>
             </AnimatedElement>

@@ -1,21 +1,17 @@
 // frontend/admin-crm/src/hooks/useVendors.test.ts
 
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
-import {
-  useVendors,
-  useVendorOperatingRules,
-  usePackageVendors,
-} from "./useVendors";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { useVendors, useVendorOperatingRules, usePackageVendors } from './useVendors';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
-describe("useVendors", () => {
-  describe("useVendors (list)", () => {
-    it("fetches vendors successfully", async () => {
+describe('useVendors', () => {
+  describe('useVendors (list)', () => {
+    it('fetches vendors successfully', async () => {
       const { result } = renderHook(() => useVendors(), {
         wrapper: createTestWrapper(),
       });
@@ -32,10 +28,10 @@ describe("useVendors", () => {
       expect(result.current.vendors.length).toBeGreaterThan(0);
     });
 
-    it("handles API error gracefully", async () => {
+    it('handles API error gracefully', async () => {
       server.use(
         http.get(`${BASE_URL}/vendors/vendors/`, () => {
-          return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+          return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
         }),
       );
 
@@ -51,7 +47,7 @@ describe("useVendors", () => {
       );
     });
 
-    it("creates a vendor", async () => {
+    it('creates a vendor', async () => {
       const { result } = renderHook(() => useVendors(), {
         wrapper: createTestWrapper(),
       });
@@ -65,13 +61,13 @@ describe("useVendors", () => {
 
       act(() => {
         result.current.createVendor({
-          name: "New Vendor",
-          code: "NEW-VENDOR",
-          service_category: "PHOTOGRAPHY",
-          contact_name: "John",
-          contact_email: "john@vendor.com",
-          contact_phone: "555-0100",
-          company_name: "New Vendor Co",
+          name: 'New Vendor',
+          code: 'NEW-VENDOR',
+          service_category: 'PHOTOGRAPHY',
+          contact_name: 'John',
+          contact_email: 'john@vendor.com',
+          contact_phone: '555-0100',
+          company_name: 'New Vendor Co',
         });
       });
 
@@ -84,8 +80,8 @@ describe("useVendors", () => {
     });
   });
 
-  describe("useVendorOperatingRules", () => {
-    it("fetches operating rules for a vendor", async () => {
+  describe('useVendorOperatingRules', () => {
+    it('fetches operating rules for a vendor', async () => {
       const { result } = renderHook(() => useVendorOperatingRules(2), {
         wrapper: createTestWrapper(),
       });
@@ -98,13 +94,11 @@ describe("useVendors", () => {
         { timeout: 5000 },
       );
 
-      expect(result.current.operatingRules).toHaveProperty(
-        "max_events_per_day",
-      );
-      expect(result.current.operatingRules).toHaveProperty("available_days");
+      expect(result.current.operatingRules).toHaveProperty('max_events_per_day');
+      expect(result.current.operatingRules).toHaveProperty('available_days');
     });
 
-    it("provides updateRules mutation", async () => {
+    it('provides updateRules mutation', async () => {
       const { result } = renderHook(() => useVendorOperatingRules(2), {
         wrapper: createTestWrapper(),
       });
@@ -116,13 +110,13 @@ describe("useVendors", () => {
         { timeout: 5000 },
       );
 
-      expect(result.current.updateRules).toBeTypeOf("function");
+      expect(result.current.updateRules).toBeTypeOf('function');
       expect(result.current.isUpdatingRules).toBe(false);
     });
   });
 
-  describe("useVendors (delete)", () => {
-    it("deletes a vendor", async () => {
+  describe('useVendors (delete)', () => {
+    it('deletes a vendor', async () => {
       const { result } = renderHook(() => useVendors(), {
         wrapper: createTestWrapper(),
       });
@@ -150,8 +144,8 @@ describe("useVendors", () => {
     });
   });
 
-  describe("usePackageVendors", () => {
-    it("fetches package vendors successfully", async () => {
+  describe('usePackageVendors', () => {
+    it('fetches package vendors successfully', async () => {
       const { result } = renderHook(() => usePackageVendors(), {
         wrapper: createTestWrapper(),
       });
@@ -167,7 +161,7 @@ describe("useVendors", () => {
       expect(Array.isArray(result.current.packageVendors)).toBe(true);
     });
 
-    it("provides CRUD and bulk assign mutations", async () => {
+    it('provides CRUD and bulk assign mutations', async () => {
       const { result } = renderHook(() => usePackageVendors(), {
         wrapper: createTestWrapper(),
       });
@@ -179,10 +173,10 @@ describe("useVendors", () => {
         { timeout: 5000 },
       );
 
-      expect(result.current.createPackageVendor).toBeTypeOf("function");
-      expect(result.current.updatePackageVendor).toBeTypeOf("function");
-      expect(result.current.deletePackageVendor).toBeTypeOf("function");
-      expect(result.current.bulkAssign).toBeTypeOf("function");
+      expect(result.current.createPackageVendor).toBeTypeOf('function');
+      expect(result.current.updatePackageVendor).toBeTypeOf('function');
+      expect(result.current.deletePackageVendor).toBeTypeOf('function');
+      expect(result.current.bulkAssign).toBeTypeOf('function');
     });
   });
 });

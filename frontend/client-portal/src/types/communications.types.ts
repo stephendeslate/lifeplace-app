@@ -8,7 +8,7 @@ export interface CommunicationTemplate {
   subject_template?: string;
   body_template: string;
   is_system: boolean;
-  variables_schema: Record<string, { type: string; required: boolean; description?: string; }>;
+  variables_schema: Record<string, { type: string; required: boolean; description?: string }>;
   created_at: string;
   updated_at: string;
 }

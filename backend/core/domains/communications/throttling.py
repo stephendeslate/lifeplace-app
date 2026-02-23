@@ -7,9 +7,10 @@ defined in config.py and prevent abuse of communication endpoints.
 """
 
 import logging
+
 from django.conf import settings
 from django.core.cache import cache
-from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
 
 from .config import CommunicationConfig
 
@@ -21,22 +22,19 @@ class CommunicationBaseThrottle(UserRateThrottle):
 
     def allow_request(self, request, view):
         """Skip throttling in development/load test mode if configured"""
-        if getattr(settings, 'COMMUNICATION_THROTTLE_DISABLED', False):
+        if getattr(settings, "COMMUNICATION_THROTTLE_DISABLED", False):
             return True
         return super().allow_request(request, view)
 
     def get_cache_key(self, request, view):
         """Custom cache key that includes the action for granular rate limiting"""
         if request.user and request.user.is_authenticated:
-            action = getattr(view, 'action', 'unknown')
+            getattr(view, "action", "unknown")
             ident = str(request.user.pk)
         else:
             ident = self.get_ident(request)
 
-        return self.cache_format % {
-            'scope': self.scope,
-            'ident': f"{ident}:{getattr(view, 'action', 'default')}"
-        }
+        return self.cache_format % {"scope": self.scope, "ident": f"{ident}:{getattr(view, 'action', 'default')}"}
 
 
 class ManualSendThrottle(CommunicationBaseThrottle):
@@ -44,12 +42,13 @@ class ManualSendThrottle(CommunicationBaseThrottle):
     Throttle for manual send operations.
     Limits: 60 requests per minute per user.
     """
-    scope = 'communications_manual_send'
+
+    scope = "communications_manual_send"
 
     def get_rate(self):
         """Get rate from configuration"""
-        limit = CommunicationConfig.get_rate_limit('NOTIFICATIONS_PER_MINUTE')
-        return f'{limit}/min'
+        limit = CommunicationConfig.get_rate_limit("NOTIFICATIONS_PER_MINUTE")
+        return f"{limit}/min"
 
 
 class BulkSendThrottle(CommunicationBaseThrottle):
@@ -57,7 +56,8 @@ class BulkSendThrottle(CommunicationBaseThrottle):
     Throttle for bulk send operations.
     This applies per-request limits, not per-recipient.
     """
-    scope = 'communications_bulk_send'
+
+    scope = "communications_bulk_send"
 
     def allow_request(self, request, view):
         """
@@ -68,13 +68,11 @@ class BulkSendThrottle(CommunicationBaseThrottle):
             return False
 
         # Then check recipient count limit
-        recipients = request.data.get('recipients', [])
-        max_recipients = CommunicationConfig.get_rate_limit('BULK_SEND_LIMIT')
+        recipients = request.data.get("recipients", [])
+        max_recipients = CommunicationConfig.get_rate_limit("BULK_SEND_LIMIT")
 
         if len(recipients) > max_recipients:
-            logger.warning(
-                f"Bulk send rejected: {len(recipients)} recipients exceeds limit of {max_recipients}"
-            )
+            logger.warning(f"Bulk send rejected: {len(recipients)} recipients exceeds limit of {max_recipients}")
             # Set a message for the throttle wait time
             self.wait_seconds = 0
             return False
@@ -83,7 +81,7 @@ class BulkSendThrottle(CommunicationBaseThrottle):
 
     def get_rate(self):
         """Allow limited bulk operations per hour"""
-        return '10/hour'
+        return "10/hour"
 
 
 class TemplatePreviewThrottle(CommunicationBaseThrottle):
@@ -91,12 +89,13 @@ class TemplatePreviewThrottle(CommunicationBaseThrottle):
     Throttle for template preview operations.
     Limits: 30 requests per minute per user.
     """
-    scope = 'communications_preview'
+
+    scope = "communications_preview"
 
     def get_rate(self):
         """Get rate from configuration"""
-        limit = CommunicationConfig.get_rate_limit('TEMPLATE_PREVIEW_PER_MINUTE')
-        return f'{limit}/min'
+        limit = CommunicationConfig.get_rate_limit("TEMPLATE_PREVIEW_PER_MINUTE")
+        return f"{limit}/min"
 
 
 class CommunicationAdminThrottle(CommunicationBaseThrottle):
@@ -104,7 +103,8 @@ class CommunicationAdminThrottle(CommunicationBaseThrottle):
     Higher rate limits for admin users.
     Admins get 5x the normal rate for most operations.
     """
-    scope = 'communications_admin'
+
+    scope = "communications_admin"
 
     def allow_request(self, request, view):
         """Allow higher limits for admin users"""
@@ -115,9 +115,9 @@ class CommunicationAdminThrottle(CommunicationBaseThrottle):
         if request.user and request.user.is_authenticated and request.user.is_staff:
             # Use admin-specific rate from settings
             admin_rate = (
-                getattr(settings, 'REST_FRAMEWORK', {})
-                .get('DEFAULT_THROTTLE_RATES', {})
-                .get('communications_admin', '500/hour')
+                getattr(settings, "REST_FRAMEWORK", {})
+                .get("DEFAULT_THROTTLE_RATES", {})
+                .get("communications_admin", "500/hour")
             )
             self.rate = admin_rate
 
@@ -129,8 +129,9 @@ class WebhookThrottle(AnonRateThrottle):
     Throttle for webhook endpoints.
     Uses IP-based throttling since webhooks are typically from external services.
     """
-    scope = 'communications_webhook'
-    rate = '200/hour'
+
+    scope = "communications_webhook"
+    rate = "200/hour"
 
     def allow_request(self, request, view):
         """Skip throttling in development/load test mode"""
@@ -146,7 +147,7 @@ class CommunicationRateLimiter:
     """
 
     # Cache key prefixes
-    CACHE_PREFIX = 'communication_rate'
+    CACHE_PREFIX = "communication_rate"
 
     @classmethod
     def check_global_rate(cls, limit_name: str) -> tuple[bool, str]:
@@ -166,7 +167,7 @@ class CommunicationRateLimiter:
 
         if current_count >= limit:
             logger.warning(f"Global rate limit exceeded for {limit_name}: {current_count}/{limit}")
-            return False, f"Rate limit exceeded. Please try again later."
+            return False, "Rate limit exceeded. Please try again later."
 
         return True, ""
 
@@ -204,10 +205,8 @@ class CommunicationRateLimiter:
         current_count = cache.get(cache_key, 0)
 
         if current_count >= limit:
-            logger.warning(
-                f"User rate limit exceeded for user {user_id}, {limit_name}: {current_count}/{limit}"
-            )
-            return False, f"You have exceeded the rate limit. Please try again later."
+            logger.warning(f"User rate limit exceeded for user {user_id}, {limit_name}: {current_count}/{limit}")
+            return False, "You have exceeded the rate limit. Please try again later."
 
         return True, ""
 
@@ -234,7 +233,7 @@ class CommunicationRateLimiter:
 
         Enforces a daily limit on total recipients across all bulk operations.
         """
-        daily_limit = getattr(settings, 'COMMUNICATION_DAILY_RECIPIENT_LIMIT', 1000)
+        daily_limit = getattr(settings, "COMMUNICATION_DAILY_RECIPIENT_LIMIT", 1000)
         cache_key = f"{cls.CACHE_PREFIX}:daily_bulk:{user_id}"
 
         current_count = cache.get(cache_key, 0)
@@ -264,13 +263,13 @@ class CommunicationRateLimiter:
 
         # Get daily bulk count
         bulk_key = f"{cls.CACHE_PREFIX}:daily_bulk:{user_id}"
-        stats['daily_recipients_sent'] = cache.get(bulk_key, 0)
-        stats['daily_recipient_limit'] = getattr(settings, 'COMMUNICATION_DAILY_RECIPIENT_LIMIT', 1000)
+        stats["daily_recipients_sent"] = cache.get(bulk_key, 0)
+        stats["daily_recipient_limit"] = getattr(settings, "COMMUNICATION_DAILY_RECIPIENT_LIMIT", 1000)
 
         # Get per-minute counts
-        for limit_name in ['NOTIFICATIONS_PER_MINUTE', 'TEMPLATE_PREVIEW_PER_MINUTE']:
+        for limit_name in ["NOTIFICATIONS_PER_MINUTE", "TEMPLATE_PREVIEW_PER_MINUTE"]:
             key = f"{cls.CACHE_PREFIX}:user:{user_id}:{limit_name}"
-            stats[f'{limit_name.lower()}_current'] = cache.get(key, 0)
-            stats[f'{limit_name.lower()}_limit'] = CommunicationConfig.get_rate_limit(limit_name)
+            stats[f"{limit_name.lower()}_current"] = cache.get(key, 0)
+            stats[f"{limit_name.lower()}_limit"] = CommunicationConfig.get_rate_limit(limit_name)
 
         return stats

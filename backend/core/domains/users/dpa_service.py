@@ -4,15 +4,16 @@ Data Subject Rights Service
 Implements DPA-compliant data access, export, erasure, correction, and objection.
 """
 
-import json
 import csv
 import io
+import json
+import logging
 import uuid
 from datetime import timedelta
-from django.utils import timezone
+
 from django.conf import settings
-from django.db import transaction, models
-import logging
+from django.db import models, transaction
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -21,28 +22,24 @@ class DataSubjectRightsService:
     """Service for handling Data Subject Rights requests per Philippines DPA"""
 
     # Fields that can be corrected by user
-    CORRECTABLE_FIELDS = ['first_name', 'last_name', 'phone', 'company']
+    CORRECTABLE_FIELDS = ["first_name", "last_name", "phone", "company"]
 
     # Fields that require verification to change
-    VERIFICATION_REQUIRED_FIELDS = ['email']
+    VERIFICATION_REQUIRED_FIELDS = ["email"]
 
     # Data types for third-party sharing disclosure
     THIRD_PARTY_DISCLOSURES = [
         {
             "recipient": "Stripe Inc.",
             "purpose": "Payment processing",
-            "data_shared": ["email", "name", "payment details"]
+            "data_shared": ["email", "name", "payment details"],
         },
         {
             "recipient": "Brevo (Sendinblue)",
             "purpose": "Email and SMS communications",
-            "data_shared": ["email", "name", "phone"]
+            "data_shared": ["email", "name", "phone"],
         },
-        {
-            "recipient": "Expo",
-            "purpose": "Push notifications",
-            "data_shared": ["device tokens"]
-        }
+        {"recipient": "Expo", "purpose": "Push notifications", "data_shared": ["device tokens"]},
     ]
 
     @classmethod
@@ -51,19 +48,16 @@ class DataSubjectRightsService:
         Generate comprehensive data access report for Right to Access.
         Returns all personal data collected about the user.
         """
-        from core.domains.events.models import Event
-        from core.domains.payments.models import Payment, Invoice
         from core.domains.contracts.models import EventContract
+        from core.domains.events.models import Event
+        from core.domains.notifications.models import DevicePushToken, NotificationPreference
+        from core.domains.payments.models import Payment
         from core.domains.questionnaires.models import QuestionnaireResponse
-        from core.domains.notifications.models import NotificationPreference, DevicePushToken
 
         report = {
             "request_id": str(uuid.uuid4()),
             "generated_at": timezone.now().isoformat(),
-            "data_subject": {
-                "id": user.id,
-                "email": user.email
-            },
+            "data_subject": {"id": user.id, "email": user.email},
             "personal_data": {
                 "account": {
                     "email": user.email,
@@ -71,7 +65,7 @@ class DataSubjectRightsService:
                     "last_name": user.last_name,
                     "date_joined": user.date_joined.isoformat(),
                     "last_login": user.last_login.isoformat() if user.last_login else None,
-                    "role": user.role
+                    "role": user.role,
                 },
                 "profile": {},
                 "events": [],
@@ -79,53 +73,49 @@ class DataSubjectRightsService:
                 "payments": [],
                 "questionnaire_responses": [],
                 "notification_preferences": {},
-                "devices": []
+                "devices": [],
             },
             "processing_purposes": {
                 "account": "Contract fulfillment - providing booking services",
                 "events": "Contract fulfillment - event management",
                 "payments": "Contract and legal obligation - financial records",
-                "marketing": "Consent - promotional communications (if consented)"
+                "marketing": "Consent - promotional communications (if consented)",
             },
             "data_retention": {
                 "account": f"{settings.DATA_RETENTION_ACCOUNT} years after account deletion",
                 "financial_records": f"{settings.DATA_RETENTION_FINANCIAL} years (BIR requirement)",
-                "contracts": f"{settings.DATA_RETENTION_CONTRACTS} years (legal evidentiary value)"
+                "contracts": f"{settings.DATA_RETENTION_CONTRACTS} years (legal evidentiary value)",
             },
-            "third_party_sharing": cls.THIRD_PARTY_DISCLOSURES
+            "third_party_sharing": cls.THIRD_PARTY_DISCLOSURES,
         }
 
         # Profile data
-        if hasattr(user, 'profile'):
+        if hasattr(user, "profile"):
             profile = user.profile
             report["personal_data"]["profile"] = {
                 "phone": profile.phone,
                 "company": profile.company,
-                "timezone": profile.display_timezone
+                "timezone": profile.display_timezone,
             }
 
         # Events
-        events = Event.objects.filter(client=user).values(
-            'id', 'name', 'status', 'start_date'
-        )
+        events = Event.objects.filter(client=user).values("id", "name", "status", "start_date")
         report["personal_data"]["events"] = list(events)
 
         # Contracts
         contracts = EventContract.objects.filter(event__client=user).values(
-            'id', 'event_id', 'status', 'fully_signed_at'
+            "id", "event_id", "status", "fully_signed_at"
         )
         report["personal_data"]["contracts"] = list(contracts)
 
         # Payments
-        payments = Payment.objects.filter(event__client=user).values(
-            'id', 'amount', 'currency', 'status', 'created_at'
-        )
+        payments = Payment.objects.filter(event__client=user).values("id", "amount", "currency", "status", "created_at")
         report["personal_data"]["payments"] = list(payments)
 
         # Questionnaire responses
-        responses = QuestionnaireResponse.objects.filter(
-            event__client=user
-        ).values('id', 'field__name', 'value', 'created_at')
+        responses = QuestionnaireResponse.objects.filter(event__client=user).values(
+            "id", "field__name", "value", "created_at"
+        )
         report["personal_data"]["questionnaire_responses"] = list(responses)
 
         # Notification preferences
@@ -137,21 +127,21 @@ class DataSubjectRightsService:
                 "push_enabled": prefs.push_enabled,
                 "marketing_email": prefs.marketing_email,
                 "marketing_sms": prefs.marketing_sms,
-                "marketing_push": prefs.marketing_push
+                "marketing_push": prefs.marketing_push,
             }
         except NotificationPreference.DoesNotExist:
             pass
 
         # Devices
         devices = DevicePushToken.objects.filter(user=user, is_active=True).values(
-            'device_type', 'device_name', 'created_at', 'last_used_at'
+            "device_type", "device_name", "created_at", "last_used_at"
         )
         report["personal_data"]["devices"] = list(devices)
 
         return report
 
     @classmethod
-    def generate_data_export(cls, user, format='json') -> tuple:
+    def generate_data_export(cls, user, format="json") -> tuple:
         """
         Generate portable data export for Right to Portability.
         Returns (content, filename, content_type)
@@ -160,36 +150,32 @@ class DataSubjectRightsService:
 
         # Restructure for portability
         export_data = {
-            "export_metadata": {
-                "generated_at": report["generated_at"],
-                "format": format,
-                "schema_version": "1.0"
-            },
+            "export_metadata": {"generated_at": report["generated_at"], "format": format, "schema_version": "1.0"},
             "user": report["personal_data"]["account"],
             "profile": report["personal_data"]["profile"],
             "events": report["personal_data"]["events"],
             "payments": report["personal_data"]["payments"],
             "questionnaire_responses": report["personal_data"]["questionnaire_responses"],
-            "notification_preferences": report["personal_data"]["notification_preferences"]
+            "notification_preferences": report["personal_data"]["notification_preferences"],
         }
 
-        timestamp = timezone.now().strftime('%Y-%m-%d')
+        timestamp = timezone.now().strftime("%Y-%m-%d")
 
-        if format == 'json':
+        if format == "json":
             content = json.dumps(export_data, indent=2, default=str)
             filename = f"lifeplace_data_export_{timestamp}.json"
             content_type = "application/json"
-        elif format == 'csv':
+        elif format == "csv":
             # Flatten for CSV
             output = io.StringIO()
             writer = csv.writer(output)
 
             # User data
-            writer.writerow(['Section', 'Field', 'Value'])
+            writer.writerow(["Section", "Field", "Value"])
             for field, value in export_data["user"].items():
-                writer.writerow(['Account', field, value])
+                writer.writerow(["Account", field, value])
             for field, value in export_data["profile"].items():
-                writer.writerow(['Profile', field, value])
+                writer.writerow(["Profile", field, value])
 
             content = output.getvalue()
             filename = f"lifeplace_data_export_{timestamp}.csv"
@@ -211,34 +197,32 @@ class DataSubjectRightsService:
         blockers = []
 
         # Check for unpaid invoices
-        unpaid = Invoice.objects.filter(
-            event__client=user,
-            status__in=['PENDING', 'OVERDUE']
-        ).aggregate(
-            count=models.Count('id'),
-            total=models.Sum('total_amount')
+        unpaid = Invoice.objects.filter(event__client=user, status__in=["PENDING", "OVERDUE"]).aggregate(
+            count=models.Count("id"), total=models.Sum("total_amount")
         )
 
-        if unpaid['count'] and unpaid['count'] > 0:
-            blockers.append({
-                "type": "unpaid_invoice",
-                "description": f"You have {unpaid['count']} unpaid invoice(s) totaling {unpaid['total']}",
-                "resolution": "Please settle outstanding payments before requesting deletion"
-            })
+        if unpaid["count"] and unpaid["count"] > 0:
+            blockers.append(
+                {
+                    "type": "unpaid_invoice",
+                    "description": f"You have {unpaid['count']} unpaid invoice(s) totaling {unpaid['total']}",
+                    "resolution": "Please settle outstanding payments before requesting deletion",
+                }
+            )
 
         # Check for upcoming events
         upcoming = Event.objects.filter(
-            client=user,
-            start_date__gt=timezone.now(),
-            status__in=['CONFIRMED', 'IN_PROGRESS']
+            client=user, start_date__gt=timezone.now(), status__in=["CONFIRMED", "IN_PROGRESS"]
         ).first()
 
         if upcoming:
-            blockers.append({
-                "type": "upcoming_event",
-                "description": f"You have an event scheduled for {upcoming.start_date.date()}",
-                "resolution": "Please cancel or complete the event before requesting deletion"
-            })
+            blockers.append(
+                {
+                    "type": "upcoming_event",
+                    "description": f"You have an event scheduled for {upcoming.start_date.date()}",
+                    "resolution": "Please cancel or complete the event before requesting deletion",
+                }
+            )
 
         return blockers
 
@@ -249,17 +233,13 @@ class DataSubjectRightsService:
         Process account deletion with proper anonymization.
         Returns summary of actions taken.
         """
-        from core.domains.events.models import Event
         from core.domains.bookingflow.models import BookingSession
-        from core.domains.notifications.models import DevicePushToken, NotificationPreference
         from core.domains.contracts.models import EventContract
+        from core.domains.events.models import Event
+        from core.domains.notifications.models import DevicePushToken, NotificationPreference
         from core.domains.payments.models import Payment
 
-        summary = {
-            "deleted": [],
-            "anonymized": [],
-            "retained": []
-        }
+        summary = {"deleted": [], "anonymized": [], "retained": []}
 
         user_email = user.email
         user_id = user.id
@@ -275,7 +255,7 @@ class DataSubjectRightsService:
         # 3. Anonymize booking sessions
         BookingSession.objects.filter(client=user).update(
             client=None,
-            booking_data={}  # Clear PII
+            booking_data={},  # Clear PII
         )
         summary["anonymized"].append("Booking sessions")
 
@@ -293,20 +273,24 @@ class DataSubjectRightsService:
         retention_date = timezone.now() + timedelta(days=365 * settings.DATA_RETENTION_FINANCIAL)
 
         if payment_count > 0:
-            summary["retained"].append({
-                "data": "Payment records",
-                "count": payment_count,
-                "reason": f"Legal obligation (BIR - {settings.DATA_RETENTION_FINANCIAL} year retention)",
-                "retention_until": retention_date.date().isoformat()
-            })
+            summary["retained"].append(
+                {
+                    "data": "Payment records",
+                    "count": payment_count,
+                    "reason": f"Legal obligation (BIR - {settings.DATA_RETENTION_FINANCIAL} year retention)",
+                    "retention_until": retention_date.date().isoformat(),
+                }
+            )
 
         if contract_count > 0:
-            summary["retained"].append({
-                "data": "Contract signatures",
-                "count": contract_count,
-                "reason": f"Legal evidentiary value ({settings.DATA_RETENTION_CONTRACTS} year retention)",
-                "retention_until": retention_date.date().isoformat()
-            })
+            summary["retained"].append(
+                {
+                    "data": "Contract signatures",
+                    "count": contract_count,
+                    "reason": f"Legal evidentiary value ({settings.DATA_RETENTION_CONTRACTS} year retention)",
+                    "retention_until": retention_date.date().isoformat(),
+                }
+            )
 
         # 6. Delete user account
         user.is_active = False
@@ -316,7 +300,7 @@ class DataSubjectRightsService:
         user.save()
 
         # Also anonymize profile
-        if hasattr(user, 'profile'):
+        if hasattr(user, "profile"):
             user.profile.phone = ""
             user.profile.company = ""
             user.profile.save()
@@ -327,11 +311,7 @@ class DataSubjectRightsService:
         # 7. Log the deletion
         logger.info(
             f"User deletion processed: {user_email} (ID: {user_id})",
-            extra={
-                'user_id': user_id,
-                'email': user_email,
-                'summary': summary
-            }
+            extra={"user_id": user_id, "email": user_email, "summary": summary},
         )
 
         return summary
@@ -342,46 +322,43 @@ class DataSubjectRightsService:
         Process data correction requests.
         Returns results of corrections.
         """
-        results = {
-            "applied": [],
-            "pending": [],
-            "rejected": []
-        }
+        results = {"applied": [], "pending": [], "rejected": []}
 
         for correction in corrections:
-            field = correction.get('field')
-            new_value = correction.get('corrected_value')
+            field = correction.get("field")
+            new_value = correction.get("corrected_value")
 
             if field in cls.CORRECTABLE_FIELDS:
                 # Direct update
-                if field in ['first_name', 'last_name']:
+                if field in ["first_name", "last_name"]:
                     setattr(user, field, new_value)
-                elif field in ['phone', 'company'] and hasattr(user, 'profile'):
+                elif field in ["phone", "company"] and hasattr(user, "profile"):
                     setattr(user.profile, field, new_value)
 
-                results["applied"].append({
-                    "field": field,
-                    "old_value": correction.get('current_value'),
-                    "new_value": new_value,
-                    "applied_at": timezone.now().isoformat()
-                })
+                results["applied"].append(
+                    {
+                        "field": field,
+                        "old_value": correction.get("current_value"),
+                        "new_value": new_value,
+                        "applied_at": timezone.now().isoformat(),
+                    }
+                )
 
             elif field in cls.VERIFICATION_REQUIRED_FIELDS:
                 # Requires verification (e.g., email)
-                results["pending"].append({
-                    "field": field,
-                    "reason": f"{field.title()} change requires verification. Check your new {field} for a verification link."
-                })
+                results["pending"].append(
+                    {
+                        "field": field,
+                        "reason": f"{field.title()} change requires verification. Check your new {field} for a verification link.",
+                    }
+                )
 
             else:
-                results["rejected"].append({
-                    "field": field,
-                    "reason": "This field cannot be corrected by user request"
-                })
+                results["rejected"].append({"field": field, "reason": "This field cannot be corrected by user request"})
 
         # Save changes
         user.save()
-        if hasattr(user, 'profile'):
+        if hasattr(user, "profile"):
             user.profile.save()
 
         return results
@@ -399,50 +376,29 @@ class DataSubjectRightsService:
 
         prefs, _ = NotificationPreference.objects.get_or_create(user=user)
 
-        if objection_type in ['marketing', 'all_non_essential']:
+        if objection_type in ["marketing", "all_non_essential"]:
             prefs.marketing_email = False
             prefs.marketing_sms = False
             prefs.marketing_push = False
-            changes.update({
-                "marketing_email": False,
-                "marketing_sms": False,
-                "marketing_push": False
-            })
+            changes.update({"marketing_email": False, "marketing_sms": False, "marketing_push": False})
 
             # Record consent withdrawal
-            for consent_type in ['MARKETING_EMAIL', 'MARKETING_SMS', 'MARKETING_PUSH']:
+            for consent_type in ["MARKETING_EMAIL", "MARKETING_SMS", "MARKETING_PUSH"]:
                 ConsentRecord.record_consent(
-                    user=user,
-                    consent_type=consent_type,
-                    granted=False,
-                    source='PRIVACY_DASHBOARD'
+                    user=user, consent_type=consent_type, granted=False, source="PRIVACY_DASHBOARD"
                 )
 
-        if objection_type in ['analytics', 'all_non_essential']:
+        if objection_type in ["analytics", "all_non_essential"]:
             # Disable analytics tracking
             changes["analytics_tracking"] = False
-            ConsentRecord.record_consent(
-                user=user,
-                consent_type='ANALYTICS',
-                granted=False,
-                source='PRIVACY_DASHBOARD'
-            )
+            ConsentRecord.record_consent(user=user, consent_type="ANALYTICS", granted=False, source="PRIVACY_DASHBOARD")
 
         prefs.save()
 
         # Things user cannot object to
         cannot_object = [
-            {
-                "processing": "Contract fulfillment",
-                "reason": "Necessary for providing booked services"
-            },
-            {
-                "processing": "Legal obligations",
-                "reason": "Required by law (BIR, NPC)"
-            }
+            {"processing": "Contract fulfillment", "reason": "Necessary for providing booked services"},
+            {"processing": "Legal obligations", "reason": "Required by law (BIR, NPC)"},
         ]
 
-        return {
-            "changes_applied": changes,
-            "cannot_object": cannot_object
-        }
+        return {"changes_applied": changes, "cannot_object": cannot_object}

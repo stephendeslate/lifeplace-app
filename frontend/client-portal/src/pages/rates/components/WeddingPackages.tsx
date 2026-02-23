@@ -1,12 +1,12 @@
 // pages/rates/components/WeddingPackages.tsx
 
-import React from "react";
-import { Box, Typography, Stack, Button, Chip } from "@mui/material";
-import { ArrowForward, Check, Favorite } from "@mui/icons-material";
-import { Section } from "../../../design-system/components/Section";
-import { Container } from "../../../design-system/components/Container";
-import { AnimatedElement } from "../../../design-system/components/AnimatedElement";
-import { tokens } from "../../../design-system/tokens";
+import React from 'react';
+import { Box, Typography, Stack, Button, Chip } from '@mui/material';
+import { ArrowForward, Check, Favorite } from '@mui/icons-material';
+import { Section } from '../../../design-system/components/Section';
+import { Container } from '../../../design-system/components/Container';
+import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import { tokens } from '../../../design-system/tokens';
 import type {
   WeddingPackagesProps,
   WeddingVenue,
@@ -15,7 +15,7 @@ import type {
   RatesWeddingVenue,
   RatesWeddingComboApi,
   RatesAllInWeddingApi,
-} from "../types/rates.types";
+} from '../types/rates.types';
 
 export const WeddingPackages: React.FC<WeddingPackagesProps> = ({
   onNavigateToBooking,
@@ -23,44 +23,36 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({
   weddingCombos: weddingCombosProp,
   allInWeddings: allInWeddingsProp,
 }) => {
-  const venues: WeddingVenue[] = (weddingVenuesProp ?? []).map(
-    (v: RatesWeddingVenue) => ({
-      id: v.id.toString(),
-      name: v.name,
-      price: parseFloat(v.price),
-      duration: v.duration ?? "3 hours",
-      capacity: v.capacity,
-      includes: v.includes,
-      excessHourRate: v.excess_hour_rate
-        ? parseFloat(v.excess_hour_rate)
-        : undefined,
-    }),
-  );
+  const venues: WeddingVenue[] = (weddingVenuesProp ?? []).map((v: RatesWeddingVenue) => ({
+    id: v.id.toString(),
+    name: v.name,
+    price: parseFloat(v.price),
+    duration: v.duration ?? '3 hours',
+    capacity: v.capacity,
+    includes: v.includes,
+    excessHourRate: v.excess_hour_rate ? parseFloat(v.excess_hour_rate) : undefined,
+  }));
 
-  const combos: WeddingCombo[] = (weddingCombosProp ?? []).map(
-    (c: RatesWeddingComboApi) => ({
-      id: c.id.toString(),
-      name: c.name,
-      price: parseFloat(c.price),
-      duration: c.duration ?? "6 hours",
-      includes: c.includes,
-    }),
-  );
+  const combos: WeddingCombo[] = (weddingCombosProp ?? []).map((c: RatesWeddingComboApi) => ({
+    id: c.id.toString(),
+    name: c.name,
+    price: parseFloat(c.price),
+    duration: c.duration ?? '6 hours',
+    includes: c.includes,
+  }));
 
-  const allIn: AllInWeddingPackage[] = (allInWeddingsProp ?? []).map(
-    (p: RatesAllInWeddingApi) => ({
-      id: p.id.toString(),
-      name: p.name,
-      startingPrice: parseFloat(p.starting_price),
-      guestCount: p.guest_count ?? 0,
-      venues: p.venues,
-      includes: p.includes,
-    }),
-  );
+  const allIn: AllInWeddingPackage[] = (allInWeddingsProp ?? []).map((p: RatesAllInWeddingApi) => ({
+    id: p.id.toString(),
+    name: p.name,
+    startingPrice: parseFloat(p.starting_price),
+    guestCount: p.guest_count ?? 0,
+    venues: p.venues,
+    includes: p.includes,
+  }));
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("en-PH", {
-      style: "currency",
-      currency: "PHP",
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(price);
@@ -72,11 +64,9 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({
         <Stack spacing={8}>
           {/* Header */}
           <AnimatedElement animation="fadeIn" delay={100}>
-            <Stack spacing={2} alignItems="center" sx={{ textAlign: "center" }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <Favorite
-                  sx={{ fontSize: 40, color: tokens.color.semantic.error.main }}
-                />
+            <Stack spacing={2} alignItems="center" sx={{ textAlign: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Favorite sx={{ fontSize: 40, color: tokens.color.semantic.error.main }} />
                 <Typography
                   sx={{
                     ...tokens.typography.styles.h2,
@@ -103,8 +93,8 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({
                   maxWidth: 700,
                 }}
               >
-                Create your perfect wedding day with our exclusive venue
-                packages and all-inclusive options.
+                Create your perfect wedding day with our exclusive venue packages and all-inclusive
+                options.
               </Typography>
             </Stack>
           </AnimatedElement>
@@ -125,32 +115,28 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({
 
             <Box
               sx={{
-                display: "grid",
+                display: 'grid',
                 gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(2, 1fr)",
-                  lg: "repeat(3, 1fr)",
+                  xs: '1fr',
+                  sm: 'repeat(2, 1fr)',
+                  lg: 'repeat(3, 1fr)',
                 },
                 gap: tokens.spacing.layout.grid.gap.lg,
               }}
             >
               {venues.map((venue, index) => (
-                <AnimatedElement
-                  key={venue.id}
-                  animation="slideUp"
-                  delay={200 + index * 50}
-                >
+                <AnimatedElement key={venue.id} animation="slideUp" delay={200 + index * 50}>
                   <Box
                     sx={{
-                      height: "100%",
-                      backgroundColor: "#FFFFFF",
+                      height: '100%',
+                      backgroundColor: '#FFFFFF',
                       borderRadius: tokens.spacing.radius.card,
                       padding: tokens.spacing.space.cardPadding.lg,
                       boxShadow: tokens.shadow.elevation.sm,
                       transition: `all ${tokens.animation.duration.normal}ms ${tokens.animation.transition.smooth}`,
-                      "&:hover": {
+                      '&:hover': {
                         boxShadow: tokens.shadow.elevation.md,
-                        transform: "translateY(-4px)",
+                        transform: 'translateY(-4px)',
                       },
                     }}
                   >
@@ -228,31 +214,27 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({
 
             <Box
               sx={{
-                display: "grid",
+                display: 'grid',
                 gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(2, 1fr)",
+                  xs: '1fr',
+                  sm: 'repeat(2, 1fr)',
                 },
                 gap: tokens.spacing.layout.grid.gap.lg,
               }}
             >
               {combos.map((combo, index) => (
-                <AnimatedElement
-                  key={combo.id}
-                  animation="slideUp"
-                  delay={200 + index * 50}
-                >
+                <AnimatedElement key={combo.id} animation="slideUp" delay={200 + index * 50}>
                   <Box
                     sx={{
-                      height: "100%",
-                      backgroundColor: "#FFFFFF",
+                      height: '100%',
+                      backgroundColor: '#FFFFFF',
                       borderRadius: tokens.spacing.radius.card,
                       padding: tokens.spacing.space.cardPadding.lg,
                       boxShadow: tokens.shadow.elevation.sm,
                       transition: `all ${tokens.animation.duration.normal}ms ${tokens.animation.transition.smooth}`,
-                      "&:hover": {
+                      '&:hover': {
                         boxShadow: tokens.shadow.elevation.md,
-                        transform: "translateY(-4px)",
+                        transform: 'translateY(-4px)',
                       },
                     }}
                   >
@@ -287,8 +269,8 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({
                           <Box
                             key={idx}
                             sx={{
-                              display: "flex",
-                              alignItems: "center",
+                              display: 'flex',
+                              alignItems: 'center',
                               gap: 1,
                             }}
                           >
@@ -332,35 +314,31 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({
 
             <Box
               sx={{
-                display: "grid",
+                display: 'grid',
                 gridTemplateColumns: {
-                  xs: "1fr",
-                  md: "repeat(2, 1fr)",
+                  xs: '1fr',
+                  md: 'repeat(2, 1fr)',
                 },
                 gap: tokens.spacing.layout.grid.gap.lg,
               }}
             >
               {allIn.map((pkg, index) => (
-                <AnimatedElement
-                  key={pkg.id}
-                  animation="slideUp"
-                  delay={200 + index * 100}
-                >
+                <AnimatedElement key={pkg.id} animation="slideUp" delay={200 + index * 100}>
                   <Box
                     sx={{
-                      height: "100%",
-                      backgroundColor: "#FFFFFF",
+                      height: '100%',
+                      backgroundColor: '#FFFFFF',
                       borderRadius: tokens.spacing.radius.card,
                       padding: tokens.spacing.space.cardPadding.lg,
                       boxShadow: tokens.shadow.elevation.md,
                       transition: `all ${tokens.animation.duration.normal}ms ${tokens.animation.transition.smooth}`,
-                      "&:hover": {
+                      '&:hover': {
                         boxShadow: tokens.shadow.elevation.lg,
-                        transform: "translateY(-4px)",
+                        transform: 'translateY(-4px)',
                       },
                     }}
                   >
-                    <Stack spacing={3} sx={{ height: "100%" }}>
+                    <Stack spacing={3} sx={{ height: '100%' }}>
                       <Box>
                         <Chip
                           label="All-Inclusive"
@@ -423,8 +401,8 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({
                           <Box
                             key={idx}
                             sx={{
-                              display: "flex",
-                              alignItems: "center",
+                              display: 'flex',
+                              alignItems: 'center',
                               gap: 1,
                             }}
                           >
@@ -452,14 +430,14 @@ export const WeddingPackages: React.FC<WeddingPackagesProps> = ({
                         onClick={onNavigateToBooking}
                         fullWidth
                         sx={{
-                          mt: "auto",
+                          mt: 'auto',
                           backgroundColor: tokens.color.base.sage[700],
-                          color: "#FFFFFF",
+                          color: '#FFFFFF',
                           padding: tokens.spacing.space.buttonPadding.md,
                           borderRadius: tokens.spacing.radius.button,
-                          textTransform: "none",
+                          textTransform: 'none',
                           fontWeight: tokens.typography.weights.semibold,
-                          "&:hover": {
+                          '&:hover': {
                             backgroundColor: tokens.color.base.sage[800],
                           },
                         }}

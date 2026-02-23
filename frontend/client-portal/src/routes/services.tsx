@@ -1,24 +1,24 @@
-import { useNavigate, useLocation } from "react-router";
-import { PublicLayout } from "../components/layout";
-import { ServicesPage } from "../pages/services";
-import { GA4Events } from "../utils/ga4";
+import { useNavigate, useLocation } from 'react-router';
+import { PublicLayout } from '../components/layout';
+import { ServicesPage } from '../pages/services';
+import { GA4Events } from '../utils/ga4';
 
 export function meta() {
   return [
-    { title: "Our Services | LifePlace Alfonso" },
+    { title: 'Our Services | LifePlace Alfonso' },
     {
-      name: "description",
+      name: 'description',
       content:
-        "Discover our services: camps, retreats, team building, workshops, and weddings at LifePlace Alfonso, Cavite.",
+        'Discover our services: camps, retreats, team building, workshops, and weddings at LifePlace Alfonso, Cavite.',
     },
-    { property: "og:title", content: "Our Services | LifePlace Alfonso" },
+    { property: 'og:title', content: 'Our Services | LifePlace Alfonso' },
     {
-      property: "og:description",
+      property: 'og:description',
       content:
-        "Discover our services: camps, retreats, team building, workshops, and weddings at LifePlace Alfonso, Cavite.",
+        'Discover our services: camps, retreats, team building, workshops, and weddings at LifePlace Alfonso, Cavite.',
     },
-    { property: "og:image", content: "/og-image.jpg" },
-    { property: "og:type", content: "website" },
+    { property: 'og:image', content: '/og-image.jpg' },
+    { property: 'og:type', content: 'website' },
   ];
 }
 
@@ -30,8 +30,8 @@ export default function ServicesRoute() {
     <PublicLayout fullHeight>
       <ServicesPage
         onNavigateToBooking={() => {
-          GA4Events.ctaClicked("book_now", location.pathname);
-          navigate("/booking");
+          GA4Events.ctaClicked('book_now', location.pathname);
+          navigate('/booking');
         }}
       />
     </PublicLayout>

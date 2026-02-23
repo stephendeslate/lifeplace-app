@@ -63,7 +63,7 @@ export const messagingQueryKeys = {
  */
 export function useThreads(
   filters: ThreadFilters = {},
-  options?: UseQueryOptions<ThreadListResponse, Error>
+  options?: UseQueryOptions<ThreadListResponse, Error>,
 ) {
   return useQuery({
     queryKey: messagingQueryKeys.threadsList(filters),
@@ -79,7 +79,7 @@ export function useThreads(
  */
 export function useThreadsInfinite(
   filters: ThreadFilters = {},
-  options?: UseInfiniteQueryOptions<ThreadListResponse, Error>
+  options?: UseInfiniteQueryOptions<ThreadListResponse, Error>,
 ) {
   return useInfiniteQuery({
     queryKey: messagingQueryKeys.threadsInfinite(filters),
@@ -101,10 +101,7 @@ export function useThreadsInfinite(
 /**
  * Fetch a specific thread with all its messages
  */
-export function useThread(
-  threadId: string,
-  options?: UseQueryOptions<MessageThreadDetail, Error>
-) {
+export function useThread(threadId: string, options?: UseQueryOptions<MessageThreadDetail, Error>) {
   return useQuery({
     queryKey: messagingQueryKeys.thread(threadId),
     queryFn: () => messagingApiClient.threads.getThread(threadId),
@@ -121,7 +118,7 @@ export function useThread(
 export function useThreadMessages(
   threadId: string,
   filters: MessageFilters = {},
-  options?: UseQueryOptions<Message[], Error>
+  options?: UseQueryOptions<Message[], Error>,
 ) {
   return useQuery({
     queryKey: messagingQueryKeys.threadMessages(threadId, filters),
@@ -139,14 +136,12 @@ export function useThreadMessages(
 export function useThreadMessagesInfinite(
   threadId: string,
   filters: MessageFilters = {},
-  options?: UseInfiniteQueryOptions<Message[], Error>
+  options?: UseInfiniteQueryOptions<Message[], Error>,
 ) {
   return useInfiniteQuery({
     queryKey: messagingQueryKeys.messagesInfinite(threadId, filters),
     queryFn: ({ pageParam }) => {
-      const queryFilters = pageParam
-        ? { ...filters, before: pageParam as string }
-        : filters;
+      const queryFilters = pageParam ? { ...filters, before: pageParam as string } : filters;
       return messagingApiClient.threads.getThreadMessages(threadId, queryFilters);
     },
     initialPageParam: undefined as string | undefined,
@@ -173,7 +168,7 @@ export function useThreadMessagesInfinite(
  */
 export function useMessages(
   filters: MessageFilters = {},
-  options?: UseQueryOptions<MessageListResponse, Error>
+  options?: UseQueryOptions<MessageListResponse, Error>,
 ) {
   return useQuery({
     queryKey: messagingQueryKeys.messagesList(filters),
@@ -187,10 +182,7 @@ export function useMessages(
 /**
  * Fetch a specific message by ID
  */
-export function useMessage(
-  messageId: string,
-  options?: UseQueryOptions<Message, Error>
-) {
+export function useMessage(messageId: string, options?: UseQueryOptions<Message, Error>) {
   return useQuery({
     queryKey: messagingQueryKeys.message(messageId),
     queryFn: () => messagingApiClient.messages.getMessage(messageId),
@@ -210,7 +202,7 @@ export function useMessage(
  */
 export function useAdminThreads(
   filters: ThreadFilters = {},
-  options?: UseQueryOptions<ThreadListResponse, Error>
+  options?: UseQueryOptions<ThreadListResponse, Error>,
 ) {
   return useQuery({
     queryKey: messagingQueryKeys.adminThreads(filters),
@@ -224,9 +216,7 @@ export function useAdminThreads(
 /**
  * Fetch messaging statistics for admin dashboard
  */
-export function useMessagingStats(
-  options?: UseQueryOptions<MessagingStats, Error>
-) {
+export function useMessagingStats(options?: UseQueryOptions<MessagingStats, Error>) {
   return useQuery({
     queryKey: messagingQueryKeys.adminStats(),
     queryFn: () => messagingApiClient.admin.getMessagingStats(),
@@ -244,10 +234,7 @@ export function useMessagingStats(
  * Hook that combines thread details with real-time message updates
  * Useful for thread detail pages
  */
-export function useThreadWithMessages(
-  threadId: string,
-  messageFilters: MessageFilters = {}
-) {
+export function useThreadWithMessages(threadId: string, messageFilters: MessageFilters = {}) {
   const threadQuery = useThread(threadId);
   const messagesQuery = useThreadMessagesInfinite(threadId, messageFilters) as any;
 
@@ -277,7 +264,10 @@ export function useInbox(filters: ThreadFilters = {}) {
   const threadsQuery = useThreadsInfinite(filters) as any;
 
   const threads = threadsQuery.data?.pages?.flatMap((page: any) => page.results) || [];
-  const totalUnread = threads.reduce((total: number, thread: any) => total + thread.unread_count, 0);
+  const totalUnread = threads.reduce(
+    (total: number, thread: any) => total + thread.unread_count,
+    0,
+  );
 
   return {
     threads,
@@ -304,7 +294,7 @@ export function useAdminDashboard() {
   const statsQuery = useMessagingStats();
   const threadsQuery = useAdminThreads({
     ordering: '-last_message_at',
-    page_size: 10
+    page_size: 10,
   });
 
   return {
@@ -328,7 +318,9 @@ export const messagingQueryInvalidation = {
   /**
    * Invalidate all messaging queries
    */
-  invalidateAll: (queryClient: { invalidateQueries: (options: { queryKey: readonly string[] }) => void }) => {
+  invalidateAll: (queryClient: {
+    invalidateQueries: (options: { queryKey: readonly string[] }) => void;
+  }) => {
     return queryClient.invalidateQueries({
       queryKey: messagingQueryKeys.all,
     });
@@ -337,7 +329,9 @@ export const messagingQueryInvalidation = {
   /**
    * Invalidate all thread-related queries
    */
-  invalidateThreads: (queryClient: { invalidateQueries: (options: { queryKey: readonly string[] }) => void }) => {
+  invalidateThreads: (queryClient: {
+    invalidateQueries: (options: { queryKey: readonly string[] }) => void;
+  }) => {
     return queryClient.invalidateQueries({
       queryKey: messagingQueryKeys.threads(),
     });
@@ -346,7 +340,10 @@ export const messagingQueryInvalidation = {
   /**
    * Invalidate a specific thread and its messages
    */
-  invalidateThread: (queryClient: { invalidateQueries: (options: { queryKey: readonly string[] }) => void }, threadId: string) => {
+  invalidateThread: (
+    queryClient: { invalidateQueries: (options: { queryKey: readonly string[] }) => void },
+    threadId: string,
+  ) => {
     return Promise.all([
       queryClient.invalidateQueries({
         queryKey: messagingQueryKeys.thread(threadId),
@@ -360,7 +357,9 @@ export const messagingQueryInvalidation = {
   /**
    * Invalidate admin queries
    */
-  invalidateAdmin: (queryClient: { invalidateQueries: (options: { queryKey: readonly string[] }) => void }) => {
+  invalidateAdmin: (queryClient: {
+    invalidateQueries: (options: { queryKey: readonly string[] }) => void;
+  }) => {
     return queryClient.invalidateQueries({
       queryKey: messagingQueryKeys.admin(),
     });

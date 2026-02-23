@@ -74,7 +74,7 @@ export const NotificationList: React.FC<NotificationListProps> = ({
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedIds(notifications.map(n => n.id));
+      setSelectedIds(notifications.map((n) => n.id));
     } else {
       setSelectedIds([]);
     }
@@ -82,9 +82,9 @@ export const NotificationList: React.FC<NotificationListProps> = ({
 
   const handleSelectOne = (id: number, checked: boolean) => {
     if (checked) {
-      setSelectedIds(prev => [...prev, id]);
+      setSelectedIds((prev) => [...prev, id]);
     } else {
-      setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
+      setSelectedIds((prev) => prev.filter((selectedId) => selectedId !== id));
     }
   };
 
@@ -98,17 +98,20 @@ export const NotificationList: React.FC<NotificationListProps> = ({
 
   const handleBulkAction = (action: 'mark_read' | 'mark_unread' | 'delete') => {
     if (selectedIds.length === 0) return;
-    
+
     onBulkAction({
       notification_ids: selectedIds,
       action,
     });
-    
+
     setSelectedIds([]);
     handleBulkMenuClose();
   };
 
-  const handleFilterChange = (field: keyof NotificationFilters, value: string | boolean | undefined) => {
+  const handleFilterChange = (
+    field: keyof NotificationFilters,
+    value: string | boolean | undefined,
+  ) => {
     onFilterChange({
       ...filters,
       [field]: value || undefined,
@@ -129,15 +132,17 @@ export const NotificationList: React.FC<NotificationListProps> = ({
     setSearchValue('');
   };
 
-  const hasActiveFilters = Object.values(filters).some(value => value !== undefined && value !== '');
+  const hasActiveFilters = Object.values(filters).some(
+    (value) => value !== undefined && value !== '',
+  );
 
   // Group notifications by time periods
   const groupNotificationsByTime = (notifications: Notification[]) => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-    const thisWeekStart = new Date(today.getTime() - (today.getDay() * 24 * 60 * 60 * 1000));
-    const lastWeekStart = new Date(thisWeekStart.getTime() - (7 * 24 * 60 * 60 * 1000));
+    const thisWeekStart = new Date(today.getTime() - today.getDay() * 24 * 60 * 60 * 1000);
+    const lastWeekStart = new Date(thisWeekStart.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     const groups = {
       today: [] as Notification[],
@@ -147,9 +152,13 @@ export const NotificationList: React.FC<NotificationListProps> = ({
       older: [] as Notification[],
     };
 
-    notifications.forEach(notification => {
+    notifications.forEach((notification) => {
       const createdDate = new Date(notification.created_at);
-      const createdDateStart = new Date(createdDate.getFullYear(), createdDate.getMonth(), createdDate.getDate());
+      const createdDateStart = new Date(
+        createdDate.getFullYear(),
+        createdDate.getMonth(),
+        createdDate.getDate(),
+      );
 
       if (createdDateStart.getTime() === today.getTime()) {
         groups.today.push(notification);
@@ -172,39 +181,41 @@ export const NotificationList: React.FC<NotificationListProps> = ({
     return [...notifications].sort((a, b) => {
       // Priority weights
       const priorityWeights = {
-        'URGENT': 1000,
-        'HIGH': 100,
-        'NORMAL': 10,
-        'LOW': 1
+        URGENT: 1000,
+        HIGH: 100,
+        NORMAL: 10,
+        LOW: 1,
       };
 
       // Status weights (unread is higher priority)
-      const statusWeight = (notification: Notification) => notification.is_read ? 0 : 500;
-      
+      const statusWeight = (notification: Notification) => (notification.is_read ? 0 : 500);
+
       // Category weights (some categories are more important)
       const categoryWeights = {
-        'SYSTEM': 50,
-        'PAYMENT': 40,
-        'CONTRACT': 35,
-        'CLIENT': 30,
-        'EVENT': 25,
-        'TASK': 20,
-        'WORKFLOW': 15,
-        'COMMUNICATION': 10,
+        SYSTEM: 50,
+        PAYMENT: 40,
+        CONTRACT: 35,
+        CLIENT: 30,
+        EVENT: 25,
+        TASK: 20,
+        WORKFLOW: 15,
+        COMMUNICATION: 10,
       };
 
       // Calculate scores
-      const scoreA = 
+      const scoreA =
         priorityWeights[a.notification_type_details?.priority as keyof typeof priorityWeights] +
         statusWeight(a) +
-        (categoryWeights[a.notification_type_details?.category as keyof typeof categoryWeights] || 5) +
+        (categoryWeights[a.notification_type_details?.category as keyof typeof categoryWeights] ||
+          5) +
         // Recent notifications get slight boost (max 10 points for notifications less than 1 hour old)
         Math.max(0, 10 - (Date.now() - new Date(a.created_at).getTime()) / (1000 * 60 * 60));
 
-      const scoreB = 
+      const scoreB =
         priorityWeights[b.notification_type_details?.priority as keyof typeof priorityWeights] +
         statusWeight(b) +
-        (categoryWeights[b.notification_type_details?.category as keyof typeof categoryWeights] || 5) +
+        (categoryWeights[b.notification_type_details?.category as keyof typeof categoryWeights] ||
+          5) +
         Math.max(0, 10 - (Date.now() - new Date(b.created_at).getTime()) / (1000 * 60 * 60));
 
       // If scores are equal, sort by created date (newest first)
@@ -224,75 +235,84 @@ export const NotificationList: React.FC<NotificationListProps> = ({
     const hasStatusFilter = filters.is_read !== undefined;
     const hasCategoryFilter = filters.category && filters.category.length > 0;
     const hasPriorityFilter = filters.priority && filters.priority.length > 0;
-    
-    let title = "No Notifications Found";
-    let message = "There are currently no notifications to display.";
+
+    let title = 'No Notifications Found';
+    let message = 'There are currently no notifications to display.';
     const suggestions = [];
 
     if (hasActiveFilters) {
-      title = "No Notifications Match Your Filters";
-      
+      title = 'No Notifications Match Your Filters';
+
       if (hasSearchTerm) {
         message = `No notifications contain "${filters.type}".`;
-        suggestions.push("Try a different search term or clear the search");
+        suggestions.push('Try a different search term or clear the search');
       }
-      
+
       if (hasStatusFilter) {
-        const statusText = filters.is_read ? "read" : "unread";
+        const statusText = filters.is_read ? 'read' : 'unread';
         if (!hasSearchTerm) {
           message = `No ${statusText} notifications found.`;
         }
-        suggestions.push(`Try viewing ${filters.is_read ? "unread" : "read"} notifications instead`);
+        suggestions.push(
+          `Try viewing ${filters.is_read ? 'unread' : 'read'} notifications instead`,
+        );
       }
-      
+
       if (hasCategoryFilter && filters.category) {
         const categoryText = filters.category;
         if (!hasSearchTerm && !hasStatusFilter) {
           message = `No ${categoryText.toLowerCase()} notifications found.`;
         }
-        suggestions.push("Try selecting a different category");
+        suggestions.push('Try selecting a different category');
       }
-      
+
       if (hasPriorityFilter && filters.priority) {
         const priorityText = filters.priority;
         if (!hasSearchTerm && !hasStatusFilter && !hasCategoryFilter) {
           message = `No ${priorityText.toLowerCase()} priority notifications found.`;
         }
-        suggestions.push("Try selecting a different priority level");
+        suggestions.push('Try selecting a different priority level');
       }
-      
+
       if (suggestions.length === 0) {
-        suggestions.push("Try adjusting your filter criteria");
+        suggestions.push('Try adjusting your filter criteria');
       }
     } else {
-      title = "All Caught Up!";
-      message = "You have no notifications at this time. When new notifications arrive, they'll appear here.";
-      suggestions.push("Configure notification preferences to control what you receive");
+      title = 'All Caught Up!';
+      message =
+        "You have no notifications at this time. When new notifications arrive, they'll appear here.";
+      suggestions.push('Configure notification preferences to control what you receive');
     }
 
     return (
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          p: 6, 
+      <Paper
+        elevation={0}
+        sx={{
+          p: 6,
           textAlign: 'center',
           bgcolor: hasActiveFilters ? 'grey.50' : 'primary.50',
           border: '2px dashed',
-          borderColor: hasActiveFilters ? 'grey.300' : 'primary.200'
+          borderColor: hasActiveFilters ? 'grey.300' : 'primary.200',
         }}
       >
-        <NotificationsIcon sx={{ 
-          fontSize: 64, 
-          color: hasActiveFilters ? 'grey.400' : 'primary.main', 
-          mb: 2,
-          opacity: 0.7
-        }} />
-        
+        <NotificationsIcon
+          sx={{
+            fontSize: 64,
+            color: hasActiveFilters ? 'grey.400' : 'primary.main',
+            mb: 2,
+            opacity: 0.7,
+          }}
+        />
+
         <Typography variant="h5" fontWeight="bold" gutterBottom>
           {title}
         </Typography>
-        
-        <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}>
+
+        <Typography
+          variant="body1"
+          color="text.secondary"
+          sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}
+        >
           {message}
         </Typography>
 
@@ -303,7 +323,12 @@ export const NotificationList: React.FC<NotificationListProps> = ({
             </Typography>
             <Stack spacing={1} alignItems="center">
               {suggestions.slice(0, 2).map((suggestion, index) => (
-                <Typography key={index} variant="body2" color="text.secondary" sx={{ fontSize: '0.9rem' }}>
+                <Typography
+                  key={index}
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ fontSize: '0.9rem' }}
+                >
                   • {suggestion}
                 </Typography>
               ))}
@@ -323,7 +348,7 @@ export const NotificationList: React.FC<NotificationListProps> = ({
               Clear All Filters
             </Button>
           )}
-          
+
           <Button
             variant="outlined"
             startIcon={<Refresh />}
@@ -365,7 +390,7 @@ export const NotificationList: React.FC<NotificationListProps> = ({
               size="small"
               sx={{ flex: 1, minWidth: 200 }}
             />
-            
+
             <Button
               variant="outlined"
               startIcon={<FilterList />}
@@ -375,7 +400,11 @@ export const NotificationList: React.FC<NotificationListProps> = ({
             >
               Filters
               {hasActiveFilters && (
-                <Chip size="small" label="•" sx={{ ml: 1, minWidth: 'auto', width: 8, height: 8 }} />
+                <Chip
+                  size="small"
+                  label="•"
+                  sx={{ ml: 1, minWidth: 'auto', width: 8, height: 8 }}
+                />
               )}
             </Button>
           </Stack>
@@ -388,10 +417,15 @@ export const NotificationList: React.FC<NotificationListProps> = ({
                 <FormControl size="small" sx={{ minWidth: 120 }}>
                   <InputLabel>Status</InputLabel>
                   <Select
-                    value={filters.is_read !== undefined ? (filters.is_read ? 'read' : 'unread') : ''}
+                    value={
+                      filters.is_read !== undefined ? (filters.is_read ? 'read' : 'unread') : ''
+                    }
                     onChange={(e) => {
                       const value = e.target.value;
-                      handleFilterChange('is_read', (value as string) === '' ? undefined : (value === 'read'));
+                      handleFilterChange(
+                        'is_read',
+                        (value as string) === '' ? undefined : value === 'read',
+                      );
                     }}
                     label="Status"
                   >
@@ -433,9 +467,9 @@ export const NotificationList: React.FC<NotificationListProps> = ({
                   </Select>
                 </FormControl>
 
-                <Button 
-                  variant="text" 
-                  onClick={clearFilters} 
+                <Button
+                  variant="text"
+                  onClick={clearFilters}
                   disabled={!hasActiveFilters}
                   size="small"
                 >
@@ -455,7 +489,7 @@ export const NotificationList: React.FC<NotificationListProps> = ({
               <Typography variant="body2" color="primary.main" fontWeight="medium">
                 {selectedIds.length} notification{selectedIds.length !== 1 ? 's' : ''} selected
               </Typography>
-              
+
               <Box>
                 <IconButton
                   onClick={handleBulkMenuOpen}
@@ -464,7 +498,7 @@ export const NotificationList: React.FC<NotificationListProps> = ({
                 >
                   <MoreVert />
                 </IconButton>
-                
+
                 <Menu
                   anchorEl={bulkMenuAnchor}
                   open={Boolean(bulkMenuAnchor)}
@@ -476,14 +510,14 @@ export const NotificationList: React.FC<NotificationListProps> = ({
                     </ListItemIcon>
                     <ListItemText>Mark as Read</ListItemText>
                   </MenuItem>
-                  
+
                   <MenuItem onClick={() => handleBulkAction('mark_unread')}>
                     <ListItemIcon>
                       <MarkEmailUnread fontSize="small" />
                     </ListItemIcon>
                     <ListItemText>Mark as Unread</ListItemText>
                   </MenuItem>
-                  
+
                   <MenuItem onClick={() => handleBulkAction('delete')} sx={{ color: 'error.main' }}>
                     <ListItemIcon>
                       <Delete fontSize="small" color="error" />
@@ -515,160 +549,163 @@ export const NotificationList: React.FC<NotificationListProps> = ({
       )}
 
       {/* Notifications List */}
-      {notifications.length === 0 ? (
-        renderFilteredEmptyState()
-      ) : (
-        (() => {
-          const groups = groupNotificationsByTime(notifications);
-          
-          const renderNotificationGroup = (groupNotifications: Notification[], title: string) => {
-            if (groupNotifications.length === 0) return null;
-            
-            // Apply smart sorting within each group
-            const sortedGroupNotifications = sortNotificationsByPriority(groupNotifications);
-            
-            const unreadCount = groupNotifications.filter(n => !n.is_read).length;
-            
-            return (
-              <Box key={title} sx={{ mb: 3 }}>
-                <Box 
-                  display="flex" 
-                  alignItems="center" 
-                  gap={1} 
-                  sx={{ 
-                    mb: 2, 
-                    pb: 1, 
-                    borderBottom: '1px solid',
-                    borderColor: 'divider'
-                  }}
-                >
-                  <Typography 
-                    variant="h6" 
-                    sx={{ 
-                      fontSize: '1rem',
-                      fontWeight: 600,
-                      color: 'text.primary'
+      {notifications.length === 0
+        ? renderFilteredEmptyState()
+        : (() => {
+            const groups = groupNotificationsByTime(notifications);
+
+            const renderNotificationGroup = (groupNotifications: Notification[], title: string) => {
+              if (groupNotifications.length === 0) return null;
+
+              // Apply smart sorting within each group
+              const sortedGroupNotifications = sortNotificationsByPriority(groupNotifications);
+
+              const unreadCount = groupNotifications.filter((n) => !n.is_read).length;
+
+              return (
+                <Box key={title} sx={{ mb: 3 }}>
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    gap={1}
+                    sx={{
+                      mb: 2,
+                      pb: 1,
+                      borderBottom: '1px solid',
+                      borderColor: 'divider',
                     }}
                   >
-                    {title}
-                  </Typography>
-                  
-                  <Chip
-                    label={groupNotifications.length}
-                    size="small"
-                    variant="outlined"
-                    sx={{ 
-                      height: 20, 
-                      fontSize: '0.75rem',
-                      bgcolor: 'grey.50'
-                    }}
-                  />
-                  
-                  {unreadCount > 0 && (
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        color: 'text.primary',
+                      }}
+                    >
+                      {title}
+                    </Typography>
+
                     <Chip
-                      label={`${unreadCount} unread`}
+                      label={groupNotifications.length}
                       size="small"
-                      color="primary"
-                      sx={{ 
-                        height: 20, 
-                        fontSize: '0.75rem'
+                      variant="outlined"
+                      sx={{
+                        height: 20,
+                        fontSize: '0.75rem',
+                        bgcolor: 'grey.50',
                       }}
                     />
-                  )}
-                </Box>
-                
-                <Stack spacing={0.75}>
-                  {sortedGroupNotifications.map((notification) => {
-                    const isUrgent = notification.notification_type_details?.priority === 'URGENT';
-                    const isHigh = notification.notification_type_details?.priority === 'HIGH';
-                    
-                    return (
-                      <Box 
-                        key={notification.id} 
-                        display="flex" 
-                        alignItems="flex-start" 
-                        gap={1}
+
+                    {unreadCount > 0 && (
+                      <Chip
+                        label={`${unreadCount} unread`}
+                        size="small"
+                        color="primary"
                         sx={{
-                          position: 'relative',
-                          ...(isUrgent && !notification.is_read && {
-                            '&::before': {
-                              content: '""',
-                              position: 'absolute',
-                              left: -12,
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              width: 6,
-                              height: '80%',
-                              bgcolor: 'error.main',
-                              borderRadius: 1,
-                              animation: 'urgentPulse 2s ease-in-out infinite alternate',
-                              '@keyframes urgentPulse': {
-                                '0%': { opacity: 0.7 },
-                                '100%': { opacity: 1 },
-                              },
-                            }
-                          }),
-                          ...(isHigh && !notification.is_read && {
-                            '&::before': {
-                              content: '""',
-                              position: 'absolute',
-                              left: -12,
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              width: 4,
-                              height: '60%',
-                              bgcolor: 'warning.main',
-                              borderRadius: 1,
-                            }
-                          })
+                          height: 20,
+                          fontSize: '0.75rem',
                         }}
-                      >
-                        <Checkbox
-                          checked={selectedIds.includes(notification.id)}
-                          onChange={(e) => handleSelectOne(notification.id, e.target.checked)}
-                          sx={{ 
-                            mt: 0.75, 
-                            '& .MuiSvgIcon-root': { 
-                              fontSize: '1.1rem',
-                              ...(isUrgent && !notification.is_read && {
-                                color: 'error.main'
+                      />
+                    )}
+                  </Box>
+
+                  <Stack spacing={0.75}>
+                    {sortedGroupNotifications.map((notification) => {
+                      const isUrgent =
+                        notification.notification_type_details?.priority === 'URGENT';
+                      const isHigh = notification.notification_type_details?.priority === 'HIGH';
+
+                      return (
+                        <Box
+                          key={notification.id}
+                          display="flex"
+                          alignItems="flex-start"
+                          gap={1}
+                          sx={{
+                            position: 'relative',
+                            ...(isUrgent &&
+                              !notification.is_read && {
+                                '&::before': {
+                                  content: '""',
+                                  position: 'absolute',
+                                  left: -12,
+                                  top: '50%',
+                                  transform: 'translateY(-50%)',
+                                  width: 6,
+                                  height: '80%',
+                                  bgcolor: 'error.main',
+                                  borderRadius: 1,
+                                  animation: 'urgentPulse 2s ease-in-out infinite alternate',
+                                  '@keyframes urgentPulse': {
+                                    '0%': { opacity: 0.7 },
+                                    '100%': { opacity: 1 },
+                                  },
+                                },
                               }),
-                              ...(isHigh && !notification.is_read && {
-                                color: 'warning.main'
-                              })
-                            } 
+                            ...(isHigh &&
+                              !notification.is_read && {
+                                '&::before': {
+                                  content: '""',
+                                  position: 'absolute',
+                                  left: -12,
+                                  top: '50%',
+                                  transform: 'translateY(-50%)',
+                                  width: 4,
+                                  height: '60%',
+                                  bgcolor: 'warning.main',
+                                  borderRadius: 1,
+                                },
+                              }),
                           }}
-                          size="small"
-                        />
-                        
-                        <Box sx={{ flexGrow: 1 }}>
-                          <NotificationCard
-                            notification={notification}
-                            onMarkRead={onMarkRead}
-                            onMarkUnread={onMarkUnread}
-                            onDelete={onDelete}
-                            compact={true}
+                        >
+                          <Checkbox
+                            checked={selectedIds.includes(notification.id)}
+                            onChange={(e) => handleSelectOne(notification.id, e.target.checked)}
+                            sx={{
+                              mt: 0.75,
+                              '& .MuiSvgIcon-root': {
+                                fontSize: '1.1rem',
+                                ...(isUrgent &&
+                                  !notification.is_read && {
+                                    color: 'error.main',
+                                  }),
+                                ...(isHigh &&
+                                  !notification.is_read && {
+                                    color: 'warning.main',
+                                  }),
+                              },
+                            }}
+                            size="small"
                           />
+
+                          <Box sx={{ flexGrow: 1 }}>
+                            <NotificationCard
+                              notification={notification}
+                              onMarkRead={onMarkRead}
+                              onMarkUnread={onMarkUnread}
+                              onDelete={onDelete}
+                              compact={true}
+                            />
+                          </Box>
                         </Box>
-                      </Box>
-                    );
-                  })}
-                </Stack>
+                      );
+                    })}
+                  </Stack>
+                </Box>
+              );
+            };
+
+            return (
+              <Box>
+                {renderNotificationGroup(groups.today, 'Today')}
+                {renderNotificationGroup(groups.yesterday, 'Yesterday')}
+                {renderNotificationGroup(groups.thisWeek, 'This Week')}
+                {renderNotificationGroup(groups.lastWeek, 'Last Week')}
+                {renderNotificationGroup(groups.older, 'Older')}
               </Box>
             );
-          };
-          
-          return (
-            <Box>
-              {renderNotificationGroup(groups.today, 'Today')}
-              {renderNotificationGroup(groups.yesterday, 'Yesterday')}
-              {renderNotificationGroup(groups.thisWeek, 'This Week')}
-              {renderNotificationGroup(groups.lastWeek, 'Last Week')}
-              {renderNotificationGroup(groups.older, 'Older')}
-            </Box>
-          );
-        })()
-      )}
+          })()}
     </Box>
   );
 };

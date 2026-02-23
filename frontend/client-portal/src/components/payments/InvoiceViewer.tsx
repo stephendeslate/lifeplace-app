@@ -92,7 +92,7 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
         {/* Header */}
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" mb={2}>
           <Box>
-            <Typography variant={compact ? "h6" : "h5"} sx={{ fontWeight: 600, mb: 1 }}>
+            <Typography variant={compact ? 'h6' : 'h5'} sx={{ fontWeight: 600, mb: 1 }}>
               {invoice.invoice_id}
             </Typography>
             <Typography variant="body2" color="text.secondary">
@@ -126,7 +126,7 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
         {showDetails && (
           <>
             <Divider sx={{ my: 2, borderColor: alpha('#fff', 0.1) }} />
-            
+
             {/* Invoice Amount & Payment Info */}
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
               <Box sx={{ flex: 1 }}>
@@ -137,23 +137,26 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                   {FinancialApi.formatAmount(invoice.total_amount, invoice.currency)}
                 </Typography>
               </Box>
-              
+
               {paymentStatus.status !== 'UNPAID' && (
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="body2" color="text.secondary" gutterBottom>
                     Amount Paid
                   </Typography>
-                  <Typography variant="h5" sx={{ 
-                    fontWeight: 600, 
-                    color: paymentStatus.status === 'FULLY_PAID' ? 'success.main' : 'warning.main' 
-                  }}>
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: 600,
+                      color:
+                        paymentStatus.status === 'FULLY_PAID' ? 'success.main' : 'warning.main',
+                    }}
+                  >
                     {FinancialApi.formatAmount(paymentStatus.amountPaid, invoice.currency)}
                   </Typography>
                   {paymentStatus.status === 'PARTIALLY_PAID' && (
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                      {paymentStatus.amountRemaining > 0 && 
-                        `${FinancialApi.formatAmount(paymentStatus.amountRemaining, invoice.currency)} remaining`
-                      }
+                      {paymentStatus.amountRemaining > 0 &&
+                        `${FinancialApi.formatAmount(paymentStatus.amountRemaining, invoice.currency)} remaining`}
                     </Typography>
                   )}
                 </Box>
@@ -171,20 +174,24 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                     {Math.round(paymentStatus.paymentProgress)}%
                   </Typography>
                 </Box>
-                <Box sx={{
-                  width: '100%',
-                  height: 8,
-                  backgroundColor: alpha('#fff', 0.1),
-                  borderRadius: 1,
-                  overflow: 'hidden',
-                }}>
-                  <Box sx={{
-                    width: `${paymentStatus.paymentProgress}%`,
-                    height: '100%',
-                    backgroundColor: theme.palette.warning.main,
+                <Box
+                  sx={{
+                    width: '100%',
+                    height: 8,
+                    backgroundColor: alpha('#fff', 0.1),
                     borderRadius: 1,
-                    transition: 'width 0.3s ease',
-                  }} />
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: `${paymentStatus.paymentProgress}%`,
+                      height: '100%',
+                      backgroundColor: theme.palette.warning.main,
+                      borderRadius: 1,
+                      transition: 'width 0.3s ease',
+                    }}
+                  />
                 </Box>
               </Box>
             )}
@@ -192,7 +199,7 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
             {showMetadata && (
               <>
                 <Divider sx={{ my: 2, borderColor: alpha('#fff', 0.1) }} />
-                
+
                 {/* Invoice Dates */}
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
                   <Box sx={{ flex: 1 }}>
@@ -203,7 +210,7 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                       {new Date(invoice.issue_date).toLocaleDateString()}
                     </Typography>
                   </Box>
-                  
+
                   <Box sx={{ flex: 1 }}>
                     <Typography variant="body2" color="text.secondary" gutterBottom>
                       Due Date
@@ -228,9 +235,7 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                     <Typography variant="body2" color="text.secondary" gutterBottom>
                       Notes
                     </Typography>
-                    <Typography variant="body2">
-                      {invoice.notes}
-                    </Typography>
+                    <Typography variant="body2">{invoice.notes}</Typography>
                   </Box>
                 )}
               </>
@@ -243,30 +248,47 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                 <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                   Invoice Items
                 </Typography>
-                <TableContainer component={Paper} sx={{
-                  backgroundColor: alpha('#fff', 0.05),
-                  backdropFilter: 'blur(10px)',
-                }}>
+                <TableContainer
+                  component={Paper}
+                  sx={{
+                    backgroundColor: alpha('#fff', 0.05),
+                    backdropFilter: 'blur(10px)',
+                  }}
+                >
                   <Table size="small">
                     <TableHead>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 600 }}>Description</TableCell>
-                        <TableCell align="center" sx={{ fontWeight: 600 }}>Type</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600 }}>Qty</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600 }}>Price</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600 }}>Total</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 600 }}>
+                          Type
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>
+                          Qty
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>
+                          Price
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 600 }}>
+                          Total
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {lineItems.map((item: InvoiceLineItem, index: number) => {
-                        const basePrice = item.base_unit_price ? parseFloat(item.base_unit_price) : null;
+                        const basePrice = item.base_unit_price
+                          ? parseFloat(item.base_unit_price)
+                          : null;
                         const unitPrice = parseFloat(item.unit_price);
                         const excessCost = item.excess_cost ? parseFloat(item.excess_cost) : 0;
 
                         // Check for new venue_details format (preferred) or legacy excess_hours
                         const venueDetails = item.venue_details;
-                        const hasVenueExcess = venueDetails && venueDetails.length > 0 && venueDetails.some(v => v.additional_hours > 0);
-                        const hasLegacyExcess = !hasVenueExcess && item.excess_hours && item.excess_hours > 0;
+                        const hasVenueExcess =
+                          venueDetails &&
+                          venueDetails.length > 0 &&
+                          venueDetails.some((v) => v.additional_hours > 0);
+                        const hasLegacyExcess =
+                          !hasVenueExcess && item.excess_hours && item.excess_hours > 0;
 
                         return (
                           <TableRow key={index}>
@@ -277,23 +299,52 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                                 </Typography>
                                 {hasVenueExcess && (
                                   <Box sx={{ mt: 0.5 }}>
-                                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                                      Base: {FinancialApi.formatAmount(basePrice || 0, invoice.currency)}
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                      sx={{ display: 'block' }}
+                                    >
+                                      Base:{' '}
+                                      {FinancialApi.formatAmount(basePrice || 0, invoice.currency)}
                                     </Typography>
-                                    {venueDetails?.map(venue => (
-                                      venue.additional_hours > 0 && (
-                                        <Typography key={venue.venue_id} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                                          {venue.venue_name}: +{venue.additional_hours}h @ {FinancialApi.formatAmount(venue.excess_hour_price, invoice.currency)}/h
-                                        </Typography>
-                                      )
-                                    ))}
+                                    {venueDetails?.map(
+                                      (venue) =>
+                                        venue.additional_hours > 0 && (
+                                          <Typography
+                                            key={venue.venue_id}
+                                            variant="caption"
+                                            color="text.secondary"
+                                            sx={{ display: 'block' }}
+                                          >
+                                            {venue.venue_name}: +{venue.additional_hours}h @{' '}
+                                            {FinancialApi.formatAmount(
+                                              venue.excess_hour_price,
+                                              invoice.currency,
+                                            )}
+                                            /h
+                                          </Typography>
+                                        ),
+                                    )}
                                   </Box>
                                 )}
                                 {hasLegacyExcess && (
-                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                                    Base: {FinancialApi.formatAmount(basePrice || 0, invoice.currency)}
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ display: 'block', mt: 0.5 }}
+                                  >
+                                    Base:{' '}
+                                    {FinancialApi.formatAmount(basePrice || 0, invoice.currency)}
                                     {item.excess_hours && item.excess_hour_price && (
-                                      <> + {item.excess_hours}h excess @ {FinancialApi.formatAmount(item.excess_hour_price, invoice.currency)}/h</>
+                                      <>
+                                        {' '}
+                                        + {item.excess_hours}h excess @{' '}
+                                        {FinancialApi.formatAmount(
+                                          item.excess_hour_price,
+                                          invoice.currency,
+                                        )}
+                                        /h
+                                      </>
                                     )}
                                   </Typography>
                                 )}
@@ -310,17 +361,15 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                                     item.item_type === 'PACKAGE'
                                       ? theme.palette.primary.main
                                       : theme.palette.secondary.main,
-                                    0.1
+                                    0.1,
                                   ),
                                   fontSize: '0.7rem',
-                                  height: '20px'
+                                  height: '20px',
                                 }}
                               />
                             </TableCell>
                             <TableCell align="right">
-                              <Typography variant="body2">
-                                {item.quantity}
-                              </Typography>
+                              <Typography variant="body2">{item.quantity}</Typography>
                             </TableCell>
                             <TableCell align="right">
                               <Box>
@@ -328,8 +377,17 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
                                   {FinancialApi.formatAmount(unitPrice, invoice.currency)}
                                 </Typography>
                                 {(hasVenueExcess || hasLegacyExcess) && excessCost > 0 && (
-                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                                    (+{FinancialApi.formatAmount(excessCost / item.quantity, invoice.currency)} excess)
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ display: 'block' }}
+                                  >
+                                    (+
+                                    {FinancialApi.formatAmount(
+                                      excessCost / item.quantity,
+                                      invoice.currency,
+                                    )}{' '}
+                                    excess)
                                   </Typography>
                                 )}
                               </Box>
@@ -349,77 +407,95 @@ export const InvoiceViewer: React.FC<InvoiceViewerProps> = ({
             )}
 
             {/* Tax Summary Section */}
-            {showLineItems && (parseFloat(invoice.tax_amount || '0') > 0 || parseFloat(invoice.subtotal || '0') > 0) && (
-              <>
-                <Divider sx={{ my: 2, borderColor: alpha('#fff', 0.1) }} />
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                  Invoice Summary
-                </Typography>
-                <Box sx={{
-                  backgroundColor: alpha('#fff', 0.05),
-                  backdropFilter: 'blur(10px)',
-                  borderRadius: 2,
-                  p: 3,
-                  border: `1px solid ${alpha('#fff', 0.1)}`,
-                }}>
-                  <Stack spacing={2}>
-                    {/* Subtotal */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography variant="body1" color="text.secondary">
-                        Subtotal
-                      </Typography>
-                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                        {FinancialApi.formatAmount(invoice.subtotal || 0, invoice.currency)}
-                      </Typography>
-                    </Box>
-
-                    {/* Tax Amount */}
-                    {parseFloat(invoice.tax_amount || '0') > 0 && (
+            {showLineItems &&
+              (parseFloat(invoice.tax_amount || '0') > 0 ||
+                parseFloat(invoice.subtotal || '0') > 0) && (
+                <>
+                  <Divider sx={{ my: 2, borderColor: alpha('#fff', 0.1) }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                    Invoice Summary
+                  </Typography>
+                  <Box
+                    sx={{
+                      backgroundColor: alpha('#fff', 0.05),
+                      backdropFilter: 'blur(10px)',
+                      borderRadius: 2,
+                      p: 3,
+                      border: `1px solid ${alpha('#fff', 0.1)}`,
+                    }}
+                  >
+                    <Stack spacing={2}>
+                      {/* Subtotal */}
                       <Box display="flex" justifyContent="space-between" alignItems="center">
                         <Typography variant="body1" color="text.secondary">
-                          Tax Amount
+                          Subtotal
                         </Typography>
-                        <Typography variant="body1" sx={{ fontWeight: 500, color: 'warning.main' }}>
-                          {FinancialApi.formatAmount(invoice.tax_amount, invoice.currency)}
+                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                          {FinancialApi.formatAmount(invoice.subtotal || 0, invoice.currency)}
                         </Typography>
                       </Box>
-                    )}
 
-                    {/* Tax Breakdown (if detailed tax info available) */}
-                    {Array.isArray(invoice.taxes) && invoice.taxes.length > 0 && (
-                      <>
-                        <Divider sx={{ borderColor: alpha('#fff', 0.1) }} />
-                        <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
-                          Tax Details:
+                      {/* Tax Amount */}
+                      {parseFloat(invoice.tax_amount || '0') > 0 && (
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Typography variant="body1" color="text.secondary">
+                            Tax Amount
+                          </Typography>
+                          <Typography
+                            variant="body1"
+                            sx={{ fontWeight: 500, color: 'warning.main' }}
+                          >
+                            {FinancialApi.formatAmount(invoice.tax_amount, invoice.currency)}
+                          </Typography>
+                        </Box>
+                      )}
+
+                      {/* Tax Breakdown (if detailed tax info available) */}
+                      {Array.isArray(invoice.taxes) && invoice.taxes.length > 0 && (
+                        <>
+                          <Divider sx={{ borderColor: alpha('#fff', 0.1) }} />
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ fontWeight: 600 }}
+                          >
+                            Tax Details:
+                          </Typography>
+                          {invoice.taxes.map((tax, index) => (
+                            <Box
+                              key={index}
+                              display="flex"
+                              justifyContent="space-between"
+                              alignItems="center"
+                              sx={{ pl: 2 }}
+                            >
+                              <Typography variant="body2" color="text.secondary">
+                                {tax.tax_rate_details?.name || `Tax Rate ${index + 1}`} (
+                                {parseFloat(tax.tax_rate_details?.rate || '0')}%)
+                              </Typography>
+                              <Typography variant="body2">
+                                {FinancialApi.formatAmount(tax.tax_amount, invoice.currency)}
+                              </Typography>
+                            </Box>
+                          ))}
+                        </>
+                      )}
+
+                      <Divider sx={{ borderColor: alpha('#fff', 0.2) }} />
+
+                      {/* Total Amount */}
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          Total Amount
                         </Typography>
-                        {invoice.taxes.map((tax, index) => (
-                          <Box key={index} display="flex" justifyContent="space-between" alignItems="center" sx={{ pl: 2 }}>
-                            <Typography variant="body2" color="text.secondary">
-                              {tax.tax_rate_details?.name || `Tax Rate ${index + 1}`} ({parseFloat(tax.tax_rate_details?.rate || '0')}%)
-                            </Typography>
-                            <Typography variant="body2">
-                              {FinancialApi.formatAmount(tax.tax_amount, invoice.currency)}
-                            </Typography>
-                          </Box>
-                        ))}
-                      </>
-                    )}
-
-                    <Divider sx={{ borderColor: alpha('#fff', 0.2) }} />
-
-                    {/* Total Amount */}
-                    <Box display="flex" justifyContent="space-between" alignItems="center">
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Total Amount
-                      </Typography>
-                      <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
-                        {FinancialApi.formatAmount(invoice.total_amount, invoice.currency)}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </Box>
-              </>
-            )}
+                        <Typography variant="h6" sx={{ fontWeight: 600, color: 'primary.main' }}>
+                          {FinancialApi.formatAmount(invoice.total_amount, invoice.currency)}
+                        </Typography>
+                      </Box>
+                    </Stack>
+                  </Box>
+                </>
+              )}
 
             {/* Actions */}
             {onDownloadPdf && (

@@ -1,16 +1,8 @@
 // frontend/client-portal/src/pages/support/components/InquiryList.tsx
 
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Chip,
-  Stack,
-  alpha,
-} from '@mui/material';
-import {
-  ChevronRight as ChevronRightIcon,
-} from '@mui/icons-material';
+import { Box, Typography, Chip, Stack, alpha } from '@mui/material';
+import { ChevronRight as ChevronRightIcon } from '@mui/icons-material';
 import { GlassCard } from '../../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
 import type { SupportInquiry } from '../../../types/support.types';
@@ -62,7 +54,9 @@ export const InquiryList: React.FC<InquiryListProps> = ({ inquiries, onSelect })
                 transition: 'all 0.2s ease',
               }}
             >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <Box
+                sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}
+              >
                 <Box sx={{ flex: 1, mr: 2 }}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5 }}>
                     {inquiry.subject}

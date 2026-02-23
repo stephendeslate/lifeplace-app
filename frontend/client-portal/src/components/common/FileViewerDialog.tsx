@@ -55,10 +55,12 @@ const formatFileSize = (bytes: number): string => {
 const getFileIcon = (fileType: string): React.ReactNode => {
   const type = fileType?.toLowerCase() || '';
   if (type.includes('pdf')) return <PdfIcon sx={{ fontSize: 64, color: '#d32f2f' }} />;
-  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'image'].some(ext => type.includes(ext))) {
+  if (
+    ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp', 'image'].some((ext) => type.includes(ext))
+  ) {
     return <ImageIcon sx={{ fontSize: 64, color: '#1976d2' }} />;
   }
-  if (['doc', 'docx', 'word', 'document'].some(ext => type.includes(ext))) {
+  if (['doc', 'docx', 'word', 'document'].some((ext) => type.includes(ext))) {
     return <DocIcon sx={{ fontSize: 64, color: '#1565c0' }} />;
   }
   return <FileIcon sx={{ fontSize: 64, color: '#757575' }} />;
@@ -66,7 +68,7 @@ const getFileIcon = (fileType: string): React.ReactNode => {
 
 const canPreviewInline = (fileType: string): 'image' | 'pdf' | false => {
   const type = fileType?.toLowerCase() || '';
-  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].some(ext => type.includes(ext))) {
+  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'].some((ext) => type.includes(ext))) {
     return 'image';
   }
   if (type.includes('pdf')) return 'pdf';
@@ -185,11 +187,7 @@ export const FileViewerDialog: React.FC<FileViewerDialogProps> = ({
           <Typography variant="h6" component="div" noWrap sx={{ maxWidth: 400 }}>
             {file.name}
           </Typography>
-          <Chip
-            label={formatFileSize(file.fileSize)}
-            size="small"
-            variant="outlined"
-          />
+          <Chip label={formatFileSize(file.fileSize)} size="small" variant="outlined" />
         </Stack>
         <Stack direction="row" spacing={1} alignItems="center">
           {previewType === 'image' && (
@@ -258,11 +256,7 @@ export const FileViewerDialog: React.FC<FileViewerDialogProps> = ({
           >
             <Typography color="error">{error}</Typography>
             {onDownload && (
-              <Button
-                variant="contained"
-                startIcon={<DownloadIcon />}
-                onClick={onDownload}
-              >
+              <Button variant="contained" startIcon={<DownloadIcon />} onClick={onDownload}>
                 Download Instead
               </Button>
             )}
@@ -347,11 +341,7 @@ export const FileViewerDialog: React.FC<FileViewerDialogProps> = ({
       <DialogActions sx={{ borderTop: '1px solid', borderColor: 'divider', py: 1.5, px: 2 }}>
         <Button onClick={onClose}>Close</Button>
         {onDownload && (
-          <Button
-            variant="contained"
-            startIcon={<DownloadIcon />}
-            onClick={onDownload}
-          >
+          <Button variant="contained" startIcon={<DownloadIcon />} onClick={onDownload}>
             Download
           </Button>
         )}

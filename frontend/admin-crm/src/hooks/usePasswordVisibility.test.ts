@@ -1,19 +1,16 @@
-import { describe, it, expect } from "vitest";
-import { renderHook, act } from "@testing-library/react";
-import {
-  usePasswordVisibility,
-  useSinglePasswordVisibility,
-} from "./usePasswordVisibility";
+import { describe, it, expect } from 'vitest';
+import { renderHook, act } from '@testing-library/react';
+import { usePasswordVisibility, useSinglePasswordVisibility } from './usePasswordVisibility';
 
-describe("usePasswordVisibility", () => {
-  it("initializes with both fields hidden", () => {
+describe('usePasswordVisibility', () => {
+  it('initializes with both fields hidden', () => {
     const { result } = renderHook(() => usePasswordVisibility());
 
     expect(result.current.showPassword).toBe(false);
     expect(result.current.showConfirmPassword).toBe(false);
   });
 
-  it("toggles password visibility", () => {
+  it('toggles password visibility', () => {
     const { result } = renderHook(() => usePasswordVisibility());
 
     act(() => {
@@ -30,7 +27,7 @@ describe("usePasswordVisibility", () => {
     expect(result.current.showPassword).toBe(false);
   });
 
-  it("toggles confirm password visibility independently", () => {
+  it('toggles confirm password visibility independently', () => {
     const { result } = renderHook(() => usePasswordVisibility());
 
     act(() => {
@@ -47,7 +44,7 @@ describe("usePasswordVisibility", () => {
     expect(result.current.showConfirmPassword).toBe(false);
   });
 
-  it("resets both fields to hidden after toggling", () => {
+  it('resets both fields to hidden after toggling', () => {
     const { result } = renderHook(() => usePasswordVisibility());
 
     act(() => {
@@ -67,14 +64,14 @@ describe("usePasswordVisibility", () => {
   });
 });
 
-describe("useSinglePasswordVisibility", () => {
-  it("initializes with password hidden", () => {
+describe('useSinglePasswordVisibility', () => {
+  it('initializes with password hidden', () => {
     const { result } = renderHook(() => useSinglePasswordVisibility());
 
     expect(result.current.showPassword).toBe(false);
   });
 
-  it("toggles password visibility and resets", () => {
+  it('toggles password visibility and resets', () => {
     const { result } = renderHook(() => useSinglePasswordVisibility());
 
     act(() => {

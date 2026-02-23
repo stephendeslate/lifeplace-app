@@ -83,14 +83,7 @@ export const SessionTimeoutWarning: React.FC<SessionTimeoutWarningProps> = ({
     checkTimeout(); // Initial check
 
     return () => clearInterval(interval);
-  }, [
-    isAuthenticated,
-    lastActivity,
-    sessionTimeoutMinutes,
-    warningMinutes,
-    open,
-    logout,
-  ]);
+  }, [isAuthenticated, lastActivity, sessionTimeoutMinutes, warningMinutes, open, logout]);
 
   // Countdown timer when dialog is open
   useEffect(() => {
@@ -158,8 +151,7 @@ export const SessionTimeoutWarning: React.FC<SessionTimeoutWarningProps> = ({
 
       <DialogContent>
         <Typography variant="body1" sx={{ mb: 2 }}>
-          Your session will expire in{' '}
-          <strong>{formatTime(timeLeft)}</strong> due to inactivity.
+          Your session will expire in <strong>{formatTime(timeLeft)}</strong> due to inactivity.
         </Typography>
 
         <Box sx={{ mb: 2 }}>
@@ -172,8 +164,7 @@ export const SessionTimeoutWarning: React.FC<SessionTimeoutWarningProps> = ({
         </Box>
 
         <Typography variant="body2" color="text.secondary">
-          Click "Stay Logged In" to continue your session, or you will be
-          automatically logged out.
+          Click "Stay Logged In" to continue your session, or you will be automatically logged out.
         </Typography>
       </DialogContent>
 
@@ -188,11 +179,7 @@ export const SessionTimeoutWarning: React.FC<SessionTimeoutWarningProps> = ({
           disabled={isExtending}
           sx={{ borderRadius: 28, minWidth: 140 }}
         >
-          {isExtending ? (
-            <CircularProgress size={20} color="inherit" />
-          ) : (
-            'Stay Logged In'
-          )}
+          {isExtending ? <CircularProgress size={20} color="inherit" /> : 'Stay Logged In'}
         </Button>
       </DialogActions>
     </Dialog>

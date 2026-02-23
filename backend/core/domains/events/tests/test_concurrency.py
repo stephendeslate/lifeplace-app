@@ -7,19 +7,18 @@ Tests:
 - Race conditions in date blocking
 """
 
-import pytest
 import uuid
-import threading
-import time
-from datetime import date, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from django.db import connection, transaction
+from datetime import date, timedelta
+
 from django.utils import timezone
 
+import pytest
+
+from core.domains.events.models import DateReservation
 from core.domains.events.services.atomic_availability_service import (
     AtomicAvailabilityService,
 )
-from core.domains.events.models import Event, DateReservation
 
 
 @pytest.fixture
@@ -39,6 +38,7 @@ def cleanup_reservations():
 # Double-Booking Prevention Tests
 # =============================================================================
 
+
 @pytest.mark.django_db(transaction=True)
 class TestDoubleBookingPrevention:
     """Tests for preventing double-booking scenarios."""
@@ -56,34 +56,27 @@ class TestDoubleBookingPrevention:
             """Attempt to reserve the test date."""
             try:
                 result = AtomicAvailabilityService.validate_and_reserve_date(
-                    event_date=test_date,
-                    booking_session_id=session_id
+                    event_date=test_date, booking_session_id=session_id
                 )
-                return {'session_id': session_id, 'result': result}
+                return {"session_id": session_id, "result": result}
             except Exception as e:
-                return {'session_id': session_id, 'error': str(e)}
+                return {"session_id": session_id, "error": str(e)}
 
         # Run concurrent reservation attempts
         with ThreadPoolExecutor(max_workers=num_concurrent_sessions) as executor:
-            futures = [
-                executor.submit(attempt_reservation, session_id)
-                for session_id in session_ids
-            ]
+            futures = [executor.submit(attempt_reservation, session_id) for session_id in session_ids]
             results = [f.result() for f in as_completed(futures)]
 
         # Analyze results
-        successful = [r for r in results if r.get('result', {}).get('available')]
-        failed = [r for r in results if not r.get('result', {}).get('available')]
+        successful = [r for r in results if r.get("result", {}).get("available")]
+        failed = [r for r in results if not r.get("result", {}).get("available")]
 
         # Only ONE session should have succeeded
         assert len(successful) == 1, f"Expected 1 successful reservation, got {len(successful)}"
         assert len(failed) == num_concurrent_sessions - 1
 
         # Verify only one reservation exists
-        reservations = DateReservation.objects.filter(
-            target_date=test_date,
-            status='PENDING'
-        )
+        reservations = DateReservation.objects.filter(target_date=test_date, status="PENDING")
         assert reservations.count() == 1
 
     def test_same_session_can_retry_reservation(self, test_date):
@@ -94,20 +87,18 @@ class TestDoubleBookingPrevention:
 
         # First attempt
         result1 = AtomicAvailabilityService.validate_and_reserve_date(
-            event_date=test_date,
-            booking_session_id=session_id
+            event_date=test_date, booking_session_id=session_id
         )
 
         # Second attempt from same session
         result2 = AtomicAvailabilityService.validate_and_reserve_date(
-            event_date=test_date,
-            booking_session_id=session_id
+            event_date=test_date, booking_session_id=session_id
         )
 
         # Both should succeed and return the same token
-        assert result1['available'] is True
-        assert result2['available'] is True
-        assert result1['reservation_token'] == result2['reservation_token']
+        assert result1["available"] is True
+        assert result2["available"] is True
+        assert result1["reservation_token"] == result2["reservation_token"]
 
     def test_expired_reservation_allows_new_booking(self, test_date):
         """
@@ -118,33 +109,29 @@ class TestDoubleBookingPrevention:
 
         # First session creates reservation
         result1 = AtomicAvailabilityService.validate_and_reserve_date(
-            event_date=test_date,
-            booking_session_id=first_session
+            event_date=test_date, booking_session_id=first_session
         )
-        assert result1['available'] is True
+        assert result1["available"] is True
 
         # Manually expire the reservation
-        reservation = DateReservation.objects.get(token=result1['reservation_token'])
+        reservation = DateReservation.objects.get(token=result1["reservation_token"])
         reservation.expires_at = timezone.now() - timedelta(minutes=1)
         reservation.save()
 
         # Second session should now be able to reserve
         result2 = AtomicAvailabilityService.validate_and_reserve_date(
-            event_date=test_date,
-            booking_session_id=second_session
+            event_date=test_date, booking_session_id=second_session
         )
 
-        assert result2['available'] is True
-        assert result2['reservation_token'] != result1['reservation_token']
+        assert result2["available"] is True
+        assert result2["reservation_token"] != result1["reservation_token"]
 
 
 @pytest.mark.django_db(transaction=True)
 class TestDateBlockingRaceConditions:
     """Tests for race conditions in date blocking."""
 
-    def test_reservation_blocked_by_confirmed_event(
-        self, test_date, event_factory
-    ):
+    def test_reservation_blocked_by_confirmed_event(self, test_date, event_factory):
         """
         Test that a reservation is blocked if an event confirms the date
         before the reservation is made.
@@ -153,23 +140,18 @@ class TestDateBlockingRaceConditions:
 
         # Create a blocking event first
         event = event_factory(
-            start_date=timezone.now().replace(
-                year=test_date.year,
-                month=test_date.month,
-                day=test_date.day
-            ),
+            start_date=timezone.now().replace(year=test_date.year, month=test_date.month, day=test_date.day),
             date_blocked=True,
-            status='CONFIRMED'
+            status="CONFIRMED",
         )
 
         # Try to reserve
         result = AtomicAvailabilityService.validate_and_reserve_date(
-            event_date=test_date,
-            booking_session_id=session_id
+            event_date=test_date, booking_session_id=session_id
         )
 
-        assert result['available'] is False
-        assert result['blocking_event_id'] == event.id
+        assert result["available"] is False
+        assert result["blocking_event_id"] == event.id
 
     def test_released_reservation_allows_other_sessions(self, test_date):
         """
@@ -180,28 +162,25 @@ class TestDateBlockingRaceConditions:
 
         # First session reserves
         result1 = AtomicAvailabilityService.validate_and_reserve_date(
-            event_date=test_date,
-            booking_session_id=first_session
+            event_date=test_date, booking_session_id=first_session
         )
-        assert result1['available'] is True
+        assert result1["available"] is True
 
         # First session releases
-        release_result = AtomicAvailabilityService.release_reservation(
-            result1['reservation_token']
-        )
-        assert release_result['success'] is True
+        release_result = AtomicAvailabilityService.release_reservation(result1["reservation_token"])
+        assert release_result["success"] is True
 
         # Second session should now succeed
         result2 = AtomicAvailabilityService.validate_and_reserve_date(
-            event_date=test_date,
-            booking_session_id=second_session
+            event_date=test_date, booking_session_id=second_session
         )
-        assert result2['available'] is True
+        assert result2["available"] is True
 
 
 # =============================================================================
 # Cleanup Race Condition Tests
 # =============================================================================
+
 
 @pytest.mark.django_db(transaction=True)
 class TestCleanupRaceConditions:
@@ -215,10 +194,9 @@ class TestCleanupRaceConditions:
 
         # Create reservation
         result = AtomicAvailabilityService.validate_and_reserve_date(
-            event_date=test_date,
-            booking_session_id=session_id
+            event_date=test_date, booking_session_id=session_id
         )
-        token = result['reservation_token']
+        token = result["reservation_token"]
 
         # Create event
         event = event_factory()
@@ -235,15 +213,15 @@ class TestCleanupRaceConditions:
             cleanup_future = executor.submit(run_cleanup)
             confirm_future = executor.submit(run_confirm)
 
-            cleanup_result = cleanup_future.result()
+            cleanup_future.result()
             confirm_result = confirm_future.result()
 
         # Confirmation should succeed (not expired yet)
-        assert confirm_result['success'] is True
+        assert confirm_result["success"] is True
 
         # Verify reservation is confirmed
         reservation = DateReservation.objects.get(token=token)
-        assert reservation.status == 'CONFIRMED'
+        assert reservation.status == "CONFIRMED"
 
     def test_multiple_cleanup_runs_are_safe(self, test_date):
         """
@@ -253,11 +231,10 @@ class TestCleanupRaceConditions:
 
         # Create and expire a reservation
         result = AtomicAvailabilityService.validate_and_reserve_date(
-            event_date=test_date,
-            booking_session_id=session_id
+            event_date=test_date, booking_session_id=session_id
         )
 
-        reservation = DateReservation.objects.get(token=result['reservation_token'])
+        reservation = DateReservation.objects.get(token=result["reservation_token"])
         reservation.expires_at = timezone.now() - timedelta(minutes=1)
         reservation.save()
 
@@ -278,4 +255,4 @@ class TestCleanupRaceConditions:
 
         # Reservation should be expired
         reservation.refresh_from_db()
-        assert reservation.status == 'EXPIRED'
+        assert reservation.status == "EXPIRED"

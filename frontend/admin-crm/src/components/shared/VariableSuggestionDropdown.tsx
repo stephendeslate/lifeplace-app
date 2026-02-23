@@ -65,9 +65,7 @@ const getGroupIcon = (groupKey: string): React.ReactNode => {
 
 // Convert variable name to human-readable label
 export const getVariableLabel = (variableName: string): string => {
-  return variableName
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (l) => l.toUpperCase());
+  return variableName.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
 export const VariableSuggestionDropdown = forwardRef<
@@ -90,16 +88,12 @@ export const VariableSuggestionDropdown = forwardRef<
   useImperativeHandle(ref, () => ({
     onKeyDown: ({ event }) => {
       if (event.key === 'ArrowUp') {
-        setSelectedIndex((prevIndex) =>
-          prevIndex === 0 ? items.length - 1 : prevIndex - 1
-        );
+        setSelectedIndex((prevIndex) => (prevIndex === 0 ? items.length - 1 : prevIndex - 1));
         return true;
       }
 
       if (event.key === 'ArrowDown') {
-        setSelectedIndex((prevIndex) =>
-          prevIndex === items.length - 1 ? 0 : prevIndex + 1
-        );
+        setSelectedIndex((prevIndex) => (prevIndex === items.length - 1 ? 0 : prevIndex + 1));
         return true;
       }
 
@@ -158,9 +152,7 @@ export const VariableSuggestionDropdown = forwardRef<
                 },
               }}
             >
-              <ListItemIcon sx={{ minWidth: 32 }}>
-                {getGroupIcon(item.group)}
-              </ListItemIcon>
+              <ListItemIcon sx={{ minWidth: 32 }}>{getGroupIcon(item.group)}</ListItemIcon>
               <ListItemText
                 primary={
                   <Box display="flex" alignItems="center" gap={0.5}>

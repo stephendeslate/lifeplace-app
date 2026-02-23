@@ -49,11 +49,7 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     },
   });
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
-  );
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 };
 
 describe('PaymentGatewaySelector', () => {
@@ -69,11 +65,8 @@ describe('PaymentGatewaySelector', () => {
 
     render(
       <TestWrapper>
-        <PaymentGatewaySelector
-          selectedGateway={null}
-          onGatewaySelect={mockOnGatewaySelect}
-        />
-      </TestWrapper>
+        <PaymentGatewaySelector selectedGateway={null} onGatewaySelect={mockOnGatewaySelect} />
+      </TestWrapper>,
     );
 
     expect(screen.getByText('Loading payment gateways...')).toBeInTheDocument();
@@ -82,11 +75,8 @@ describe('PaymentGatewaySelector', () => {
   it('renders multiple gateways with radio selection', async () => {
     render(
       <TestWrapper>
-        <PaymentGatewaySelector
-          selectedGateway={null}
-          onGatewaySelect={mockOnGatewaySelect}
-        />
-      </TestWrapper>
+        <PaymentGatewaySelector selectedGateway={null} onGatewaySelect={mockOnGatewaySelect} />
+      </TestWrapper>,
     );
 
     await waitFor(() => {
@@ -105,11 +95,8 @@ describe('PaymentGatewaySelector', () => {
 
     render(
       <TestWrapper>
-        <PaymentGatewaySelector
-          selectedGateway={null}
-          onGatewaySelect={mockOnGatewaySelect}
-        />
-      </TestWrapper>
+        <PaymentGatewaySelector selectedGateway={null} onGatewaySelect={mockOnGatewaySelect} />
+      </TestWrapper>,
     );
 
     await waitFor(() => {
@@ -128,11 +115,8 @@ describe('PaymentGatewaySelector', () => {
 
     render(
       <TestWrapper>
-        <PaymentGatewaySelector
-          selectedGateway={null}
-          onGatewaySelect={mockOnGatewaySelect}
-        />
-      </TestWrapper>
+        <PaymentGatewaySelector selectedGateway={null} onGatewaySelect={mockOnGatewaySelect} />
+      </TestWrapper>,
     );
 
     await waitFor(() => {
@@ -154,7 +138,7 @@ describe('PaymentGatewaySelector', () => {
           onGatewaySelect={mockOnGatewaySelect}
           allowedGateways={['stripe']}
         />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     await waitFor(() => {
@@ -170,17 +154,19 @@ describe('PaymentGatewaySelector', () => {
 
     render(
       <TestWrapper>
-        <PaymentGatewaySelector
-          selectedGateway={null}
-          onGatewaySelect={mockOnGatewaySelect}
-        />
-      </TestWrapper>
+        <PaymentGatewaySelector selectedGateway={null} onGatewaySelect={mockOnGatewaySelect} />
+      </TestWrapper>,
     );
 
     // Wait with longer timeout as component has retry logic (retries once for 403)
-    await waitFor(() => {
-      expect(screen.getByText(/Payment gateway information is not available/)).toBeInTheDocument();
-    }, { timeout: 5000 });
+    await waitFor(
+      () => {
+        expect(
+          screen.getByText(/Payment gateway information is not available/),
+        ).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
   });
 
   it('handles network errors', async () => {
@@ -189,17 +175,17 @@ describe('PaymentGatewaySelector', () => {
 
     render(
       <TestWrapper>
-        <PaymentGatewaySelector
-          selectedGateway={null}
-          onGatewaySelect={mockOnGatewaySelect}
-        />
-      </TestWrapper>
+        <PaymentGatewaySelector selectedGateway={null} onGatewaySelect={mockOnGatewaySelect} />
+      </TestWrapper>,
     );
 
     // Wait with longer timeout as component has retry logic (retries up to 3 times)
-    await waitFor(() => {
-      expect(screen.getByText(/Failed to load payment gateways/)).toBeInTheDocument();
-    }, { timeout: 10000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText(/Failed to load payment gateways/)).toBeInTheDocument();
+      },
+      { timeout: 10000 },
+    );
   }, 15000); // Increase test timeout to allow for retry delays
 
   it('handles empty gateway list', async () => {
@@ -207,11 +193,8 @@ describe('PaymentGatewaySelector', () => {
 
     render(
       <TestWrapper>
-        <PaymentGatewaySelector
-          selectedGateway={null}
-          onGatewaySelect={mockOnGatewaySelect}
-        />
-      </TestWrapper>
+        <PaymentGatewaySelector selectedGateway={null} onGatewaySelect={mockOnGatewaySelect} />
+      </TestWrapper>,
     );
 
     await waitFor(() => {
@@ -227,7 +210,7 @@ describe('PaymentGatewaySelector', () => {
           onGatewaySelect={mockOnGatewaySelect}
           disabled={true}
         />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     await waitFor(() => {
@@ -235,7 +218,7 @@ describe('PaymentGatewaySelector', () => {
     });
 
     const radioButtons = screen.getAllByRole('radio');
-    radioButtons.forEach(radio => {
+    radioButtons.forEach((radio) => {
       expect(radio).toBeDisabled();
     });
   });
@@ -248,7 +231,7 @@ describe('PaymentGatewaySelector', () => {
           onGatewaySelect={mockOnGatewaySelect}
           showTitle={true}
         />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     await waitFor(() => {
@@ -265,7 +248,7 @@ describe('PaymentGatewaySelector', () => {
           showTitle={true}
           required={true}
         />
-      </TestWrapper>
+      </TestWrapper>,
     );
 
     await waitFor(() => {

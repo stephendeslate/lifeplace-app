@@ -39,11 +39,7 @@ interface SignInDialogProps {
   onSuccess?: () => void;
 }
 
-export const SignInDialog: React.FC<SignInDialogProps> = ({
-  open,
-  onClose,
-  onSuccess,
-}) => {
+export const SignInDialog: React.FC<SignInDialogProps> = ({ open, onClose, onSuccess }) => {
   const { login } = useAuth();
   const { showSuccess } = useToastActions();
   const theme = useTheme();
@@ -58,22 +54,21 @@ export const SignInDialog: React.FC<SignInDialogProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleInputChange = (field: keyof LoginCredentials) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = field === 'remember_me' ? event.target.checked : event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    if (errors[field]) {
-      setErrors(prev => ({
+  const handleInputChange =
+    (field: keyof LoginCredentials) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = field === 'remember_me' ? event.target.checked : event.target.value;
+      setFormData((prev) => ({
         ...prev,
-        [field]: '',
+        [field]: value,
       }));
-    }
-  };
+
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: '',
+        }));
+      }
+    };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -89,10 +84,7 @@ export const SignInDialog: React.FC<SignInDialogProps> = ({
 
     try {
       await login(formData);
-      showSuccess(
-        'Welcome back!',
-        'You have been successfully signed in.'
-      );
+      showSuccess('Welcome back!', 'You have been successfully signed in.');
       // Reset form
       setFormData({ email: '', password: '', remember_me: false });
       onSuccess?.();
@@ -103,7 +95,7 @@ export const SignInDialog: React.FC<SignInDialogProps> = ({
       const statusCode = ErrorHandler.getStatusCode(error);
       if (statusCode === 400 || statusCode === 401) {
         setErrors({
-          form: 'Invalid email or password. Please check your credentials and try again.'
+          form: 'Invalid email or password. Please check your credentials and try again.',
         });
       } else {
         const errorMessage = ErrorHandler.extractMessage(error);
@@ -258,18 +250,11 @@ export const SignInDialog: React.FC<SignInDialogProps> = ({
                 fontWeight: 600,
               }}
             >
-              {isSubmitting ? (
-                <CircularProgress size={24} sx={{ color: 'inherit' }} />
-              ) : (
-                'Sign In'
-              )}
+              {isSubmitting ? <CircularProgress size={24} sx={{ color: 'inherit' }} /> : 'Sign In'}
             </Button>
 
             {/* Google Sign-In */}
-            <GoogleLoginButton
-              onSuccess={handleGoogleSuccess}
-              text="signin_with"
-            />
+            <GoogleLoginButton onSuccess={handleGoogleSuccess} text="signin_with" />
 
             <Typography variant="body2" color="text.secondary" textAlign="center">
               Don't have an account?{' '}

@@ -1,5 +1,5 @@
 // frontend/admin-crm/src/pages/analytics/tabs/OperationsReportsTab.tsx
-import React from "react";
+import React from 'react';
 import {
   Box,
   Typography,
@@ -11,32 +11,24 @@ import {
   TableRow,
   Skeleton,
   LinearProgress,
-} from "@mui/material";
-import { ModernCard } from "../../../components/common/ModernCard";
+} from '@mui/material';
+import { ModernCard } from '../../../components/common/ModernCard';
 
-import { VenueChart, PlaceholderCard } from "../../../components/analytics";
-import {
-  useVenueUsage,
-  useCalendarUtilization,
-} from "../../../hooks/useAnalytics";
-import type { DateRange } from "../../../types/analytics.types";
-import { formatCurrency } from "../../../utils/currency";
+import { VenueChart, PlaceholderCard } from '../../../components/analytics';
+import { useVenueUsage, useCalendarUtilization } from '../../../hooks/useAnalytics';
+import type { DateRange } from '../../../types/analytics.types';
+import { formatCurrency } from '../../../utils/currency';
 
 interface OperationsReportsTabProps {
   dateRange: DateRange;
 }
 
-export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({
-  dateRange,
-}) => {
+export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({ dateRange }) => {
   const { data: venues, isLoading: venuesLoading } = useVenueUsage(dateRange);
-  const { data: calendar, isLoading: calendarLoading } =
-    useCalendarUtilization(dateRange);
+  const { data: calendar, isLoading: calendarLoading } = useCalendarUtilization(dateRange);
 
   // Find max values for progress bars
-  const maxMonthlyBookings = Math.max(
-    ...(calendar?.by_month?.map((m) => m.booking_count) || [1]),
-  );
+  const maxMonthlyBookings = Math.max(...(calendar?.by_month?.map((m) => m.booking_count) || [1]));
   const maxDailyBookings = Math.max(
     ...(calendar?.by_day_of_week?.map((d) => d.booking_count) || [1]),
   );
@@ -52,24 +44,18 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({
 
         {!venuesLoading && venues && venues.length > 0 && (
           <ModernCard variant="flat" size="medium" sx={{ mt: 2 }}>
-            <TableContainer sx={{ overflowX: "auto" }}>
+            <TableContainer sx={{ overflowX: 'auto' }}>
               <Table size="small">
                 <TableHead>
                   <TableRow>
                     <TableCell>Venue</TableCell>
                     <TableCell align="right">Bookings</TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{ display: { xs: "none", lg: "table-cell" } }}
-                    >
+                    <TableCell align="right" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                       Confirmed
                     </TableCell>
                     <TableCell align="right">Completed</TableCell>
                     <TableCell align="right">Revenue</TableCell>
-                    <TableCell
-                      align="right"
-                      sx={{ display: { xs: "none", md: "table-cell" } }}
-                    >
+                    <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                       Utilization
                     </TableCell>
                   </TableRow>
@@ -85,29 +71,19 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({
                           <Typography
                             variant="caption"
                             color="text.secondary"
-                            sx={{ display: { xs: "none", md: "block" } }}
+                            sx={{ display: { xs: 'none', md: 'block' } }}
                           >
                             {venue.venue_code}
                           </Typography>
                         )}
                       </TableCell>
                       <TableCell align="right">{venue.booking_count}</TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{ display: { xs: "none", lg: "table-cell" } }}
-                      >
+                      <TableCell align="right" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                         {venue.confirmed_count}
                       </TableCell>
-                      <TableCell align="right">
-                        {venue.completed_count}
-                      </TableCell>
-                      <TableCell align="right">
-                        {formatCurrency(venue.total_revenue)}
-                      </TableCell>
-                      <TableCell
-                        align="right"
-                        sx={{ display: { xs: "none", md: "table-cell" } }}
-                      >
+                      <TableCell align="right">{venue.completed_count}</TableCell>
+                      <TableCell align="right">{formatCurrency(venue.total_revenue)}</TableCell>
+                      <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                         {venue.utilization_percentage}%
                       </TableCell>
                     </TableRow>
@@ -127,11 +103,7 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({
 
         <Box display="flex" gap={3} flexWrap="wrap">
           {/* By Month */}
-          <ModernCard
-            variant="flat"
-            size="medium"
-            sx={{ flex: "1 1 400px", minWidth: 300 }}
-          >
+          <ModernCard variant="flat" size="medium" sx={{ flex: '1 1 400px', minWidth: 300 }}>
             <Typography variant="subtitle2" mb={2}>
               Bookings by Month
             </Typography>
@@ -140,13 +112,7 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({
             ) : (
               <Box>
                 {calendar?.by_month?.map((month) => (
-                  <Box
-                    key={month.month}
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                    mb={1.5}
-                  >
+                  <Box key={month.month} display="flex" alignItems="center" gap={2} mb={1.5}>
                     <Typography variant="body2" sx={{ minWidth: 80 }}>
                       {month.month_name?.substring(0, 3)}
                     </Typography>
@@ -157,20 +123,17 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({
                         sx={{
                           height: 20,
                           borderRadius: 1,
-                          backgroundColor: "grey.200",
-                          "& .MuiLinearProgress-bar": {
+                          backgroundColor: 'grey.200',
+                          '& .MuiLinearProgress-bar': {
                             backgroundColor:
                               month.booking_count === maxMonthlyBookings
-                                ? "success.main"
-                                : "primary.main",
+                                ? 'success.main'
+                                : 'primary.main',
                           },
                         }}
                       />
                     </Box>
-                    <Typography
-                      variant="body2"
-                      sx={{ minWidth: 30, textAlign: "right" }}
-                    >
+                    <Typography variant="body2" sx={{ minWidth: 30, textAlign: 'right' }}>
                       {month.booking_count}
                     </Typography>
                   </Box>
@@ -185,11 +148,7 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({
           </ModernCard>
 
           {/* By Day of Week */}
-          <ModernCard
-            variant="flat"
-            size="medium"
-            sx={{ flex: "1 1 400px", minWidth: 300 }}
-          >
+          <ModernCard variant="flat" size="medium" sx={{ flex: '1 1 400px', minWidth: 300 }}>
             <Typography variant="subtitle2" mb={2}>
               Bookings by Day of Week
             </Typography>
@@ -198,13 +157,7 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({
             ) : (
               <Box>
                 {calendar?.by_day_of_week?.map((day) => (
-                  <Box
-                    key={day.day_of_week}
-                    display="flex"
-                    alignItems="center"
-                    gap={2}
-                    mb={1.5}
-                  >
+                  <Box key={day.day_of_week} display="flex" alignItems="center" gap={2} mb={1.5}>
                     <Typography variant="body2" sx={{ minWidth: 80 }}>
                       {day.day_name?.substring(0, 3)}
                     </Typography>
@@ -215,26 +168,20 @@ export const OperationsReportsTab: React.FC<OperationsReportsTabProps> = ({
                         sx={{
                           height: 20,
                           borderRadius: 1,
-                          backgroundColor: "grey.200",
-                          "& .MuiLinearProgress-bar": {
+                          backgroundColor: 'grey.200',
+                          '& .MuiLinearProgress-bar': {
                             backgroundColor:
-                              day.booking_count === maxDailyBookings
-                                ? "success.main"
-                                : "info.main",
+                              day.booking_count === maxDailyBookings ? 'success.main' : 'info.main',
                           },
                         }}
                       />
                     </Box>
-                    <Typography
-                      variant="body2"
-                      sx={{ minWidth: 30, textAlign: "right" }}
-                    >
+                    <Typography variant="body2" sx={{ minWidth: 30, textAlign: 'right' }}>
                       {day.booking_count}
                     </Typography>
                   </Box>
                 ))}
-                {(!calendar?.by_day_of_week ||
-                  calendar.by_day_of_week.length === 0) && (
+                {(!calendar?.by_day_of_week || calendar.by_day_of_week.length === 0) && (
                   <Typography color="text.secondary" textAlign="center">
                     No daily data available
                   </Typography>

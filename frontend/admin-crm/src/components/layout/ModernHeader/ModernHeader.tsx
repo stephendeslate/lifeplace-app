@@ -73,7 +73,7 @@ export const ModernHeader: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Safe context access with fallbacks
   const layoutContext = useLayout();
   const authContext = useAuth();
@@ -81,9 +81,7 @@ export const ModernHeader: React.FC = () => {
   const appTheme = useAppTheme();
   const { startTour } = useWalkthrough();
 
-  const {
-    headerHeight = 64
-  } = layoutContext || {};
+  const { headerHeight = 64 } = layoutContext || {};
   const { user, logout } = authContext || {};
   const { showInfo } = toastContext || {};
 
@@ -98,9 +96,7 @@ export const ModernHeader: React.FC = () => {
       borderBottom: isDark
         ? `1px solid ${tokens.color.neutral[800]}`
         : `1px solid ${tokens.color.neutral[200]}`,
-      background: isDark
-        ? tokens.color.neutral[900]
-        : 'white',
+      background: isDark ? tokens.color.neutral[900] : 'white',
     };
   })();
 
@@ -127,7 +123,6 @@ export const ModernHeader: React.FC = () => {
     handleUserMenuClose();
     navigate('/settings');
   };
-
 
   const getInitials = (firstName?: string, lastName?: string, email?: string) => {
     if (firstName && lastName) {
@@ -171,8 +166,8 @@ export const ModernHeader: React.FC = () => {
           transition: createTransition(['background'], 'fast'),
         }}
       >
-        <Toolbar 
-          sx={{ 
+        <Toolbar
+          sx={{
             px: { xs: 2, sm: 3, lg: 4 },
             height: headerHeight,
             minHeight: `${headerHeight}px !important`,
@@ -198,7 +193,7 @@ export const ModernHeader: React.FC = () => {
                     },
                     '&:active': {
                       background: tokens.color.neutral[300],
-                    }
+                    },
                   }}
                 >
                   {mobileMenuOpen ? <Close /> : <MenuIcon />}
@@ -216,7 +211,7 @@ export const ModernHeader: React.FC = () => {
                 transition: createTransition('opacity', 'fast'),
                 '&:hover': {
                   opacity: 0.8,
-                }
+                },
               }}
               onClick={() => navigate('/dashboard')}
             >
@@ -241,7 +236,7 @@ export const ModernHeader: React.FC = () => {
                 {navigationItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = isActiveRoute(item.path);
-                  
+
                   return (
                     <Button
                       key={item.path}
@@ -256,25 +251,25 @@ export const ModernHeader: React.FC = () => {
                         borderRadius: tokens.spacing.radius.md,
                         position: 'relative',
                         transition: createTransition(['background', 'color'], 'fast'),
-                        background: isActive
-                          ? tokens.color.primary[50]
-                          : 'transparent',
+                        background: isActive ? tokens.color.primary[50] : 'transparent',
                         '&:hover': {
                           background: isActive
                             ? tokens.color.primary[100]
                             : tokens.color.neutral[100],
                         },
-                        '&::after': isActive ? {
-                          content: '""',
-                          position: 'absolute',
-                          bottom: -8,
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          width: 24,
-                          height: 3,
-                          borderRadius: tokens.spacing.radius.full,
-                          background: tokens.color.primary[600],
-                        } : {},
+                        '&::after': isActive
+                          ? {
+                              content: '""',
+                              position: 'absolute',
+                              bottom: -8,
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              width: 24,
+                              height: 3,
+                              borderRadius: tokens.spacing.radius.full,
+                              background: tokens.color.primary[600],
+                            }
+                          : {},
                       }}
                     >
                       {item.label}
@@ -283,7 +278,6 @@ export const ModernHeader: React.FC = () => {
                 })}
               </Box>
             )}
-
           </Box>
 
           {/* Right Section: Enhanced Actions + Notifications + User */}
@@ -353,12 +347,12 @@ export const ModernHeader: React.FC = () => {
                   mt: 1.5,
                   minWidth: 240,
                   borderRadius: tokens.spacing.radius.lg,
-                  border: appTheme.effectiveMode === 'dark'
-                    ? `1px solid ${tokens.color.neutral[700]}`
-                    : `1px solid ${tokens.color.neutral[200]}`,
-                  background: appTheme.effectiveMode === 'dark'
-                    ? tokens.color.neutral[900]
-                    : 'white',
+                  border:
+                    appTheme.effectiveMode === 'dark'
+                      ? `1px solid ${tokens.color.neutral[700]}`
+                      : `1px solid ${tokens.color.neutral[200]}`,
+                  background:
+                    appTheme.effectiveMode === 'dark' ? tokens.color.neutral[900] : 'white',
                   overflow: 'hidden',
                 },
               }}
@@ -384,26 +378,28 @@ export const ModernHeader: React.FC = () => {
                     {getInitials(user?.first_name, user?.last_name, user?.email)}
                   </Avatar>
                   <Box flex={1}>
-                    <Typography 
-                      variant="subtitle2" 
-                      fontWeight="bold" 
-                      sx={{ 
-                        color: appTheme.effectiveMode === 'dark' 
-                          ? tokens.color.neutral[50] 
-                          : tokens.color.neutral[900],
+                    <Typography
+                      variant="subtitle2"
+                      fontWeight="bold"
+                      sx={{
+                        color:
+                          appTheme.effectiveMode === 'dark'
+                            ? tokens.color.neutral[50]
+                            : tokens.color.neutral[900],
                         fontSize: '0.95rem',
                       }}
                     >
-                      {user?.first_name || user?.last_name 
+                      {user?.first_name || user?.last_name
                         ? `${user?.first_name} ${user?.last_name}`.trim()
                         : user?.email}
                     </Typography>
-                    <Typography 
-                      variant="caption" 
-                      sx={{ 
-                        color: appTheme.effectiveMode === 'dark' 
-                          ? tokens.color.neutral[300] 
-                          : tokens.color.neutral[600],
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        color:
+                          appTheme.effectiveMode === 'dark'
+                            ? tokens.color.neutral[300]
+                            : tokens.color.neutral[600],
                         fontSize: '0.8rem',
                       }}
                     >
@@ -426,7 +422,7 @@ export const ModernHeader: React.FC = () => {
                   </Box>
                 </Box>
               </Box>
-              
+
               <Divider sx={{ opacity: 0.1 }} />
 
               {/* Menu Items */}
@@ -439,7 +435,7 @@ export const ModernHeader: React.FC = () => {
                     transition: createTransition(['background'], 'fast'),
                     '&:hover': {
                       background: tokens.color.neutral[100],
-                    }
+                    },
                   }}
                 >
                   <ListItemIcon>
@@ -457,7 +453,7 @@ export const ModernHeader: React.FC = () => {
                     transition: createTransition(['background'], 'fast'),
                     '&:hover': {
                       background: tokens.color.neutral[100],
-                    }
+                    },
                   }}
                 >
                   <ListItemIcon>
@@ -472,9 +468,9 @@ export const ModernHeader: React.FC = () => {
                     )}
                   </ListItemIcon>
                   <ListItemText>
-                    {appTheme.mode === 'light' && "Switch to Dark"}
-                    {appTheme.mode === 'dark' && "Follow System"}
-                    {appTheme.mode === 'system' && "Switch to Light"}
+                    {appTheme.mode === 'light' && 'Switch to Dark'}
+                    {appTheme.mode === 'dark' && 'Follow System'}
+                    {appTheme.mode === 'system' && 'Switch to Light'}
                   </ListItemText>
                   <Box sx={{ ml: 1, opacity: 0.6, fontSize: '0.75rem' }}>
                     {appTheme.effectiveMode === 'dark' ? '🌙' : '☀️'}
@@ -493,7 +489,7 @@ export const ModernHeader: React.FC = () => {
                     transition: createTransition(['background'], 'fast'),
                     '&:hover': {
                       background: tokens.color.neutral[100],
-                    }
+                    },
                   }}
                 >
                   <ListItemIcon>
@@ -516,8 +512,8 @@ export const ModernHeader: React.FC = () => {
                       color: tokens.color.error[600],
                       '& .MuiListItemIcon-root': {
                         color: tokens.color.error[600],
-                      }
-                    }
+                      },
+                    },
                   }}
                 >
                   <ListItemIcon>
@@ -541,12 +537,11 @@ export const ModernHeader: React.FC = () => {
               left: 0,
               right: 0,
               zIndex: 1299,
-              background: appTheme.effectiveMode === 'dark'
-                ? tokens.color.neutral[900]
-                : 'white',
-              borderBottom: appTheme.effectiveMode === 'dark'
-                ? `1px solid ${tokens.color.neutral[800]}`
-                : `1px solid ${tokens.color.neutral[200]}`,
+              background: appTheme.effectiveMode === 'dark' ? tokens.color.neutral[900] : 'white',
+              borderBottom:
+                appTheme.effectiveMode === 'dark'
+                  ? `1px solid ${tokens.color.neutral[800]}`
+                  : `1px solid ${tokens.color.neutral[200]}`,
               maxHeight: `calc(100vh - ${headerHeight}px)`,
               overflowY: 'auto',
             }}
@@ -555,7 +550,7 @@ export const ModernHeader: React.FC = () => {
               {navigationItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = isActiveRoute(item.path);
-                
+
                 return (
                   <ListItem key={item.path} disablePadding sx={{ px: 2, py: 0.5 }}>
                     <ListItemButton
@@ -564,9 +559,7 @@ export const ModernHeader: React.FC = () => {
                         borderRadius: tokens.spacing.radius.md,
                         py: 1.5,
                         transition: createTransition(['background'], 'fast'),
-                        background: isActive
-                          ? tokens.color.primary[50]
-                          : 'transparent',
+                        background: isActive ? tokens.color.primary[50] : 'transparent',
                         '&:hover': {
                           background: isActive
                             ? tokens.color.primary[100]
@@ -575,24 +568,26 @@ export const ModernHeader: React.FC = () => {
                       }}
                     >
                       <ListItemIcon sx={{ minWidth: 40 }}>
-                        <Icon sx={{ 
-                          color: isActive 
-                            ? tokens.color.primary[600] 
-                            : (appTheme.effectiveMode === 'dark' 
-                                ? tokens.color.neutral[400] 
-                                : tokens.color.neutral[600]),
-                          fontSize: 22,
-                        }} />
+                        <Icon
+                          sx={{
+                            color: isActive
+                              ? tokens.color.primary[600]
+                              : appTheme.effectiveMode === 'dark'
+                                ? tokens.color.neutral[400]
+                                : tokens.color.neutral[600],
+                            fontSize: 22,
+                          }}
+                        />
                       </ListItemIcon>
-                      <ListItemText 
+                      <ListItemText
                         primary={item.label}
                         primaryTypographyProps={{
                           fontWeight: isActive ? 600 : 500,
-                          color: isActive 
-                            ? tokens.color.primary[700] 
-                            : (appTheme.effectiveMode === 'dark' 
-                                ? tokens.color.neutral[200] 
-                                : tokens.color.neutral[800]),
+                          color: isActive
+                            ? tokens.color.primary[700]
+                            : appTheme.effectiveMode === 'dark'
+                              ? tokens.color.neutral[200]
+                              : tokens.color.neutral[800],
                           fontSize: '0.95rem',
                         }}
                       />
@@ -611,7 +606,6 @@ export const ModernHeader: React.FC = () => {
                   </ListItem>
                 );
               })}
-              
             </List>
           </Box>
         </Collapse>

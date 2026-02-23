@@ -57,8 +57,7 @@ export const useCreateEventQuestionnaire = () => {
       const message =
         error && typeof error === 'object' && 'response' in error
           ? String(
-              (error as { response?: { data?: { detail?: string } } }).response
-                ?.data?.detail
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to assign questionnaire'
           : 'Failed to assign questionnaire';
       showToast({
@@ -91,8 +90,7 @@ export const useUpdateEventQuestionnaire = () => {
       const message =
         error && typeof error === 'object' && 'response' in error
           ? String(
-              (error as { response?: { data?: { detail?: string } } }).response
-                ?.data?.detail
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to update questionnaire'
           : 'Failed to update questionnaire';
       showToast({
@@ -123,8 +121,7 @@ export const useDeleteEventQuestionnaire = () => {
       const message =
         error && typeof error === 'object' && 'response' in error
           ? String(
-              (error as { response?: { data?: { detail?: string } } }).response
-                ?.data?.detail
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to remove questionnaire'
           : 'Failed to remove questionnaire';
       showToast({
@@ -150,7 +147,7 @@ export const useSendEventQuestionnaire = () => {
       });
       queryClient.setQueryData(
         ['eventQuestionnaire', updatedQuestionnaire.id],
-        updatedQuestionnaire
+        updatedQuestionnaire,
       );
       showToast({
         type: 'success',
@@ -162,8 +159,7 @@ export const useSendEventQuestionnaire = () => {
       const message =
         error && typeof error === 'object' && 'response' in error
           ? String(
-              (error as { response?: { data?: { detail?: string } } }).response
-                ?.data?.detail
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to send questionnaire'
           : 'Failed to send questionnaire';
       showToast({
@@ -194,8 +190,7 @@ export const useSendQuestionnaireReminder = () => {
       const message =
         error && typeof error === 'object' && 'response' in error
           ? String(
-              (error as { response?: { data?: { detail?: string } } }).response
-                ?.data?.detail
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to send reminder'
           : 'Failed to send reminder';
       showToast({

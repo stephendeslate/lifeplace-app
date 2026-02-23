@@ -4,11 +4,11 @@ from rest_framework.routers import DefaultRouter
 
 from . import views
 
-app_name = 'notes'
+app_name = "notes"
 
 router = DefaultRouter()
-router.register(r'', views.NoteViewSet, basename='note')
+router.register(r"", views.NoteViewSet, basename="note")
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", include(router.urls)),
 ]

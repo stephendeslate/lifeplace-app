@@ -1,5 +1,5 @@
 // frontend/admin-crm/src/pages/analytics/tabs/QuestionnairesTab.tsx
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -14,8 +14,8 @@ import {
   LinearProgress,
   Slider,
   Alert,
-} from "@mui/material";
-import { ModernCard } from "../../../components/common/ModernCard";
+} from '@mui/material';
+import { ModernCard } from '../../../components/common/ModernCard';
 import {
   BarChart,
   Bar,
@@ -25,19 +25,19 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
-} from "recharts";
-import WarningIcon from "@mui/icons-material/Warning";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+} from 'recharts';
+import WarningIcon from '@mui/icons-material/Warning';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
-import { KPICard, KPIGrid } from "../../../components/analytics";
+import { KPICard, KPIGrid } from '../../../components/analytics';
 import {
   useQuestionnaireSummary,
   useQuestionnaireFieldHeatmap,
   useQuestionnaireProblemFields,
-} from "../../../hooks/useAnalytics";
-import type { DateRange } from "../../../types/analytics.types";
-import { tokens } from "../../../design-system";
-import { formatPercent } from "../../../utils/formatters";
+} from '../../../hooks/useAnalytics';
+import type { DateRange } from '../../../types/analytics.types';
+import { tokens } from '../../../design-system';
+import { formatPercent } from '../../../utils/formatters';
 
 interface QuestionnairesTabProps {
   dateRange: DateRange;
@@ -49,20 +49,19 @@ const getCompletionColor = (rate: number): string => {
   return tokens.color.error[500];
 };
 
-export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
-  dateRange,
-}) => {
-  const [selectedQuestionnaireId, setSelectedQuestionnaireId] = useState<
-    number | null
-  >(null);
+export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({ dateRange }) => {
+  const [selectedQuestionnaireId, setSelectedQuestionnaireId] = useState<number | null>(null);
   const [threshold, setThreshold] = useState<number>(80);
 
-  const { data: summary, isLoading: summaryLoading } =
-    useQuestionnaireSummary(dateRange);
-  const { data: heatmap, isLoading: heatmapLoading } =
-    useQuestionnaireFieldHeatmap(selectedQuestionnaireId, dateRange);
-  const { data: problemFields, isLoading: problemsLoading } =
-    useQuestionnaireProblemFields(dateRange, threshold);
+  const { data: summary, isLoading: summaryLoading } = useQuestionnaireSummary(dateRange);
+  const { data: heatmap, isLoading: heatmapLoading } = useQuestionnaireFieldHeatmap(
+    selectedQuestionnaireId,
+    dateRange,
+  );
+  const { data: problemFields, isLoading: problemsLoading } = useQuestionnaireProblemFields(
+    dateRange,
+    threshold,
+  );
 
   return (
     <Box>
@@ -74,12 +73,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
         {summaryLoading ? (
           <Box display="flex" gap={2} flexWrap="wrap">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton
-                key={i}
-                variant="rectangular"
-                width={180}
-                height={100}
-              />
+              <Skeleton key={i} variant="rectangular" width={180} height={100} />
             ))}
           </Box>
         ) : summary?.overall ? (
@@ -106,15 +100,11 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
               title="Overall Completion Rate"
               value={formatPercent(summary.overall.overall_completion_rate)}
               isLoading={summaryLoading}
-              color={
-                summary.overall.overall_completion_rate >= 80
-                  ? "success"
-                  : "warning"
-              }
+              color={summary.overall.overall_completion_rate >= 80 ? 'success' : 'warning'}
             />
           </KPIGrid>
         ) : (
-          <ModernCard variant="flat" size="small" sx={{ textAlign: "center" }}>
+          <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
             <Typography color="text.secondary">
               No questionnaire data available for the selected period
             </Typography>
@@ -132,7 +122,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
         ) : summary?.by_questionnaire && summary.by_questionnaire.length > 0 ? (
           <>
             <ModernCard variant="flat" size="medium" sx={{ mb: 2 }}>
-              <Box sx={{ width: "100%", height: 300 }}>
+              <Box sx={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
                   <BarChart
                     data={summary.by_questionnaire}
@@ -140,11 +130,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
                     margin={{ top: 20, right: 30, left: 150, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      type="number"
-                      domain={[0, 100]}
-                      tickFormatter={(v) => `${v}%`}
-                    />
+                    <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
                     <YAxis
                       type="category"
                       dataKey="questionnaire_name"
@@ -152,10 +138,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
                       width={140}
                     />
                     <Tooltip
-                      formatter={(value: number) => [
-                        formatPercent(value),
-                        "Completion Rate",
-                      ]}
+                      formatter={(value: number) => [formatPercent(value), 'Completion Rate']}
                     />
                     <Bar dataKey="completion_rate" name="Completion Rate">
                       {summary.by_questionnaire.map((entry, index) => (
@@ -170,30 +153,21 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
               </Box>
             </ModernCard>
             <ModernCard variant="flat" size="medium">
-              <TableContainer sx={{ overflowX: "auto" }}>
+              <TableContainer sx={{ overflowX: 'auto' }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell>Questionnaire</TableCell>
                       <TableCell align="center">Total Fields</TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{ display: { xs: "none", md: "table-cell" } }}
-                      >
+                      <TableCell align="center" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                         Required Fields
                       </TableCell>
                       <TableCell align="center">Events</TableCell>
                       <TableCell align="center">Complete</TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{ display: { xs: "none", md: "table-cell" } }}
-                      >
+                      <TableCell align="center" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                         Incomplete
                       </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{ display: { xs: "none", lg: "table-cell" } }}
-                      >
+                      <TableCell align="center" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                         Completion Rate
                       </TableCell>
                     </TableRow>
@@ -203,13 +177,9 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
                       <TableRow
                         key={q.questionnaire_id}
                         hover
-                        sx={{ cursor: "pointer" }}
-                        onClick={() =>
-                          setSelectedQuestionnaireId(q.questionnaire_id)
-                        }
-                        selected={
-                          selectedQuestionnaireId === q.questionnaire_id
-                        }
+                        sx={{ cursor: 'pointer' }}
+                        onClick={() => setSelectedQuestionnaireId(q.questionnaire_id)}
+                        selected={selectedQuestionnaireId === q.questionnaire_id}
                       >
                         <TableCell>
                           <Typography variant="body2" fontWeight={500}>
@@ -219,13 +189,11 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
                         <TableCell align="center">{q.total_fields}</TableCell>
                         <TableCell
                           align="center"
-                          sx={{ display: { xs: "none", md: "table-cell" } }}
+                          sx={{ display: { xs: 'none', md: 'table-cell' } }}
                         >
                           {q.required_fields}
                         </TableCell>
-                        <TableCell align="center">
-                          {q.events_with_responses}
-                        </TableCell>
+                        <TableCell align="center">{q.events_with_responses}</TableCell>
                         <TableCell align="center">
                           <Chip
                             label={q.complete_responses}
@@ -236,27 +204,20 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
                         </TableCell>
                         <TableCell
                           align="center"
-                          sx={{ display: { xs: "none", md: "table-cell" } }}
+                          sx={{ display: { xs: 'none', md: 'table-cell' } }}
                         >
                           <Chip
                             label={q.incomplete_responses}
                             size="small"
-                            color={
-                              q.incomplete_responses > 0 ? "warning" : "default"
-                            }
+                            color={q.incomplete_responses > 0 ? 'warning' : 'default'}
                             variant="outlined"
                           />
                         </TableCell>
                         <TableCell
                           align="center"
-                          sx={{ display: { xs: "none", lg: "table-cell" } }}
+                          sx={{ display: { xs: 'none', lg: 'table-cell' } }}
                         >
-                          <Box
-                            display="flex"
-                            alignItems="center"
-                            justifyContent="center"
-                            gap={1}
-                          >
+                          <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
                             <LinearProgress
                               variant="determinate"
                               value={q.completion_rate}
@@ -265,10 +226,8 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
                                 height: 8,
                                 borderRadius: 4,
                                 bgcolor: tokens.color.neutral[200],
-                                "& .MuiLinearProgress-bar": {
-                                  bgcolor: getCompletionColor(
-                                    q.completion_rate,
-                                  ),
+                                '& .MuiLinearProgress-bar': {
+                                  bgcolor: getCompletionColor(q.completion_rate),
                                 },
                               }}
                             />
@@ -283,20 +242,13 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
                 </Table>
               </TableContainer>
             </ModernCard>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ mt: 1, display: "block" }}
-            >
-              Click on a questionnaire row to view field-level completion
-              details
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+              Click on a questionnaire row to view field-level completion details
             </Typography>
           </>
         ) : (
-          <ModernCard variant="flat" size="small" sx={{ textAlign: "center" }}>
-            <Typography color="text.secondary">
-              No questionnaire data available
-            </Typography>
+          <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
+            <Typography color="text.secondary">No questionnaire data available</Typography>
           </ModernCard>
         )}
       </Box>
@@ -310,9 +262,9 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
               <Typography
                 component="span"
                 color="text.secondary"
-                sx={{ ml: 1, fontWeight: "normal" }}
+                sx={{ ml: 1, fontWeight: 'normal' }}
               >
-                -{" "}
+                -{' '}
                 {
                   summary.by_questionnaire.find(
                     (q) => q.questionnaire_id === selectedQuestionnaireId,
@@ -327,7 +279,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
             <ModernCard variant="flat" size="medium">
               <Box
                 sx={{
-                  width: "100%",
+                  width: '100%',
                   height: Math.max(300, heatmap.length * 40),
                 }}
               >
@@ -338,11 +290,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
                     margin={{ top: 20, right: 30, left: 180, bottom: 5 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis
-                      type="number"
-                      domain={[0, 100]}
-                      tickFormatter={(v) => `${v}%`}
-                    />
+                    <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} />
                     <YAxis
                       type="category"
                       dataKey="field_name"
@@ -371,20 +319,13 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
                   </BarChart>
                 </ResponsiveContainer>
               </Box>
-              <TableContainer sx={{ mt: 2, overflowX: "auto" }}>
+              <TableContainer sx={{ mt: 2, overflowX: 'auto' }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
                       <TableCell>Field</TableCell>
-                      <TableCell
-                        sx={{ display: { xs: "none", lg: "table-cell" } }}
-                      >
-                        Type
-                      </TableCell>
-                      <TableCell
-                        align="center"
-                        sx={{ display: { xs: "none", lg: "table-cell" } }}
-                      >
+                      <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Type</TableCell>
+                      <TableCell align="center" sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                         Required
                       </TableCell>
                       <TableCell align="center">Responses</TableCell>
@@ -395,37 +336,27 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
                     {heatmap.map((field) => (
                       <TableRow key={field.field_id}>
                         <TableCell>{field.field_name}</TableCell>
-                        <TableCell
-                          sx={{ display: { xs: "none", lg: "table-cell" } }}
-                        >
-                          <Chip
-                            label={field.field_type}
-                            size="small"
-                            variant="outlined"
-                          />
+                        <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
+                          <Chip label={field.field_type} size="small" variant="outlined" />
                         </TableCell>
                         <TableCell
                           align="center"
-                          sx={{ display: { xs: "none", lg: "table-cell" } }}
+                          sx={{ display: { xs: 'none', lg: 'table-cell' } }}
                         >
                           {field.required ? (
                             <CheckCircleIcon fontSize="small" color="success" />
                           ) : (
-                            "-"
+                            '-'
                           )}
                         </TableCell>
-                        <TableCell align="center">
-                          {field.response_count}
-                        </TableCell>
+                        <TableCell align="center">{field.response_count}</TableCell>
                         <TableCell align="center">
                           <Chip
                             label={formatPercent(field.completion_rate)}
                             size="small"
                             sx={{
-                              bgcolor: getCompletionColor(
-                                field.completion_rate,
-                              ),
-                              color: "white",
+                              bgcolor: getCompletionColor(field.completion_rate),
+                              color: 'white',
                             }}
                           />
                         </TableCell>
@@ -436,11 +367,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
               </TableContainer>
             </ModernCard>
           ) : (
-            <ModernCard
-              variant="flat"
-              size="small"
-              sx={{ textAlign: "center" }}
-            >
+            <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
               <Typography color="text.secondary">
                 No field data available for this questionnaire
               </Typography>
@@ -451,28 +378,18 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
 
       {/* Problem Fields */}
       <Box>
-        <Box
-          display="flex"
-          justifyContent="space-between"
-          alignItems="center"
-          mb={2}
-        >
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
           <Typography variant="h6">
             Problem Fields
             <Typography
               component="span"
               color="text.secondary"
-              sx={{ ml: 1, fontWeight: "normal", fontSize: "0.875rem" }}
+              sx={{ ml: 1, fontWeight: 'normal', fontSize: '0.875rem' }}
             >
               (completion rate below threshold)
             </Typography>
           </Typography>
-          <Box
-            display="flex"
-            alignItems="center"
-            gap={2}
-            sx={{ minWidth: 300 }}
-          >
+          <Box display="flex" alignItems="center" gap={2} sx={{ minWidth: 300 }}>
             <Typography variant="body2" color="text.secondary">
               Threshold:
             </Typography>
@@ -483,9 +400,9 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
               max={100}
               step={5}
               marks={[
-                { value: 50, label: "50%" },
-                { value: 80, label: "80%" },
-                { value: 100, label: "100%" },
+                { value: 50, label: '50%' },
+                { value: 80, label: '80%' },
+                { value: 100, label: '100%' },
               ]}
               valueLabelDisplay="auto"
               valueLabelFormat={(v) => `${v}%`}
@@ -499,12 +416,11 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
           <>
             <Alert severity="warning" sx={{ mb: 2 }}>
               {problemFields.length} field
-              {problemFields.length !== 1 ? "s" : ""} found with completion rate
-              below {threshold}%. Consider simplifying these fields or making
-              them optional.
+              {problemFields.length !== 1 ? 's' : ''} found with completion rate below {threshold}%.
+              Consider simplifying these fields or making them optional.
             </Alert>
             <ModernCard variant="flat" size="medium">
-              <TableContainer sx={{ overflowX: "auto" }}>
+              <TableContainer sx={{ overflowX: 'auto' }}>
                 <Table size="small">
                   <TableHead>
                     <TableRow>
@@ -526,11 +442,7 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Chip
-                            label={field.field_type}
-                            size="small"
-                            variant="outlined"
-                          />
+                          <Chip label={field.field_type} size="small" variant="outlined" />
                         </TableCell>
                         <TableCell align="center">
                           <Chip
@@ -552,13 +464,8 @@ export const QuestionnairesTab: React.FC<QuestionnairesTabProps> = ({
             </ModernCard>
           </>
         ) : (
-          <ModernCard variant="flat" size="small" sx={{ textAlign: "center" }}>
-            <Box
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              gap={1}
-            >
+          <ModernCard variant="flat" size="small" sx={{ textAlign: 'center' }}>
+            <Box display="flex" alignItems="center" justifyContent="center" gap={1}>
               <CheckCircleIcon color="success" />
               <Typography color="success.main">
                 No fields below the {threshold}% completion threshold

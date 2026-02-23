@@ -6,7 +6,17 @@ import { PartnerBenefits } from './PartnerBenefits';
 
 // Mock the design system components
 vi.mock('../../../design-system', () => ({
-  Section: ({ children, id, background, spacing }: { children: React.ReactNode; id?: string; background?: string; spacing?: string }) => (
+  Section: ({
+    children,
+    id,
+    background,
+    spacing,
+  }: {
+    children: React.ReactNode;
+    id?: string;
+    background?: string;
+    spacing?: string;
+  }) => (
     <section data-testid="section" id={id} data-background={background} data-spacing={spacing}>
       {children}
     </section>
@@ -16,12 +26,30 @@ vi.mock('../../../design-system', () => ({
       {children}
     </div>
   ),
-  ModernCard: ({ children, variant, size, hover }: { children: React.ReactNode; variant?: string; size?: string; hover?: boolean }) => (
+  ModernCard: ({
+    children,
+    variant,
+    size,
+    hover,
+  }: {
+    children: React.ReactNode;
+    variant?: string;
+    size?: string;
+    hover?: boolean;
+  }) => (
     <div data-testid="modern-card" data-variant={variant} data-size={size} data-hover={hover}>
       {children}
     </div>
   ),
-  AnimatedElement: ({ children, animation, delay }: { children: React.ReactNode; animation?: string; delay?: number }) => (
+  AnimatedElement: ({
+    children,
+    animation,
+    delay,
+  }: {
+    children: React.ReactNode;
+    animation?: string;
+    delay?: number;
+  }) => (
     <div data-testid="animated-element" data-animation={animation} data-delay={delay}>
       {children}
     </div>
@@ -107,9 +135,7 @@ describe('PartnerBenefits', () => {
 
     it('renders subheading text', () => {
       render(<PartnerBenefits />);
-      expect(
-        screen.getByText(/why partner with lifeplace alfonso/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/why partner with lifeplace alfonso/i)).toBeInTheDocument();
     });
 
     it('renders all four benefit cards', () => {
@@ -122,7 +148,7 @@ describe('PartnerBenefits', () => {
       render(<PartnerBenefits />);
       expect(screen.getByRole('heading', { name: /premium facility access/i })).toBeInTheDocument();
       expect(
-        screen.getByText(/access to a well-equipped venue in a desirable location/i)
+        screen.getByText(/access to a well-equipped venue in a desirable location/i),
       ).toBeInTheDocument();
     });
 
@@ -130,23 +156,21 @@ describe('PartnerBenefits', () => {
       render(<PartnerBenefits />);
       expect(screen.getByRole('heading', { name: /exclusive discounts/i })).toBeInTheDocument();
       expect(
-        screen.getByText(/enjoy exclusive discounts and referral incentives/i)
+        screen.getByText(/enjoy exclusive discounts and referral incentives/i),
       ).toBeInTheDocument();
     });
 
     it('renders Cross-Promotional Marketing benefit', () => {
       render(<PartnerBenefits />);
       expect(screen.getByText(/cross-promotional marketing/i)).toBeInTheDocument();
-      expect(
-        screen.getByText(/benefit from joint marketing opportunities/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/benefit from joint marketing opportunities/i)).toBeInTheDocument();
     });
 
     it('renders Established Credibility benefit', () => {
       render(<PartnerBenefits />);
       expect(screen.getByText(/established credibility/i)).toBeInTheDocument();
       expect(
-        screen.getByText(/partner with a trusted venue with a proven track record/i)
+        screen.getByText(/partner with a trusted venue with a proven track record/i),
       ).toBeInTheDocument();
     });
 
@@ -285,18 +309,10 @@ describe('PartnerBenefits', () => {
       render(<PartnerBenefits />);
 
       // Each benefit should have a description
-      expect(
-        screen.getByText(/access to a well-equipped venue/i)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/exclusive discounts and referral incentives/i)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/joint marketing opportunities/i)
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/trusted venue with a proven track record/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/access to a well-equipped venue/i)).toBeInTheDocument();
+      expect(screen.getByText(/exclusive discounts and referral incentives/i)).toBeInTheDocument();
+      expect(screen.getByText(/joint marketing opportunities/i)).toBeInTheDocument();
+      expect(screen.getByText(/trusted venue with a proven track record/i)).toBeInTheDocument();
     });
   });
 
@@ -332,14 +348,14 @@ describe('PartnerBenefits', () => {
 
       // Header content
       expect(screen.getByRole('heading', { name: /partnership benefits/i })).toBeInTheDocument();
-      expect(
-        screen.getByText(/why partner with lifeplace alfonso/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/why partner with lifeplace alfonso/i)).toBeInTheDocument();
 
       // All benefit titles as headings
       expect(screen.getByRole('heading', { name: /premium facility access/i })).toBeInTheDocument();
       expect(screen.getByRole('heading', { name: /exclusive discounts/i })).toBeInTheDocument();
-      expect(screen.getByRole('heading', { name: /cross-promotional marketing/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /cross-promotional marketing/i }),
+      ).toBeInTheDocument();
       expect(screen.getByRole('heading', { name: /established credibility/i })).toBeInTheDocument();
     });
 
@@ -347,16 +363,24 @@ describe('PartnerBenefits', () => {
       render(<PartnerBenefits />);
 
       expect(
-        screen.getByText(/access to a well-equipped venue in a desirable location with versatile event spaces/i)
+        screen.getByText(
+          /access to a well-equipped venue in a desirable location with versatile event spaces/i,
+        ),
       ).toBeInTheDocument();
       expect(
-        screen.getByText(/enjoy exclusive discounts and referral incentives for your clients and organization/i)
+        screen.getByText(
+          /enjoy exclusive discounts and referral incentives for your clients and organization/i,
+        ),
       ).toBeInTheDocument();
       expect(
-        screen.getByText(/benefit from joint marketing opportunities and increased visibility to our client base/i)
+        screen.getByText(
+          /benefit from joint marketing opportunities and increased visibility to our client base/i,
+        ),
       ).toBeInTheDocument();
       expect(
-        screen.getByText(/partner with a trusted venue with a proven track record of successful events/i)
+        screen.getByText(
+          /partner with a trusted venue with a proven track record of successful events/i,
+        ),
       ).toBeInTheDocument();
     });
   });

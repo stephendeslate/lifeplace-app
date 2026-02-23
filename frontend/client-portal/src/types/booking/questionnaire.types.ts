@@ -222,7 +222,15 @@ export interface QuestionnaireStepData {
 // Conditional logic types
 export interface ConditionalRule {
   field_id: number;
-  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'is_empty' | 'is_not_empty';
+  operator:
+    | 'equals'
+    | 'not_equals'
+    | 'contains'
+    | 'not_contains'
+    | 'greater_than'
+    | 'less_than'
+    | 'is_empty'
+    | 'is_not_empty';
   value: string | number | boolean | string[] | number[];
   logic?: 'AND' | 'OR';
 }

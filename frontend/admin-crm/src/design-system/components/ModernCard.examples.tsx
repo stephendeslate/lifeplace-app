@@ -192,8 +192,8 @@ export const ContentCardExample: React.FC = () => (
       </Box>
 
       <Typography variant="body2" color="text.secondary">
-        Track your wedding planning progress with our comprehensive checklist. From venue
-        selection to final touches, we've got you covered.
+        Track your wedding planning progress with our comprehensive checklist. From venue selection
+        to final touches, we've got you covered.
       </Typography>
 
       <Stack direction="row" spacing={1} sx={{ pt: 1 }}>

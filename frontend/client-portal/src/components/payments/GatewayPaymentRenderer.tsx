@@ -21,15 +21,16 @@ import {
   CreditCard as CardIcon,
   SwapHoriz as SwitchIcon,
 } from '@mui/icons-material';
-import {
-  Elements,
-  CardElement,
-  useStripe,
-  useElements,
-} from '@stripe/react-stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import type { Stripe } from '@stripe/stripe-js';
 import { GlassCard } from '../../design-system';
-import { PaymentFlowManager, type PaymentConfig, type PaymentSession, type PaymentResult, type PaymentError } from '../../services/PaymentFlowManager';
+import {
+  PaymentFlowManager,
+  type PaymentConfig,
+  type PaymentSession,
+  type PaymentResult,
+  type PaymentError,
+} from '../../services/PaymentFlowManager';
 
 // ===========================
 // Types and Interfaces
@@ -78,7 +79,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   session,
   onSubmit,
   isProcessing,
-  error
+  error,
 }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -86,34 +87,40 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
   const [cardComplete, setCardComplete] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
 
-  const handleSubmit = useCallback(async (event: React.FormEvent) => {
-    event.preventDefault();
+  const handleSubmit = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
 
-    if (!stripe || !elements) {
-      return;
-    }
-
-    const cardElement = elements.getElement(CardElement);
-    if (!cardElement) {
-      return;
-    }
-
-    const paymentData = {
-      payment_method: {
-        card: cardElement,
-        billing_details: {
-          // Add billing details if needed
-        }
+      if (!stripe || !elements) {
+        return;
       }
-    };
 
-    onSubmit(paymentData);
-  }, [stripe, elements, onSubmit]);
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) {
+        return;
+      }
 
-  const handleCardChange = useCallback((event: { error?: { message: string }; complete: boolean }) => {
-    setCardError(event.error ? event.error.message : null);
-    setCardComplete(event.complete);
-  }, []);
+      const paymentData = {
+        payment_method: {
+          card: cardElement,
+          billing_details: {
+            // Add billing details if needed
+          },
+        },
+      };
+
+      onSubmit(paymentData);
+    },
+    [stripe, elements, onSubmit],
+  );
+
+  const handleCardChange = useCallback(
+    (event: { error?: { message: string }; complete: boolean }) => {
+      setCardError(event.error ? event.error.message : null);
+      setCardComplete(event.complete);
+    },
+    [],
+  );
 
   const cardElementOptions = {
     style: {
@@ -142,10 +149,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
             backgroundColor: alpha(theme.palette.background.paper, 0.8),
           }}
         >
-          <CardElement
-            options={cardElementOptions}
-            onChange={handleCardChange}
-          />
+          <CardElement options={cardElementOptions} onChange={handleCardChange} />
         </Box>
 
         {/* Card Error */}
@@ -156,11 +160,7 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
         )}
 
         {/* Payment Error */}
-        {error && (
-          <Alert severity="error">
-            {error.message}
-          </Alert>
-        )}
+        {error && <Alert severity="error">{error.message}</Alert>}
 
         {/* Submit Button */}
         <Button
@@ -175,7 +175,9 @@ const StripePaymentForm: React.FC<StripePaymentFormProps> = ({
             fontWeight: 600,
           }}
         >
-          {isProcessing ? 'Processing...' : `Pay ${session.config.amount ? `${session.config.currency || 'PHP'} ${session.config.amount}` : ''}`}
+          {isProcessing
+            ? 'Processing...'
+            : `Pay ${session.config.amount ? `${session.config.currency || 'PHP'} ${session.config.amount}` : ''}`}
         </Button>
 
         {/* Security Notice */}
@@ -212,14 +214,8 @@ interface PayPalPaymentFormProps {
 const PayPalPaymentForm: React.FC<PayPalPaymentFormProps> = () => {
   return (
     <Box>
-      <Alert severity="info">
-        PayPal integration coming soon
-      </Alert>
-      <Button
-        variant="contained"
-        disabled
-        sx={{ mt: 2, width: '100%' }}
-      >
+      <Alert severity="info">PayPal integration coming soon</Alert>
+      <Button variant="contained" disabled sx={{ mt: 2, width: '100%' }}>
         PayPal Not Available
       </Button>
     </Box>
@@ -236,19 +232,11 @@ interface GenericPaymentFormProps {
   error?: PaymentError;
 }
 
-const GenericPaymentForm: React.FC<GenericPaymentFormProps> = ({
-  session
-}) => {
+const GenericPaymentForm: React.FC<GenericPaymentFormProps> = ({ session }) => {
   return (
     <Box>
-      <Alert severity="warning">
-        Payment gateway {session.gatewayCode} is not yet supported
-      </Alert>
-      <Button
-        variant="contained"
-        disabled
-        sx={{ mt: 2, width: '100%' }}
-      >
+      <Alert severity="warning">Payment gateway {session.gatewayCode} is not yet supported</Alert>
+      <Button variant="contained" disabled sx={{ mt: 2, width: '100%' }}>
         Gateway Not Available
       </Button>
     </Box>
@@ -271,7 +259,7 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
   onError,
   onCancel,
   disabled = false,
-  allowGatewaySwitching = true
+  allowGatewaySwitching = true,
 }) => {
   const theme = useTheme();
   const [state, setState] = useState<PaymentState>({
@@ -280,44 +268,47 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
     error: null,
     availableGateways: [],
     selectedGateway: null,
-    retryCount: 0
+    retryCount: 0,
   });
 
   const paymentManager = useMemo(() => PaymentFlowManager.getInstance(), []);
 
   // Initialize payment session
-  const initializeSession = useCallback(async (gatewayCode?: string) => {
-    try {
-      setState(prev => ({ ...prev, isProcessing: true, error: null }));
+  const initializeSession = useCallback(
+    async (gatewayCode?: string) => {
+      try {
+        setState((prev) => ({ ...prev, isProcessing: true, error: null }));
 
-      const sessionConfig = { ...config };
-      if (gatewayCode) {
-        sessionConfig.gatewayCode = gatewayCode;
+        const sessionConfig = { ...config };
+        if (gatewayCode) {
+          sessionConfig.gatewayCode = gatewayCode;
+        }
+
+        const session = await paymentManager.initializePayment(sessionConfig);
+        const gateways = await paymentManager.getAvailableGateways();
+
+        setState((prev) => ({
+          ...prev,
+          session,
+          availableGateways: gateways,
+          selectedGateway: session.gatewayCode,
+          isProcessing: false,
+          error: null,
+        }));
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('❌ Failed to initialize session:', error);
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to initialize payment';
+        const paymentError = {
+          code: 'initialization_failed',
+          message: errorMessage,
+        };
+        setState((prev) => ({ ...prev, error: paymentError, isProcessing: false }));
+        onError(paymentError);
       }
-
-      const session = await paymentManager.initializePayment(sessionConfig);
-      const gateways = await paymentManager.getAvailableGateways();
-
-      setState(prev => ({
-        ...prev,
-        session,
-        availableGateways: gateways,
-        selectedGateway: session.gatewayCode,
-        isProcessing: false,
-        error: null
-      }));
-
-    } catch (error) {
-      if (import.meta.env.DEV) console.error('❌ Failed to initialize session:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to initialize payment';
-      const paymentError = {
-        code: 'initialization_failed',
-        message: errorMessage
-      };
-      setState(prev => ({ ...prev, error: paymentError, isProcessing: false }));
-      onError(paymentError);
-    }
-  }, [config, paymentManager, onError]);
+    },
+    [config, paymentManager, onError],
+  );
 
   // Initialize on mount
   React.useEffect(() => {
@@ -325,73 +316,85 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
   }, [initializeSession]);
 
   // Handle payment submission
-  const handlePaymentSubmit = useCallback(async (paymentData: unknown) => {
-    if (!state.session || disabled) return;
+  const handlePaymentSubmit = useCallback(
+    async (paymentData: unknown) => {
+      if (!state.session || disabled) return;
 
-    try {
-      setState(prev => ({ ...prev, isProcessing: true, error: null }));
+      try {
+        setState((prev) => ({ ...prev, isProcessing: true, error: null }));
 
-      const result = await paymentManager.processPayment(state.session, paymentData);
+        const result = await paymentManager.processPayment(state.session, paymentData);
 
-      if (result.success) {
-        setState(prev => ({ ...prev, isProcessing: false, error: null }));
-        onSuccess(result);
-      } else {
-        setState(prev => ({ ...prev, error: result.error ?? null, isProcessing: false }));
-        if (result.error) {
-          onError(result.error);
+        if (result.success) {
+          setState((prev) => ({ ...prev, isProcessing: false, error: null }));
+          onSuccess(result);
+        } else {
+          setState((prev) => ({ ...prev, error: result.error ?? null, isProcessing: false }));
+          if (result.error) {
+            onError(result.error);
+          }
         }
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('❌ Payment processing failed:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Payment processing failed';
+        const paymentError = {
+          code: 'processing_failed',
+          message: errorMessage,
+        };
+        setState((prev) => ({ ...prev, error: paymentError, isProcessing: false }));
+        onError(paymentError);
       }
-
-    } catch (error) {
-      if (import.meta.env.DEV) console.error('❌ Payment processing failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Payment processing failed';
-      const paymentError = {
-        code: 'processing_failed',
-        message: errorMessage
-      };
-      setState(prev => ({ ...prev, error: paymentError, isProcessing: false }));
-      onError(paymentError);
-    }
-  }, [state.session, disabled, paymentManager, onSuccess, onError]);
+    },
+    [state.session, disabled, paymentManager, onSuccess, onError],
+  );
 
   // Handle gateway switch
-  const handleGatewaySwitch = useCallback(async (newGatewayCode: string) => {
-    if (newGatewayCode === state.selectedGateway) return;
+  const handleGatewaySwitch = useCallback(
+    async (newGatewayCode: string) => {
+      if (newGatewayCode === state.selectedGateway) return;
 
-    await initializeSession(newGatewayCode);
-  }, [state.selectedGateway, initializeSession]);
+      await initializeSession(newGatewayCode);
+    },
+    [state.selectedGateway, initializeSession],
+  );
 
   // Handle retry
-  const handleRetry = useCallback(async (useAlternativeGateway = false) => {
-    if (!state.session) return;
+  const handleRetry = useCallback(
+    async (useAlternativeGateway = false) => {
+      if (!state.session) return;
 
-    try {
-      setState(prev => ({ ...prev, isProcessing: true, error: null, retryCount: prev.retryCount + 1 }));
+      try {
+        setState((prev) => ({
+          ...prev,
+          isProcessing: true,
+          error: null,
+          retryCount: prev.retryCount + 1,
+        }));
 
-      const result = await paymentManager.retryPayment(state.session, useAlternativeGateway);
+        const result = await paymentManager.retryPayment(state.session, useAlternativeGateway);
 
-      if (result.success) {
-        setState(prev => ({ ...prev, isProcessing: false, error: null }));
-        onSuccess(result);
-      } else {
-        setState(prev => ({ ...prev, error: result.error ?? null, isProcessing: false }));
-        if (result.error) {
-          onError(result.error);
+        if (result.success) {
+          setState((prev) => ({ ...prev, isProcessing: false, error: null }));
+          onSuccess(result);
+        } else {
+          setState((prev) => ({ ...prev, error: result.error ?? null, isProcessing: false }));
+          if (result.error) {
+            onError(result.error);
+          }
         }
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('❌ Payment retry failed:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Payment retry failed';
+        const paymentError = {
+          code: 'retry_failed',
+          message: errorMessage,
+        };
+        setState((prev) => ({ ...prev, error: paymentError, isProcessing: false }));
+        onError(paymentError);
       }
-
-    } catch (error) {
-      if (import.meta.env.DEV) console.error('❌ Payment retry failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Payment retry failed';
-      const paymentError = {
-        code: 'retry_failed',
-        message: errorMessage
-      };
-      setState(prev => ({ ...prev, error: paymentError, isProcessing: false }));
-      onError(paymentError);
-    }
-  }, [state.session, paymentManager, onSuccess, onError]);
+    },
+    [state.session, paymentManager, onSuccess, onError],
+  );
 
   // Render gateway selection
   const renderGatewaySelection = () => {
@@ -410,11 +413,7 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
           startAdornment={<SwitchIcon sx={{ mr: 1, color: theme.palette.text.secondary }} />}
         >
           {state.availableGateways.map((gateway) => (
-            <MenuItem
-              key={gateway.code}
-              value={gateway.code}
-              disabled={!gateway.isHealthy}
-            >
+            <MenuItem key={gateway.code} value={gateway.code} disabled={!gateway.isHealthy}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography>{gateway.name}</Typography>
                 {!gateway.isHealthy && (
@@ -444,7 +443,7 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
       session: state.session,
       onSubmit: handlePaymentSubmit,
       isProcessing: state.isProcessing,
-      error: state.error || undefined
+      error: state.error || undefined,
     };
 
     switch (state.session.gatewayCode) {
@@ -495,7 +494,7 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
         mx: 'auto',
         p: 3,
         opacity: disabled ? 0.6 : 1,
-        pointerEvents: disabled ? 'none' : 'auto'
+        pointerEvents: disabled ? 'none' : 'auto',
       }}
     >
       <Stack spacing={3}>
@@ -524,12 +523,7 @@ export const GatewayPaymentRenderer: React.FC<GatewayPaymentRendererProps> = ({
 
         {/* Cancel Button */}
         {onCancel && (
-          <Button
-            variant="text"
-            onClick={onCancel}
-            disabled={state.isProcessing}
-            sx={{ mt: 2 }}
-          >
+          <Button variant="text" onClick={onCancel} disabled={state.isProcessing} sx={{ mt: 2 }}>
             Cancel
           </Button>
         )}
@@ -551,11 +545,11 @@ export const GatewayPaymentRendererWithContext: React.FC<GatewayPaymentRendererP
       try {
         const manager = PaymentFlowManager.getInstance();
         const gateways = await manager.getAvailableGateways();
-        const hasStripe = gateways.some(g => g.code === 'stripe' && g.isHealthy);
+        const hasStripe = gateways.some((g) => g.code === 'stripe' && g.isHealthy);
 
         if (hasStripe) {
           const { loadStripe } = await import('@stripe/stripe-js');
-          const stripeKey = gateways.find(g => g.code === 'stripe')?.publishableKey;
+          const stripeKey = gateways.find((g) => g.code === 'stripe')?.publishableKey;
 
           if (stripeKey) {
             setStripePromise(loadStripe(stripeKey));

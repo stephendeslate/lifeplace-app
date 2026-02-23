@@ -23,10 +23,6 @@
       "@test-utils/*": ["./test-utils/*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "vitest.d.ts"
-  ],
+  "include": ["**/*.ts", "**/*.tsx", "vitest.d.ts"],
   "exclude": ["node_modules", "dist"]
 }

@@ -42,15 +42,19 @@ export const getDefaultSlashCommands = (): SlashCommandItem[] => [
     icon: <ConditionalIcon sx={{ fontSize: 20 }} />,
     category: 'insert',
     command: (editor) => {
-      editor.chain().focus().insertContent({
-        type: 'conditionalBlock',
-        content: [
-          {
-            type: 'paragraph',
-            content: [{ type: 'text', text: 'Conditional content here...' }],
-          },
-        ],
-      }).run();
+      editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: 'conditionalBlock',
+          content: [
+            {
+              type: 'paragraph',
+              content: [{ type: 'text', text: 'Conditional content here...' }],
+            },
+          ],
+        })
+        .run();
     },
   },
   {
@@ -132,12 +136,12 @@ export const getDefaultSlashCommands = (): SlashCommandItem[] => [
  */
 export const filterSlashCommands = (
   items: SlashCommandItem[],
-  query: string
+  query: string,
 ): SlashCommandItem[] => {
   const lowerQuery = query.toLowerCase();
   return items.filter(
     (item) =>
       item.title.toLowerCase().includes(lowerQuery) ||
-      item.description.toLowerCase().includes(lowerQuery)
+      item.description.toLowerCase().includes(lowerQuery),
   );
 };

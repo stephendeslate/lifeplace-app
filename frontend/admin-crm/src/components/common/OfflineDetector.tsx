@@ -22,7 +22,7 @@ interface OfflineDetectorProps {
 
 export const OfflineDetector: React.FC<OfflineDetectorProps> = ({ children }) => {
   const [isOnline, setIsOnline] = useState(() =>
-    typeof navigator !== 'undefined' ? navigator.onLine : true
+    typeof navigator !== 'undefined' ? navigator.onLine : true,
   );
   const [showBanner, setShowBanner] = useState(false);
   const [lastOnlineAt, setLastOnlineAt] = useState<Date | null>(null);
@@ -127,8 +127,7 @@ export const OfflineDetector: React.FC<OfflineDetectorProps> = ({ children }) =>
           }
         >
           <AlertTitle>Connection Lost</AlertTitle>
-          You appear to be offline. Changes you make may not be saved until
-          you're back online.
+          You appear to be offline. Changes you make may not be saved until you're back online.
         </Alert>
       </Snackbar>
     </OfflineContext.Provider>

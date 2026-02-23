@@ -43,13 +43,13 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
   const { effectiveMode } = useTheme();
   const muiTheme = useMuiTheme();
   const isDarkMode = effectiveMode === 'dark';
-  
+
   const [formData, setFormData] = useState<LoginCredentials>({
     email: '',
     password: '',
     remember_me: false,
   });
-  
+
   const [errors, setErrors] = useState<Partial<LoginCredentials>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState<string>('');
@@ -73,33 +73,32 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleInputChange = (field: keyof LoginCredentials) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = field === 'remember_me' ? event.target.checked : event.target.value;
-    
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+  const handleInputChange =
+    (field: keyof LoginCredentials) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = field === 'remember_me' ? event.target.checked : event.target.value;
 
-    // Clear error for this field when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        [field]: undefined,
+        [field]: value,
       }));
-    }
 
-    // Clear submit error when user makes changes
-    if (submitError) {
-      setSubmitError('');
-    }
-  };
+      // Clear error for this field when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: undefined,
+        }));
+      }
+
+      // Clear submit error when user makes changes
+      if (submitError) {
+        setSubmitError('');
+      }
+    };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -109,14 +108,15 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
       await login(formData);
       onSuccess?.();
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed. Please try again.';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Login failed. Please try again.';
       setSubmitError(errorMessage);
       showError('Login Failed', errorMessage);
     }
   };
 
   const togglePasswordVisibility = () => {
-    setShowPassword(prev => !prev);
+    setShowPassword((prev) => !prev);
   };
 
   return (
@@ -173,9 +173,9 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
         >
           LifePlace Admin
         </Typography>
-        
-        <Typography 
-          variant="body1" 
+
+        <Typography
+          variant="body1"
           sx={{
             color: tokens.color.neutral[600],
             fontWeight: 500,
@@ -195,7 +195,7 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
             border: `1px solid ${tokens.color.error[200]}`,
             '& .MuiAlert-message': {
               fontWeight: 500,
-            }
+            },
           }}
         >
           {submitError}
@@ -217,12 +217,14 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <Email 
-                sx={{ 
-                  color: errors.email 
-                    ? tokens.color.error[500] 
-                    : isDarkMode ? tokens.color.neutral[400] : tokens.color.neutral[500] 
-                }} 
+              <Email
+                sx={{
+                  color: errors.email
+                    ? tokens.color.error[500]
+                    : isDarkMode
+                      ? tokens.color.neutral[400]
+                      : tokens.color.neutral[500],
+                }}
               />
             </InputAdornment>
           ),
@@ -305,12 +307,14 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <Lock 
-                sx={{ 
-                  color: errors.password 
-                    ? tokens.color.error[500] 
-                    : isDarkMode ? tokens.color.neutral[400] : tokens.color.neutral[500] 
-                }} 
+              <Lock
+                sx={{
+                  color: errors.password
+                    ? tokens.color.error[500]
+                    : isDarkMode
+                      ? tokens.color.neutral[400]
+                      : tokens.color.neutral[500],
+                }}
               />
             </InputAdornment>
           ),
@@ -498,9 +502,11 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
           background: tokens.color.primary[600],
           color: 'white',
 
-          '&:hover': !isLoading ? {
-            background: tokens.color.primary[700],
-          } : {},
+          '&:hover': !isLoading
+            ? {
+                background: tokens.color.primary[700],
+              }
+            : {},
 
           '&:active': {
             background: tokens.color.primary[800],
@@ -515,9 +521,9 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
         }}
       >
         {isLoading ? (
-          <Box 
-            display="flex" 
-            alignItems="center" 
+          <Box
+            display="flex"
+            alignItems="center"
             gap={2}
             sx={{
               '& .loading-spinner': {
@@ -528,7 +534,7 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
                 borderRadius: '50%',
                 animation: 'spin 1s linear infinite',
               },
-              
+
               '@keyframes spin': {
                 '0%': { transform: 'rotate(0deg)' },
                 '100%': { transform: 'rotate(360deg)' },
@@ -557,8 +563,8 @@ export const ModernLoginForm: React.FC<ModernLoginFormProps> = ({ onSuccess }) =
       />
 
       {/* Footer Text */}
-      <Typography 
-        variant="caption" 
+      <Typography
+        variant="caption"
         sx={{
           textAlign: 'center',
           color: tokens.color.neutral[600],

@@ -85,7 +85,8 @@ export const ContractAmendmentRequestDialog: React.FC<ContractAmendmentRequestDi
 
   if (!contract) return null;
 
-  const eventName = typeof contract.event === 'object' ? contract.event.name : `Event #${contract.event}`;
+  const eventName =
+    typeof contract.event === 'object' ? contract.event.name : `Event #${contract.event}`;
 
   return (
     <ModernDialog
@@ -136,7 +137,9 @@ export const ContractAmendmentRequestDialog: React.FC<ContractAmendmentRequestDi
           value={formData.amendment_reason}
           onChange={(e) => setFormData((prev) => ({ ...prev, amendment_reason: e.target.value }))}
           error={!!errors.amendment_reason}
-          helperText={errors.amendment_reason || 'Brief explanation for why this amendment is needed'}
+          helperText={
+            errors.amendment_reason || 'Brief explanation for why this amendment is needed'
+          }
           disabled={isLoading}
         />
 
@@ -148,9 +151,13 @@ export const ContractAmendmentRequestDialog: React.FC<ContractAmendmentRequestDi
           rows={4}
           label="Detailed Changes Description"
           value={formData.changes_description}
-          onChange={(e) => setFormData((prev) => ({ ...prev, changes_description: e.target.value }))}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, changes_description: e.target.value }))
+          }
           error={!!errors.changes_description}
-          helperText={errors.changes_description || 'Describe all changes to be made to the contract'}
+          helperText={
+            errors.changes_description || 'Describe all changes to be made to the contract'
+          }
           disabled={isLoading}
         />
 

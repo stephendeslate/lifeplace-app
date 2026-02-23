@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/test/mocks/handlers/settings.handlers.ts
 
-import { http, HttpResponse, delay } from "msw";
+import { http, HttpResponse, delay } from 'msw';
 import {
   mockAdminUsers,
   mockAdminInvitations,
@@ -9,15 +9,15 @@ import {
   createMockAdminUser,
   createMockAdminInvitation,
   createMockLegalDocument,
-} from "../data/settings.mock";
+} from '../data/settings.mock';
 import type {
   AccountSettingsFormData,
   AdminUser,
   LegalDocument,
   CompanySettings,
-} from "../../../types/settings.types";
+} from '../../../types/settings.types';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
 // Mutable stores for testing mutations
 let adminUsersStore = [...mockAdminUsers];
@@ -26,15 +26,15 @@ let legalDocumentsStore = [...mockLegalDocuments];
 let companySettingsStore = { ...mockCompanySettings };
 let currentUser: AdminUser = {
   id: 1,
-  email: "admin@lifeplace.com",
-  first_name: "Admin",
-  last_name: "User",
-  role: "ADMIN",
+  email: 'admin@lifeplace.com',
+  first_name: 'Admin',
+  last_name: 'User',
+  role: 'ADMIN',
   is_active: true,
-  date_joined: "2024-01-01T00:00:00Z",
+  date_joined: '2024-01-01T00:00:00Z',
   profile: {
-    phone: "555-0100",
-    company: "LifePlace",
+    phone: '555-0100',
+    company: 'LifePlace',
   },
 };
 
@@ -69,26 +69,20 @@ export const settingsHandlers = [
 
     if (!body.current_password || !body.new_password) {
       return HttpResponse.json(
-        { detail: "Current password and new password are required" },
+        { detail: 'Current password and new password are required' },
         { status: 400 },
       );
     }
 
     if (body.new_password !== body.confirm_password) {
-      return HttpResponse.json(
-        { detail: "New passwords do not match" },
-        { status: 400 },
-      );
+      return HttpResponse.json({ detail: 'New passwords do not match' }, { status: 400 });
     }
 
-    if (body.current_password === "wrong-password") {
-      return HttpResponse.json(
-        { detail: "Current password is incorrect" },
-        { status: 400 },
-      );
+    if (body.current_password === 'wrong-password') {
+      return HttpResponse.json({ detail: 'Current password is incorrect' }, { status: 400 });
     }
 
-    return HttpResponse.json({ detail: "Password changed successfully" });
+    return HttpResponse.json({ detail: 'Password changed successfully' });
   }),
 
   // === Admin Users Management ===
@@ -115,7 +109,7 @@ export const settingsHandlers = [
       email: body.email as string,
       first_name: body.first_name as string,
       last_name: body.last_name as string,
-      role: "admin",
+      role: 'admin',
       is_active: true,
     });
 
@@ -131,7 +125,7 @@ export const settingsHandlers = [
     const idx = adminUsersStore.findIndex((u) => u.id === id);
 
     if (idx === -1) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     const updates = (await request.json()) as Record<string, unknown>;
@@ -147,7 +141,7 @@ export const settingsHandlers = [
     const idx = adminUsersStore.findIndex((u) => u.id === id);
 
     if (idx === -1) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     adminUsersStore.splice(idx, 1);
@@ -176,7 +170,7 @@ export const settingsHandlers = [
     const invitation = invitationsStore.find((inv) => inv.id === id);
 
     if (!invitation) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     return HttpResponse.json(invitation);
@@ -191,7 +185,7 @@ export const settingsHandlers = [
     // Check for duplicate email
     if (invitationsStore.some((inv) => inv.email === body.email)) {
       return HttpResponse.json(
-        { detail: "An invitation for this email already exists" },
+        { detail: 'An invitation for this email already exists' },
         { status: 400 },
       );
     }
@@ -215,7 +209,7 @@ export const settingsHandlers = [
     const idx = invitationsStore.findIndex((inv) => inv.id === id);
 
     if (idx === -1) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     invitationsStore.splice(idx, 1);
@@ -223,57 +217,45 @@ export const settingsHandlers = [
   }),
 
   // POST /api/users/invitations/:id/accept/
-  http.post(
-    `${BASE_URL}/users/invitations/:id/accept/`,
-    async ({ params, request }) => {
-      await delay(50);
+  http.post(`${BASE_URL}/users/invitations/:id/accept/`, async ({ params, request }) => {
+    await delay(50);
 
-      const { id } = params;
-      const invitation = invitationsStore.find((inv) => inv.id === id);
+    const { id } = params;
+    const invitation = invitationsStore.find((inv) => inv.id === id);
 
-      if (!invitation) {
-        return HttpResponse.json(
-          { detail: "Invitation not found" },
-          { status: 404 },
-        );
-      }
+    if (!invitation) {
+      return HttpResponse.json({ detail: 'Invitation not found' }, { status: 404 });
+    }
 
-      if (invitation.is_accepted) {
-        return HttpResponse.json(
-          { detail: "Invitation has already been accepted" },
-          { status: 400 },
-        );
-      }
+    if (invitation.is_accepted) {
+      return HttpResponse.json({ detail: 'Invitation has already been accepted' }, { status: 400 });
+    }
 
-      const body = (await request.json()) as {
-        password: string;
-        confirm_password: string;
-      };
+    const body = (await request.json()) as {
+      password: string;
+      confirm_password: string;
+    };
 
-      if (body.password !== body.confirm_password) {
-        return HttpResponse.json(
-          { detail: "Passwords do not match" },
-          { status: 400 },
-        );
-      }
+    if (body.password !== body.confirm_password) {
+      return HttpResponse.json({ detail: 'Passwords do not match' }, { status: 400 });
+    }
 
-      // Mark invitation as accepted
-      invitation.is_accepted = true;
+    // Mark invitation as accepted
+    invitation.is_accepted = true;
 
-      return HttpResponse.json({
-        message: "Invitation accepted successfully",
-        tokens: {
-          access: "new-access-token",
-          refresh: "new-refresh-token",
-        },
-        user: createMockAdminUser({
-          email: invitation.email,
-          first_name: invitation.first_name,
-          last_name: invitation.last_name,
-        }),
-      });
-    },
-  ),
+    return HttpResponse.json({
+      message: 'Invitation accepted successfully',
+      tokens: {
+        access: 'new-access-token',
+        refresh: 'new-refresh-token',
+      },
+      user: createMockAdminUser({
+        email: invitation.email,
+        first_name: invitation.first_name,
+        last_name: invitation.last_name,
+      }),
+    });
+  }),
 
   // === Legal Documents ===
 
@@ -288,12 +270,10 @@ export const settingsHandlers = [
     await delay(30);
 
     const { type } = params;
-    const doc = legalDocumentsStore.find(
-      (d) => d.document_type === (type as string).toUpperCase(),
-    );
+    const doc = legalDocumentsStore.find((d) => d.document_type === (type as string).toUpperCase());
 
     if (!doc) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     return HttpResponse.json({ success: true, data: doc });
@@ -313,7 +293,7 @@ export const settingsHandlers = [
       const body = (await request.json()) as Record<string, unknown>;
       const newDoc = createMockLegalDocument({
         id: legalDocumentsStore.length + 1,
-        document_type: (type as string).toUpperCase() as "TERMS_OF_SERVICE" | "PRIVACY_POLICY",
+        document_type: (type as string).toUpperCase() as 'TERMS_OF_SERVICE' | 'PRIVACY_POLICY',
         title: body.title as string,
         content: body.content as string,
         version: body.version as string,
@@ -345,9 +325,9 @@ export const settingsHandlers = [
     await delay(50);
 
     // Handle both JSON and FormData
-    const contentType = request.headers.get("content-type");
+    const contentType = request.headers.get('content-type');
 
-    if (contentType && contentType.includes("multipart/form-data")) {
+    if (contentType && contentType.includes('multipart/form-data')) {
       // For FormData requests, just return updated settings
       const formData = await request.formData();
       const updates: Record<string, unknown> = {};

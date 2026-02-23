@@ -5,7 +5,7 @@ import EnterpriseEventsCalendar from './EnterpriseEventsCalendar';
 
 /**
  * Enhanced Events Calendar with Enterprise-level features
- * 
+ *
  * Features:
  * - Real-time availability checking
  * - Date conflict detection and validation

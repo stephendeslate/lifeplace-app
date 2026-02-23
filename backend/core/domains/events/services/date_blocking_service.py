@@ -7,15 +7,13 @@ Implements the first-to-pay-wins logic for the ON_DOWNPAYMENT policy.
 """
 
 import logging
-from datetime import datetime, timedelta
-from decimal import Decimal
-from typing import Dict, List, Optional, Tuple
+from datetime import timedelta
 
 from django.db import transaction
-from django.db.models import Q, QuerySet
+from django.db.models import QuerySet
 from django.utils import timezone
 
-from ..models import Event, DateReservation
+from ..models import Event
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +40,7 @@ class DateBlockingService:
         Returns:
             dict: Effective payment terms
         """
-        from core.domains.bookingflow.models import BookingFlow, PaymentTermsConfiguration
+        from core.domains.bookingflow.models import BookingFlow
         from core.domains.payments.models import PaymentSettings
 
         # Get global defaults
@@ -50,11 +48,11 @@ class DateBlockingService:
 
         # Build default terms from global settings
         default_terms = {
-            'date_blocking_policy': global_settings.date_blocking_policy,
-            'downpayment_due_reference': global_settings.downpayment_due_reference,
-            'downpayment_deadline_days': global_settings.downpayment_deadline_days,
-            'downpayment_percentage': global_settings.downpayment_percentage,
-            'downpayment_due_days': global_settings.downpayment_due_days,
+            "date_blocking_policy": global_settings.date_blocking_policy,
+            "downpayment_due_reference": global_settings.downpayment_due_reference,
+            "downpayment_deadline_days": global_settings.downpayment_deadline_days,
+            "downpayment_percentage": global_settings.downpayment_percentage,
+            "downpayment_due_days": global_settings.downpayment_due_days,
         }
 
         # Try to get flow-specific overrides
@@ -63,22 +61,16 @@ class DateBlockingService:
         if isinstance(event_or_flow, Event):
             # Get booking flow from event's type if available
             if event_or_flow.event_type:
-                booking_flow = BookingFlow.objects.filter(
-                    event_type=event_or_flow.event_type,
-                    is_active=True
-                ).first()
+                booking_flow = BookingFlow.objects.filter(event_type=event_or_flow.event_type, is_active=True).first()
         elif isinstance(event_or_flow, BookingFlow):
             booking_flow = event_or_flow
 
         if booking_flow:
             # Look for PaymentTermsConfiguration
             try:
-                payment_step = booking_flow.steps.filter(
-                    step_type='payment_info',
-                    is_enabled=True
-                ).first()
+                payment_step = booking_flow.steps.filter(step_type="payment_info", is_enabled=True).first()
 
-                if payment_step and hasattr(payment_step, 'payment_terms_config'):
+                if payment_step and hasattr(payment_step, "payment_terms_config"):
                     flow_terms = payment_step.payment_terms_config.get_effective_settings()
                     return flow_terms
             except Exception as e:
@@ -87,7 +79,7 @@ class DateBlockingService:
         return default_terms
 
     @staticmethod
-    def is_date_blocked(target_date, exclude_event_id: Optional[int] = None) -> bool:
+    def is_date_blocked(target_date, exclude_event_id: int | None = None) -> bool:
         """
         Check if a date is already blocked by another event.
 
@@ -98,15 +90,12 @@ class DateBlockingService:
         Returns:
             bool: True if date is blocked
         """
-        if hasattr(target_date, 'date'):
+        if hasattr(target_date, "date"):
             check_date = target_date.date()
         else:
             check_date = target_date
 
-        query = Event.objects.filter(
-            date_blocked=True,
-            start_date__date=check_date
-        ).exclude(status='CANCELLED')
+        query = Event.objects.filter(date_blocked=True, start_date__date=check_date).exclude(status="CANCELLED")
 
         if exclude_event_id:
             query = query.exclude(id=exclude_event_id)
@@ -114,7 +103,7 @@ class DateBlockingService:
         return query.exists()
 
     @staticmethod
-    def get_blocking_event(target_date) -> Optional[Event]:
+    def get_blocking_event(target_date) -> Event | None:
         """
         Get the event that is blocking a specific date.
 
@@ -124,15 +113,12 @@ class DateBlockingService:
         Returns:
             Event or None
         """
-        if hasattr(target_date, 'date'):
+        if hasattr(target_date, "date"):
             check_date = target_date.date()
         else:
             check_date = target_date
 
-        return Event.objects.filter(
-            date_blocked=True,
-            start_date__date=check_date
-        ).exclude(status='CANCELLED').first()
+        return Event.objects.filter(date_blocked=True, start_date__date=check_date).exclude(status="CANCELLED").first()
 
     @staticmethod
     def block_date(event: Event, reason: str = None) -> None:
@@ -147,11 +133,10 @@ class DateBlockingService:
         """
         event.date_blocked = True
         event.date_blocked_at = timezone.now()
-        event.save(update_fields=['date_blocked', 'date_blocked_at'])
+        event.save(update_fields=["date_blocked", "date_blocked_at"])
 
         logger.info(
-            f"Date blocked for event {event.id} on {event.start_date.date()}"
-            f"{f' - Reason: {reason}' if reason else ''}"
+            f"Date blocked for event {event.id} on {event.start_date.date()}{f' - Reason: {reason}' if reason else ''}"
         )
 
     @staticmethod
@@ -165,7 +150,7 @@ class DateBlockingService:
         """
         event.date_blocked = False
         event.date_blocked_at = None
-        event.save(update_fields=['date_blocked', 'date_blocked_at'])
+        event.save(update_fields=["date_blocked", "date_blocked_at"])
 
         logger.info(
             f"Date unblocked for event {event.id} on {event.start_date.date()}"
@@ -184,14 +169,11 @@ class DateBlockingService:
             QuerySet of competing events
         """
         return Event.objects.filter(
-            start_date__date=event.start_date.date(),
-            status='CONFIRMED',
-            date_blocked=False,
-            payment_status='UNPAID'
+            start_date__date=event.start_date.date(), status="CONFIRMED", date_blocked=False, payment_status="UNPAID"
         ).exclude(id=event.id)
 
     @staticmethod
-    def process_downpayment_received(event: Event, payment=None) -> Dict:
+    def process_downpayment_received(event: Event, payment=None) -> dict:
         """
         CRITICAL: Handle first-to-pay-wins logic.
 
@@ -210,16 +192,16 @@ class DateBlockingService:
             dict: Summary of actions taken
         """
         result = {
-            'success': False,
-            'blocked': False,
-            'cancelled_events': [],
-            'error': None,
+            "success": False,
+            "blocked": False,
+            "cancelled_events": [],
+            "error": None,
         }
 
         # Check if date is already blocked
         if DateBlockingService.is_date_blocked(event.start_date, exclude_event_id=event.id):
             blocking_event = DateBlockingService.get_blocking_event(event.start_date)
-            result['error'] = f"Date already blocked by event {blocking_event.id if blocking_event else 'unknown'}"
+            result["error"] = f"Date already blocked by event {blocking_event.id if blocking_event else 'unknown'}"
             logger.warning(
                 f"Cannot block date for event {event.id} - "
                 f"already blocked by event {blocking_event.id if blocking_event else 'unknown'}"
@@ -228,10 +210,9 @@ class DateBlockingService:
 
         # Block the date for this event
         DateBlockingService.block_date(
-            event,
-            reason=f"Downpayment received (payment {payment.id if payment else 'N/A'})"
+            event, reason=f"Downpayment received (payment {payment.id if payment else 'N/A'})"
         )
-        result['blocked'] = True
+        result["blocked"] = True
 
         # Find and cancel competing events
         competing_events = DateBlockingService.get_competing_events(event)
@@ -245,8 +226,8 @@ class DateBlockingService:
                 f"because date was taken by event {event.id}"
             )
 
-        result['cancelled_events'] = cancelled_events
-        result['success'] = True
+        result["cancelled_events"] = cancelled_events
+        result["success"] = True
 
         logger.info(
             f"Downpayment processed for event {event.id}: "
@@ -257,11 +238,7 @@ class DateBlockingService:
 
     @staticmethod
     @transaction.atomic
-    def atomic_process_downpayment_received(
-        event: Event,
-        payment=None,
-        reservation_token: str = None
-    ) -> Dict:
+    def atomic_process_downpayment_received(event: Event, payment=None, reservation_token: str = None) -> dict:
         """
         ATOMIC version of first-to-pay-wins logic using SELECT FOR UPDATE.
 
@@ -284,10 +261,10 @@ class DateBlockingService:
             }
         """
         result = {
-            'success': False,
-            'blocked': False,
-            'cancelled_events': [],
-            'error': None,
+            "success": False,
+            "blocked": False,
+            "cancelled_events": [],
+            "error": None,
         }
 
         try:
@@ -296,42 +273,40 @@ class DateBlockingService:
             # which adds LEFT JOINs on nullable FKs incompatible with FOR UPDATE
             locked_event = Event.all_objects.select_for_update(nowait=False).get(id=event.id)
         except Event.DoesNotExist:
-            result['error'] = 'Event not found'
+            result["error"] = "Event not found"
             return result
 
         # Skip if already blocked or cancelled
         if locked_event.date_blocked:
             logger.info(f"Event {event.id} already has date blocked")
-            result['success'] = True
-            result['blocked'] = True
+            result["success"] = True
+            result["blocked"] = True
             return result
 
-        if locked_event.status == 'CANCELLED':
-            result['error'] = 'Event is cancelled'
+        if locked_event.status == "CANCELLED":
+            result["error"] = "Event is cancelled"
             return result
 
         # Lock ALL events on this date (including competitors)
         # Use all_objects to bypass OptimizedEventManager's select_related (see above)
-        events_on_date = Event.all_objects.select_for_update(nowait=False).filter(
-            start_date__date=locked_event.start_date.date(),
-            status__in=['CONFIRMED', 'LEAD']
-        ).exclude(status='CANCELLED')
+        events_on_date = (
+            Event.all_objects.select_for_update(nowait=False)
+            .filter(start_date__date=locked_event.start_date.date(), status__in=["CONFIRMED", "LEAD"])
+            .exclude(status="CANCELLED")
+        )
 
         # Check if another event has already blocked this date
         blocking_event = events_on_date.filter(date_blocked=True).exclude(id=locked_event.id).first()
         if blocking_event:
-            result['error'] = f"Date already blocked by event {blocking_event.id}"
-            logger.warning(
-                f"Cannot block date for event {event.id} - "
-                f"already blocked by event {blocking_event.id}"
-            )
+            result["error"] = f"Date already blocked by event {blocking_event.id}"
+            logger.warning(f"Cannot block date for event {event.id} - already blocked by event {blocking_event.id}")
             return result
 
         # ATOMIC BLOCK: We have the lock, block the date now
         locked_event.date_blocked = True
         locked_event.date_blocked_at = timezone.now()
-        locked_event.save(update_fields=['date_blocked', 'date_blocked_at'])
-        result['blocked'] = True
+        locked_event.save(update_fields=["date_blocked", "date_blocked_at"])
+        result["blocked"] = True
 
         logger.info(
             f"Date blocked atomically for event {event.id} on {locked_event.start_date.date()}"
@@ -342,38 +317,34 @@ class DateBlockingService:
         if reservation_token:
             try:
                 from .atomic_availability_service import AtomicAvailabilityService
+
                 AtomicAvailabilityService.confirm_reservation(reservation_token, locked_event.id)
             except Exception as e:
                 logger.warning(f"Failed to confirm reservation {reservation_token}: {e}")
 
         # Find and cancel competing events (already locked)
         competing_events = events_on_date.filter(
-            status='CONFIRMED',
-            date_blocked=False,
-            payment_status='UNPAID'
+            status="CONFIRMED", date_blocked=False, payment_status="UNPAID"
         ).exclude(id=locked_event.id)
 
         cancelled_events = []
         for competing_event in competing_events:
             DateBlockingService.cancel_event_for_date_taken(competing_event, locked_event)
-            cancelled_events.append({
-                'id': competing_event.id,
-                'client_id': competing_event.client_id
-            })
+            cancelled_events.append({"id": competing_event.id, "client_id": competing_event.client_id})
             logger.info(
                 f"Cancelled event {competing_event.id} (client: {competing_event.client_id}) "
                 f"because date was taken by event {event.id}"
             )
 
-        result['cancelled_events'] = cancelled_events
-        result['success'] = True
+        result["cancelled_events"] = cancelled_events
+        result["success"] = True
 
         # Broadcast availability change via WebSocket
         try:
             from .websocket_service import AvailabilityWebSocketService
+
             AvailabilityWebSocketService.broadcast_date_blocked(
-                date=locked_event.start_date.date(),
-                blocking_event_id=locked_event.id
+                date=locked_event.start_date.date(), blocking_event_id=locked_event.id
             )
         except ImportError:
             logger.debug("WebSocket service not available yet")
@@ -399,18 +370,16 @@ class DateBlockingService:
             event: The event to cancel
             blocking_event: The event that took the date
         """
-        event.status = 'CANCELLED'
-        event.cancelled_reason = 'DATE_TAKEN'
+        event.status = "CANCELLED"
+        event.cancelled_reason = "DATE_TAKEN"
         event.cancelled_at = timezone.now()
         event.can_rebook = True  # Allow rebooking
-        event.save(update_fields=['status', 'cancelled_reason', 'cancelled_at', 'can_rebook'])
+        event.save(update_fields=["status", "cancelled_reason", "cancelled_at", "can_rebook"])
 
         # Trigger notification (using existing notification system)
         DateBlockingService._send_date_taken_notification(event, blocking_event)
 
-        logger.info(
-            f"Event {event.id} cancelled - date taken by event {blocking_event.id}"
-        )
+        logger.info(f"Event {event.id} cancelled - date taken by event {blocking_event.id}")
 
     @staticmethod
     def cancel_event_for_timeout(event: Event) -> None:
@@ -423,18 +392,16 @@ class DateBlockingService:
         Args:
             event: The event to cancel
         """
-        event.status = 'CANCELLED'
-        event.cancelled_reason = 'PAYMENT_TIMEOUT'
+        event.status = "CANCELLED"
+        event.cancelled_reason = "PAYMENT_TIMEOUT"
         event.cancelled_at = timezone.now()
         event.can_rebook = True  # Allow rebooking
-        event.save(update_fields=['status', 'cancelled_reason', 'cancelled_at', 'can_rebook'])
+        event.save(update_fields=["status", "cancelled_reason", "cancelled_at", "can_rebook"])
 
         # Trigger notification (using existing notification system)
         DateBlockingService._send_timeout_notification(event)
 
-        logger.info(
-            f"Event {event.id} cancelled - payment deadline expired"
-        )
+        logger.info(f"Event {event.id} cancelled - payment deadline expired")
 
     @staticmethod
     def check_deadline_expiry(event: Event) -> bool:
@@ -463,15 +430,14 @@ class DateBlockingService:
             deadline_days: Number of days from now until deadline
         """
         event.downpayment_deadline = timezone.now() + timedelta(days=deadline_days)
-        event.save(update_fields=['downpayment_deadline'])
+        event.save(update_fields=["downpayment_deadline"])
 
         logger.info(
-            f"Set downpayment deadline for event {event.id}: "
-            f"{event.downpayment_deadline.strftime('%Y-%m-%d %H:%M')}"
+            f"Set downpayment deadline for event {event.id}: {event.downpayment_deadline.strftime('%Y-%m-%d %H:%M')}"
         )
 
     @staticmethod
-    def should_block_on_booking_completion(event: Event) -> Tuple[bool, str]:
+    def should_block_on_booking_completion(event: Event) -> tuple[bool, str]:
         """
         Determine if date should be blocked immediately on booking completion.
 
@@ -482,10 +448,10 @@ class DateBlockingService:
             Tuple[bool, str]: (should_block, policy_name)
         """
         terms = DateBlockingService.get_effective_payment_terms(event)
-        policy = terms.get('date_blocking_policy', 'IMMEDIATE')
+        policy = terms.get("date_blocking_policy", "IMMEDIATE")
 
-        if policy == 'IMMEDIATE':
-            return True, 'IMMEDIATE'
+        if policy == "IMMEDIATE":
+            return True, "IMMEDIATE"
         return False, policy
 
     @staticmethod
@@ -502,13 +468,13 @@ class DateBlockingService:
 
             NotificationService.create_notification(
                 recipient=event.client,
-                notification_type_code='EVENT_CANCELLED',
+                notification_type_code="EVENT_CANCELLED",
                 context={
-                    'event_name': event.name or event.start_date.strftime("%B %d, %Y"),
-                    'event_date': event.start_date.strftime("%B %d, %Y"),
-                    'reason': 'Another client secured the date first.',
+                    "event_name": event.name or event.start_date.strftime("%B %d, %Y"),
+                    "event_date": event.start_date.strftime("%B %d, %Y"),
+                    "reason": "Another client secured the date first.",
                 },
-                delivery_methods=['IN_APP', 'EMAIL'],
+                delivery_methods=["IN_APP", "EMAIL"],
                 event=event,
                 client=event.client,
             )
@@ -528,13 +494,13 @@ class DateBlockingService:
 
             NotificationService.create_notification(
                 recipient=event.client,
-                notification_type_code='EVENT_CANCELLED',
+                notification_type_code="EVENT_CANCELLED",
                 context={
-                    'event_name': event.name or event.start_date.strftime("%B %d, %Y"),
-                    'event_date': event.start_date.strftime("%B %d, %Y"),
-                    'reason': 'The payment deadline has passed.',
+                    "event_name": event.name or event.start_date.strftime("%B %d, %Y"),
+                    "event_date": event.start_date.strftime("%B %d, %Y"),
+                    "reason": "The payment deadline has passed.",
                 },
-                delivery_methods=['IN_APP', 'EMAIL'],
+                delivery_methods=["IN_APP", "EMAIL"],
                 event=event,
                 client=event.client,
             )

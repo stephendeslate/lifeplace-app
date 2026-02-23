@@ -21,23 +21,19 @@ import {
   Tabs,
   Tab,
 } from '@mui/material';
-import {
-  Save as SaveIcon,
-  Cancel as CancelIcon,
-  Add as AddIcon,
-} from '@mui/icons-material';
+import { Save as SaveIcon, Cancel as CancelIcon, Add as AddIcon } from '@mui/icons-material';
 import { useEventTypes } from '../../hooks/useEvents';
 import { WorkflowStagesTable } from './WorkflowStagesTable';
 import { WorkflowStageFormDialog } from './WorkflowStageFormDialog';
 import { ManualTriggerDialog } from './ManualTriggerDialog';
 import { useWorkflowStages, useWorkflowTriggers } from '../../hooks/useWorkflows';
-import type { 
-  WorkflowTemplate, 
-  CreateWorkflowTemplateData, 
+import type {
+  WorkflowTemplate,
+  CreateWorkflowTemplateData,
   UpdateWorkflowTemplateData,
   WorkflowStage,
   CreateWorkflowStageData,
-  UpdateWorkflowStageData 
+  UpdateWorkflowStageData,
 } from '../../types/workflows.types';
 
 interface WorkflowTemplateFormProps {
@@ -118,15 +114,18 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
     }
   }, [template]);
 
-  const handleInputChange = (field: keyof CreateWorkflowTemplateData, value: string | boolean | number | null) => {
-    setFormData(prev => ({
+  const handleInputChange = (
+    field: keyof CreateWorkflowTemplateData,
+    value: string | boolean | number | null,
+  ) => {
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
         [field]: '',
       }));
@@ -146,7 +145,7 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     // Pass the form data to the parent component
@@ -171,7 +170,7 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
     deleteStage(id, {
       onSuccess: () => {
         refetchStages();
-      }
+      },
     });
   };
 
@@ -182,27 +181,30 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
 
   const handleStageSubmit = (data: CreateWorkflowStageData | UpdateWorkflowStageData) => {
     if (editingStage) {
-      updateStage({ 
-        id: editingStage.id, 
-        data: data as UpdateWorkflowStageData 
-      }, {
-        onSuccess: () => {
-          setStageDialogOpen(false);
-          setEditingStage(null);
-          refetchStages();
-        }
-      });
+      updateStage(
+        {
+          id: editingStage.id,
+          data: data as UpdateWorkflowStageData,
+        },
+        {
+          onSuccess: () => {
+            setStageDialogOpen(false);
+            setEditingStage(null);
+            refetchStages();
+          },
+        },
+      );
     } else {
       const stageData = {
         ...data,
         template: template?.id,
       } as CreateWorkflowStageData;
-      
+
       createStage(stageData, {
         onSuccess: () => {
           setStageDialogOpen(false);
           refetchStages();
-        }
+        },
       });
     }
   };
@@ -225,7 +227,7 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
           setTriggerDialogOpen(false);
           setStageToTrigger(null);
         },
-      }
+      },
     );
   };
 
@@ -249,7 +251,7 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
                 <Typography variant="h6" gutterBottom>
                   Template Details
                 </Typography>
-                
+
                 <Stack spacing={3}>
                   <TextField
                     label="Template Name"
@@ -314,7 +316,9 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
                     control={
                       <Switch
                         checked={formData.lead_stage_auto_stop ?? true}
-                        onChange={(e) => handleInputChange('lead_stage_auto_stop', e.target.checked)}
+                        onChange={(e) =>
+                          handleInputChange('lead_stage_auto_stop', e.target.checked)
+                        }
                       />
                     }
                     label="Lead Stage Auto-Stop"
@@ -339,9 +343,7 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
         <TabPanel value={activeTab} index={1}>
           <Stack spacing={3}>
             <Box display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="h6">
-                Workflow Stages
-              </Typography>
+              <Typography variant="h6">Workflow Stages</Typography>
               <Button
                 variant="contained"
                 startIcon={<AddIcon />}
@@ -353,7 +355,8 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
             </Box>
 
             <Alert severity="info">
-              Configure the stages that events will progress through. Each stage can have automated actions and progression conditions.
+              Configure the stages that events will progress through. Each stage can have automated
+              actions and progression conditions.
             </Alert>
 
             <Card>
@@ -390,8 +393,10 @@ export const WorkflowTemplateForm: React.FC<WorkflowTemplateFormProps> = ({
               >
                 {isLoading ? (
                   <CircularProgress size={20} />
+                ) : isEditing ? (
+                  'Update Template'
                 ) : (
-                  isEditing ? 'Update Template' : 'Create Template'
+                  'Create Template'
                 )}
               </Button>
             </Box>

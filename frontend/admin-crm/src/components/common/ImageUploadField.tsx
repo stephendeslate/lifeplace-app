@@ -71,59 +71,71 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   const previewUrl = getPreviewUrl();
 
   // Validate file
-  const validateFile = useCallback((file: File): string | null => {
-    // Check file type
-    if (!acceptedTypes.includes(file.type)) {
-      return `Invalid file type. Accepted: ${acceptedTypes.map(t => t.split('/')[1]).join(', ')}`;
-    }
+  const validateFile = useCallback(
+    (file: File): string | null => {
+      // Check file type
+      if (!acceptedTypes.includes(file.type)) {
+        return `Invalid file type. Accepted: ${acceptedTypes.map((t) => t.split('/')[1]).join(', ')}`;
+      }
 
-    // Check file size
-    const maxSizeBytes = maxSizeMB * 1024 * 1024;
-    if (file.size > maxSizeBytes) {
-      return `File too large. Maximum size: ${maxSizeMB}MB`;
-    }
+      // Check file size
+      const maxSizeBytes = maxSizeMB * 1024 * 1024;
+      if (file.size > maxSizeBytes) {
+        return `File too large. Maximum size: ${maxSizeMB}MB`;
+      }
 
-    return null;
-  }, [acceptedTypes, maxSizeMB]);
+      return null;
+    },
+    [acceptedTypes, maxSizeMB],
+  );
 
   // Handle file selection
-  const handleFileSelect = useCallback((file: File) => {
-    setLocalError(null);
-    const validationError = validateFile(file);
+  const handleFileSelect = useCallback(
+    (file: File) => {
+      setLocalError(null);
+      const validationError = validateFile(file);
 
-    if (validationError) {
-      setLocalError(validationError);
-      return;
-    }
+      if (validationError) {
+        setLocalError(validationError);
+        return;
+      }
 
-    setIsLoading(true);
-    // Simulate brief loading for UX
-    setTimeout(() => {
-      onChange(file);
-      setIsLoading(false);
-    }, 200);
-  }, [validateFile, onChange]);
+      setIsLoading(true);
+      // Simulate brief loading for UX
+      setTimeout(() => {
+        onChange(file);
+        setIsLoading(false);
+      }, 200);
+    },
+    [validateFile, onChange],
+  );
 
   // Handle drop
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
 
-    if (disabled) return;
+      if (disabled) return;
 
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      handleFileSelect(files[0]);
-    }
-  }, [disabled, handleFileSelect]);
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        handleFileSelect(files[0]);
+      }
+    },
+    [disabled, handleFileSelect],
+  );
 
   // Handle drag events
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!disabled) setIsDragging(true);
-  }, [disabled]);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!disabled) setIsDragging(true);
+    },
+    [disabled],
+  );
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -132,16 +144,19 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   }, []);
 
   // Handle file input change
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      handleFileSelect(files[0]);
-    }
-    // Reset input so same file can be selected again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }, [handleFileSelect]);
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        handleFileSelect(files[0]);
+      }
+      // Reset input so same file can be selected again
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    },
+    [handleFileSelect],
+  );
 
   // Handle click to select file
   const handleClick = useCallback(() => {
@@ -151,11 +166,14 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   }, [disabled]);
 
   // Handle delete
-  const handleDelete = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    onChange(null);
-    setLocalError(null);
-  }, [onChange]);
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onChange(null);
+      setLocalError(null);
+    },
+    [onChange],
+  );
 
   const displayError = error || localError;
   const hasImage = !!previewUrl;
@@ -163,11 +181,7 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
   return (
     <Box>
       {label && (
-        <Typography
-          variant="subtitle2"
-          color="text.secondary"
-          sx={{ mb: 1, fontWeight: 500 }}
-        >
+        <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1, fontWeight: 500 }}>
           {label}
         </Typography>
       )}
@@ -199,14 +213,12 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
             : hasImage
               ? 'transparent'
               : theme.palette.grey[50],
-          '&:hover': disabled ? {} : {
-            borderColor: displayError
-              ? theme.palette.error.main
-              : theme.palette.primary.main,
-            backgroundColor: hasImage
-              ? 'transparent'
-              : alpha(theme.palette.primary.main, 0.05),
-          },
+          '&:hover': disabled
+            ? {}
+            : {
+                borderColor: displayError ? theme.palette.error.main : theme.palette.primary.main,
+                backgroundColor: hasImage ? 'transparent' : alpha(theme.palette.primary.main, 0.05),
+              },
         }}
       >
         {/* Hidden file input */}
@@ -281,30 +293,16 @@ export const ImageUploadField: React.FC<ImageUploadFieldProps> = ({
             }}
           >
             {isDragging ? (
-              <CloudUploadIcon
-                sx={{ fontSize: 48, color: theme.palette.primary.main, mb: 1 }}
-              />
+              <CloudUploadIcon sx={{ fontSize: 48, color: theme.palette.primary.main, mb: 1 }} />
             ) : (
-              <ImageIcon
-                sx={{ fontSize: 48, color: theme.palette.grey[400], mb: 1 }}
-              />
+              <ImageIcon sx={{ fontSize: 48, color: theme.palette.grey[400], mb: 1 }} />
             )}
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              align="center"
-            >
-              {isDragging
-                ? 'Drop image here'
-                : 'Click or drag image to upload'}
+            <Typography variant="body2" color="text.secondary" align="center">
+              {isDragging ? 'Drop image here' : 'Click or drag image to upload'}
             </Typography>
-            <Typography
-              variant="caption"
-              color="text.disabled"
-              align="center"
-              sx={{ mt: 0.5 }}
-            >
-              {acceptedTypes.map(t => t.split('/')[1].toUpperCase()).join(', ')} up to {maxSizeMB}MB
+            <Typography variant="caption" color="text.disabled" align="center" sx={{ mt: 0.5 }}>
+              {acceptedTypes.map((t) => t.split('/')[1].toUpperCase()).join(', ')} up to {maxSizeMB}
+              MB
             </Typography>
           </Box>
         )}

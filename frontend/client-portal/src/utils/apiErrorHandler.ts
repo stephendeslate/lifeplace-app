@@ -21,11 +21,7 @@ interface AxiosLikeError {
  * Check if an error looks like an Axios error
  */
 const isAxiosLikeError = (error: unknown): error is AxiosLikeError => {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    ('response' in error || 'code' in error)
-  );
+  return typeof error === 'object' && error !== null && ('response' in error || 'code' in error);
 };
 
 /**

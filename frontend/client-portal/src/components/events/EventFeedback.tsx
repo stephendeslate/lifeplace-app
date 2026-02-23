@@ -49,18 +49,10 @@ const EventFeedbackComponent: React.FC<EventFeedbackProps> = ({
   showEmpty = true,
 }) => {
   const PHILIPPINE_TIMEZONE = 'Asia/Manila';
-  const { 
-    useEventFeedback, 
-    useSubmitEventFeedback, 
-    useUpdateEventFeedback 
-  } = useEvents();
-  
-  const { 
-    data: feedback, 
-    isLoading, 
-    error 
-  } = useEventFeedback(eventId);
-  
+  const { useEventFeedback, useSubmitEventFeedback, useUpdateEventFeedback } = useEvents();
+
+  const { data: feedback, isLoading, error } = useEventFeedback(eventId);
+
   const submitMutation = useSubmitEventFeedback();
   const updateMutation = useUpdateEventFeedback();
 
@@ -90,13 +82,13 @@ const EventFeedbackComponent: React.FC<EventFeedbackProps> = ({
   // Handle form field changes
   const handleOverallRatingChange = (_: React.SyntheticEvent, value: number | null) => {
     if (value !== null) {
-      setFormData(prev => ({ ...prev, overall_rating: value }));
+      setFormData((prev) => ({ ...prev, overall_rating: value }));
     }
   };
 
   const handleCategoryRatingChange = (category: string, value: number | null) => {
     if (value !== null) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         categories: {
           ...prev.categories,
@@ -106,14 +98,13 @@ const EventFeedbackComponent: React.FC<EventFeedbackProps> = ({
     }
   };
 
-  const handleTextChange = (field: keyof FeedbackSubmission) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({ ...prev, [field]: event.target.value }));
-  };
+  const handleTextChange =
+    (field: keyof FeedbackSubmission) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({ ...prev, [field]: event.target.value }));
+    };
 
   const handlePublicToggle = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({ ...prev, is_public: event.target.checked }));
+    setFormData((prev) => ({ ...prev, is_public: event.target.checked }));
   };
 
   // Handle form submission
@@ -215,11 +206,7 @@ const EventFeedbackComponent: React.FC<EventFeedbackProps> = ({
         <Typography variant="body2" color="text.secondary" paragraph>
           We'd love to hear about your experience with this event.
         </Typography>
-        <Button
-          variant="contained"
-          startIcon={<FeedbackIcon />}
-          onClick={startEditing}
-        >
+        <Button variant="contained" startIcon={<FeedbackIcon />} onClick={startEditing}>
           Submit Feedback
         </Button>
       </Paper>
@@ -240,15 +227,12 @@ const EventFeedbackComponent: React.FC<EventFeedbackProps> = ({
                     Your Feedback
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    Submitted on {formatInTimeZone(feedback.created_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
+                    Submitted on{' '}
+                    {formatInTimeZone(feedback.created_at, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
                   </Typography>
                 </Box>
                 {!feedback.response && (
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={startEditing}
-                  >
+                  <Button variant="outlined" size="small" onClick={startEditing}>
                     Edit
                   </Button>
                 )}
@@ -276,7 +260,7 @@ const EventFeedbackComponent: React.FC<EventFeedbackProps> = ({
                   <AccordionDetails>
                     <Stack spacing={2}>
                       {Object.entries(feedback.categories).map(([key, rating]) => {
-                        const category = FEEDBACK_CATEGORIES.find(cat => cat.key === key);
+                        const category = FEEDBACK_CATEGORIES.find((cat) => cat.key === key);
                         return (
                           <Stack
                             key={key}
@@ -285,9 +269,7 @@ const EventFeedbackComponent: React.FC<EventFeedbackProps> = ({
                             alignItems="center"
                             justifyContent="space-between"
                           >
-                            <Typography variant="body2">
-                              {category?.label || key}:
-                            </Typography>
+                            <Typography variant="body2">{category?.label || key}:</Typography>
                             <Stack direction="row" spacing={1} alignItems="center">
                               <Rating value={rating} size="small" readOnly />
                               <Typography variant="caption" color="text.secondary">
@@ -321,9 +303,7 @@ const EventFeedbackComponent: React.FC<EventFeedbackProps> = ({
                     <Typography variant="body1" fontWeight={500}>
                       Testimonial
                     </Typography>
-                    {feedback.is_public && (
-                      <Chip label="Public" size="small" color="primary" />
-                    )}
+                    {feedback.is_public && <Chip label="Public" size="small" color="primary" />}
                   </Stack>
                   <Typography variant="body2" color="text.secondary">
                     {feedback.testimonial}
@@ -390,9 +370,7 @@ const EventFeedbackComponent: React.FC<EventFeedbackProps> = ({
                         alignItems="center"
                         justifyContent="space-between"
                       >
-                        <Typography variant="body2">
-                          {category.label}:
-                        </Typography>
+                        <Typography variant="body2">{category.label}:</Typography>
                         <Rating
                           value={formData.categories?.[category.key] || 0}
                           onChange={(_, value) => handleCategoryRatingChange(category.key, value)}
@@ -456,9 +434,8 @@ const EventFeedbackComponent: React.FC<EventFeedbackProps> = ({
                   {submitMutation.isPending || updateMutation.isPending
                     ? 'Submitting...'
                     : hasFeedback
-                    ? 'Update Feedback'
-                    : 'Submit Feedback'
-                  }
+                      ? 'Update Feedback'
+                      : 'Submit Feedback'}
                 </Button>
               </Stack>
             </Stack>

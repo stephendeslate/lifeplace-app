@@ -1,10 +1,12 @@
 # backend/core/domains/workflows/tasks.py
 import logging
 
-from celery import shared_task
 from django.utils import timezone
 
+from celery import shared_task
+
 logger = logging.getLogger(__name__)
+
 
 @shared_task
 def schedule_stage_actions(event_id, stage_id):
@@ -16,7 +18,6 @@ def schedule_stage_actions(event_id, stage_id):
     2. After Stage: trigger_time delay from when trigger_after_stage was completed
     """
     from core.domains.events.models import Event, EventTimeline
-    from core.domains.workflows.engine import WorkflowEngine
     from core.domains.workflows.models import WorkflowStage
 
     try:
@@ -24,9 +25,9 @@ def schedule_stage_actions(event_id, stage_id):
         stage = WorkflowStage.objects.get(id=stage_id)
 
         # Parse trigger time (e.g., "AFTER_3_DAYS")
-        trigger_parts = stage.trigger_time.split('_')
+        trigger_parts = stage.trigger_time.split("_")
 
-        if len(trigger_parts) >= 3 and trigger_parts[0] == 'AFTER':
+        if len(trigger_parts) >= 3 and trigger_parts[0] == "AFTER":
             try:
                 # Extract the number and unit
                 number = int(trigger_parts[1])
@@ -38,11 +39,15 @@ def schedule_stage_actions(event_id, stage_id):
                 # If trigger_after_stage is set, calculate from when that stage was reached
                 if stage.trigger_after_stage:
                     # Find when the referenced stage was reached in EventTimeline
-                    stage_reached_entry = EventTimeline.objects.filter(
-                        event=event,
-                        action_type='STAGE_CHANGE',
-                        description__icontains=stage.trigger_after_stage.name
-                    ).order_by('-created_at').first()
+                    stage_reached_entry = (
+                        EventTimeline.objects.filter(
+                            event=event,
+                            action_type="STAGE_CHANGE",
+                            description__icontains=stage.trigger_after_stage.name,
+                        )
+                        .order_by("-created_at")
+                        .first()
+                    )
 
                     if stage_reached_entry:
                         base_time = stage_reached_entry.created_at
@@ -59,11 +64,11 @@ def schedule_stage_actions(event_id, stage_id):
                         return
 
                 # Calculate the delay based on unit
-                if unit.startswith('day'):
+                if unit.startswith("day"):
                     execute_at = base_time + timezone.timedelta(days=number)
-                elif unit.startswith('hour'):
+                elif unit.startswith("hour"):
                     execute_at = base_time + timezone.timedelta(hours=number)
-                elif unit.startswith('week'):
+                elif unit.startswith("week"):
                     execute_at = base_time + timezone.timedelta(weeks=number)
                 else:
                     # Default to days if unit not recognized
@@ -72,22 +77,19 @@ def schedule_stage_actions(event_id, stage_id):
                 # If execution time is in the past, execute immediately
                 if execute_at <= timezone.now():
                     logger.info(
-                        f"Trigger time for stage '{stage.name}' is in past ({execute_at}), "
-                        f"executing immediately"
+                        f"Trigger time for stage '{stage.name}' is in past ({execute_at}), executing immediately"
                     )
                     execute_delayed_stage_action.apply_async(args=[event_id, stage_id])
                 else:
                     # Schedule the task
-                    execute_delayed_stage_action.apply_async(
-                        args=[event_id, stage_id],
-                        eta=execute_at
-                    )
+                    execute_delayed_stage_action.apply_async(args=[event_id, stage_id], eta=execute_at)
 
                 logger.info(f"Scheduled delayed action for event {event_id}, stage {stage_id} at {execute_at}")
             except (ValueError, IndexError):
                 logger.error(f"Invalid trigger time format: {stage.trigger_time}")
     except (Event.DoesNotExist, WorkflowStage.DoesNotExist) as e:
-        logger.error(f"Error scheduling stage actions: {str(e)}")
+        logger.error(f"Error scheduling stage actions: {e!s}")
+
 
 @shared_task
 def execute_delayed_stage_action(event_id, stage_id):
@@ -107,15 +109,11 @@ def execute_delayed_stage_action(event_id, stage_id):
                 stage._execute_automation(event)
 
             # Check if we should progress to next stage
-            WorkflowEngine.progress_workflow(
-                event,
-                trigger_type='SCHEDULED_ACTION',
-                data={'stage_id': stage_id}
-            )
+            WorkflowEngine.progress_workflow(event, trigger_type="SCHEDULED_ACTION", data={"stage_id": stage_id})
 
             logger.info(f"Executed delayed action for event {event_id}, stage {stage_id}")
     except (Event.DoesNotExist, WorkflowStage.DoesNotExist) as e:
-        logger.error(f"Error executing delayed stage action: {str(e)}")
+        logger.error(f"Error executing delayed stage action: {e!s}")
 
 
 @shared_task(
@@ -137,6 +135,7 @@ def schedule_before_event_action(self, event_id: int, stage_id: int):
         stage_id: ID of the workflow stage
     """
     import re
+
     from core.domains.events.models import Event
     from core.domains.workflows.models import WorkflowStage
 
@@ -147,21 +146,20 @@ def schedule_before_event_action(self, event_id: int, stage_id: int):
         # Check if event has a start_date
         if not event.start_date:
             logger.warning(
-                f"Event {event_id} has no start_date - cannot schedule BEFORE_EVENT action "
-                f"for stage '{stage.name}'"
+                f"Event {event_id} has no start_date - cannot schedule BEFORE_EVENT action for stage '{stage.name}'"
             )
-            return {'status': 'skipped', 'reason': 'no_start_date'}
+            return {"status": "skipped", "reason": "no_start_date"}
 
         # Parse trigger time (e.g., "30_DAYS_BEFORE_EVENT" or "7_DAYS_BEFORE_EVENT")
         trigger_time = stage.trigger_time.upper()
 
         # Extract the number of days using regex
         # Matches patterns like: 30_DAYS_BEFORE_EVENT, 7_DAY_BEFORE_EVENT
-        match = re.match(r'(\d+)_DAYS?_BEFORE_EVENT', trigger_time)
+        match = re.match(r"(\d+)_DAYS?_BEFORE_EVENT", trigger_time)
 
         if not match:
             logger.error(f"Invalid BEFORE_EVENT trigger time format: {stage.trigger_time}")
-            return {'status': 'error', 'reason': 'invalid_format'}
+            return {"status": "error", "reason": "invalid_format"}
 
         days_before = int(match.group(1))
 
@@ -171,38 +169,30 @@ def schedule_before_event_action(self, event_id: int, stage_id: int):
         # If calculated time is in the past, execute immediately
         now = timezone.now()
         if execute_at <= now:
-            logger.info(
-                f"Trigger time for stage '{stage.name}' is in past ({execute_at}), "
-                f"executing immediately"
-            )
-            execute_delayed_stage_action.apply_async(
-                args=[event_id, stage_id]
-            )
+            logger.info(f"Trigger time for stage '{stage.name}' is in past ({execute_at}), executing immediately")
+            execute_delayed_stage_action.apply_async(args=[event_id, stage_id])
         else:
             # Schedule for future execution
-            execute_delayed_stage_action.apply_async(
-                args=[event_id, stage_id],
-                eta=execute_at
-            )
+            execute_delayed_stage_action.apply_async(args=[event_id, stage_id], eta=execute_at)
             logger.info(
                 f"Scheduled BEFORE_EVENT action for event {event_id}, stage '{stage.name}' "
                 f"at {execute_at} ({days_before} days before event)"
             )
 
         return {
-            'status': 'scheduled',
-            'event_id': event_id,
-            'stage_id': stage_id,
-            'execute_at': execute_at.isoformat(),
-            'days_before': days_before,
+            "status": "scheduled",
+            "event_id": event_id,
+            "stage_id": stage_id,
+            "execute_at": execute_at.isoformat(),
+            "days_before": days_before,
         }
 
     except Event.DoesNotExist:
         logger.error(f"Event {event_id} not found for BEFORE_EVENT scheduling")
-        return {'status': 'error', 'reason': 'event_not_found'}
+        return {"status": "error", "reason": "event_not_found"}
     except WorkflowStage.DoesNotExist:
         logger.error(f"WorkflowStage {stage_id} not found for BEFORE_EVENT scheduling")
-        return {'status': 'error', 'reason': 'stage_not_found'}
+        return {"status": "error", "reason": "stage_not_found"}
     except Exception as e:
         logger.error(f"Error scheduling BEFORE_EVENT action: {e}")
         raise  # Let Celery retry
@@ -224,6 +214,7 @@ def process_before_event_triggers(self):
     """
     import re
     from datetime import timedelta
+
     from core.domains.events.models import Event
     from core.domains.workflows.models import WorkflowStage
 
@@ -235,13 +226,13 @@ def process_before_event_triggers(self):
 
     # Find all stages with BEFORE_EVENT triggers that are automated
     before_event_stages = WorkflowStage.objects.filter(
-        trigger_time__icontains='BEFORE_EVENT',
+        trigger_time__icontains="BEFORE_EVENT",
         is_automated=True,
-    ).select_related('template')
+    ).select_related("template")
 
     for stage in before_event_stages:
         # Parse days before from trigger_time
-        match = re.match(r'(\d+)_DAYS?_BEFORE_EVENT', stage.trigger_time.upper())
+        match = re.match(r"(\d+)_DAYS?_BEFORE_EVENT", stage.trigger_time.upper())
         if not match:
             continue
 
@@ -255,30 +246,22 @@ def process_before_event_triggers(self):
             workflow_template=stage.template,
             current_stage=stage,
             start_date__date=target_date,
-            status__in=['LEAD', 'CONFIRMED'],
-        ).exclude(status='CANCELLED')
+            status__in=["LEAD", "CONFIRMED"],
+        ).exclude(status="CANCELLED")
 
         for event in events:
             try:
                 # Schedule the action (the task will handle duplicate prevention)
                 schedule_before_event_action.delay(event.id, stage.id)
                 processed_count += 1
-                logger.info(
-                    f"Scheduled BEFORE_EVENT action from sweep for event {event.id}, "
-                    f"stage '{stage.name}'"
-                )
+                logger.info(f"Scheduled BEFORE_EVENT action from sweep for event {event.id}, stage '{stage.name}'")
 
             except Exception as e:
-                logger.error(
-                    f"Error processing BEFORE_EVENT trigger for event {event.id}: {e}"
-                )
+                logger.error(f"Error processing BEFORE_EVENT trigger for event {event.id}: {e}")
                 error_count += 1
 
-    logger.info(
-        f"BEFORE_EVENT trigger sweep completed: "
-        f"{processed_count} scheduled, {error_count} errors"
-    )
-    return {'processed': processed_count, 'errors': error_count}
+    logger.info(f"BEFORE_EVENT trigger sweep completed: {processed_count} scheduled, {error_count} errors")
+    return {"processed": processed_count, "errors": error_count}
 
 
 @shared_task(
@@ -305,15 +288,15 @@ def process_time_elapsed_triggers(self):
 
     # Find all stages with TIME_ELAPSED progression conditions
     time_elapsed_stages = WorkflowStage.objects.filter(
-        progression_condition__istartswith='TIME_ELAPSED'
-    ).select_related('template')
+        progression_condition__istartswith="TIME_ELAPSED"
+    ).select_related("template")
 
     for stage in time_elapsed_stages:
         # Find events currently at this stage
         events = Event.objects.filter(
             workflow_template=stage.template,
             current_stage=stage,
-        ).exclude(status='CANCELLED')
+        ).exclude(status="CANCELLED")
 
         for event in events:
             try:
@@ -321,27 +304,19 @@ def process_time_elapsed_triggers(self):
                 if stage.check_advancement_criteria(event):
                     # Attempt to progress the workflow
                     progressed = WorkflowEngine.progress_workflow(
-                        event,
-                        trigger_type='TIME_ELAPSED',
-                        data={'stage_id': stage.id}
+                        event, trigger_type="TIME_ELAPSED", data={"stage_id": stage.id}
                     )
                     if progressed:
                         processed_count += 1
                         logger.info(
-                            f"TIME_ELAPSED triggered progression for event {event.id} "
-                            f"from stage '{stage.name}'"
+                            f"TIME_ELAPSED triggered progression for event {event.id} from stage '{stage.name}'"
                         )
             except Exception as e:
-                logger.error(
-                    f"Error processing TIME_ELAPSED trigger for event {event.id}: {e}"
-                )
+                logger.error(f"Error processing TIME_ELAPSED trigger for event {event.id}: {e}")
                 error_count += 1
 
-    logger.info(
-        f"TIME_ELAPSED trigger sweep completed: "
-        f"{processed_count} progressions, {error_count} errors"
-    )
-    return {'processed': processed_count, 'errors': error_count}
+    logger.info(f"TIME_ELAPSED trigger sweep completed: {processed_count} progressions, {error_count} errors")
+    return {"processed": processed_count, "errors": error_count}
 
 
 @shared_task(
@@ -362,6 +337,7 @@ def process_after_stage_triggers(self):
     """
     import re
     from datetime import timedelta
+
     from core.domains.events.models import Event, EventTimeline
     from core.domains.workflows.models import WorkflowStage
 
@@ -375,33 +351,33 @@ def process_after_stage_triggers(self):
     after_stage_stages = WorkflowStage.objects.filter(
         trigger_after_stage__isnull=False,
         is_automated=True,
-    ).select_related('template', 'trigger_after_stage')
+    ).select_related("template", "trigger_after_stage")
 
     for stage in after_stage_stages:
         # Find events using this workflow template that haven't executed this stage yet
         events = Event.objects.filter(
             workflow_template=stage.template,
-        ).exclude(status='CANCELLED')
+        ).exclude(status="CANCELLED")
 
         for event in events:
             try:
                 # Check if this automation has already been executed for this event
                 # by looking for a timeline entry indicating the stage was triggered
                 already_triggered = EventTimeline.objects.filter(
-                    event=event,
-                    action_type__in=['STAGE_CHANGE', 'SYSTEM_UPDATE'],
-                    description__icontains=stage.name
+                    event=event, action_type__in=["STAGE_CHANGE", "SYSTEM_UPDATE"], description__icontains=stage.name
                 ).exists()
 
                 if already_triggered:
                     continue
 
                 # Find when the referenced stage (trigger_after_stage) was reached
-                stage_reached_entry = EventTimeline.objects.filter(
-                    event=event,
-                    action_type='STAGE_CHANGE',
-                    description__icontains=stage.trigger_after_stage.name
-                ).order_by('-created_at').first()
+                stage_reached_entry = (
+                    EventTimeline.objects.filter(
+                        event=event, action_type="STAGE_CHANGE", description__icontains=stage.trigger_after_stage.name
+                    )
+                    .order_by("-created_at")
+                    .first()
+                )
 
                 if not stage_reached_entry:
                     # Referenced stage hasn't been reached yet
@@ -412,7 +388,7 @@ def process_after_stage_triggers(self):
                     continue
 
                 trigger_time_upper = stage.trigger_time.upper()
-                match = re.match(r'AFTER_(\d+)_(DAYS?|HOURS?|WEEKS?)', trigger_time_upper)
+                match = re.match(r"AFTER_(\d+)_(DAYS?|HOURS?|WEEKS?)", trigger_time_upper)
 
                 if not match:
                     continue
@@ -421,11 +397,11 @@ def process_after_stage_triggers(self):
                 unit = match.group(2).upper()
 
                 # Calculate required elapsed time
-                if unit.startswith('DAY'):
+                if unit.startswith("DAY"):
                     required_delta = timedelta(days=amount)
-                elif unit.startswith('HOUR'):
+                elif unit.startswith("HOUR"):
                     required_delta = timedelta(hours=amount)
-                elif unit.startswith('WEEK'):
+                elif unit.startswith("WEEK"):
                     required_delta = timedelta(weeks=amount)
                 else:
                     continue
@@ -447,30 +423,24 @@ def process_after_stage_triggers(self):
                     # Log the execution
                     EventTimeline.objects.create(
                         event=event,
-                        action_type='SYSTEM_UPDATE',
+                        action_type="SYSTEM_UPDATE",
                         description=f"Executed delayed automation '{stage.name}' (trigger: {amount} {unit.lower()} after '{stage.trigger_after_stage.name}')",
                         action_data={
-                            'stage_id': stage.id,
-                            'trigger_after_stage_id': stage.trigger_after_stage.id,
-                            'trigger_type': 'AFTER_STAGE'
+                            "stage_id": stage.id,
+                            "trigger_after_stage_id": stage.trigger_after_stage.id,
+                            "trigger_type": "AFTER_STAGE",
                         },
-                        is_public=False
+                        is_public=False,
                     )
 
                     scheduled_count += 1
 
             except Exception as e:
-                logger.error(
-                    f"Error processing AFTER_STAGE trigger for event {event.id}, "
-                    f"stage '{stage.name}': {e}"
-                )
+                logger.error(f"Error processing AFTER_STAGE trigger for event {event.id}, stage '{stage.name}': {e}")
                 error_count += 1
 
-    logger.info(
-        f"AFTER_STAGE trigger sweep completed: "
-        f"{scheduled_count} executed, {error_count} errors"
-    )
-    return {'executed': scheduled_count, 'errors': error_count}
+    logger.info(f"AFTER_STAGE trigger sweep completed: {scheduled_count} executed, {error_count} errors")
+    return {"executed": scheduled_count, "errors": error_count}
 
 
 @shared_task(
@@ -494,7 +464,7 @@ def process_webhook_retries(self):
     try:
         retried_count = WorkflowWebhookService.retry_pending_deliveries()
         logger.info(f"Webhook retry processing completed: {retried_count} retried")
-        return {'retried': retried_count}
+        return {"retried": retried_count}
     except Exception as e:
         logger.error(f"Error processing webhook retries: {e}")
-        return {'retried': 0, 'error': str(e)}
+        return {"retried": 0, "error": str(e)}

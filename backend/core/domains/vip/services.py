@@ -1,19 +1,17 @@
 # backend/core/domains/vip/services.py
 import logging
 from decimal import Decimal
-from typing import List, Optional, Tuple
 
 from django.db import transaction
-from django.db.models import Q, Sum
 from django.utils import timezone
 
 from .models import (
-    VIPSettings,
-    VIPTier,
-    VIPBenefit,
     ClientVIPStatus,
+    VIPBenefit,
     VIPPointTransaction,
     VIPRewardRedemption,
+    VIPSettings,
+    VIPTier,
     VIPTierHistory,
 )
 
@@ -43,9 +41,9 @@ class VIPService:
         status, created = ClientVIPStatus.objects.get_or_create(
             client=client,
             defaults={
-                'current_tier': VIPTier.objects.filter(is_default=True, is_active=True).first(),
-                'status': 'ACTIVE',
-            }
+                "current_tier": VIPTier.objects.filter(is_default=True, is_active=True).first(),
+                "status": "ACTIVE",
+            },
         )
 
         if created:
@@ -56,14 +54,14 @@ class VIPService:
                     client_vip_status=status,
                     from_tier=None,
                     to_tier=status.current_tier,
-                    reason='INITIAL',
-                    notes='Initial VIP status creation',
+                    reason="INITIAL",
+                    notes="Initial VIP status creation",
                 )
 
         return status
 
     @staticmethod
-    def calculate_eligible_tier(client_vip_status: ClientVIPStatus) -> Optional[VIPTier]:
+    def calculate_eligible_tier(client_vip_status: ClientVIPStatus) -> VIPTier | None:
         """
         Calculate the highest tier a client is eligible for based on their stats.
         Returns None if no tier qualifies beyond default.
@@ -73,7 +71,7 @@ class VIPService:
             return None
 
         # Get all active tiers ordered by level (highest first)
-        tiers = VIPTier.objects.filter(is_active=True).order_by('-level')
+        tiers = VIPTier.objects.filter(is_active=True).order_by("-level")
 
         earning_type = settings.automatic_earning_type
         total_spent = client_vip_status.total_spent
@@ -83,19 +81,15 @@ class VIPService:
         for tier in tiers:
             qualifies = False
 
-            if earning_type == 'SPENDING':
+            if earning_type == "SPENDING":
                 if tier.min_total_spent and total_spent >= tier.min_total_spent:
                     qualifies = True
-            elif earning_type == 'BOOKINGS':
+            elif earning_type == "BOOKINGS":
                 if tier.min_completed_bookings and completed_bookings >= tier.min_completed_bookings:
                     qualifies = True
-            elif earning_type == 'BOTH':
+            elif earning_type == "BOTH":
                 # Any condition met qualifies
-                if tier.min_total_spent and total_spent >= tier.min_total_spent:
-                    qualifies = True
-                elif tier.min_completed_bookings and completed_bookings >= tier.min_completed_bookings:
-                    qualifies = True
-                elif tier.min_points_required and points_balance >= tier.min_points_required:
+                if (tier.min_total_spent and total_spent >= tier.min_total_spent) or (tier.min_completed_bookings and completed_bookings >= tier.min_completed_bookings) or (tier.min_points_required and points_balance >= tier.min_points_required):
                     qualifies = True
 
             if qualifies:
@@ -127,14 +121,14 @@ class VIPService:
         # Perform upgrade
         old_tier = current_tier
         client_vip_status.current_tier = eligible_tier
-        client_vip_status.save(update_fields=['current_tier', 'updated_at'])
+        client_vip_status.save(update_fields=["current_tier", "updated_at"])
 
         # Record tier change
         VIPTierHistory.objects.create(
             client_vip_status=client_vip_status,
             from_tier=old_tier,
             to_tier=eligible_tier,
-            reason='AUTOMATIC_UPGRADE',
+            reason="AUTOMATIC_UPGRADE",
             notes=f"Auto-upgraded based on spending: {client_vip_status.total_spent}, bookings: {client_vip_status.completed_bookings_count}",
         )
 
@@ -146,12 +140,7 @@ class VIPService:
 
     @staticmethod
     @transaction.atomic
-    def assign_tier_manually(
-        client,
-        tier: VIPTier,
-        assigned_by,
-        reason: str = ""
-    ) -> ClientVIPStatus:
+    def assign_tier_manually(client, tier: VIPTier, assigned_by, reason: str = "") -> ClientVIPStatus:
         """Manually assign a tier to a client."""
         client_status = VIPService.get_or_create_client_status(client)
         old_tier = client_status.current_tier
@@ -160,7 +149,7 @@ class VIPService:
         client_status.assigned_by = assigned_by
         client_status.assigned_at = timezone.now()
         client_status.assignment_reason = reason
-        client_status.status = 'ACTIVE'
+        client_status.status = "ACTIVE"
         client_status.save()
 
         # Record tier change
@@ -168,19 +157,16 @@ class VIPService:
             client_vip_status=client_status,
             from_tier=old_tier,
             to_tier=tier,
-            reason='MANUAL_ASSIGNMENT',
+            reason="MANUAL_ASSIGNMENT",
             notes=reason,
             changed_by=assigned_by,
         )
 
-        logger.info(
-            f"Manually assigned {client.email} to tier {tier.name} "
-            f"by {assigned_by.email}. Reason: {reason}"
-        )
+        logger.info(f"Manually assigned {client.email} to tier {tier.name} by {assigned_by.email}. Reason: {reason}")
         return client_status
 
     @staticmethod
-    def get_client_benefits(client) -> List[VIPBenefit]:
+    def get_client_benefits(client) -> list[VIPBenefit]:
         """Get all active benefits for a client's current tier."""
         if not client:
             return []
@@ -190,38 +176,31 @@ class VIPService:
             return []
 
         # Lazy expiration: update status field when expired at query time
-        if client_status.status == 'ACTIVE' and client_status.is_expired:
-            client_status.status = 'EXPIRED'
-            client_status.save(update_fields=['status', 'updated_at'])
+        if client_status.status == "ACTIVE" and client_status.is_expired:
+            client_status.status = "EXPIRED"
+            client_status.save(update_fields=["status", "updated_at"])
             logger.info(f"VIP status for client {client.id} expired (lazy update)")
             return []
 
-        if not client_status.current_tier or client_status.status != 'ACTIVE':
+        if not client_status.current_tier or client_status.status != "ACTIVE":
             return []
 
-        return list(VIPBenefit.objects.filter(
-            tier=client_status.current_tier,
-            is_active=True
-        ).select_related('tier'))
+        return list(VIPBenefit.objects.filter(tier=client_status.current_tier, is_active=True).select_related("tier"))
 
     @staticmethod
-    def get_automatic_benefits(client) -> List[VIPBenefit]:
+    def get_automatic_benefits(client) -> list[VIPBenefit]:
         """Get automatic-apply benefits for pricing integration."""
         benefits = VIPService.get_client_benefits(client)
-        return [b for b in benefits if b.application_mode == 'AUTOMATIC']
+        return [b for b in benefits if b.application_mode == "AUTOMATIC"]
 
     @staticmethod
-    def get_redeemable_benefits(client) -> List[VIPBenefit]:
+    def get_redeemable_benefits(client) -> list[VIPBenefit]:
         """Get redeemable benefits available to the client."""
         benefits = VIPService.get_client_benefits(client)
-        return [b for b in benefits if b.application_mode == 'REDEEMABLE']
+        return [b for b in benefits if b.application_mode == "REDEEMABLE"]
 
     @staticmethod
-    def check_benefit_eligibility(
-        client,
-        benefit: VIPBenefit,
-        event=None
-    ) -> Tuple[bool, str]:
+    def check_benefit_eligibility(client, benefit: VIPBenefit, event=None) -> tuple[bool, str]:
         """
         Check if client can use a specific benefit.
         Returns (is_eligible, reason).
@@ -234,12 +213,12 @@ class VIPService:
             return False, "Client has no VIP status"
 
         # Lazy expiration: update status field when expired at query time
-        if client_status.status == 'ACTIVE' and client_status.is_expired:
-            client_status.status = 'EXPIRED'
-            client_status.save(update_fields=['status', 'updated_at'])
+        if client_status.status == "ACTIVE" and client_status.is_expired:
+            client_status.status = "EXPIRED"
+            client_status.save(update_fields=["status", "updated_at"])
             logger.info(f"VIP status for client {client.id} expired (lazy update in eligibility check)")
 
-        if client_status.status != 'ACTIVE':
+        if client_status.status != "ACTIVE":
             return False, f"VIP status is {client_status.status}"
 
         if not client_status.current_tier:
@@ -257,14 +236,14 @@ class VIPService:
             monthly_uses = VIPRewardRedemption.objects.filter(
                 client_vip_status=client_status,
                 benefit=benefit,
-                status__in=['PENDING', 'APPLIED'],
-                created_at__gte=month_start
+                status__in=["PENDING", "APPLIED"],
+                created_at__gte=month_start,
             ).count()
             if monthly_uses >= benefit.max_uses_per_month:
                 return False, f"Monthly limit of {benefit.max_uses_per_month} reached"
 
         # Check points cost for redeemable benefits
-        if benefit.application_mode == 'REDEEMABLE' and benefit.points_cost > 0:
+        if benefit.application_mode == "REDEEMABLE" and benefit.points_cost > 0:
             if client_status.points_balance < benefit.points_cost:
                 return False, f"Insufficient points (need {benefit.points_cost}, have {client_status.points_balance})"
 
@@ -276,7 +255,7 @@ class VIPPointsService:
 
     @staticmethod
     @transaction.atomic
-    def award_points_for_payment(payment) -> Optional[VIPPointTransaction]:
+    def award_points_for_payment(payment) -> VIPPointTransaction | None:
         """Award points when payment is completed."""
         settings = VIPSettings.get_settings()
         if not settings.is_program_enabled or not settings.earning_points_enabled:
@@ -291,9 +270,7 @@ class VIPPointsService:
 
         # Calculate points: (amount / currency_unit) * points_per_currency
         amount = payment.amount
-        points_earned = int(
-            (amount / settings.points_currency_unit) * settings.points_per_currency_spent
-        )
+        points_earned = int((amount / settings.points_currency_unit) * settings.points_per_currency_spent)
 
         if points_earned <= 0:
             return None
@@ -302,12 +279,12 @@ class VIPPointsService:
         new_balance = client_status.points_balance + points_earned
         client_status.points_balance = new_balance
         client_status.lifetime_points_earned += points_earned
-        client_status.save(update_fields=['points_balance', 'lifetime_points_earned', 'updated_at'])
+        client_status.save(update_fields=["points_balance", "lifetime_points_earned", "updated_at"])
 
         # Create transaction record
         transaction = VIPPointTransaction.objects.create(
             client_vip_status=client_status,
-            transaction_type='EARNED_PAYMENT',
+            transaction_type="EARNED_PAYMENT",
             points=points_earned,
             payment=payment,
             event=payment.event,
@@ -320,23 +297,18 @@ class VIPPointsService:
 
     @staticmethod
     @transaction.atomic
-    def award_bonus_points(
-        client,
-        points: int,
-        description: str,
-        performed_by
-    ) -> VIPPointTransaction:
+    def award_bonus_points(client, points: int, description: str, performed_by) -> VIPPointTransaction:
         """Manually award bonus points."""
         client_status = VIPService.get_or_create_client_status(client)
 
         new_balance = client_status.points_balance + points
         client_status.points_balance = new_balance
         client_status.lifetime_points_earned += points
-        client_status.save(update_fields=['points_balance', 'lifetime_points_earned', 'updated_at'])
+        client_status.save(update_fields=["points_balance", "lifetime_points_earned", "updated_at"])
 
         transaction = VIPPointTransaction.objects.create(
             client_vip_status=client_status,
-            transaction_type='EARNED_BONUS',
+            transaction_type="EARNED_BONUS",
             points=points,
             description=description,
             balance_after=new_balance,
@@ -349,10 +321,7 @@ class VIPPointsService:
     @staticmethod
     @transaction.atomic
     def spend_points(
-        client,
-        points: int,
-        description: str,
-        benefit: Optional[VIPBenefit] = None
+        client, points: int, description: str, benefit: VIPBenefit | None = None
     ) -> VIPPointTransaction:
         """Deduct points for reward redemption."""
         client_status = VIPService.get_or_create_client_status(client)
@@ -363,11 +332,11 @@ class VIPPointsService:
         new_balance = client_status.points_balance - points
         client_status.points_balance = new_balance
         client_status.lifetime_points_spent += points
-        client_status.save(update_fields=['points_balance', 'lifetime_points_spent', 'updated_at'])
+        client_status.save(update_fields=["points_balance", "lifetime_points_spent", "updated_at"])
 
         transaction = VIPPointTransaction.objects.create(
             client_vip_status=client_status,
-            transaction_type='SPENT_REWARD',
+            transaction_type="SPENT_REWARD",
             points=-points,  # Negative for spent
             description=description,
             balance_after=new_balance,
@@ -378,12 +347,7 @@ class VIPPointsService:
 
     @staticmethod
     @transaction.atomic
-    def adjust_points(
-        client,
-        points: int,
-        description: str,
-        performed_by
-    ) -> VIPPointTransaction:
+    def adjust_points(client, points: int, description: str, performed_by) -> VIPPointTransaction:
         """Manual point adjustment (can be positive or negative)."""
         client_status = VIPService.get_or_create_client_status(client)
 
@@ -395,11 +359,13 @@ class VIPPointsService:
             client_status.lifetime_points_spent += abs(points)
 
         client_status.points_balance = new_balance
-        client_status.save(update_fields=['points_balance', 'lifetime_points_earned', 'lifetime_points_spent', 'updated_at'])
+        client_status.save(
+            update_fields=["points_balance", "lifetime_points_earned", "lifetime_points_spent", "updated_at"]
+        )
 
         transaction = VIPPointTransaction.objects.create(
             client_vip_status=client_status,
-            transaction_type='ADJUSTED',
+            transaction_type="ADJUSTED",
             points=points,
             description=description,
             balance_after=new_balance,
@@ -414,29 +380,29 @@ class VIPPricingIntegrationService:
     """Integration with PricingCalculationService."""
 
     @staticmethod
-    def calculate_vip_discount(client, subtotal: Decimal) -> Tuple[Decimal, List[str]]:
+    def calculate_vip_discount(client, subtotal: Decimal) -> tuple[Decimal, list[str]]:
         """
         Calculate total VIP discount amount and list of applied benefits.
         Useful for displaying discount breakdown.
         """
         settings = VIPSettings.get_settings()
         if not settings.is_program_enabled:
-            return Decimal('0'), []
+            return Decimal("0"), []
 
         automatic_benefits = VIPService.get_automatic_benefits(client)
         if not automatic_benefits:
-            return Decimal('0'), []
+            return Decimal("0"), []
 
-        total_discount = Decimal('0')
+        total_discount = Decimal("0")
         applied = []
 
         for benefit in automatic_benefits:
-            if benefit.benefit_type == 'PERCENTAGE_DISCOUNT' and benefit.value:
-                discount = subtotal * (benefit.value / Decimal('100'))
+            if benefit.benefit_type == "PERCENTAGE_DISCOUNT" and benefit.value:
+                discount = subtotal * (benefit.value / Decimal("100"))
                 total_discount += discount
                 applied.append(f"{benefit.value}% VIP discount (${discount:.2f})")
 
-            elif benefit.benefit_type == 'FIXED_DISCOUNT' and benefit.value:
+            elif benefit.benefit_type == "FIXED_DISCOUNT" and benefit.value:
                 discount = min(benefit.value, subtotal - total_discount)
                 total_discount += discount
                 applied.append(f"${benefit.value} VIP discount")
@@ -450,29 +416,26 @@ class VIPPricingIntegrationService:
         fee_type: 'SERVICE_CHARGE', 'LATE_FEE', 'RESCHEDULING_FEE'
         """
         benefit_type_map = {
-            'SERVICE_CHARGE': 'WAIVE_SERVICE_CHARGE',
-            'LATE_FEE': 'WAIVE_LATE_FEE',
-            'RESCHEDULING_FEE': 'WAIVE_RESCHEDULING_FEE',
+            "SERVICE_CHARGE": "WAIVE_SERVICE_CHARGE",
+            "LATE_FEE": "WAIVE_LATE_FEE",
+            "RESCHEDULING_FEE": "WAIVE_RESCHEDULING_FEE",
         }
 
         if fee_type not in benefit_type_map:
             return False
 
         automatic_benefits = VIPService.get_automatic_benefits(client)
-        return any(
-            b.benefit_type == benefit_type_map[fee_type]
-            for b in automatic_benefits
-        )
+        return any(b.benefit_type == benefit_type_map[fee_type] for b in automatic_benefits)
 
     @staticmethod
-    def get_exclusive_products_for_client(client) -> List[int]:
+    def get_exclusive_products_for_client(client) -> list[int]:
         """Get IDs of exclusive products available to this VIP client."""
         benefits = VIPService.get_client_benefits(client)
-        exclusive_benefits = [b for b in benefits if b.benefit_type == 'EXCLUSIVE_PACKAGE']
+        exclusive_benefits = [b for b in benefits if b.benefit_type == "EXCLUSIVE_PACKAGE"]
 
         product_ids = []
         for benefit in exclusive_benefits:
-            product_ids.extend(benefit.applicable_products.values_list('id', flat=True))
+            product_ids.extend(benefit.applicable_products.values_list("id", flat=True))
 
         return list(set(product_ids))
 
@@ -482,11 +445,7 @@ class VIPRedemptionService:
 
     @staticmethod
     @transaction.atomic
-    def redeem_benefit(
-        client,
-        benefit: VIPBenefit,
-        event
-    ) -> VIPRewardRedemption:
+    def redeem_benefit(client, benefit: VIPBenefit, event) -> VIPRewardRedemption:
         """Redeem a benefit for a specific event."""
         # Check eligibility
         is_eligible, reason = VIPService.check_benefit_eligibility(client, benefit, event)
@@ -498,9 +457,7 @@ class VIPRedemptionService:
         # Deduct points if required
         if benefit.points_cost > 0:
             VIPPointsService.spend_points(
-                client,
-                benefit.points_cost,
-                f"Redeemed: {benefit.name} for event #{event.id}"
+                client, benefit.points_cost, f"Redeemed: {benefit.name} for event #{event.id}"
             )
 
         # Create redemption record
@@ -508,7 +465,7 @@ class VIPRedemptionService:
             client_vip_status=client_status,
             benefit=benefit,
             event=event,
-            status='PENDING',
+            status="PENDING",
             points_spent=benefit.points_cost,
         )
 
@@ -519,7 +476,7 @@ class VIPRedemptionService:
     @transaction.atomic
     def apply_redemption(redemption: VIPRewardRedemption, value_applied: Decimal = None):
         """Mark a redemption as applied."""
-        redemption.status = 'APPLIED'
+        redemption.status = "APPLIED"
         redemption.applied_at = timezone.now()
         if value_applied:
             redemption.value_applied = value_applied
@@ -531,28 +488,27 @@ class VIPRedemptionService:
     @transaction.atomic
     def cancel_redemption(redemption: VIPRewardRedemption):
         """Cancel a redemption and refund points."""
-        if redemption.status == 'CANCELLED':
+        if redemption.status == "CANCELLED":
             return
 
         # Refund points
         if redemption.points_spent > 0:
-            client = redemption.client_vip_status.client
             client_status = redemption.client_vip_status
 
             client_status.points_balance += redemption.points_spent
             client_status.lifetime_points_spent -= redemption.points_spent
-            client_status.save(update_fields=['points_balance', 'lifetime_points_spent', 'updated_at'])
+            client_status.save(update_fields=["points_balance", "lifetime_points_spent", "updated_at"])
 
             # Record refund transaction
             VIPPointTransaction.objects.create(
                 client_vip_status=client_status,
-                transaction_type='ADJUSTED',
+                transaction_type="ADJUSTED",
                 points=redemption.points_spent,
                 description=f"Refund for cancelled redemption #{redemption.id}",
                 balance_after=client_status.points_balance,
             )
 
-        redemption.status = 'CANCELLED'
+        redemption.status = "CANCELLED"
         redemption.save()
 
         logger.info(f"Cancelled redemption {redemption.id}")

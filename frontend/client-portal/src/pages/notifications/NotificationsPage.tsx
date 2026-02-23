@@ -1,6 +1,6 @@
 // frontend/client-portal/src/pages/notifications/NotificationsPage.tsx
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -16,7 +16,7 @@ import {
   CircularProgress,
   useTheme,
   alpha,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Notifications as NotificationsIcon,
   Event as EventIcon,
@@ -36,44 +36,41 @@ import {
   Delete as DeleteIcon,
   FilterList as FilterIcon,
   Close as ClearIcon,
-} from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
-import { useDocumentTitle } from "../../hooks/useDocumentTitle";
-import { AnimatedElement } from "../../design-system/components/AnimatedElement";
-import { useNotifications } from "../../hooks/useNotifications";
-import { useNotificationRealtime } from "../../hooks/useNotificationRealtime";
-import { NotificationPreferencesDialog } from "../../components/notifications/NotificationPreferencesDialog";
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import { useNotifications } from '../../hooks/useNotifications';
+import { useNotificationRealtime } from '../../hooks/useNotificationRealtime';
+import { NotificationPreferencesDialog } from '../../components/notifications/NotificationPreferencesDialog';
 import type {
   Notification,
   NotificationCategory,
   NotificationPriority,
   NotificationFilters,
-} from "../../types/notifications.types";
-import {
-  NOTIFICATION_CATEGORIES,
-  NOTIFICATION_PRIORITIES,
-} from "../../types/notifications.types";
+} from '../../types/notifications.types';
+import { NOTIFICATION_CATEGORIES, NOTIFICATION_PRIORITIES } from '../../types/notifications.types';
 
 // Category icon mapping
 const getCategoryIcon = (category?: NotificationCategory) => {
   switch (category) {
-    case "EVENT":
+    case 'EVENT':
       return <EventIcon fontSize="small" />;
-    case "PAYMENT":
+    case 'PAYMENT':
       return <PaymentIcon fontSize="small" />;
-    case "COMMUNICATION":
+    case 'COMMUNICATION':
       return <MessageIcon fontSize="small" />;
-    case "SYSTEM":
+    case 'SYSTEM':
       return <SettingsIcon fontSize="small" />;
-    case "TASK":
+    case 'TASK':
       return <TaskIcon fontSize="small" />;
-    case "CLIENT":
+    case 'CLIENT':
       return <PersonIcon fontSize="small" />;
-    case "CONTRACT":
+    case 'CONTRACT':
       return <ContractIcon fontSize="small" />;
-    case "WORKFLOW":
+    case 'WORKFLOW':
       return <WorkflowIcon fontSize="small" />;
-    case "MARKETING":
+    case 'MARKETING':
       return <CampaignIcon fontSize="small" />;
     default:
       return <NotificationsIcon fontSize="small" />;
@@ -81,28 +78,25 @@ const getCategoryIcon = (category?: NotificationCategory) => {
 };
 
 // Category color mapping
-const getCategoryColor = (
-  theme: ReturnType<typeof useTheme>,
-  category?: NotificationCategory,
-) => {
+const getCategoryColor = (theme: ReturnType<typeof useTheme>, category?: NotificationCategory) => {
   switch (category) {
-    case "EVENT":
+    case 'EVENT':
       return theme.palette.primary.main;
-    case "PAYMENT":
+    case 'PAYMENT':
       return theme.palette.success.main;
-    case "COMMUNICATION":
+    case 'COMMUNICATION':
       return theme.palette.info.main;
-    case "SYSTEM":
+    case 'SYSTEM':
       return theme.palette.grey[600];
-    case "TASK":
+    case 'TASK':
       return theme.palette.secondary.main;
-    case "CLIENT":
+    case 'CLIENT':
       return theme.palette.info.dark;
-    case "CONTRACT":
+    case 'CONTRACT':
       return theme.palette.warning.main;
-    case "WORKFLOW":
+    case 'WORKFLOW':
       return theme.palette.primary.dark;
-    case "MARKETING":
+    case 'MARKETING':
       return theme.palette.secondary.light;
     default:
       return theme.palette.primary.main;
@@ -112,13 +106,13 @@ const getCategoryColor = (
 // Priority icon mapping
 const getPriorityIcon = (priority?: NotificationPriority) => {
   switch (priority) {
-    case "URGENT":
+    case 'URGENT':
       return <WarningIcon fontSize="small" color="error" />;
-    case "HIGH":
+    case 'HIGH':
       return <WarningIcon fontSize="small" color="warning" />;
-    case "NORMAL":
+    case 'NORMAL':
       return <InfoIcon fontSize="small" color="info" />;
-    case "LOW":
+    case 'LOW':
       return <SuccessIcon fontSize="small" color="success" />;
     default:
       return <InfoIcon fontSize="small" />;
@@ -126,7 +120,7 @@ const getPriorityIcon = (priority?: NotificationPriority) => {
 };
 
 export const NotificationsPage: React.FC = () => {
-  useDocumentTitle("Notifications | LifePlace Alfonso");
+  useDocumentTitle('Notifications | LifePlace Alfonso');
   const theme = useTheme();
   const navigate = useNavigate();
 
@@ -167,8 +161,8 @@ export const NotificationsPage: React.FC = () => {
       markAsReadMutation.mutate(notification.id);
     }
     if (notification.action_url) {
-      if (notification.action_url.startsWith("http")) {
-        window.open(notification.action_url, "_blank");
+      if (notification.action_url.startsWith('http')) {
+        window.open(notification.action_url, '_blank');
       } else {
         navigate(notification.action_url);
       }
@@ -183,23 +177,20 @@ export const NotificationsPage: React.FC = () => {
           <Box
             sx={{
               mb: 4,
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              justifyContent: "space-between",
-              alignItems: { xs: "stretch", md: "flex-start" },
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              justifyContent: 'space-between',
+              alignItems: { xs: 'stretch', md: 'flex-start' },
               gap: 2,
             }}
           >
             <Box>
-              <Typography
-                variant="h4"
-                sx={{ fontWeight: 600, mb: 1, color: "primary.main" }}
-              >
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
                 Notifications
               </Typography>
               <Typography variant="body1" color="text.secondary">
                 {unreadCount > 0
-                  ? `You have ${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`
+                  ? `You have ${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`
                   : "You're all caught up!"}
               </Typography>
             </Box>
@@ -227,16 +218,11 @@ export const NotificationsPage: React.FC = () => {
                 variant="outlined"
                 startIcon={<FilterIcon />}
                 onClick={() => setShowFilters(!showFilters)}
-                color={hasActiveFilters ? "primary" : "inherit"}
+                color={hasActiveFilters ? 'primary' : 'inherit'}
               >
                 Filters
                 {hasActiveFilters && (
-                  <Chip
-                    label="Active"
-                    size="small"
-                    color="primary"
-                    sx={{ ml: 1, height: 20 }}
-                  />
+                  <Chip label="Active" size="small" color="primary" sx={{ ml: 1, height: 20 }} />
                 )}
               </Button>
               <Button
@@ -254,22 +240,10 @@ export const NotificationsPage: React.FC = () => {
         {/* Counts Summary */}
         {counts && (
           <AnimatedElement animation="fadeIn" delay={150}>
-            <Stack
-              direction="row"
-              spacing={1}
-              sx={{ mb: 3, flexWrap: "wrap", gap: 1 }}
-            >
-              <Chip
-                label={`${counts.total} Total`}
-                size="small"
-                variant="outlined"
-              />
+            <Stack direction="row" spacing={1} sx={{ mb: 3, flexWrap: 'wrap', gap: 1 }}>
+              <Chip label={`${counts.total} Total`} size="small" variant="outlined" />
               {counts.unread > 0 && (
-                <Chip
-                  label={`${counts.unread} Unread`}
-                  size="small"
-                  color="error"
-                />
+                <Chip label={`${counts.unread} Unread`} size="small" color="error" />
               )}
               {Object.entries(counts.by_category || {}).map(
                 ([cat, count]) =>
@@ -286,9 +260,8 @@ export const NotificationsPage: React.FC = () => {
                         }))
                       }
                       sx={{
-                        cursor: "pointer",
-                        borderColor:
-                          filters.category === cat ? "primary.main" : undefined,
+                        cursor: 'pointer',
+                        borderColor: filters.category === cat ? 'primary.main' : undefined,
                         bgcolor:
                           filters.category === cat
                             ? alpha(theme.palette.primary.main, 0.08)
@@ -309,33 +282,26 @@ export const NotificationsPage: React.FC = () => {
                 mb: 3,
                 p: 2,
                 borderRadius: 2,
-                bgcolor: "background.paper",
-                border: "1px solid",
-                borderColor: "divider",
+                bgcolor: 'background.paper',
+                border: '1px solid',
+                borderColor: 'divider',
               }}
             >
               <Stack
-                direction={{ xs: "column", sm: "row" }}
+                direction={{ xs: 'column', sm: 'row' }}
                 spacing={2}
-                alignItems={{ xs: "stretch", sm: "center" }}
+                alignItems={{ xs: 'stretch', sm: 'center' }}
               >
                 <TextField
                   select
                   size="small"
                   label="Status"
-                  value={
-                    filters.is_read === undefined
-                      ? ""
-                      : filters.is_read
-                        ? "read"
-                        : "unread"
-                  }
+                  value={filters.is_read === undefined ? '' : filters.is_read ? 'read' : 'unread'}
                   onChange={(e) => {
                     const val = e.target.value;
                     setFilters((prev) => ({
                       ...prev,
-                      is_read:
-                        val === "" ? undefined : val === "read" ? true : false,
+                      is_read: val === '' ? undefined : val === 'read' ? true : false,
                     }));
                   }}
                   sx={{ minWidth: 140 }}
@@ -349,12 +315,11 @@ export const NotificationsPage: React.FC = () => {
                   select
                   size="small"
                   label="Category"
-                  value={filters.category ?? ""}
+                  value={filters.category ?? ''}
                   onChange={(e) =>
                     setFilters((prev) => ({
                       ...prev,
-                      category:
-                        (e.target.value as NotificationCategory) || undefined,
+                      category: (e.target.value as NotificationCategory) || undefined,
                     }))
                   }
                   sx={{ minWidth: 160 }}
@@ -371,12 +336,11 @@ export const NotificationsPage: React.FC = () => {
                   select
                   size="small"
                   label="Priority"
-                  value={filters.priority ?? ""}
+                  value={filters.priority ?? ''}
                   onChange={(e) =>
                     setFilters((prev) => ({
                       ...prev,
-                      priority:
-                        (e.target.value as NotificationPriority) || undefined,
+                      priority: (e.target.value as NotificationPriority) || undefined,
                     }))
                   }
                   sx={{ minWidth: 140 }}
@@ -390,11 +354,7 @@ export const NotificationsPage: React.FC = () => {
                 </TextField>
 
                 {hasActiveFilters && (
-                  <Button
-                    size="small"
-                    startIcon={<ClearIcon />}
-                    onClick={handleClearFilters}
-                  >
+                  <Button size="small" startIcon={<ClearIcon />} onClick={handleClearFilters}>
                     Clear
                   </Button>
                 )}
@@ -408,47 +368,37 @@ export const NotificationsPage: React.FC = () => {
           <Box
             sx={{
               borderRadius: 2,
-              bgcolor: "background.paper",
-              border: "1px solid",
-              borderColor: "divider",
-              overflow: "hidden",
+              bgcolor: 'background.paper',
+              border: '1px solid',
+              borderColor: 'divider',
+              overflow: 'hidden',
             }}
           >
             {isLoading ? (
               <Box
                 sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
                   py: 8,
                 }}
               >
                 <CircularProgress size={40} />
-                <Typography
-                  variant="body1"
-                  color="text.secondary"
-                  sx={{ ml: 2 }}
-                >
+                <Typography variant="body1" color="text.secondary" sx={{ ml: 2 }}>
                   Loading notifications...
                 </Typography>
               </Box>
             ) : notifications.length === 0 ? (
-              <Box sx={{ textAlign: "center", py: 8, px: 4 }}>
-                <NotificationsIcon
-                  sx={{ fontSize: 64, color: "grey.400", mb: 2 }}
-                />
+              <Box sx={{ textAlign: 'center', py: 8, px: 4 }}>
+                <NotificationsIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
                 <Typography variant="h6" gutterBottom>
                   {hasActiveFilters
-                    ? "No notifications match your filters"
-                    : "No Notifications Yet"}
+                    ? 'No notifications match your filters'
+                    : 'No Notifications Yet'}
                 </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 3 }}
-                >
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
                   {hasActiveFilters
-                    ? "Try adjusting your filters to see more results."
+                    ? 'Try adjusting your filters to see more results.'
                     : "We'll notify you when something important happens with your events, payments, or contracts."}
                 </Typography>
                 {hasActiveFilters && (
@@ -460,32 +410,24 @@ export const NotificationsPage: React.FC = () => {
             ) : (
               <Stack divider={<Divider />}>
                 {notifications.map((notification, index) => {
-                  const category =
-                    notification.notification_type_details?.category;
-                  const priority =
-                    notification.notification_type_details?.priority;
+                  const category = notification.notification_type_details?.category;
+                  const priority = notification.notification_type_details?.priority;
                   const categoryColor = getCategoryColor(theme, category);
 
                   return (
-                    <AnimatedElement
-                      key={notification.id}
-                      animation="fadeIn"
-                      delay={index * 30}
-                    >
+                    <AnimatedElement key={notification.id} animation="fadeIn" delay={index * 30}>
                       <Box
                         sx={{
                           p: { xs: 2, md: 3 },
                           bgcolor: notification.is_read
-                            ? "transparent"
+                            ? 'transparent'
                             : alpha(categoryColor, 0.04),
-                          "&:hover": {
+                          '&:hover': {
                             bgcolor: alpha(theme.palette.action.hover, 0.04),
                           },
-                          transition: "background-color 0.2s ease",
-                          position: "relative",
-                          cursor: notification.action_url
-                            ? "pointer"
-                            : "default",
+                          transition: 'background-color 0.2s ease',
+                          position: 'relative',
+                          cursor: notification.action_url ? 'pointer' : 'default',
                         }}
                         onClick={() => handleNotificationClick(notification)}
                       >
@@ -493,7 +435,7 @@ export const NotificationsPage: React.FC = () => {
                         {!notification.is_read && (
                           <Box
                             sx={{
-                              position: "absolute",
+                              position: 'absolute',
                               left: 0,
                               top: 0,
                               bottom: 0,
@@ -529,9 +471,7 @@ export const NotificationsPage: React.FC = () => {
                                 variant="body2"
                                 sx={{
                                   fontWeight: notification.is_read ? 400 : 600,
-                                  color: notification.is_read
-                                    ? "text.secondary"
-                                    : "text.primary",
+                                  color: notification.is_read ? 'text.secondary' : 'text.primary',
                                 }}
                               >
                                 {notification.title}
@@ -544,11 +484,7 @@ export const NotificationsPage: React.FC = () => {
                                 ml={1}
                               >
                                 {getPriorityIcon(priority)}
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                  noWrap
-                                >
+                                <Typography variant="caption" color="text.secondary" noWrap>
                                   {notification.time_since_created}
                                 </Typography>
                               </Box>
@@ -581,10 +517,7 @@ export const NotificationsPage: React.FC = () => {
                                 )}
                                 {category && (
                                   <Chip
-                                    label={
-                                      notification.notification_type_details
-                                        ?.name || category
-                                    }
+                                    label={notification.notification_type_details?.name || category}
                                     size="small"
                                     sx={{
                                       bgcolor: alpha(categoryColor, 0.08),
@@ -596,19 +529,11 @@ export const NotificationsPage: React.FC = () => {
                               </Box>
 
                               {/* Actions */}
-                              <Box
-                                display="flex"
-                                gap={0.5}
-                                onClick={(e) => e.stopPropagation()}
-                              >
+                              <Box display="flex" gap={0.5} onClick={(e) => e.stopPropagation()}>
                                 {notification.is_read ? (
                                   <IconButton
                                     size="small"
-                                    onClick={() =>
-                                      markAsUnreadMutation.mutate(
-                                        notification.id,
-                                      )
-                                    }
+                                    onClick={() => markAsUnreadMutation.mutate(notification.id)}
                                     disabled={markAsUnreadMutation.isPending}
                                     title="Mark as unread"
                                   >
@@ -617,9 +542,7 @@ export const NotificationsPage: React.FC = () => {
                                 ) : (
                                   <IconButton
                                     size="small"
-                                    onClick={() =>
-                                      markAsReadMutation.mutate(notification.id)
-                                    }
+                                    onClick={() => markAsReadMutation.mutate(notification.id)}
                                     disabled={markAsReadMutation.isPending}
                                     title="Mark as read"
                                   >
@@ -628,14 +551,12 @@ export const NotificationsPage: React.FC = () => {
                                 )}
                                 <IconButton
                                   size="small"
-                                  onClick={() =>
-                                    deleteMutation.mutate(notification.id)
-                                  }
+                                  onClick={() => deleteMutation.mutate(notification.id)}
                                   disabled={deleteMutation.isPending}
                                   title="Delete"
                                   sx={{
-                                    "&:hover": {
-                                      color: "error.main",
+                                    '&:hover': {
+                                      color: 'error.main',
                                     },
                                   }}
                                 >

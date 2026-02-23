@@ -1,16 +1,7 @@
 // frontend/client-portal/src/components/booking/steps/IntelligentDateTimeStep.tsx
 
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import {
-  Box,
-  Typography,
-  Alert,
-  Stack,
-  Avatar,
-  useTheme,
-  alpha,
-  Paper,
-} from '@mui/material';
+import { Box, Typography, Alert, Stack, Avatar, useTheme, alpha, Paper } from '@mui/material';
 import {
   CalendarToday as CalendarIcon,
   CheckCircle as CheckCircleIcon,
@@ -32,10 +23,11 @@ import type {
   VenuePublic,
   PackageVenuePublic,
 } from '../../../types/booking';
-import type { AvailabilitySlot, EventData } from '../../../design-system/visualizations/EventAvailabilityCalendar';
+import type {
+  AvailabilitySlot,
+  EventData,
+} from '../../../design-system/visualizations/EventAvailabilityCalendar';
 import { availabilityConfig } from '../../../config/availability.config';
-
-
 
 interface IntelligentDateTimeStepProps {
   stepData?: DateTimeStepData;
@@ -78,17 +70,19 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
   // Venue state (from props or loaded from package)
   const [venue, setVenue] = useState<VenuePublic | null>(propVenue || null);
   // Note: packageVenue and venueLoading are set but not read - kept for potential future use
-  const [_packageVenue, setPackageVenue] = useState<PackageVenuePublic | null>(propPackageVenue || null);
+  const [_packageVenue, setPackageVenue] = useState<PackageVenuePublic | null>(
+    propPackageVenue || null,
+  );
   const [_venueLoading, setVenueLoading] = useState(false);
 
   // Core state - SIMPLIFIED: Only date selection
   const [selectedDate, setSelectedDate] = useState<Date | null>(
-    stepData?.start_date ? parseISO(stepData.start_date) : null
+    stepData?.start_date ? parseISO(stepData.start_date) : null,
   );
 
   // End date state for multi-day events
   const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(
-    stepData?.end_date ? parseISO(stepData.end_date) : null
+    stepData?.end_date ? parseISO(stepData.end_date) : null,
   );
 
   // Range mode configuration
@@ -113,10 +107,16 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
           if (pv) {
             setPackageVenue(pv);
             // Get full venue details
-            VenuesApi.getVenue(pv.venue).then(setVenue).catch(err => { if (import.meta.env.DEV) console.error(err); });
+            VenuesApi.getVenue(pv.venue)
+              .then(setVenue)
+              .catch((err) => {
+                if (import.meta.env.DEV) console.error(err);
+              });
           }
         })
-        .catch(err => { if (import.meta.env.DEV) console.error(err); })
+        .catch((err) => {
+          if (import.meta.env.DEV) console.error(err);
+        })
         .finally(() => setVenueLoading(false));
     }
   }, [selectedPackageId, propVenue, venue]);
@@ -149,14 +149,15 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
       (blockedDate: string) => {
         // Check if the blocked date matches our selected date
         if (selectedDateString && blockedDate === selectedDateString) {
-          if (import.meta.env.DEV) console.log('[DateTimeStep] Selected date was blocked by another user!');
+          if (import.meta.env.DEV)
+            console.log('[DateTimeStep] Selected date was blocked by another user!');
           setDateBlockedAlert(true);
           // Clear the selection since the date is no longer available
           setSelectedDate(null);
           setSelectedEndDate(null);
         }
       },
-      [selectedDateString]
+      [selectedDateString],
     ),
   });
 
@@ -177,8 +178,8 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
   // Only show events with date_blocked=true as "booked"
   const calendarEvents: EventData[] = useMemo(() => {
     return availabilityEvents
-      .filter(event => event.date_blocked) // Only show truly blocked events
-      .map(event => ({
+      .filter((event) => event.date_blocked) // Only show truly blocked events
+      .map((event) => ({
         id: event.id,
         name: event.name,
         event_type_name: event.event_type_name || '',
@@ -194,7 +195,8 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
     if (!selectedDate) return;
 
     const dateString = format(selectedDate, 'yyyy-MM-dd');
-    const endDateString = isRangeMode && selectedEndDate ? format(selectedEndDate, 'yyyy-MM-dd') : undefined;
+    const endDateString =
+      isRangeMode && selectedEndDate ? format(selectedEndDate, 'yyyy-MM-dd') : undefined;
 
     const data: SimplifiedDateTimeStepData = {
       start_date: dateString,
@@ -206,31 +208,40 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
 
     onDataChangeRef.current(data);
   }, [selectedDate, selectedEndDate, venue, isRangeMode]);
-  
+
   // Handle date selection from calendar (start date in range mode)
-  const handleDateSelect = useCallback((date: Date, _slot: AvailabilitySlot) => {
-    setSelectedDate(date);
-    // Clear end date when a new start date is selected
-    if (isRangeMode) {
-      setSelectedEndDate(null);
-    }
-  }, [isRangeMode]);
+  const handleDateSelect = useCallback(
+    (date: Date, _slot: AvailabilitySlot) => {
+      setSelectedDate(date);
+      // Clear end date when a new start date is selected
+      if (isRangeMode) {
+        setSelectedEndDate(null);
+      }
+    },
+    [isRangeMode],
+  );
 
   // Handle range selection from calendar (both start and end dates)
   const handleRangeSelect = useCallback((startDate: Date, endDate: Date) => {
     setSelectedDate(startDate);
     setSelectedEndDate(endDate);
   }, []);
-  
+
   // Validation helpers
-  const getFieldError = useCallback((fieldName: string) => {
-    return validationErrors[fieldName]?.[0];
-  }, [validationErrors]);
-  
-  const hasFieldError = useCallback((fieldName: string) => {
-    return !!(validationErrors[fieldName]?.length > 0);
-  }, [validationErrors]);
-  
+  const getFieldError = useCallback(
+    (fieldName: string) => {
+      return validationErrors[fieldName]?.[0];
+    },
+    [validationErrors],
+  );
+
+  const hasFieldError = useCallback(
+    (fieldName: string) => {
+      return !!(validationErrors[fieldName]?.length > 0);
+    },
+    [validationErrors],
+  );
+
   // Check if current selection is complete and valid
   const isComplete = useMemo(() => {
     if (isRangeMode) {
@@ -248,7 +259,9 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
     if (isRangeMode && selectedEndDate) {
       const endDateStr = format(selectedEndDate, 'EEEE, MMMM d, yyyy');
       // Calculate nights (the difference in days between dates)
-      const nightCount = Math.ceil((selectedEndDate.getTime() - selectedDate.getTime()) / (1000 * 60 * 60 * 24));
+      const nightCount = Math.ceil(
+        (selectedEndDate.getTime() - selectedDate.getTime()) / (1000 * 60 * 60 * 24),
+      );
       // Days is nights + 1 (e.g., 2 nights = 3 days)
       const dayCount = nightCount + 1;
       return {
@@ -266,7 +279,7 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
       isRange: false,
     };
   }, [selectedDate, selectedEndDate, isRangeMode]);
-  
+
   return (
     <Box>
       {/* Header */}
@@ -284,7 +297,7 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
           >
             <CalendarIcon sx={{ fontSize: 30 }} />
           </Avatar>
-          
+
           <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
             {isRangeMode ? 'Select Your Event Dates' : 'Select Your Event Date'}
           </Typography>
@@ -294,24 +307,19 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
               ? `Choose the start and end dates for your event (up to ${maxRangeDays} ${maxRangeDays === 1 ? 'day' : 'days'})`
               : 'Choose the date for your event'}
           </Typography>
-
         </Box>
       </AnimatedElement>
 
       {/* Alert when selected date becomes blocked */}
       {dateBlockedAlert && (
         <AnimatedElement animation="slideDown" delay={150}>
-          <Alert
-            severity="warning"
-            onClose={handleClearBlockedAlert}
-            sx={{ mb: 3 }}
-          >
+          <Alert severity="warning" onClose={handleClearBlockedAlert} sx={{ mb: 3 }}>
             <Typography variant="body1" fontWeight={500}>
               Date No Longer Available
             </Typography>
             <Typography variant="body2">
-              The date you selected has just been booked by another customer.
-              Please select a different date.
+              The date you selected has just been booked by another customer. Please select a
+              different date.
             </Typography>
           </Alert>
         </AnimatedElement>
@@ -328,11 +336,7 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
 
       {/* Date Selection */}
       <AnimatedElement animation="slideUp" delay={200}>
-        <GlassCard
-          variant="light"
-          intensity="medium"
-          sx={{ p: { xs: 1, sm: 3 } }}
-        >
+        <GlassCard variant="light" intensity="medium" sx={{ p: { xs: 1, sm: 3 } }}>
           <Box sx={{ p: 0 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: { xs: 1.5, sm: 3 } }}>
               <CalendarIcon color="primary" />
@@ -353,8 +357,12 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
                 minRangeDays={minRangeDays}
                 maxRangeDays={maxRangeDays}
                 onRangeSelect={handleRangeSelect}
-                minAdvanceBookingDays={flow?.min_advance_booking_days ?? availabilityConfig.minAdvanceBookingDays}
-                maxAdvanceBookingDays={flow?.max_advance_booking_days ?? availabilityConfig.maxAdvanceBookingDays}
+                minAdvanceBookingDays={
+                  flow?.min_advance_booking_days ?? availabilityConfig.minAdvanceBookingDays
+                }
+                maxAdvanceBookingDays={
+                  flow?.max_advance_booking_days ?? availabilityConfig.maxAdvanceBookingDays
+                }
               />
 
               {selectedDate && (
@@ -389,16 +397,17 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
                       </Box>
                       <Stack spacing={0.5}>
                         <Typography variant="body2" color="text.secondary">
-                          Check-in: {VenuesApi.formatTime(venue.operating_rules.default_check_in_time || '')}
+                          Check-in:{' '}
+                          {VenuesApi.formatTime(venue.operating_rules.default_check_in_time || '')}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          Checkout: {VenuesApi.formatTime(venue.operating_rules.default_checkout_time || '')}
+                          Checkout:{' '}
+                          {VenuesApi.formatTime(venue.operating_rules.default_checkout_time || '')}
                           {venue.is_overnight && ' (next day)'}
                         </Typography>
                       </Stack>
                     </Paper>
                   )}
-
                 </Box>
               )}
             </Stack>
@@ -411,7 +420,7 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
           </Box>
         </GlassCard>
       </AnimatedElement>
-      
+
       {/* Selection Summary */}
       {isComplete && (
         <AnimatedElement animation="slideUp" delay={300}>
@@ -436,13 +445,12 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
                 <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600 }}>
                   {selectedSummary?.isRange ? 'Event Dates' : 'Event Date'}
                 </Typography>
-                <Typography variant="body1">
-                  {selectedSummary?.date}
-                </Typography>
+                <Typography variant="body1">{selectedSummary?.date}</Typography>
                 {selectedSummary?.isRange && selectedSummary.dayCount >= 1 && (
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
                     {selectedSummary.dayCount} {selectedSummary.dayCount === 1 ? 'Day' : 'Days'}
-                    {selectedSummary.nightCount >= 1 && ` ${selectedSummary.nightCount} ${selectedSummary.nightCount === 1 ? 'Night' : 'Nights'}`}
+                    {selectedSummary.nightCount >= 1 &&
+                      ` ${selectedSummary.nightCount} ${selectedSummary.nightCount === 1 ? 'Night' : 'Nights'}`}
                   </Typography>
                 )}
               </Box>
@@ -450,7 +458,7 @@ export const IntelligentDateTimeStep: React.FC<IntelligentDateTimeStepProps> = (
           </GlassCard>
         </AnimatedElement>
       )}
-      
+
       {/* Validation Errors */}
       {Object.keys(validationErrors).length > 0 && (
         <AnimatedElement animation="slideUp" delay={400}>

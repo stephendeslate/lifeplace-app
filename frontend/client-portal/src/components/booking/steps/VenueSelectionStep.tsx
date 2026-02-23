@@ -1,7 +1,7 @@
 // frontend/client-portal/src/components/booking/steps/VenueSelectionStep.tsx
 // Simplified: Only handles venue selection. Package selection moved to PackageSelectionStep.
 
-import React, { useCallback, useMemo, useState, useEffect } from "react";
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -13,25 +13,19 @@ import {
   Chip,
   Alert,
   Skeleton,
-} from "@mui/material";
-import {
-  Check,
-  AccessTime,
-  People,
-  LocationOn,
-  Collections,
-} from "@mui/icons-material";
-import { useQuery } from "@tanstack/react-query";
-import { VenuesApi } from "../../../apis/booking/venues.api";
-import { ProductsApi } from "../../../apis/booking/products.api";
-import { useCurrencySettings } from "../../../hooks/useCurrency";
-import { ImageCarousel, ImageLightbox } from "../../gallery";
-import type { GalleryImage } from "../../../types/gallery.types";
+} from '@mui/material';
+import { Check, AccessTime, People, LocationOn, Collections } from '@mui/icons-material';
+import { useQuery } from '@tanstack/react-query';
+import { VenuesApi } from '../../../apis/booking/venues.api';
+import { ProductsApi } from '../../../apis/booking/products.api';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
+import { ImageCarousel, ImageLightbox } from '../../gallery';
+import type { GalleryImage } from '../../../types/gallery.types';
 import type {
   RentableVenue,
   VenueSelectionStepConfiguration,
-} from "../../../types/booking/venues.types";
-import type { VenueSelectionStepData } from "../../../types/booking/stepData.types";
+} from '../../../types/booking/venues.types';
+import type { VenueSelectionStepData } from '../../../types/booking/stepData.types';
 
 interface VenueSelectionStepProps {
   stepData?: VenueSelectionStepData;
@@ -71,9 +65,8 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
   const maxVenues = config?.max_venues ?? 5;
   const showPricing = config?.show_pricing ?? true;
   const showIncludedHours = config?.show_included_hours ?? true;
-  const title = config?.title || "Select Your Spaces";
-  const description =
-    config?.description || "Choose which spaces to include in your booking.";
+  const title = config?.title || 'Select Your Spaces';
+  const description = config?.description || 'Choose which spaces to include in your booking.';
 
   // Fetch rentable venues with event-type-specific pricing if available
   const {
@@ -81,13 +74,13 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
     isLoading,
     error: fetchError,
   } = useQuery({
-    queryKey: ["rentable-venues", eventTypeId],
+    queryKey: ['rentable-venues', eventTypeId],
     queryFn: () => VenuesApi.getRentableVenues(eventTypeId),
   });
 
   // Debug logging - remove after fixing
   if (import.meta.env.DEV) {
-    console.log("[VenueSelectionStep] Debug:", {
+    console.log('[VenueSelectionStep] Debug:', {
       config,
       configAvailableVenues: config?.available_venues_details,
       apiVenues: venues,
@@ -100,9 +93,7 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
   const availableVenues = config?.available_venues_details || venues || [];
 
   // Sync local state with stepData changes from parent
-  const stepDataVenueIdsString = JSON.stringify(
-    stepData.selected_venue_ids || [],
-  );
+  const stepDataVenueIdsString = JSON.stringify(stepData.selected_venue_ids || []);
   useEffect(() => {
     const newIds = stepData.selected_venue_ids || [];
     if (JSON.stringify(selectedVenueIds) !== stepDataVenueIdsString) {
@@ -152,15 +143,11 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
     const errors: string[] = [];
 
     if (minVenues > 0 && selectedVenueIds.length < minVenues) {
-      errors.push(
-        `Please select at least ${minVenues} space${minVenues > 1 ? "s" : ""}`,
-      );
+      errors.push(`Please select at least ${minVenues} space${minVenues > 1 ? 's' : ''}`);
     }
 
     if (maxVenues > 0 && selectedVenueIds.length > maxVenues) {
-      errors.push(
-        `Cannot select more than ${maxVenues} space${maxVenues > 1 ? "s" : ""}`,
-      );
+      errors.push(`Cannot select more than ${maxVenues} space${maxVenues > 1 ? 's' : ''}`);
     }
 
     // Merge with external validation errors
@@ -177,20 +164,15 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
   };
 
   // Build GalleryImage[] from a venue's featured + gallery images
-  const buildVenueGalleryImages = useCallback(
-    (venue: RentableVenue): GalleryImage[] => {
-      const urls = [venue.featured_image, ...venue.gallery_images].filter(
-        Boolean,
-      ) as string[];
-      return urls.map((src, index) => ({
-        src,
-        alt: `${venue.name} - Photo ${index + 1}`,
-        venueId: venue.id,
-        venueName: venue.name,
-      }));
-    },
-    [],
-  );
+  const buildVenueGalleryImages = useCallback((venue: RentableVenue): GalleryImage[] => {
+    const urls = [venue.featured_image, ...venue.gallery_images].filter(Boolean) as string[];
+    return urls.map((src, index) => ({
+      src,
+      alt: `${venue.name} - Photo ${index + 1}`,
+      venueId: venue.id,
+      venueName: venue.name,
+    }));
+  }, []);
 
   // Open lightbox for a specific venue
   const openLightbox = useCallback(
@@ -223,17 +205,12 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
   // Loading state
   if (isLoading) {
     return (
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <Skeleton variant="text" width="60%" height={40} />
         <Skeleton variant="text" width="80%" />
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {[1, 2, 3].map((i) => (
-            <Skeleton
-              key={i}
-              variant="rectangular"
-              height={200}
-              sx={{ borderRadius: 2 }}
-            />
+            <Skeleton key={i} variant="rectangular" height={200} sx={{ borderRadius: 2 }} />
           ))}
         </Box>
       </Box>
@@ -242,20 +219,12 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
 
   // Error state
   if (fetchError) {
-    return (
-      <Alert severity="error">
-        Failed to load venues. Please refresh and try again.
-      </Alert>
-    );
+    return <Alert severity="error">Failed to load venues. Please refresh and try again.</Alert>;
   }
 
   // No venues available
   if (availableVenues.length === 0) {
-    return (
-      <Alert severity="info">
-        No spaces are currently available for selection.
-      </Alert>
-    );
+    return <Alert severity="info">No spaces are currently available for selection.</Alert>;
   }
 
   return (
@@ -288,7 +257,7 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
       )}
 
       {/* Venue Cards */}
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 3 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 3 }}>
         {availableVenues.map((venue) => {
           const isSelected = isVenueSelected(venue.id);
           // Get effective pricing (uses event-type config if available)
@@ -297,15 +266,15 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
           return (
             <Card
               key={venue.id}
-              variant={isSelected ? "elevation" : "outlined"}
+              variant={isSelected ? 'elevation' : 'outlined'}
               sx={{
                 border: isSelected ? 2 : 1,
-                borderColor: isSelected ? "primary.main" : "divider",
-                position: "relative",
-                transition: "all 0.2s ease-in-out",
-                cursor: "pointer",
-                "&:hover": {
-                  borderColor: isSelected ? "primary.main" : "primary.light",
+                borderColor: isSelected ? 'primary.main' : 'divider',
+                position: 'relative',
+                transition: 'all 0.2s ease-in-out',
+                cursor: 'pointer',
+                '&:hover': {
+                  borderColor: isSelected ? 'primary.main' : 'primary.light',
                   boxShadow: 2,
                 },
               }}
@@ -317,14 +286,14 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
                   label="Included"
                   color="primary"
                   size="small"
-                  sx={{ position: "absolute", top: 16, right: 16, zIndex: 1 }}
+                  sx={{ position: 'absolute', top: 16, right: 16, zIndex: 1 }}
                 />
               )}
 
               <Box
                 sx={{
-                  display: "flex",
-                  flexDirection: { xs: "column", sm: "row" },
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
                 }}
               >
                 {/* Venue Image: carousel when gallery images exist, fallback otherwise */}
@@ -336,16 +305,16 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
                     return (
                       <Box
                         sx={{
-                          width: { xs: "100%", sm: 200 },
+                          width: { xs: '100%', sm: 200 },
                           height: { xs: 150, sm: 200 },
                           flexShrink: 0,
-                          position: "relative",
+                          position: 'relative',
                         }}
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
                       >
                         <ImageCarousel
                           images={galleryImages}
-                          height={{ xs: "150px", sm: "200px" }}
+                          height={{ xs: '150px', sm: '200px' }}
                           showArrows={galleryImages.length > 1}
                           showThumbnails={false}
                           onImageClick={(index) => openLightbox(venue, index)}
@@ -356,16 +325,16 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
                             label={`${galleryImages.length} photos`}
                             size="small"
                             sx={{
-                              position: "absolute",
+                              position: 'absolute',
                               bottom: 8,
                               left: 8,
                               zIndex: 2,
-                              backgroundColor: "rgba(0, 0, 0, 0.6)",
-                              color: "#fff",
-                              fontSize: "0.7rem",
+                              backgroundColor: 'rgba(0, 0, 0, 0.6)',
+                              color: '#fff',
+                              fontSize: '0.7rem',
                               height: 24,
-                              "& .MuiChip-icon": { color: "#fff" },
-                              cursor: "pointer",
+                              '& .MuiChip-icon': { color: '#fff' },
+                              cursor: 'pointer',
                             }}
                             onClick={(e: React.MouseEvent) => {
                               e.stopPropagation();
@@ -384,9 +353,9 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
                       alt={venue.name}
                       loading="lazy"
                       sx={{
-                        width: { xs: "100%", sm: 200 },
-                        height: { xs: 150, sm: "auto" },
-                        objectFit: "cover",
+                        width: { xs: '100%', sm: 200 },
+                        height: { xs: 150, sm: 'auto' },
+                        objectFit: 'cover',
                       }}
                     />
                   );
@@ -398,19 +367,13 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
                   </Typography>
 
                   {venue.description && (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mb: 2 }}
-                    >
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                       {venue.description}
                     </Typography>
                   )}
 
                   {/* Venue Features */}
-                  <Box
-                    sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}
-                  >
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
                     <Chip
                       icon={<People />}
                       label={`${venue.minimum_capacity}-${venue.maximum_capacity} guests`}
@@ -422,12 +385,12 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
                         icon={<AccessTime />}
                         label={
                           pricing.isAllDayAccess
-                            ? "All-day access"
+                            ? 'All-day access'
                             : `${pricing.includedHours} hours included`
                         }
                         size="small"
                         variant="outlined"
-                        color={pricing.isAllDayAccess ? "success" : "default"}
+                        color={pricing.isAllDayAccess ? 'success' : 'default'}
                       />
                     )}
                     {venue.location_description && (
@@ -442,9 +405,7 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
 
                   {/* Pricing */}
                   {showPricing && (
-                    <Box
-                      sx={{ display: "flex", alignItems: "baseline", gap: 1 }}
-                    >
+                    <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
                       <Typography variant="h5" color="primary">
                         {formatPrice(pricing.basePrice)}
                       </Typography>
@@ -461,14 +422,14 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
 
               <CardActions sx={{ px: 2, pb: 2 }}>
                 <Button
-                  variant={isSelected ? "contained" : "outlined"}
+                  variant={isSelected ? 'contained' : 'outlined'}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleVenueToggle(venue);
                   }}
                   fullWidth
                 >
-                  {isSelected ? "Included" : "Add to Booking"}
+                  {isSelected ? 'Included' : 'Add to Booking'}
                 </Button>
               </CardActions>
             </Card>
@@ -480,8 +441,7 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
       {selectedVenueIds.length > 0 && (
         <Alert severity="info" sx={{ mb: 2 }}>
           <Typography variant="body2">
-            <strong>Selected:</strong>{" "}
-            {selectedVenueObjects.map((v) => v.name).join(", ")}
+            <strong>Selected:</strong> {selectedVenueObjects.map((v) => v.name).join(', ')}
           </Typography>
           <Typography variant="caption" color="text.secondary">
             You'll choose your package in the next step.
@@ -491,7 +451,7 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
 
       {/* Validation indicator */}
       {isValidating && (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 2 }}>
           <Typography variant="body2" color="text.secondary">
             Validating selection...
           </Typography>
@@ -511,9 +471,7 @@ export const VenueSelectionStep: React.FC<VenueSelectionStepProps> = ({
         ctaButton={
           lightboxVenueId !== null
             ? {
-                label: isVenueSelected(lightboxVenueId)
-                  ? "Remove This Venue"
-                  : "Select This Venue",
+                label: isVenueSelected(lightboxVenueId) ? 'Remove This Venue' : 'Select This Venue',
                 onClick: handleLightboxSelect,
               }
             : undefined

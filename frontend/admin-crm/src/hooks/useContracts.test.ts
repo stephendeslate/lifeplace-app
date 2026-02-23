@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import {
   useContractTemplates,
   useCreateContractTemplate,
@@ -17,13 +17,13 @@ import {
   useApproveAmendment,
   useRejectAmendment,
   useSendContract,
-} from "./useContracts";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+} from './useContracts';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-describe("Contract Templates", () => {
-  it("fetches contract templates", async () => {
+describe('Contract Templates', () => {
+  it('fetches contract templates', async () => {
     const { result } = renderHook(() => useContractTemplates(), {
       wrapper: createTestWrapper(),
     });
@@ -38,7 +38,7 @@ describe("Contract Templates", () => {
     expect(result.current.data).toBeDefined();
   });
 
-  it("creates a contract template", async () => {
+  it('creates a contract template', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useCreateContractTemplate(), {
       wrapper,
@@ -46,8 +46,8 @@ describe("Contract Templates", () => {
 
     act(() => {
       result.current.mutate({
-        name: "New Contract Template",
-        content: "<p>Contract content</p>",
+        name: 'New Contract Template',
+        content: '<p>Contract content</p>',
       } as never);
     });
 
@@ -60,14 +60,14 @@ describe("Contract Templates", () => {
     );
   });
 
-  it("updates a contract template", async () => {
+  it('updates a contract template', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useUpdateContractTemplate(), {
       wrapper,
     });
 
     act(() => {
-      result.current.mutate({ id: 1, data: { name: "Updated" } } as never);
+      result.current.mutate({ id: 1, data: { name: 'Updated' } } as never);
     });
 
     await waitFor(
@@ -79,7 +79,7 @@ describe("Contract Templates", () => {
     );
   });
 
-  it("deletes a contract template", async () => {
+  it('deletes a contract template', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useDeleteContractTemplate(), {
       wrapper,
@@ -98,13 +98,10 @@ describe("Contract Templates", () => {
     );
   });
 
-  it("handles create error", async () => {
+  it('handles create error', async () => {
     server.use(
-      http.post("http://localhost:8000/api/contracts/templates/", () => {
-        return HttpResponse.json(
-          { detail: "Validation error" },
-          { status: 400 },
-        );
+      http.post('http://localhost:8000/api/contracts/templates/', () => {
+        return HttpResponse.json({ detail: 'Validation error' }, { status: 400 });
       }),
     );
 
@@ -114,7 +111,7 @@ describe("Contract Templates", () => {
     });
 
     act(() => {
-      result.current.mutate({ name: "Bad Template" } as never);
+      result.current.mutate({ name: 'Bad Template' } as never);
     });
 
     await waitFor(
@@ -126,8 +123,8 @@ describe("Contract Templates", () => {
   });
 });
 
-describe("Event Contracts", () => {
-  it("fetches event contracts", async () => {
+describe('Event Contracts', () => {
+  it('fetches event contracts', async () => {
     const { result } = renderHook(() => useEventContracts(), {
       wrapper: createTestWrapper(),
     });
@@ -143,7 +140,7 @@ describe("Event Contracts", () => {
     expect(Array.isArray(result.current.data)).toBe(true);
   });
 
-  it("creates an event contract", async () => {
+  it('creates an event contract', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useCreateEventContract(), { wrapper });
 
@@ -163,14 +160,14 @@ describe("Event Contracts", () => {
     );
   });
 
-  it("updates an event contract", async () => {
+  it('updates an event contract', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useUpdateEventContract(), { wrapper });
 
     act(() => {
       result.current.mutate({
         id: 1,
-        data: { content: "<p>Updated</p>" },
+        data: { content: '<p>Updated</p>' },
       } as never);
     });
 
@@ -183,7 +180,7 @@ describe("Event Contracts", () => {
     );
   });
 
-  it("deletes an event contract", async () => {
+  it('deletes an event contract', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useDeleteEventContract(), { wrapper });
 
@@ -200,7 +197,7 @@ describe("Event Contracts", () => {
     );
   });
 
-  it("fetches contracts for a specific event", async () => {
+  it('fetches contracts for a specific event', async () => {
     const { result } = renderHook(() => useContractsForEvent(1), {
       wrapper: createTestWrapper(),
     });
@@ -216,7 +213,7 @@ describe("Event Contracts", () => {
     expect(Array.isArray(result.current.data)).toBe(true);
   });
 
-  it("fetches contracts for a specific client", async () => {
+  it('fetches contracts for a specific client', async () => {
     const { result } = renderHook(() => useContractsForClient(1), {
       wrapper: createTestWrapper(),
     });
@@ -232,8 +229,8 @@ describe("Event Contracts", () => {
   });
 });
 
-describe("Contract Operations", () => {
-  it("adds a signature to a contract", async () => {
+describe('Contract Operations', () => {
+  it('adds a signature to a contract', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useAddContractSignature(), { wrapper });
 
@@ -242,10 +239,10 @@ describe("Contract Operations", () => {
         contractId: 1,
         data: {
           signer: 1,
-          role: "CLIENT",
-          signature_data: "base64data",
-          signer_name: "John Doe",
-          signer_email: "john@example.com",
+          role: 'CLIENT',
+          signature_data: 'base64data',
+          signer_name: 'John Doe',
+          signer_email: 'john@example.com',
         },
       } as never);
     });
@@ -259,12 +256,12 @@ describe("Contract Operations", () => {
     );
   });
 
-  it("voids a contract", async () => {
+  it('voids a contract', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useVoidContract(), { wrapper });
 
     act(() => {
-      result.current.mutate({ id: 1, reason: "Test void" } as never);
+      result.current.mutate({ id: 1, reason: 'Test void' } as never);
     });
 
     await waitFor(
@@ -276,7 +273,7 @@ describe("Contract Operations", () => {
     );
   });
 
-  it("sends a contract", async () => {
+  it('sends a contract', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useSendContract(), { wrapper });
 
@@ -294,8 +291,8 @@ describe("Contract Operations", () => {
   });
 });
 
-describe("Contract Amendments", () => {
-  it("requests an amendment", async () => {
+describe('Contract Amendments', () => {
+  it('requests an amendment', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useRequestAmendment(), { wrapper });
 
@@ -303,8 +300,8 @@ describe("Contract Amendments", () => {
       result.current.mutate({
         contractId: 1,
         data: {
-          amendment_reason: "Date change",
-          changes_description: "Changed date",
+          amendment_reason: 'Date change',
+          changes_description: 'Changed date',
         },
       } as never);
     });
@@ -318,7 +315,7 @@ describe("Contract Amendments", () => {
     );
   });
 
-  it("approves an amendment", async () => {
+  it('approves an amendment', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useApproveAmendment(), { wrapper });
 
@@ -335,12 +332,12 @@ describe("Contract Amendments", () => {
     );
   });
 
-  it("rejects an amendment", async () => {
+  it('rejects an amendment', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useRejectAmendment(), { wrapper });
 
     act(() => {
-      result.current.mutate({ id: 1, reviewNotes: "Not approved" } as never);
+      result.current.mutate({ id: 1, reviewNotes: 'Not approved' } as never);
     });
 
     await waitFor(

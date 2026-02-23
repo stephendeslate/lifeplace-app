@@ -12,12 +12,7 @@ import {
   alpha,
   CircularProgress,
 } from '@mui/material';
-import {
-  Email,
-  LockReset,
-  ArrowBack,
-  CheckCircle,
-} from '@mui/icons-material';
+import { Email, LockReset, ArrowBack, CheckCircle } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useToastActions } from '../../contexts/ToastContext';
 import { authApi } from '../../apis/auth.api';
@@ -64,7 +59,8 @@ export const ForgotPasswordForm: React.FC = () => {
       setIsSuccess(true);
       showSuccess('Email Sent', response.detail);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to send reset email. Please try again.';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to send reset email. Please try again.';
       showError('Request Failed', errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -108,11 +104,7 @@ export const ForgotPasswordForm: React.FC = () => {
             Check Your Email
           </Typography>
 
-          <Typography
-            variant="body1"
-            color="text.secondary"
-            gutterBottom
-          >
+          <Typography variant="body1" color="text.secondary" gutterBottom>
             We've sent password reset instructions to:
           </Typography>
 
@@ -124,11 +116,7 @@ export const ForgotPasswordForm: React.FC = () => {
             {email}
           </Typography>
 
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ fontSize: '0.875rem' }}
-          >
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.875rem' }}>
             If you don't see the email, check your spam folder.
           </Typography>
         </Box>
@@ -190,11 +178,7 @@ export const ForgotPasswordForm: React.FC = () => {
           Forgot Password?
         </Typography>
 
-        <Typography
-          variant="body2"
-          color="text.secondary"
-          sx={{ lineHeight: 1.6 }}
-        >
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
           Enter your email address and we'll send you instructions to reset your password.
         </Typography>
       </Box>

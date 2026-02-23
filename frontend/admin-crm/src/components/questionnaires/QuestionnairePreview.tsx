@@ -64,7 +64,7 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
             disabled
             size={compact ? 'small' : 'medium'}
           />,
-          field
+          field,
         );
 
       case 'number':
@@ -78,7 +78,7 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
             disabled
             size={compact ? 'small' : 'medium'}
           />,
-          field
+          field,
         );
 
       case 'email':
@@ -92,7 +92,7 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
             disabled
             size={compact ? 'small' : 'medium'}
           />,
-          field
+          field,
         );
 
       case 'phone':
@@ -106,7 +106,7 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
             disabled
             size={compact ? 'small' : 'medium'}
           />,
-          field
+          field,
         );
 
       case 'date':
@@ -119,10 +119,10 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
                 fullWidth: true,
                 required: isRequired,
                 size: compact ? 'small' : 'medium',
-              }
+              },
             }}
           />,
-          field
+          field,
         );
 
       case 'time':
@@ -135,10 +135,10 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
                 fullWidth: true,
                 required: isRequired,
                 size: compact ? 'small' : 'medium',
-              }
+              },
             }}
           />,
-          field
+          field,
         );
 
       case 'boolean':
@@ -148,18 +148,14 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
             label={label}
             sx={{ alignItems: 'flex-start' }}
           />,
-          field
+          field,
         );
 
       case 'select':
         return withDescription(
           <FormControl fullWidth size={compact ? 'small' : 'medium'}>
             <InputLabel>{label}</InputLabel>
-            <Select
-              label={label}
-              required={isRequired}
-              disabled
-            >
+            <Select label={label} required={isRequired} disabled>
               {field.options?.map((option, index) => (
                 <MenuItem key={index} value={option}>
                   {option}
@@ -167,7 +163,7 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
               ))}
             </Select>
           </FormControl>,
-          field
+          field,
         );
 
       case 'multi-select':
@@ -186,7 +182,7 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
               ))}
             </Stack>
           </Box>,
-          field
+          field,
         );
 
       case 'file':
@@ -209,15 +205,20 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
               Choose file to upload
             </Button>
             {(field.max_file_size_mb || field.allowed_file_types?.length > 0) && (
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                {field.allowed_file_types?.length > 0 && `Allowed: ${field.allowed_file_types.join(', ')}`}
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 0.5, display: 'block' }}
+              >
+                {field.allowed_file_types?.length > 0 &&
+                  `Allowed: ${field.allowed_file_types.join(', ')}`}
                 {field.allowed_file_types?.length > 0 && field.max_file_size_mb && ' • '}
                 {field.max_file_size_mb && `Max size: ${field.max_file_size_mb}MB`}
                 {field.max_files > 1 && ` • Up to ${field.max_files} files`}
               </Typography>
             )}
           </Box>,
-          field
+          field,
         );
 
       case 'guests':
@@ -258,7 +259,7 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
               />
             )}
           </Box>,
-          field
+          field,
         );
 
       default:
@@ -271,7 +272,7 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
             disabled
             size={compact ? 'small' : 'medium'}
           />,
-          field
+          field,
         );
     }
   };
@@ -302,11 +303,9 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
             <Typography variant="h6" fontWeight="bold">
               {questionnaire.name}
             </Typography>
-            {!questionnaire.is_active && (
-              <Chip label="Inactive" size="small" color="default" />
-            )}
+            {!questionnaire.is_active && <Chip label="Inactive" size="small" color="default" />}
           </Box>
-          
+
           {questionnaire.event_type_name && (
             <Chip
               label={`For: ${questionnaire.event_type_name}`}
@@ -324,20 +323,13 @@ export const QuestionnairePreview: React.FC<QuestionnairePreviewProps> = ({
           {questionnaire.fields
             ?.sort((a, b) => a.order - b.order)
             .map((field) => (
-              <Box key={field.id}>
-                {renderField(field)}
-              </Box>
+              <Box key={field.id}>{renderField(field)}</Box>
             ))}
         </Stack>
 
         {/* Submit Button Preview */}
         <Box mt={4} pt={3} borderTop={1} borderColor="divider">
-          <Button
-            variant="contained"
-            size="large"
-            disabled
-            fullWidth={compact}
-          >
+          <Button variant="contained" size="large" disabled fullWidth={compact}>
             Submit Questionnaire
           </Button>
         </Box>

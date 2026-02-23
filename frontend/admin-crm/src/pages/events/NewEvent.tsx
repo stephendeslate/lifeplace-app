@@ -17,10 +17,7 @@ export const NewEvent: React.FC = () => {
   const { createEvent, isCreatingEvent } = useEvents();
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Events', path: '/events' },
-      { label: 'New Event' },
-    ]);
+    setBreadcrumbs([{ label: 'Events', path: '/events' }, { label: 'New Event' }]);
   }, [setBreadcrumbs]);
 
   const handleSubmit = (data: CreateEventData | Partial<CreateEventData>) => {
@@ -66,11 +63,7 @@ export const NewEvent: React.FC = () => {
         }}
       >
         <Box sx={{ maxWidth: 900, mx: 'auto' }}>
-          <EventForm
-            onSubmit={handleSubmit}
-            onCancel={handleCancel}
-            isLoading={isCreatingEvent}
-          />
+          <EventForm onSubmit={handleSubmit} onCancel={handleCancel} isLoading={isCreatingEvent} />
         </Box>
       </Paper>
     </ModernPageLayout>

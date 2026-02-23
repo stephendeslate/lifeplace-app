@@ -39,24 +39,20 @@ interface EnhancedSettingsNavigationProps {
   onToggleCollapse?: () => void;
 }
 
-export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProps> = ({ 
+export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProps> = ({
   onItemClick,
   collapsed = false,
-  onToggleCollapse 
+  onToggleCollapse,
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
   const location = useLocation();
-  
-  const {
-    favorites,
-    addFavorite,
-    removeFavorite,
-  } = useEnhancedSettings();
 
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(() => 
-    settingsNavigationConfig.map(g => g.id)
+  const { favorites, addFavorite, removeFavorite } = useEnhancedSettings();
+
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(() =>
+    settingsNavigationConfig.map((g) => g.id),
   );
 
   const handleItemClick = (item: SettingsNavigationItem) => {
@@ -69,15 +65,13 @@ export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProp
   };
 
   const toggleGroup = (groupId: string) => {
-    setExpandedGroups(prev =>
-      prev.includes(groupId)
-        ? prev.filter(id => id !== groupId)
-        : [...prev, groupId]
+    setExpandedGroups((prev) =>
+      prev.includes(groupId) ? prev.filter((id) => id !== groupId) : [...prev, groupId],
     );
   };
 
   const isFavorite = (itemId: string) => {
-    return favorites.some(fav => fav.id === itemId);
+    return favorites.some((fav) => fav.id === itemId);
   };
 
   const toggleFavorite = (item: SettingsNavigationItem, event: React.MouseEvent) => {
@@ -102,11 +96,12 @@ export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProp
     const isFav = isFavorite(item.id);
 
     return (
-      <ListItem 
-        key={item.id} 
+      <ListItem
+        key={item.id}
         disablePadding
         secondaryAction={
-          !collapsed && showFavoriteButton && (
+          !collapsed &&
+          showFavoriteButton && (
             <Zoom in={true}>
               <IconButton
                 edge="end"
@@ -193,7 +188,7 @@ export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProp
 
   const renderNavigationGroup = (group: SettingsNavigationGroup) => {
     const isExpanded = expandedGroups.includes(group.id);
-    const hasActiveItem = group.items.some(item => isItemActive(item));
+    const hasActiveItem = group.items.some((item) => isItemActive(item));
 
     return (
       <Box key={group.id} sx={{ mb: 2 }}>
@@ -237,9 +232,7 @@ export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProp
           )}
         </ListItemButton>
         <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-          <List disablePadding>
-            {group.items.map(item => renderNavigationItem(item))}
-          </List>
+          <List disablePadding>{group.items.map((item) => renderNavigationItem(item))}</List>
         </Collapse>
       </Box>
     );
@@ -268,10 +261,10 @@ export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProp
               Favorites
             </Typography>
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-              {favorites.slice(0, 3).map(fav => {
+              {favorites.slice(0, 3).map((fav) => {
                 const item = settingsNavigationConfig
-                  .flatMap(g => g.items)
-                  .find(i => i.id === fav.id);
+                  .flatMap((g) => g.items)
+                  .find((i) => i.id === fav.id);
                 return item ? (
                   <Chip
                     key={fav.id}
@@ -290,7 +283,6 @@ export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProp
             </Box>
           </Box>
         )}
-
       </Box>
     );
   };
@@ -310,11 +302,11 @@ export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProp
       }}
     >
       {/* Header */}
-      <Box 
-        sx={{ 
-          p: collapsed ? 1 : 2, 
-          borderBottom: 1, 
-          borderColor: 'divider', 
+      <Box
+        sx={{
+          p: collapsed ? 1 : 2,
+          borderBottom: 1,
+          borderColor: 'divider',
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
@@ -344,7 +336,6 @@ export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProp
         )}
       </Box>
 
-
       {/* Quick Access */}
       {renderQuickAccess()}
 
@@ -353,12 +344,9 @@ export const EnhancedSettingsNavigation: React.FC<EnhancedSettingsNavigationProp
         {filteredConfig.map((group, index) => (
           <React.Fragment key={group.id}>
             {renderNavigationGroup(group)}
-            {index < filteredConfig.length - 1 && !collapsed && (
-              <Divider sx={{ mx: 2, my: 1 }} />
-            )}
+            {index < filteredConfig.length - 1 && !collapsed && <Divider sx={{ mx: 2, my: 1 }} />}
           </React.Fragment>
         ))}
-        
       </Box>
 
       {/* Quick Stats (when not collapsed) */}

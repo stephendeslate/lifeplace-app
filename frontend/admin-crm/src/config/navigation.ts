@@ -111,7 +111,7 @@ export const navigationConfig: NavigationGroup[] = [
         icon: Assignment,
         roles: ['ADMIN'],
       },
-     ],
+    ],
     roles: ['ADMIN'],
   },
   {
@@ -293,7 +293,7 @@ export const getNavigationItemByPath = (path: string) => {
       if (item.path === path) {
         return { group, item };
       }
-      
+
       // Check children
       if (item.children) {
         for (const child of item.children) {
@@ -310,15 +310,17 @@ export const getNavigationItemByPath = (path: string) => {
 // Helper function to filter navigation by user role
 export const filterNavigationByRole = (role: string): NavigationGroup[] => {
   return navigationConfig
-    .filter(group => !group.roles || group.roles.includes(role as 'ADMIN' | 'CLIENT'))
-    .map(group => ({
+    .filter((group) => !group.roles || group.roles.includes(role as 'ADMIN' | 'CLIENT'))
+    .map((group) => ({
       ...group,
       items: group.items
-        .filter(item => !item.roles || item.roles.includes(role as 'ADMIN' | 'CLIENT'))
-        .map(item => ({
+        .filter((item) => !item.roles || item.roles.includes(role as 'ADMIN' | 'CLIENT'))
+        .map((item) => ({
           ...item,
-          children: item.children?.filter(child => !child.roles || child.roles.includes(role as 'ADMIN' | 'CLIENT'))
-        }))
+          children: item.children?.filter(
+            (child) => !child.roles || child.roles.includes(role as 'ADMIN' | 'CLIENT'),
+          ),
+        })),
     }))
-    .filter(group => group.items.length > 0);
+    .filter((group) => group.items.length > 0);
 };

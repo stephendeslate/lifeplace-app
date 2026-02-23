@@ -5,7 +5,7 @@ import type {
   StageType,
   AutomationType,
   WebhookEventType,
-} from "../../../types/workflows.types";
+} from '../../../types/workflows.types';
 
 export function createMockWorkflowTemplate(
   overrides: Partial<WorkflowTemplate> = {},
@@ -16,24 +16,24 @@ export function createMockWorkflowTemplate(
     name: `Workflow Template ${id}`,
     description: `Workflow template description ${id}`,
     event_type: 1,
-    event_type_name: "Wedding",
+    event_type_name: 'Wedding',
     is_active: true,
     lead_stage_auto_stop: true,
     stages_count: 5,
     events_using_count: 3,
-    created_at: "2024-06-15T10:00:00Z",
-    updated_at: "2024-06-15T10:00:00Z",
+    created_at: '2024-06-15T10:00:00Z',
+    updated_at: '2024-06-15T10:00:00Z',
     ...overrides,
   };
 }
 
 export function createMockWorkflowTemplates(count: number): WorkflowTemplate[] {
   const names = [
-    "Wedding Full Pipeline",
-    "Corporate Event Flow",
-    "Quick Booking Flow",
-    "VIP Client Pipeline",
-    "Team Building Workflow",
+    'Wedding Full Pipeline',
+    'Corporate Event Flow',
+    'Quick Booking Flow',
+    'VIP Client Pipeline',
+    'Team Building Workflow',
   ];
   return Array.from({ length: count }, (_, i) =>
     createMockWorkflowTemplate({
@@ -48,17 +48,15 @@ export function createMockWorkflowTemplates(count: number): WorkflowTemplate[] {
 
 export const mockWorkflowTemplates = createMockWorkflowTemplates(5);
 
-export function createMockWorkflowStage(
-  overrides: Partial<WorkflowStage> = {},
-): WorkflowStage {
+export function createMockWorkflowStage(overrides: Partial<WorkflowStage> = {}): WorkflowStage {
   const id = overrides.id || Math.floor(Math.random() * 10000);
-  const stage: StageType = overrides.stage || "LEAD";
+  const stage: StageType = overrides.stage || 'LEAD';
   const stageDisplayMap: Record<StageType, string> = {
-    LEAD: "Lead",
-    PRODUCTION: "Production",
-    POST_PRODUCTION: "Post-Production",
+    LEAD: 'Lead',
+    PRODUCTION: 'Production',
+    POST_PRODUCTION: 'Post-Production',
   };
-  const automationType: AutomationType = overrides.automation_type || "EMAIL";
+  const automationType: AutomationType = overrides.automation_type || 'EMAIL';
   return {
     id,
     template: 1,
@@ -68,13 +66,13 @@ export function createMockWorkflowStage(
     order: overrides.order || 1,
     is_automated: true,
     automation_type: automationType,
-    trigger_time: "ON_CREATION",
+    trigger_time: 'ON_CREATION',
     trigger_after_stage: null,
-    email_template: automationType === "EMAIL" ? 1 : null,
-    contract_template: automationType === "CONTRACT" ? 1 : null,
-    questionnaire_template: automationType === "QUESTIONNAIRE" ? 1 : null,
-    task_description: automationType === "TASK" ? "Complete this task" : "",
-    progression_condition: "",
+    email_template: automationType === 'EMAIL' ? 1 : null,
+    contract_template: automationType === 'CONTRACT' ? 1 : null,
+    questionnaire_template: automationType === 'QUESTIONNAIRE' ? 1 : null,
+    task_description: automationType === 'TASK' ? 'Complete this task' : '',
+    progression_condition: '',
     required_tasks_completed: false,
     trigger_on_payment_received: false,
     trigger_on_quote_accepted: false,
@@ -82,8 +80,8 @@ export function createMockWorkflowStage(
     trigger_on_event_created: false,
     trigger_on_quote_sent: false,
     metadata: {},
-    created_at: "2024-06-15T10:00:00Z",
-    updated_at: "2024-06-15T10:00:00Z",
+    created_at: '2024-06-15T10:00:00Z',
+    updated_at: '2024-06-15T10:00:00Z',
     ...overrides,
   };
 }
@@ -94,22 +92,22 @@ export function createMockWorkflowStages(count: number): WorkflowStage[] {
     stage: StageType;
     automationType: AutomationType;
   }> = [
-    { name: "Send Welcome Email", stage: "LEAD", automationType: "EMAIL" },
-    { name: "Generate Quote", stage: "LEAD", automationType: "QUOTE" },
+    { name: 'Send Welcome Email', stage: 'LEAD', automationType: 'EMAIL' },
+    { name: 'Generate Quote', stage: 'LEAD', automationType: 'QUOTE' },
     {
-      name: "Send Contract",
-      stage: "PRODUCTION",
-      automationType: "CONTRACT",
+      name: 'Send Contract',
+      stage: 'PRODUCTION',
+      automationType: 'CONTRACT',
     },
     {
-      name: "Send Questionnaire",
-      stage: "PRODUCTION",
-      automationType: "QUESTIONNAIRE",
+      name: 'Send Questionnaire',
+      stage: 'PRODUCTION',
+      automationType: 'QUESTIONNAIRE',
     },
     {
-      name: "Thank You Email",
-      stage: "POST_PRODUCTION",
-      automationType: "EMAIL",
+      name: 'Thank You Email',
+      stage: 'POST_PRODUCTION',
+      automationType: 'EMAIL',
     },
   ];
   return Array.from({ length: count }, (_, i) => {
@@ -134,29 +132,29 @@ export function createMockWorkflowWebhook(
     id,
     name: `Webhook ${id}`,
     url: `https://example.com/webhooks/${id}`,
-    secret: "whsec_test_secret_key",
+    secret: 'whsec_test_secret_key',
     is_active: true,
-    events: ["STAGE_COMPLETED"] as WebhookEventType[],
+    events: ['STAGE_COMPLETED'] as WebhookEventType[],
     workflow_template: 1,
-    workflow_template_name: "Wedding Full Pipeline",
-    headers: { "Content-Type": "application/json" },
-    last_triggered_at: "2024-06-15T10:00:00Z",
+    workflow_template_name: 'Wedding Full Pipeline',
+    headers: { 'Content-Type': 'application/json' },
+    last_triggered_at: '2024-06-15T10:00:00Z',
     failure_count: 0,
     delivery_count: 25,
     success_rate: 100,
-    created_at: "2024-06-15T10:00:00Z",
-    updated_at: "2024-06-15T10:00:00Z",
+    created_at: '2024-06-15T10:00:00Z',
+    updated_at: '2024-06-15T10:00:00Z',
     ...overrides,
   };
 }
 
 export function createMockWorkflowWebhooks(count: number): WorkflowWebhook[] {
   const webhookEvents: WebhookEventType[][] = [
-    ["STAGE_ENTERED", "STAGE_COMPLETED"],
-    ["AUTOMATION_EXECUTED"],
-    ["WORKFLOW_COMPLETED"],
-    ["STAGE_COMPLETED", "WORKFLOW_COMPLETED"],
-    ["STAGE_ENTERED"],
+    ['STAGE_ENTERED', 'STAGE_COMPLETED'],
+    ['AUTOMATION_EXECUTED'],
+    ['WORKFLOW_COMPLETED'],
+    ['STAGE_COMPLETED', 'WORKFLOW_COMPLETED'],
+    ['STAGE_ENTERED'],
   ];
   return Array.from({ length: count }, (_, i) =>
     createMockWorkflowWebhook({

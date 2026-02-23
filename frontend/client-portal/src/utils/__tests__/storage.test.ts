@@ -382,7 +382,14 @@ describe('Storage Utilities', () => {
   describe('Clear Functions', () => {
     it('clearAuth removes tokens and user', () => {
       storage.setTokens({ access: 'token', refresh: 'refresh' });
-      storage.setUser({ id: '1', email: 'test@test.com', first_name: 'Test', last_name: 'User', is_active: true, date_joined: '' });
+      storage.setUser({
+        id: '1',
+        email: 'test@test.com',
+        first_name: 'Test',
+        last_name: 'User',
+        is_active: true,
+        date_joined: '',
+      });
 
       storage.clearAuth();
 
@@ -392,10 +399,23 @@ describe('Storage Utilities', () => {
 
     it('clearUserData removes user-specific data but keeps preferences', () => {
       storage.setTokens({ access: 'token', refresh: 'refresh' });
-      storage.setUser({ id: '1', email: 'test@test.com', first_name: 'Test', last_name: 'User', is_active: true, date_joined: '' });
+      storage.setUser({
+        id: '1',
+        email: 'test@test.com',
+        first_name: 'Test',
+        last_name: 'User',
+        is_active: true,
+        date_joined: '',
+      });
       storage.setPreferences({ language: 'es' });
       storage.addFavorite({ type: 'event', title: 'Event' });
-      storage.addToCart({ eventId: '1', eventTitle: 'E', ticketType: 'VIP', quantity: 1, price: 100 });
+      storage.addToCart({
+        eventId: '1',
+        eventTitle: 'E',
+        ticketType: 'VIP',
+        quantity: 1,
+        price: 100,
+      });
 
       storage.clearUserData();
 
@@ -408,7 +428,14 @@ describe('Storage Utilities', () => {
 
     it('clearAll removes everything', () => {
       storage.setTokens({ access: 'token', refresh: 'refresh' });
-      storage.setUser({ id: '1', email: 'test@test.com', first_name: 'Test', last_name: 'User', is_active: true, date_joined: '' });
+      storage.setUser({
+        id: '1',
+        email: 'test@test.com',
+        first_name: 'Test',
+        last_name: 'User',
+        is_active: true,
+        date_joined: '',
+      });
       storage.setPreferences({ language: 'es' });
       storage.setThemeMode('dark');
 

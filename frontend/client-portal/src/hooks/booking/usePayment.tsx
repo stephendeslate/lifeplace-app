@@ -3,10 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { PaymentApi } from '../../apis/booking/payment.api';
 import { ErrorHandler } from '../../utils/errorHandler';
-import type {
-  PaymentGateway,
-  PaymentGatewayResponse,
-} from '../../types/booking';
+import type { PaymentGateway, PaymentGatewayResponse } from '../../types/booking';
 
 // Hook for managing payment gateways
 export const usePaymentGateways = () => {
@@ -17,7 +14,7 @@ export const usePaymentGateways = () => {
   const fetchGateways = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await PaymentApi.getPaymentGateways();
       setGateways(data);
@@ -90,10 +87,10 @@ export const usePaymentGateway = (gatewayId?: number) => {
 
   const fetchGateway = useCallback(async () => {
     if (!gatewayId) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await PaymentApi.getPaymentGateway(gatewayId);
       setGateway(data);
@@ -120,9 +117,12 @@ export const usePaymentGateway = (gatewayId?: number) => {
   }, [gateway]);
 
   // Check if gateway supports a specific feature
-  const supportsFeature = useCallback((feature: string) => {
-    return gateway ? PaymentApi.supportsFeature(gateway, feature) : false;
-  }, [gateway]);
+  const supportsFeature = useCallback(
+    (feature: string) => {
+      return gateway ? PaymentApi.supportsFeature(gateway, feature) : false;
+    },
+    [gateway],
+  );
 
   return {
     gateway,
@@ -140,34 +140,31 @@ export const usePaymentGateway = (gatewayId?: number) => {
 
 // Hook for payment calculations
 export const usePaymentCalculations = () => {
-  const calculateDeposit = useCallback((
-    totalAmount: string | number,
-    depositType: 'PERCENTAGE' | 'FIXED',
-    depositValue: string | number
-  ) => {
-    return PaymentApi.calculateDepositAmount(totalAmount, depositType, depositValue);
-  }, []);
+  const calculateDeposit = useCallback(
+    (
+      totalAmount: string | number,
+      depositType: 'PERCENTAGE' | 'FIXED',
+      depositValue: string | number,
+    ) => {
+      return PaymentApi.calculateDepositAmount(totalAmount, depositType, depositValue);
+    },
+    [],
+  );
 
-  const calculateRemaining = useCallback((
-    totalAmount: string | number,
-    depositAmount: string | number
-  ) => {
-    return PaymentApi.calculateRemainingBalance(totalAmount, depositAmount);
-  }, []);
+  const calculateRemaining = useCallback(
+    (totalAmount: string | number, depositAmount: string | number) => {
+      return PaymentApi.calculateRemainingBalance(totalAmount, depositAmount);
+    },
+    [],
+  );
 
   // DEPRECATED: Use useCurrentCurrency hook instead for DRY compliance
   // This is kept for backward compatibility with legacy code
-  const formatAmount = useCallback((
-    amount: string | number,
-    currency?: string
-  ) => {
+  const formatAmount = useCallback((amount: string | number, currency?: string) => {
     return PaymentApi.formatAmount(amount, currency || 'PHP');
   }, []);
 
-  const validateAmount = useCallback((
-    gateway: PaymentGateway,
-    amount: number
-  ) => {
+  const validateAmount = useCallback((gateway: PaymentGateway, amount: number) => {
     return PaymentApi.validateAmountLimits(gateway, amount);
   }, []);
 
@@ -183,35 +180,44 @@ export const usePaymentCalculations = () => {
 export const usePaymentValidation = () => {
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
-  const validatePaymentMethod = useCallback((
-    gateway: PaymentGateway,
-    paymentData: Record<string, unknown>
-  ) => {
-    const validation = PaymentApi.validatePaymentMethod(gateway, paymentData);
-    setValidationErrors(validation.errors);
-    return validation;
-  }, []);
+  const validatePaymentMethod = useCallback(
+    (gateway: PaymentGateway, paymentData: Record<string, unknown>) => {
+      const validation = PaymentApi.validatePaymentMethod(gateway, paymentData);
+      setValidationErrors(validation.errors);
+      return validation;
+    },
+    [],
+  );
 
-  const formatPaymentData = useCallback((
-    gateway: PaymentGateway,
-    paymentMethod: string,
-    paymentType: 'FULL' | 'DEPOSIT',
-    additionalData: Record<string, unknown> = {}
-  ) => {
-    return PaymentApi.formatPaymentData(gateway, paymentMethod, paymentType, additionalData);
-  }, []);
+  const formatPaymentData = useCallback(
+    (
+      gateway: PaymentGateway,
+      paymentMethod: string,
+      paymentType: 'FULL' | 'DEPOSIT',
+      additionalData: Record<string, unknown> = {},
+    ) => {
+      return PaymentApi.formatPaymentData(gateway, paymentMethod, paymentType, additionalData);
+    },
+    [],
+  );
 
   const clearErrors = useCallback(() => {
     setValidationErrors({});
   }, []);
 
-  const getFieldError = useCallback((field: string) => {
-    return validationErrors[field]?.[0];
-  }, [validationErrors]);
+  const getFieldError = useCallback(
+    (field: string) => {
+      return validationErrors[field]?.[0];
+    },
+    [validationErrors],
+  );
 
-  const hasFieldError = useCallback((field: string) => {
-    return !!(validationErrors[field]?.length > 0);
-  }, [validationErrors]);
+  const hasFieldError = useCallback(
+    (field: string) => {
+      return !!(validationErrors[field]?.length > 0);
+    },
+    [validationErrors],
+  );
 
   return {
     validationErrors,
@@ -231,10 +237,10 @@ export const useGatewayConfig = (gatewayCode?: string) => {
 
   const fetchConfig = useCallback(async () => {
     if (!gatewayCode) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await PaymentApi.getGatewayPublicConfig(gatewayCode);
       setConfig(data);
@@ -266,30 +272,32 @@ export const usePaymentFlow = (
     acceptDeposit: boolean;
     depositType: 'PERCENTAGE' | 'FIXED';
     depositAmount: string | number;
-  }
+  },
 ) => {
   const [selectedPaymentType, setSelectedPaymentType] = useState<'FULL' | 'DEPOSIT'>('FULL');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('');
   const [paymentData, setPaymentData] = useState<Record<string, unknown>>({});
 
-  const { calculateDeposit, calculateRemaining, formatAmount, validateAmount } = usePaymentCalculations();
+  const { calculateDeposit, calculateRemaining, formatAmount, validateAmount } =
+    usePaymentCalculations();
   const { validatePaymentMethod, formatPaymentData, validationErrors } = usePaymentValidation();
 
   // Calculate amounts based on payment type
   const amounts = useMemo(() => {
     const total = typeof totalAmount === 'string' ? parseFloat(totalAmount) : totalAmount;
-    
+
     let depositAmount = 0;
     if (depositConfig?.acceptDeposit && selectedPaymentType === 'DEPOSIT') {
       depositAmount = calculateDeposit(
         total,
         depositConfig.depositType,
-        depositConfig.depositAmount
+        depositConfig.depositAmount,
       );
     }
 
     const dueNow = selectedPaymentType === 'DEPOSIT' ? depositAmount : total;
-    const remaining = selectedPaymentType === 'DEPOSIT' ? calculateRemaining(total, depositAmount) : 0;
+    const remaining =
+      selectedPaymentType === 'DEPOSIT' ? calculateRemaining(total, depositAmount) : 0;
 
     return {
       total,
@@ -301,7 +309,14 @@ export const usePaymentFlow = (
       formattedDueNow: formatAmount(dueNow),
       formattedRemaining: formatAmount(remaining),
     };
-  }, [totalAmount, selectedPaymentType, depositConfig, calculateDeposit, calculateRemaining, formatAmount]);
+  }, [
+    totalAmount,
+    selectedPaymentType,
+    depositConfig,
+    calculateDeposit,
+    calculateRemaining,
+    formatAmount,
+  ]);
 
   // Validate current payment setup
   const validation = useMemo(() => {
@@ -320,23 +335,25 @@ export const usePaymentFlow = (
 
     const methodValidation = validatePaymentMethod(gateway, paymentData);
     return methodValidation;
-  }, [gateway, selectedPaymentMethod, amounts.dueNow, paymentData, validateAmount, validatePaymentMethod]);
+  }, [
+    gateway,
+    selectedPaymentMethod,
+    amounts.dueNow,
+    paymentData,
+    validateAmount,
+    validatePaymentMethod,
+  ]);
 
   // Get formatted payment data for submission
   const getFormattedData = useCallback(() => {
     if (!gateway) return null;
 
-    return formatPaymentData(
-      gateway,
-      selectedPaymentMethod,
-      selectedPaymentType,
-      paymentData
-    );
+    return formatPaymentData(gateway, selectedPaymentMethod, selectedPaymentType, paymentData);
   }, [gateway, selectedPaymentMethod, selectedPaymentType, paymentData, formatPaymentData]);
 
   // Update payment data
   const updatePaymentData = useCallback((newData: Record<string, unknown>) => {
-    setPaymentData(prev => ({ ...prev, ...newData }));
+    setPaymentData((prev) => ({ ...prev, ...newData }));
   }, []);
 
   // Reset payment flow
@@ -357,19 +374,19 @@ export const usePaymentFlow = (
     setSelectedPaymentType,
     selectedPaymentMethod,
     setSelectedPaymentMethod,
-    
+
     // Payment data
     paymentData,
     updatePaymentData,
-    
+
     // Calculated amounts
     amounts,
-    
+
     // Validation
     validation,
     validationErrors,
     isComplete,
-    
+
     // Actions
     getFormattedData,
     resetPaymentFlow,
@@ -387,20 +404,20 @@ export const useGatewaySelection = (availableGateways: PaymentGateway[] = []) =>
 
   // Filter gateways based on criteria
   const filteredGateways = useMemo(() => {
-    return availableGateways.filter(gateway => {
+    return availableGateways.filter((gateway) => {
       // Filter by supported methods
       if (filterCriteria.supportedMethods?.length) {
         const gatewayMethods = PaymentApi.getSupportedPaymentMethods(gateway);
-        const hasRequiredMethod = filterCriteria.supportedMethods.some(method =>
-          gatewayMethods.includes(method)
+        const hasRequiredMethod = filterCriteria.supportedMethods.some((method) =>
+          gatewayMethods.includes(method),
         );
         if (!hasRequiredMethod) return false;
       }
 
       // Filter by required features
       if (filterCriteria.requiredFeatures?.length) {
-        const hasAllFeatures = filterCriteria.requiredFeatures.every(feature =>
-          PaymentApi.supportsFeature(gateway, feature)
+        const hasAllFeatures = filterCriteria.requiredFeatures.every((feature) =>
+          PaymentApi.supportsFeature(gateway, feature),
         );
         if (!hasAllFeatures) return false;
       }
@@ -425,7 +442,7 @@ export const useGatewaySelection = (availableGateways: PaymentGateway[] = []) =>
 
   // Update filter criteria
   const updateFilter = useCallback((newCriteria: Partial<typeof filterCriteria>) => {
-    setFilterCriteria(prev => ({ ...prev, ...newCriteria }));
+    setFilterCriteria((prev) => ({ ...prev, ...newCriteria }));
   }, []);
 
   // Clear filters

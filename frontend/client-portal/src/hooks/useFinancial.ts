@@ -1,38 +1,33 @@
 // frontend/client-portal/src/hooks/useFinancial.ts
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "../contexts/ToastContext";
-import FinancialApi from "../apis/financial.api";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useToast } from '../contexts/ToastContext';
+import FinancialApi from '../apis/financial.api';
 import type {
   PaymentFilters,
   InvoiceFilters,
   PaymentMethodFormData,
-} from "../types/financial.types";
+} from '../types/financial.types';
 
 // Query keys for consistent caching
 export const financialKeys = {
-  all: ["financial"] as const,
-  payments: () => [...financialKeys.all, "payments"] as const,
+  all: ['financial'] as const,
+  payments: () => [...financialKeys.all, 'payments'] as const,
   payment: (id: number) => [...financialKeys.payments(), id] as const,
-  paymentSummary: () => [...financialKeys.payments(), "summary"] as const,
-  invoices: () => [...financialKeys.all, "invoices"] as const,
+  paymentSummary: () => [...financialKeys.payments(), 'summary'] as const,
+  invoices: () => [...financialKeys.all, 'invoices'] as const,
   invoice: (id: number) => [...financialKeys.invoices(), id] as const,
-  paymentPlans: () => [...financialKeys.all, "payment-plans"] as const,
+  paymentPlans: () => [...financialKeys.all, 'payment-plans'] as const,
   paymentPlan: (id: number) => [...financialKeys.paymentPlans(), id] as const,
-  paymentMethods: () => [...financialKeys.all, "payment-methods"] as const,
-  paymentMethod: (id: number) =>
-    [...financialKeys.paymentMethods(), id] as const,
-  refunds: () => [...financialKeys.all, "refunds"] as const,
+  paymentMethods: () => [...financialKeys.all, 'payment-methods'] as const,
+  paymentMethod: (id: number) => [...financialKeys.paymentMethods(), id] as const,
+  refunds: () => [...financialKeys.all, 'refunds'] as const,
   refund: (id: number) => [...financialKeys.refunds(), id] as const,
 };
 
 // ==================== PAYMENTS ====================
 
-export const usePayments = (
-  filters?: PaymentFilters,
-  page?: number,
-  pageSize?: number,
-) => {
+export const usePayments = (filters?: PaymentFilters, page?: number, pageSize?: number) => {
   return useQuery({
     queryKey: [...financialKeys.payments(), filters, page, pageSize],
     queryFn: () => FinancialApi.getPayments(filters, page, pageSize),
@@ -66,22 +61,18 @@ export const useDownloadPaymentReceipt = () => {
     },
     onSuccess: ({ blob, paymentId }) => {
       FinancialApi.downloadFile(blob, `receipt-payment-${paymentId}.pdf`);
-      showToast({ type: "success", title: "Receipt downloaded successfully" });
+      showToast({ type: 'success', title: 'Receipt downloaded successfully' });
     },
     onError: (error) => {
       const message = FinancialApi.handleError(error);
-      showToast({ type: "error", title: message });
+      showToast({ type: 'error', title: message });
     },
   });
 };
 
 // ==================== INVOICES ====================
 
-export const useInvoices = (
-  filters?: InvoiceFilters,
-  page?: number,
-  pageSize?: number,
-) => {
+export const useInvoices = (filters?: InvoiceFilters, page?: number, pageSize?: number) => {
   return useQuery({
     queryKey: [...financialKeys.invoices(), filters, page, pageSize],
     queryFn: () => FinancialApi.getInvoices(filters, page, pageSize),
@@ -107,11 +98,11 @@ export const useDownloadInvoicePdf = () => {
     },
     onSuccess: ({ blob, invoiceId }) => {
       FinancialApi.downloadFile(blob, `invoice-${invoiceId}.pdf`);
-      showToast({ type: "success", title: "Invoice downloaded successfully" });
+      showToast({ type: 'success', title: 'Invoice downloaded successfully' });
     },
     onError: (error) => {
       const message = FinancialApi.handleError(error);
-      showToast({ type: "error", title: message });
+      showToast({ type: 'error', title: message });
     },
   });
 };
@@ -123,8 +114,7 @@ export const usePaymentPlans = () => {
   return useQuery({
     queryKey: financialKeys.paymentPlans(),
     queryFn: async () => {
-      if (import.meta.env.DEV)
-        console.warn("⚠️ WIP: Payment plans hook is currently disabled");
+      if (import.meta.env.DEV) console.warn('⚠️ WIP: Payment plans hook is currently disabled');
       const data = await FinancialApi.getPaymentPlans();
       return data.results || [];
     },
@@ -138,7 +128,7 @@ export const usePaymentPlan = (planId: number) => {
     queryKey: financialKeys.paymentPlan(planId),
     queryFn: () => {
       if (import.meta.env.DEV)
-        console.warn("⚠️ WIP: Payment plan details hook is currently disabled");
+        console.warn('⚠️ WIP: Payment plan details hook is currently disabled');
       return FinancialApi.getPaymentPlan(planId);
     },
     enabled: false, // Disabled - WIP
@@ -168,20 +158,19 @@ export const useCreatePaymentMethod = () => {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: (methodData: PaymentMethodFormData) =>
-      FinancialApi.createPaymentMethod(methodData),
+    mutationFn: (methodData: PaymentMethodFormData) => FinancialApi.createPaymentMethod(methodData),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: financialKeys.paymentMethods(),
       });
       showToast({
-        type: "success",
-        title: "Payment method created successfully",
+        type: 'success',
+        title: 'Payment method created successfully',
       });
     },
     onError: (error) => {
       const message = FinancialApi.handleError(error);
-      showToast({ type: "error", title: message });
+      showToast({ type: 'error', title: message });
     },
   });
 };
@@ -206,13 +195,13 @@ export const useUpdatePaymentMethod = () => {
         queryKey: financialKeys.paymentMethod(updatedMethod.id),
       });
       showToast({
-        type: "success",
-        title: "Payment method updated successfully",
+        type: 'success',
+        title: 'Payment method updated successfully',
       });
     },
     onError: (error) => {
       const message = FinancialApi.handleError(error);
-      showToast({ type: "error", title: message });
+      showToast({ type: 'error', title: message });
     },
   });
 };
@@ -222,8 +211,7 @@ export const useDeletePaymentMethod = () => {
   const { showToast } = useToast();
 
   return useMutation({
-    mutationFn: (methodId: number) =>
-      FinancialApi.deletePaymentMethod(methodId),
+    mutationFn: (methodId: number) => FinancialApi.deletePaymentMethod(methodId),
     onSuccess: (_, methodId) => {
       queryClient.invalidateQueries({
         queryKey: financialKeys.paymentMethods(),
@@ -232,13 +220,13 @@ export const useDeletePaymentMethod = () => {
         queryKey: financialKeys.paymentMethod(methodId),
       });
       showToast({
-        type: "success",
-        title: "Payment method deleted successfully",
+        type: 'success',
+        title: 'Payment method deleted successfully',
       });
     },
     onError: (error) => {
       const message = FinancialApi.handleError(error);
-      showToast({ type: "error", title: message });
+      showToast({ type: 'error', title: message });
     },
   });
 };
@@ -279,41 +267,23 @@ export const useFinancialOverview = () => {
     refundsQuery.isLoading;
 
   const error =
-    paymentsQuery.error ||
-    invoicesQuery.error ||
-    summaryQuery.error ||
-    refundsQuery.error;
+    paymentsQuery.error || invoicesQuery.error || summaryQuery.error || refundsQuery.error;
 
   // Debug logging to help identify data structure issues
-  const payments = Array.isArray(paymentsQuery.data?.results)
-    ? paymentsQuery.data.results
-    : [];
-  const invoices = Array.isArray(invoicesQuery.data?.results)
-    ? invoicesQuery.data.results
-    : [];
-  const refunds = Array.isArray(refundsQuery.data?.results)
-    ? refundsQuery.data.results
-    : [];
+  const payments = Array.isArray(paymentsQuery.data?.results) ? paymentsQuery.data.results : [];
+  const invoices = Array.isArray(invoicesQuery.data?.results) ? invoicesQuery.data.results : [];
+  const refunds = Array.isArray(refundsQuery.data?.results) ? refundsQuery.data.results : [];
 
   // Log non-array data for debugging
   if (import.meta.env.DEV) {
-    if (
-      paymentsQuery.data?.results &&
-      !Array.isArray(paymentsQuery.data.results)
-    ) {
-      console.warn("Payment data is not an array:", paymentsQuery.data);
+    if (paymentsQuery.data?.results && !Array.isArray(paymentsQuery.data.results)) {
+      console.warn('Payment data is not an array:', paymentsQuery.data);
     }
-    if (
-      invoicesQuery.data?.results &&
-      !Array.isArray(invoicesQuery.data.results)
-    ) {
-      console.warn("Invoice data is not an array:", invoicesQuery.data);
+    if (invoicesQuery.data?.results && !Array.isArray(invoicesQuery.data.results)) {
+      console.warn('Invoice data is not an array:', invoicesQuery.data);
     }
-    if (
-      refundsQuery.data?.results &&
-      !Array.isArray(refundsQuery.data.results)
-    ) {
-      console.warn("Refunds data is not an array:", refundsQuery.data);
+    if (refundsQuery.data?.results && !Array.isArray(refundsQuery.data.results)) {
+      console.warn('Refunds data is not an array:', refundsQuery.data);
     }
   }
 
@@ -345,19 +315,19 @@ export const useFinancialAnalytics = () => {
     paymentStatusBreakdown: summaryQuery.data
       ? [
           {
-            label: "Paid",
+            label: 'Paid',
             value: parseFloat(summaryQuery.data.total_paid),
-            color: "#4caf50",
+            color: '#4caf50',
           },
           {
-            label: "Pending",
+            label: 'Pending',
             value: parseFloat(summaryQuery.data.total_pending),
-            color: "#ff9800",
+            color: '#ff9800',
           },
           {
-            label: "Overdue",
+            label: 'Overdue',
             value: parseFloat(summaryQuery.data.total_overdue),
-            color: "#f44336",
+            color: '#f44336',
           },
         ]
       : [],

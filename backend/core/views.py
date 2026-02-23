@@ -2,12 +2,14 @@
 """
 Core application views including health checks
 """
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
-from django.views.decorators.csrf import csrf_exempt
-from django.db import connection
-from django.core.cache import cache
+
 import time
+
+from django.core.cache import cache
+from django.db import connection
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET
 
 
 @csrf_exempt
@@ -20,10 +22,12 @@ def health_check(request):
     No authentication required
     Response time should be < 100ms
     """
-    return JsonResponse({
-        'status': 'healthy',
-        'service': 'lifeplace-backend',
-    })
+    return JsonResponse(
+        {
+            "status": "healthy",
+            "service": "lifeplace-backend",
+        }
+    )
 
 
 @csrf_exempt
@@ -38,32 +42,35 @@ def readiness_check(request):
         503 Service Unavailable if dependencies are down
     """
     checks = {
-        'database': False,
-        'cache': False,
+        "database": False,
+        "cache": False,
     }
 
     # Check database connection
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
-            checks['database'] = True
-    except Exception as e:
+            checks["database"] = True
+    except Exception:
         pass
 
     # Check Redis cache
     try:
-        cache_key = f'health_check_{int(time.time())}'
-        cache.set(cache_key, 'ok', timeout=10)
-        checks['cache'] = cache.get(cache_key) == 'ok'
+        cache_key = f"health_check_{int(time.time())}"
+        cache.set(cache_key, "ok", timeout=10)
+        checks["cache"] = cache.get(cache_key) == "ok"
         cache.delete(cache_key)
-    except Exception as e:
+    except Exception:
         pass
 
     # Return 503 if any check failed
     all_healthy = all(checks.values())
     status_code = 200 if all_healthy else 503
 
-    return JsonResponse({
-        'status': 'ready' if all_healthy else 'not_ready',
-        'checks': checks,
-    }, status=status_code)
+    return JsonResponse(
+        {
+            "status": "ready" if all_healthy else "not_ready",
+            "checks": checks,
+        },
+        status=status_code,
+    )

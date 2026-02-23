@@ -1,24 +1,24 @@
-import { useNavigate, useLocation } from "react-router";
-import { PublicLayout } from "../components/layout";
-import { FacilitiesPage } from "../pages/facilities";
-import { GA4Events } from "../utils/ga4";
+import { useNavigate, useLocation } from 'react-router';
+import { PublicLayout } from '../components/layout';
+import { FacilitiesPage } from '../pages/facilities';
+import { GA4Events } from '../utils/ga4';
 
 export function meta() {
   return [
-    { title: "Facilities | LifePlace Alfonso" },
+    { title: 'Facilities | LifePlace Alfonso' },
     {
-      name: "description",
+      name: 'description',
       content:
-        "Explore our facilities including conference rooms, outdoor areas, and accommodation at LifePlace Alfonso.",
+        'Explore our facilities including conference rooms, outdoor areas, and accommodation at LifePlace Alfonso.',
     },
-    { property: "og:title", content: "Facilities | LifePlace Alfonso" },
+    { property: 'og:title', content: 'Facilities | LifePlace Alfonso' },
     {
-      property: "og:description",
+      property: 'og:description',
       content:
-        "Explore our facilities including conference rooms, outdoor areas, and accommodation at LifePlace Alfonso.",
+        'Explore our facilities including conference rooms, outdoor areas, and accommodation at LifePlace Alfonso.',
     },
-    { property: "og:image", content: "/og-image.jpg" },
-    { property: "og:type", content: "website" },
+    { property: 'og:image', content: '/og-image.jpg' },
+    { property: 'og:type', content: 'website' },
   ];
 }
 
@@ -30,8 +30,8 @@ export default function FacilitiesRoute() {
     <PublicLayout fullHeight>
       <FacilitiesPage
         onNavigateToBooking={() => {
-          GA4Events.ctaClicked("book_now", location.pathname);
-          navigate("/booking");
+          GA4Events.ctaClicked('book_now', location.pathname);
+          navigate('/booking');
         }}
       />
     </PublicLayout>

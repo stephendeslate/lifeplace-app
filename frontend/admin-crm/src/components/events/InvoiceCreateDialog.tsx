@@ -18,9 +18,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
-import {
-  Save as SaveIcon,
-} from '@mui/icons-material';
+import { Save as SaveIcon } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { addDays, format } from 'date-fns';
 import { useInvoices } from '../../hooks/usePayments';
@@ -84,40 +82,39 @@ export const InvoiceCreateDialog: React.FC<InvoiceCreateDialogProps> = ({
     }
   }, [open]);
 
-  const handleInputChange = (field: keyof InvoiceFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = event.target.value;
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    // Clear error for this field
-    if (errors[field]) {
-      setErrors((prev) => ({
+  const handleInputChange =
+    (field: keyof InvoiceFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
         ...prev,
-        [field]: undefined,
+        [field]: value,
       }));
-    }
-  };
 
-  const handleSelectChange = (field: keyof InvoiceFormData) => (
-    event: SelectChangeEvent<string>
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: event.target.value as string,
-    }));
+      // Clear error for this field
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: undefined,
+        }));
+      }
+    };
 
-    // Clear error for this field
-    if (errors[field]) {
-      setErrors((prev) => ({
+  const handleSelectChange =
+    (field: keyof InvoiceFormData) => (event: SelectChangeEvent<string>) => {
+      setFormData((prev) => ({
         ...prev,
-        [field]: undefined,
+        [field]: event.target.value as string,
       }));
-    }
-  };
+
+      // Clear error for this field
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: undefined,
+        }));
+      }
+    };
 
   const handleDateChange = (field: 'issue_date' | 'due_date') => (date: Date | null) => {
     if (date) {
@@ -178,21 +175,19 @@ export const InvoiceCreateDialog: React.FC<InvoiceCreateDialogProps> = ({
   const isLoading = isCreatingInvoice;
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={handleClose}
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { minHeight: 400 }
+        sx: { minHeight: 400 },
       }}
     >
       {open && (
         <>
-          <DialogTitle>
-            Create Invoice for {event.name || `Event #${event.id}`}
-          </DialogTitle>
-      
+          <DialogTitle>Create Invoice for {event.name || `Event #${event.id}`}</DialogTitle>
+
           <DialogContent>
             <Box component="form" noValidate sx={{ mt: 1 }}>
               <Stack spacing={3}>
@@ -324,21 +319,19 @@ export const InvoiceCreateDialog: React.FC<InvoiceCreateDialogProps> = ({
 
                 <Box>
                   <Typography variant="caption" color="text.secondary">
-                    💡 <strong>Tip:</strong> After creating the invoice, you can add line items, adjust amounts, and send it to the client.
+                    💡 <strong>Tip:</strong> After creating the invoice, you can add line items,
+                    adjust amounts, and send it to the client.
                   </Typography>
                 </Box>
               </Stack>
             </Box>
           </DialogContent>
-          
+
           <DialogActions sx={{ p: 3 }}>
-            <Button 
-              onClick={handleClose}
-              disabled={isLoading}
-            >
+            <Button onClick={handleClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmit}
               variant="contained"
               disabled={isLoading}

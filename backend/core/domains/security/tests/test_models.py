@@ -7,15 +7,17 @@ Tests:
 - AffectedUser model (affected user tracking)
 """
 
-import pytest
-from django.utils import timezone
 from datetime import timedelta
+
+from django.utils import timezone
+
+import pytest
 from freezegun import freeze_time
 
 from core.domains.security.models import (
-    SecurityBreach,
-    BreachNotification,
     AffectedUser,
+    BreachNotification,
+    SecurityBreach,
 )
 
 
@@ -27,53 +29,50 @@ class TestSecurityBreachModel:
         """Test creating a security breach with required fields."""
         lead_user = user_factory(admin=True)
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-001',
-            title='Test Data Breach',
-            description='Test breach description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
-            status='DETECTED',
+            breach_id="BREACH-2025-001",
+            title="Test Data Breach",
+            description="Test breach description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
+            status="DETECTED",
             detected_at=timezone.now(),
             incident_lead=lead_user,
         )
 
-        assert breach.breach_id == 'BREACH-2025-001'
-        assert breach.title == 'Test Data Breach'
-        assert breach.breach_type == 'DATA_LEAK'
-        assert breach.severity == 'HIGH'
-        assert breach.status == 'DETECTED'
+        assert breach.breach_id == "BREACH-2025-001"
+        assert breach.title == "Test Data Breach"
+        assert breach.breach_type == "DATA_LEAK"
+        assert breach.severity == "HIGH"
+        assert breach.status == "DETECTED"
         assert breach.incident_lead == lead_user
 
     def test_breach_string_representation(self):
         """Test SecurityBreach __str__ returns breach_id and title."""
-        breach = SecurityBreach(
-            breach_id='BREACH-2025-001',
-            title='Test Breach'
-        )
+        breach = SecurityBreach(breach_id="BREACH-2025-001", title="Test Breach")
 
-        assert str(breach) == 'BREACH-2025-001: Test Breach'
+        assert str(breach) == "BREACH-2025-001: Test Breach"
 
     def test_breach_default_status(self):
         """Test breach default status is DETECTED."""
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-002',
-            title='Test Breach',
-            description='Description',
-            breach_type='UNAUTHORIZED_ACCESS',
-            severity='MEDIUM',
+            breach_id="BREACH-2025-002",
+            title="Test Breach",
+            description="Description",
+            breach_type="UNAUTHORIZED_ACCESS",
+            severity="MEDIUM",
             detected_at=timezone.now(),
         )
 
-        assert breach.status == 'DETECTED'
+        assert breach.status == "DETECTED"
 
     def test_breach_default_values(self):
         """Test breach default values for counts and flags."""
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-003',
-            title='Test Breach',
-            description='Description',
-            breach_type='PHISHING',
-            severity='LOW',
+            breach_id="BREACH-2025-003",
+            title="Test Breach",
+            description="Description",
+            breach_type="PHISHING",
+            severity="LOW",
             detected_at=timezone.now(),
         )
 
@@ -87,7 +86,7 @@ class TestSecurityBreachModel:
     def test_breach_requires_notification_with_spi(self):
         """Test requires_notification returns True when SPI is involved."""
         breach = SecurityBreach(
-            breach_id='BREACH-2025-004',
+            breach_id="BREACH-2025-004",
             involves_spi=True,
             data_types_affected=[],
             affected_users_count=1,
@@ -98,7 +97,7 @@ class TestSecurityBreachModel:
     def test_breach_requires_notification_with_high_user_count(self):
         """Test requires_notification returns True with 100+ affected users."""
         breach = SecurityBreach(
-            breach_id='BREACH-2025-005',
+            breach_id="BREACH-2025-005",
             involves_spi=False,
             data_types_affected=[],
             affected_users_count=100,
@@ -109,9 +108,9 @@ class TestSecurityBreachModel:
     def test_breach_requires_notification_with_payment_data(self):
         """Test requires_notification returns True with payment data exposed."""
         breach = SecurityBreach(
-            breach_id='BREACH-2025-006',
+            breach_id="BREACH-2025-006",
             involves_spi=False,
-            data_types_affected=['email', 'payment'],
+            data_types_affected=["email", "payment"],
             affected_users_count=1,
         )
 
@@ -120,9 +119,9 @@ class TestSecurityBreachModel:
     def test_breach_requires_notification_with_government_id(self):
         """Test requires_notification returns True with government_id exposed."""
         breach = SecurityBreach(
-            breach_id='BREACH-2025-007',
+            breach_id="BREACH-2025-007",
             involves_spi=False,
-            data_types_affected=['government_id'],
+            data_types_affected=["government_id"],
             affected_users_count=1,
         )
 
@@ -131,20 +130,20 @@ class TestSecurityBreachModel:
     def test_breach_does_not_require_notification_minor_incident(self):
         """Test requires_notification returns False for minor incidents."""
         breach = SecurityBreach(
-            breach_id='BREACH-2025-008',
+            breach_id="BREACH-2025-008",
             involves_spi=False,
-            data_types_affected=['email'],
+            data_types_affected=["email"],
             affected_users_count=10,
         )
 
         assert breach.requires_notification() is False
 
-    @freeze_time('2025-01-15 10:00:00')
+    @freeze_time("2025-01-15 10:00:00")
     def test_hours_since_detection(self):
         """Test hours_since_detection calculation."""
         detected_time = timezone.now() - timedelta(hours=24)
         breach = SecurityBreach(
-            breach_id='BREACH-2025-009',
+            breach_id="BREACH-2025-009",
             detected_at=detected_time,
         )
 
@@ -153,42 +152,42 @@ class TestSecurityBreachModel:
     def test_hours_since_detection_with_no_detected_at(self):
         """Test hours_since_detection returns 0 when detected_at is None."""
         breach = SecurityBreach(
-            breach_id='BREACH-2025-010',
+            breach_id="BREACH-2025-010",
             detected_at=None,
         )
 
         assert breach.hours_since_detection() == 0
 
-    @freeze_time('2025-01-15 10:00:00')
+    @freeze_time("2025-01-15 10:00:00")
     def test_is_notification_overdue_after_72_hours(self):
         """Test is_notification_overdue returns True after 72 hours."""
         detected_time = timezone.now() - timedelta(hours=73)
         breach = SecurityBreach(
-            breach_id='BREACH-2025-011',
+            breach_id="BREACH-2025-011",
             detected_at=detected_time,
             npc_notified=False,
         )
 
         assert breach.is_notification_overdue() is True
 
-    @freeze_time('2025-01-15 10:00:00')
+    @freeze_time("2025-01-15 10:00:00")
     def test_is_notification_not_overdue_before_72_hours(self):
         """Test is_notification_overdue returns False before 72 hours."""
         detected_time = timezone.now() - timedelta(hours=71)
         breach = SecurityBreach(
-            breach_id='BREACH-2025-012',
+            breach_id="BREACH-2025-012",
             detected_at=detected_time,
             npc_notified=False,
         )
 
         assert breach.is_notification_overdue() is False
 
-    @freeze_time('2025-01-15 10:00:00')
+    @freeze_time("2025-01-15 10:00:00")
     def test_is_notification_not_overdue_when_already_notified(self):
         """Test is_notification_overdue returns False when NPC already notified."""
         detected_time = timezone.now() - timedelta(hours=100)
         breach = SecurityBreach(
-            breach_id='BREACH-2025-013',
+            breach_id="BREACH-2025-013",
             detected_at=detected_time,
             npc_notified=True,
         )
@@ -200,19 +199,19 @@ class TestSecurityBreachModel:
         now = timezone.now()
 
         breach1 = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-014',
-            title='Older Breach',
-            description='Description',
-            breach_type='OTHER',
-            severity='LOW',
+            breach_id="BREACH-2025-014",
+            title="Older Breach",
+            description="Description",
+            breach_type="OTHER",
+            severity="LOW",
             detected_at=now - timedelta(days=2),
         )
         breach2 = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-015',
-            title='Newer Breach',
-            description='Description',
-            breach_type='OTHER',
-            severity='LOW',
+            breach_id="BREACH-2025-015",
+            title="Newer Breach",
+            description="Description",
+            breach_type="OTHER",
+            severity="LOW",
             detected_at=now - timedelta(days=1),
         )
 
@@ -222,11 +221,11 @@ class TestSecurityBreachModel:
 
     def test_breach_severity_choices(self):
         """Test all severity choices are valid."""
-        valid_severities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
+        valid_severities = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
 
         for severity in valid_severities:
             breach = SecurityBreach(
-                breach_id=f'BREACH-SEV-{severity}',
+                breach_id=f"BREACH-SEV-{severity}",
                 severity=severity,
             )
             assert breach.severity == severity
@@ -234,13 +233,18 @@ class TestSecurityBreachModel:
     def test_breach_status_choices(self):
         """Test all status choices are valid."""
         valid_statuses = [
-            'DETECTED', 'INVESTIGATING', 'CONFIRMED', 'CONTAINED',
-            'NOTIFYING', 'RESOLVED', 'FALSE_POSITIVE'
+            "DETECTED",
+            "INVESTIGATING",
+            "CONFIRMED",
+            "CONTAINED",
+            "NOTIFYING",
+            "RESOLVED",
+            "FALSE_POSITIVE",
         ]
 
         for status in valid_statuses:
             breach = SecurityBreach(
-                breach_id=f'BREACH-STATUS-{status}',
+                breach_id=f"BREACH-STATUS-{status}",
                 status=status,
             )
             assert breach.status == status
@@ -248,13 +252,19 @@ class TestSecurityBreachModel:
     def test_breach_type_choices(self):
         """Test all breach type choices are valid."""
         valid_types = [
-            'UNAUTHORIZED_ACCESS', 'DATA_THEFT', 'DATA_LEAK', 'RANSOMWARE',
-            'PHISHING', 'INSIDER_THREAT', 'SYSTEM_COMPROMISE', 'OTHER'
+            "UNAUTHORIZED_ACCESS",
+            "DATA_THEFT",
+            "DATA_LEAK",
+            "RANSOMWARE",
+            "PHISHING",
+            "INSIDER_THREAT",
+            "SYSTEM_COMPROMISE",
+            "OTHER",
         ]
 
         for breach_type in valid_types:
             breach = SecurityBreach(
-                breach_id=f'BREACH-TYPE-{breach_type}',
+                breach_id=f"BREACH-TYPE-{breach_type}",
                 breach_type=breach_type,
             )
             assert breach.breach_type == breach_type
@@ -267,64 +277,64 @@ class TestBreachNotificationModel:
     def test_create_breach_notification(self):
         """Test creating a breach notification."""
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-020',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-020",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
         notification = BreachNotification.objects.create(
             breach=breach,
-            notification_type='NPC_INITIAL',
-            recipient='complaints@privacy.gov.ph',
-            content='Initial NPC notification content',
-            delivery_status='SENT',
+            notification_type="NPC_INITIAL",
+            recipient="complaints@privacy.gov.ph",
+            content="Initial NPC notification content",
+            delivery_status="SENT",
         )
 
         assert notification.breach == breach
-        assert notification.notification_type == 'NPC_INITIAL'
-        assert notification.recipient == 'complaints@privacy.gov.ph'
-        assert notification.delivery_status == 'SENT'
+        assert notification.notification_type == "NPC_INITIAL"
+        assert notification.recipient == "complaints@privacy.gov.ph"
+        assert notification.delivery_status == "SENT"
 
     def test_notification_string_representation(self):
         """Test BreachNotification __str__ returns informative string."""
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-021',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-021",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
         notification = BreachNotification.objects.create(
             breach=breach,
-            notification_type='USER_EMAIL',
-            recipient='user@example.com',
-            content='Content',
+            notification_type="USER_EMAIL",
+            recipient="user@example.com",
+            content="Content",
         )
 
-        expected = 'BREACH-2025-021 - USER_EMAIL to user@example.com'
+        expected = "BREACH-2025-021 - USER_EMAIL to user@example.com"
         assert str(notification) == expected
 
     def test_notification_sent_at_auto_set(self):
         """Test sent_at is automatically set on creation."""
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-022',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-022",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
         notification = BreachNotification.objects.create(
             breach=breach,
-            notification_type='USER_EMAIL',
-            recipient='user@example.com',
-            content='Content',
+            notification_type="USER_EMAIL",
+            recipient="user@example.com",
+            content="Content",
         )
 
         assert notification.sent_at is not None
@@ -332,36 +342,33 @@ class TestBreachNotificationModel:
     def test_notification_default_delivery_status(self):
         """Test notification default delivery status is SENT."""
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-023',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-023",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
         notification = BreachNotification.objects.create(
             breach=breach,
-            notification_type='USER_EMAIL',
-            recipient='user@example.com',
-            content='Content',
+            notification_type="USER_EMAIL",
+            recipient="user@example.com",
+            content="Content",
         )
 
-        assert notification.delivery_status == 'SENT'
+        assert notification.delivery_status == "SENT"
 
     def test_notification_type_choices(self):
         """Test all notification type choices are valid."""
-        valid_types = [
-            'NPC_INITIAL', 'NPC_FULL_REPORT', 'USER_EMAIL',
-            'USER_SMS', 'USER_IN_APP', 'INTERNAL'
-        ]
+        valid_types = ["NPC_INITIAL", "NPC_FULL_REPORT", "USER_EMAIL", "USER_SMS", "USER_IN_APP", "INTERNAL"]
 
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-024',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-024",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
@@ -369,34 +376,34 @@ class TestBreachNotificationModel:
             notification = BreachNotification(
                 breach=breach,
                 notification_type=notif_type,
-                recipient='test@example.com',
-                content='Content',
+                recipient="test@example.com",
+                content="Content",
             )
             assert notification.notification_type == notif_type
 
     def test_notification_ordering_by_sent_at(self):
         """Test notifications are ordered by sent_at descending."""
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-025',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-025",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
         # Create notifications
         notif1 = BreachNotification.objects.create(
             breach=breach,
-            notification_type='USER_EMAIL',
-            recipient='first@example.com',
-            content='First',
+            notification_type="USER_EMAIL",
+            recipient="first@example.com",
+            content="First",
         )
         notif2 = BreachNotification.objects.create(
             breach=breach,
-            notification_type='USER_EMAIL',
-            recipient='second@example.com',
-            content='Second',
+            notification_type="USER_EMAIL",
+            recipient="second@example.com",
+            content="Second",
         )
 
         notifications = list(BreachNotification.objects.all())
@@ -407,19 +414,19 @@ class TestBreachNotificationModel:
     def test_breach_cascade_deletes_notifications(self):
         """Test that deleting a breach deletes its notifications."""
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-026',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-026",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
         BreachNotification.objects.create(
             breach=breach,
-            notification_type='USER_EMAIL',
-            recipient='user@example.com',
-            content='Content',
+            notification_type="USER_EMAIL",
+            recipient="user@example.com",
+            content="Content",
         )
 
         breach_id = breach.id
@@ -436,63 +443,63 @@ class TestAffectedUserModel:
         """Test creating an affected user record."""
         user = user_factory()
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-030',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-030",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
         affected = AffectedUser.objects.create(
             breach=breach,
             user=user,
-            data_exposed=['email', 'phone'],
+            data_exposed=["email", "phone"],
         )
 
         assert affected.breach == breach
         assert affected.user == user
-        assert affected.data_exposed == ['email', 'phone']
+        assert affected.data_exposed == ["email", "phone"]
         assert affected.notified is False
         assert affected.notified_at is None
 
     def test_affected_user_string_representation(self, user_factory):
         """Test AffectedUser __str__ returns informative string."""
-        user = user_factory(email='affected@example.com')
+        user = user_factory(email="affected@example.com")
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-031',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-031",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
         affected = AffectedUser.objects.create(
             breach=breach,
             user=user,
-            data_exposed=['email'],
+            data_exposed=["email"],
         )
 
-        expected = 'BREACH-2025-031 - User affected@example.com'
+        expected = "BREACH-2025-031 - User affected@example.com"
         assert str(affected) == expected
 
     def test_affected_user_default_notified_false(self, user_factory):
         """Test affected user default notified is False."""
         user = user_factory()
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-032',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-032",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
         affected = AffectedUser.objects.create(
             breach=breach,
             user=user,
-            data_exposed=['email'],
+            data_exposed=["email"],
         )
 
         assert affected.notified is False
@@ -501,45 +508,46 @@ class TestAffectedUserModel:
         """Test unique_together constraint on breach and user."""
         user = user_factory()
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-033',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-033",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
         AffectedUser.objects.create(
             breach=breach,
             user=user,
-            data_exposed=['email'],
+            data_exposed=["email"],
         )
 
         # Attempt to create duplicate should raise error
         from django.db import IntegrityError
+
         with pytest.raises(IntegrityError):
             AffectedUser.objects.create(
                 breach=breach,
                 user=user,
-                data_exposed=['phone'],
+                data_exposed=["phone"],
             )
 
     def test_affected_user_mark_as_notified(self, user_factory):
         """Test marking affected user as notified."""
         user = user_factory()
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-034',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-034",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
         affected = AffectedUser.objects.create(
             breach=breach,
             user=user,
-            data_exposed=['email'],
+            data_exposed=["email"],
         )
 
         affected.notified = True
@@ -554,18 +562,18 @@ class TestAffectedUserModel:
         """Test that deleting a breach deletes its affected users."""
         user = user_factory()
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-035',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-035",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
         AffectedUser.objects.create(
             breach=breach,
             user=user,
-            data_exposed=['email'],
+            data_exposed=["email"],
         )
 
         breach_id = breach.id
@@ -577,18 +585,18 @@ class TestAffectedUserModel:
         """Test that deleting a user deletes their affected user records."""
         user = user_factory()
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-036',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-036",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
         affected = AffectedUser.objects.create(
             breach=breach,
             user=user,
-            data_exposed=['email'],
+            data_exposed=["email"],
         )
 
         affected_id = affected.id
@@ -603,17 +611,17 @@ class TestAffectedUserModel:
         user3 = user_factory()
 
         breach = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-037',
-            title='Test Breach',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-037",
+            title="Test Breach",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
 
-        AffectedUser.objects.create(breach=breach, user=user1, data_exposed=['email'])
-        AffectedUser.objects.create(breach=breach, user=user2, data_exposed=['email', 'phone'])
-        AffectedUser.objects.create(breach=breach, user=user3, data_exposed=['payment'])
+        AffectedUser.objects.create(breach=breach, user=user1, data_exposed=["email"])
+        AffectedUser.objects.create(breach=breach, user=user2, data_exposed=["email", "phone"])
+        AffectedUser.objects.create(breach=breach, user=user3, data_exposed=["payment"])
 
         assert breach.affected_users.count() == 3
 
@@ -622,23 +630,23 @@ class TestAffectedUserModel:
         user = user_factory()
 
         breach1 = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-038',
-            title='Breach 1',
-            description='Description',
-            breach_type='DATA_LEAK',
-            severity='HIGH',
+            breach_id="BREACH-2025-038",
+            title="Breach 1",
+            description="Description",
+            breach_type="DATA_LEAK",
+            severity="HIGH",
             detected_at=timezone.now(),
         )
         breach2 = SecurityBreach.objects.create(
-            breach_id='BREACH-2025-039',
-            title='Breach 2',
-            description='Description',
-            breach_type='PHISHING',
-            severity='MEDIUM',
+            breach_id="BREACH-2025-039",
+            title="Breach 2",
+            description="Description",
+            breach_type="PHISHING",
+            severity="MEDIUM",
             detected_at=timezone.now(),
         )
 
-        AffectedUser.objects.create(breach=breach1, user=user, data_exposed=['email'])
-        AffectedUser.objects.create(breach=breach2, user=user, data_exposed=['phone'])
+        AffectedUser.objects.create(breach=breach1, user=user, data_exposed=["email"])
+        AffectedUser.objects.create(breach=breach2, user=user, data_exposed=["phone"])
 
         assert AffectedUser.objects.filter(user=user).count() == 2

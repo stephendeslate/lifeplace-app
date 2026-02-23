@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/steps/EnhancedContactInfoStep.tsx
 
-import React, { useState, useCallback, useEffect, useRef } from "react";
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Box,
   Typography,
@@ -13,7 +13,7 @@ import {
   Checkbox,
   useTheme,
   alpha,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Person as PersonIcon,
   Email as EmailIcon,
@@ -27,20 +27,20 @@ import {
   Star as StarIcon,
   Verified as VerifiedIcon,
   Login as LoginIcon,
-} from "@mui/icons-material";
-import { GlassCard } from "../../../design-system/components/GlassCard";
-import { AnimatedElement } from "../../../design-system/components/AnimatedElement";
-import { useAccessibility } from "../../accessibility";
-import { useContactInfo } from "../../../hooks/booking/useContactInfo";
-import { SignInDialog } from "../../common/SignInDialog";
-import { useAuth } from "../../../contexts/AuthContext";
-import { validatePhoneNumber as validatePhoneLib } from "@shared/utils/phoneValidation";
+} from '@mui/icons-material';
+import { GlassCard } from '../../../design-system/components/GlassCard';
+import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import { useAccessibility } from '../../accessibility';
+import { useContactInfo } from '../../../hooks/booking/useContactInfo';
+import { SignInDialog } from '../../common/SignInDialog';
+import { useAuth } from '../../../contexts/AuthContext';
+import { validatePhoneNumber as validatePhoneLib } from '@shared/utils/phoneValidation';
 import type {
   ContactInfoStepData,
   ContactInfoStepConfiguration,
   BookingFlow,
   StepValidationResult,
-} from "../../../types/booking";
+} from '../../../types/booking';
 
 interface EnhancedContactInfoStepProps {
   stepData?: ContactInfoStepData;
@@ -53,9 +53,9 @@ interface EnhancedContactInfoStepProps {
 }
 
 interface ValidationState {
-  email: "idle" | "validating" | "valid" | "invalid";
-  phone: "idle" | "validating" | "valid" | "invalid";
-  full_name: "idle" | "validating" | "valid" | "invalid";
+  email: 'idle' | 'validating' | 'valid' | 'invalid';
+  phone: 'idle' | 'validating' | 'valid' | 'invalid';
+  full_name: 'idle' | 'validating' | 'valid' | 'invalid';
 }
 
 // Email validation utility
@@ -69,9 +69,7 @@ const validatePhoneNumber = (phone: string): boolean => {
   return validatePhoneLib(phone);
 };
 
-export const EnhancedContactInfoStep: React.FC<
-  EnhancedContactInfoStepProps
-> = ({
+export const EnhancedContactInfoStep: React.FC<EnhancedContactInfoStepProps> = ({
   stepData,
   config,
   onDataChange,
@@ -80,24 +78,19 @@ export const EnhancedContactInfoStep: React.FC<
   const theme = useTheme();
   const { announceToScreenReader } = useAccessibility();
 
-  const {
-    getInitialData,
-    fieldRequirements,
-    accountCreationOptions,
-    isAuthenticated,
-    user,
-  } = useContactInfo(config);
+  const { getInitialData, fieldRequirements, accountCreationOptions, isAuthenticated, user } =
+    useContactInfo(config);
 
   // Form data state
   const [formData, setFormData] = useState<ContactInfoStepData>(() => {
     if (stepData) return stepData;
     if (isAuthenticated && user) {
       return {
-        full_name: `${user.first_name || ""} ${user.last_name || ""}`.trim(),
-        email: user.email || "",
-        phone: user.profile?.phone || "",
-        address: "",
-        company: "",
+        full_name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+        email: user.email || '',
+        phone: user.profile?.phone || '',
+        address: '',
+        company: '',
         create_account: false,
       };
     }
@@ -106,9 +99,9 @@ export const EnhancedContactInfoStep: React.FC<
 
   // Advanced validation states
   const [validationState, setValidationState] = useState<ValidationState>({
-    email: "idle",
-    phone: "idle",
-    full_name: "idle",
+    email: 'idle',
+    phone: 'idle',
+    full_name: 'idle',
   });
 
   // Sync autofilled data to parent on mount
@@ -137,45 +130,43 @@ export const EnhancedContactInfoStep: React.FC<
       onDataChange(newData);
 
       // Real-time validation for specific fields
-      if (field === "email") {
-        setValidationState((prev) => ({ ...prev, email: "validating" }));
+      if (field === 'email') {
+        setValidationState((prev) => ({ ...prev, email: 'validating' }));
         setTimeout(() => {
           const isValid = validateEmail(value as string);
           setValidationState((prev) => ({
             ...prev,
-            email: isValid ? "valid" : "invalid",
+            email: isValid ? 'valid' : 'invalid',
           }));
           if (isValid) {
-            announceToScreenReader("Email address is valid");
+            announceToScreenReader('Email address is valid');
           }
         }, 500);
       }
 
-      if (field === "phone") {
-        setValidationState((prev) => ({ ...prev, phone: "validating" }));
+      if (field === 'phone') {
+        setValidationState((prev) => ({ ...prev, phone: 'validating' }));
 
         setTimeout(() => {
           const isValid = validatePhoneNumber(value as string);
           setValidationState((prev) => ({
             ...prev,
-            phone: isValid ? "valid" : "invalid",
+            phone: isValid ? 'valid' : 'invalid',
           }));
           if (isValid) {
-            announceToScreenReader("Phone number is valid");
+            announceToScreenReader('Phone number is valid');
           }
         }, 500);
       }
 
-      if (field === "full_name") {
-        setValidationState((prev) => ({ ...prev, full_name: "validating" }));
+      if (field === 'full_name') {
+        setValidationState((prev) => ({ ...prev, full_name: 'validating' }));
         setTimeout(() => {
           const hasFullName =
-            value &&
-            (value as string).trim().length > 0 &&
-            (value as string).includes(" ");
+            value && (value as string).trim().length > 0 && (value as string).includes(' ');
           setValidationState((prev) => ({
             ...prev,
-            full_name: hasFullName ? "valid" : "invalid",
+            full_name: hasFullName ? 'valid' : 'invalid',
           }));
         }, 300);
       }
@@ -183,23 +174,16 @@ export const EnhancedContactInfoStep: React.FC<
     [formData, onDataChange, announceToScreenReader],
   );
 
-  const getFieldError = (fieldName: string) =>
-    externalValidationErrors[fieldName]?.[0];
-  const hasFieldError = (fieldName: string) =>
-    !!(externalValidationErrors[fieldName]?.length > 0);
+  const getFieldError = (fieldName: string) => externalValidationErrors[fieldName]?.[0];
+  const hasFieldError = (fieldName: string) => !!(externalValidationErrors[fieldName]?.length > 0);
 
   const getValidationIcon = (field: keyof ValidationState) => {
     switch (validationState[field]) {
-      case "validating":
-        return (
-          <AutoAwesomeIcon
-            color="primary"
-            sx={{ animation: "pulse 1s infinite" }}
-          />
-        );
-      case "valid":
+      case 'validating':
+        return <AutoAwesomeIcon color="primary" sx={{ animation: 'pulse 1s infinite' }} />;
+      case 'valid':
         return <CheckCircleIcon color="success" />;
-      case "invalid":
+      case 'invalid':
         return null;
       default:
         return null;
@@ -222,12 +206,11 @@ export const EnhancedContactInfoStep: React.FC<
 
       // Update form with user data
       const newData: ContactInfoStepData = {
-        full_name:
-          `${authUser.first_name || ""} ${authUser.last_name || ""}`.trim(),
-        email: authUser.email || "",
-        phone: authUser.profile?.phone || formData.phone || "",
-        address: formData.address || "",
-        company: formData.company || "",
+        full_name: `${authUser.first_name || ''} ${authUser.last_name || ''}`.trim(),
+        email: authUser.email || '',
+        phone: authUser.profile?.phone || formData.phone || '',
+        address: formData.address || '',
+        company: formData.company || '',
         create_account: false,
       };
       setFormData(newData);
@@ -235,19 +218,17 @@ export const EnhancedContactInfoStep: React.FC<
 
       // Update validation states for auto-filled fields
       if (newData.email) {
-        setValidationState((prev) => ({ ...prev, email: "valid" }));
+        setValidationState((prev) => ({ ...prev, email: 'valid' }));
       }
-      if (newData.full_name && newData.full_name.includes(" ")) {
-        setValidationState((prev) => ({ ...prev, full_name: "valid" }));
+      if (newData.full_name && newData.full_name.includes(' ')) {
+        setValidationState((prev) => ({ ...prev, full_name: 'valid' }));
       }
       if (newData.phone && validatePhoneNumber(newData.phone)) {
-        setValidationState((prev) => ({ ...prev, phone: "valid" }));
+        setValidationState((prev) => ({ ...prev, phone: 'valid' }));
       }
 
       // Announce to screen reader
-      announceToScreenReader(
-        "Your contact information has been filled in from your account",
-      );
+      announceToScreenReader('Your contact information has been filled in from your account');
     }
   }, [
     authIsAuthenticated,
@@ -263,14 +244,14 @@ export const EnhancedContactInfoStep: React.FC<
     <Box>
       {/* Header */}
       <AnimatedElement animation="slideDown" delay={100}>
-        <Box sx={{ textAlign: "center", mb: 4 }}>
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Avatar
             sx={{
               width: 80,
               height: 80,
               backgroundColor: alpha(theme.palette.primary.main, 0.15),
               color: theme.palette.primary.main,
-              mx: "auto",
+              mx: 'auto',
               mb: 3,
             }}
           >
@@ -281,13 +262,8 @@ export const EnhancedContactInfoStep: React.FC<
             Contact Information
           </Typography>
 
-          <Typography
-            variant="h6"
-            color="text.secondary"
-            sx={{ maxWidth: 600, mx: "auto" }}
-          >
-            Please provide your contact details so we can coordinate your event
-            perfectly
+          <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 600, mx: 'auto' }}>
+            Please provide your contact details so we can coordinate your event perfectly
           </Typography>
         </Box>
       </AnimatedElement>
@@ -296,54 +272,51 @@ export const EnhancedContactInfoStep: React.FC<
       <AnimatedElement animation="slideUp" delay={200}>
         <Box
           sx={{
-            display: "flex",
-            justifyContent: "center",
+            display: 'flex',
+            justifyContent: 'center',
             mb: 4,
-            flexWrap: "wrap",
+            flexWrap: 'wrap',
             gap: 2,
           }}
         >
           {[
             {
-              key: "full_name",
-              label: "Name",
+              key: 'full_name',
+              label: 'Name',
               icon: <PersonIcon fontSize="small" />,
             },
             {
-              key: "email",
-              label: "Email",
+              key: 'email',
+              label: 'Email',
               icon: <EmailIcon fontSize="small" />,
             },
             {
-              key: "phone",
-              label: "Phone",
+              key: 'phone',
+              label: 'Phone',
               icon: <PhoneIcon fontSize="small" />,
             },
           ].map((item) => (
             <Chip
               key={item.key}
-              icon={
-                getValidationIcon(item.key as keyof ValidationState) ||
-                item.icon
-              }
+              icon={getValidationIcon(item.key as keyof ValidationState) || item.icon}
               label={item.label}
               variant={
-                validationState[item.key as keyof ValidationState] === "valid"
-                  ? "filled"
-                  : "outlined"
+                validationState[item.key as keyof ValidationState] === 'valid'
+                  ? 'filled'
+                  : 'outlined'
               }
               color={
-                validationState[item.key as keyof ValidationState] === "valid"
-                  ? "success"
-                  : "default"
+                validationState[item.key as keyof ValidationState] === 'valid'
+                  ? 'success'
+                  : 'default'
               }
               sx={{
                 backgroundColor:
-                  validationState[item.key as keyof ValidationState] === "valid"
+                  validationState[item.key as keyof ValidationState] === 'valid'
                     ? alpha(theme.palette.success.main, 0.15)
-                    : alpha("#fff", 0.1),
-                backdropFilter: "blur(10px)",
-                transition: "all 0.3s ease",
+                    : alpha('#fff', 0.1),
+                backdropFilter: 'blur(10px)',
+                transition: 'all 0.3s ease',
               }}
             />
           ))}
@@ -362,7 +335,7 @@ export const EnhancedContactInfoStep: React.FC<
               border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
             }}
           >
-            <Box sx={{ p: 3, display: "flex", alignItems: "center", gap: 2 }}>
+            <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
               <Avatar
                 sx={{
                   backgroundColor: alpha(theme.palette.success.main, 0.15),
@@ -396,11 +369,11 @@ export const EnhancedContactInfoStep: React.FC<
       {/* Main Form */}
       <Box
         sx={{
-          display: "flex",
-          flexDirection: "column",
+          display: 'flex',
+          flexDirection: 'column',
           gap: 3,
           maxWidth: 800,
-          mx: "auto",
+          mx: 'auto',
         }}
       >
         {/* Personal Information */}
@@ -409,14 +382,12 @@ export const EnhancedContactInfoStep: React.FC<
             variant="light"
             intensity="medium"
             sx={{
-              backgroundColor: alpha("#fff", 0.08),
-              border: `1px solid ${alpha("#fff", 0.1)}`,
+              backgroundColor: alpha('#fff', 0.08),
+              border: `1px solid ${alpha('#fff', 0.1)}`,
             }}
           >
             <Box sx={{ p: 4 }}>
-              <Box
-                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}
-              >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
                 <AccountIcon color="primary" />
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Personal Details
@@ -426,11 +397,9 @@ export const EnhancedContactInfoStep: React.FC<
               <TextField
                 label="Full Name"
                 value={formData.full_name}
-                onChange={(e) => updateFormData("full_name", e.target.value)}
-                error={hasFieldError("full_name")}
-                helperText={
-                  getFieldError("full_name") || "Enter your first and last name"
-                }
+                onChange={(e) => updateFormData('full_name', e.target.value)}
+                error={hasFieldError('full_name')}
+                helperText={getFieldError('full_name') || 'Enter your first and last name'}
                 required={fieldRequirements.full_name}
                 fullWidth
                 placeholder="John Doe"
@@ -440,16 +409,16 @@ export const EnhancedContactInfoStep: React.FC<
                       <PersonIcon color="primary" />
                     </InputAdornment>
                   ),
-                  endAdornment: validationState.full_name === "valid" && (
+                  endAdornment: validationState.full_name === 'valid' && (
                     <InputAdornment position="end">
                       <CheckCircleIcon color="success" />
                     </InputAdornment>
                   ),
                   sx: {
-                    backgroundColor: alpha("#fff", 0.1),
-                    backdropFilter: "blur(10px)",
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: alpha("#fff", 0.2),
+                    backgroundColor: alpha('#fff', 0.1),
+                    backdropFilter: 'blur(10px)',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: alpha('#fff', 0.2),
                     },
                   },
                 }}
@@ -464,39 +433,34 @@ export const EnhancedContactInfoStep: React.FC<
             variant="light"
             intensity="medium"
             sx={{
-              backgroundColor: alpha("#fff", 0.08),
+              backgroundColor: alpha('#fff', 0.08),
               border:
-                hasFieldError("email") || hasFieldError("phone")
+                hasFieldError('email') || hasFieldError('phone')
                   ? `2px solid ${theme.palette.error.main}`
-                  : `1px solid ${alpha("#fff", 0.1)}`,
+                  : `1px solid ${alpha('#fff', 0.1)}`,
             }}
           >
             <Box sx={{ p: 4 }}>
-              <Box
-                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}
-              >
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
                 <EmailIcon color="primary" />
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
                   Contact Details
                 </Typography>
               </Box>
 
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 <Box>
                   <TextField
                     label="Email Address"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => updateFormData("email", e.target.value)}
-                    error={
-                      hasFieldError("email") ||
-                      validationState.email === "invalid"
-                    }
+                    onChange={(e) => updateFormData('email', e.target.value)}
+                    error={hasFieldError('email') || validationState.email === 'invalid'}
                     helperText={
-                      getFieldError("email") ||
-                      (validationState.email === "invalid"
-                        ? "Please enter a valid email address"
-                        : "")
+                      getFieldError('email') ||
+                      (validationState.email === 'invalid'
+                        ? 'Please enter a valid email address'
+                        : '')
                     }
                     required={fieldRequirements.email}
                     fullWidth
@@ -507,15 +471,13 @@ export const EnhancedContactInfoStep: React.FC<
                         </InputAdornment>
                       ),
                       endAdornment: (
-                        <InputAdornment position="end">
-                          {getValidationIcon("email")}
-                        </InputAdornment>
+                        <InputAdornment position="end">{getValidationIcon('email')}</InputAdornment>
                       ),
                       sx: {
-                        backgroundColor: alpha("#fff", 0.1),
-                        backdropFilter: "blur(10px)",
-                        "& .MuiOutlinedInput-notchedOutline": {
-                          borderColor: alpha("#fff", 0.2),
+                        backgroundColor: alpha('#fff', 0.1),
+                        backdropFilter: 'blur(10px)',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: alpha('#fff', 0.2),
                         },
                       },
                     }}
@@ -526,16 +488,13 @@ export const EnhancedContactInfoStep: React.FC<
                   <TextField
                     label="Phone Number"
                     value={formData.phone}
-                    onChange={(e) => updateFormData("phone", e.target.value)}
-                    error={
-                      hasFieldError("phone") ||
-                      validationState.phone === "invalid"
-                    }
+                    onChange={(e) => updateFormData('phone', e.target.value)}
+                    error={hasFieldError('phone') || validationState.phone === 'invalid'}
                     helperText={
-                      getFieldError("phone") ||
-                      (validationState.phone === "invalid"
-                        ? "Please enter a valid phone number"
-                        : "e.g., 09123456789, +639123456789, or +1 415 555 1234")
+                      getFieldError('phone') ||
+                      (validationState.phone === 'invalid'
+                        ? 'Please enter a valid phone number'
+                        : 'e.g., 09123456789, +639123456789, or +1 415 555 1234')
                     }
                     required={fieldRequirements.phone}
                     placeholder="09123456789"
@@ -547,15 +506,13 @@ export const EnhancedContactInfoStep: React.FC<
                         </InputAdornment>
                       ),
                       endAdornment: (
-                        <InputAdornment position="end">
-                          {getValidationIcon("phone")}
-                        </InputAdornment>
+                        <InputAdornment position="end">{getValidationIcon('phone')}</InputAdornment>
                       ),
                       sx: {
-                        backgroundColor: alpha("#fff", 0.1),
-                        backdropFilter: "blur(10px)",
-                        "& .MuiOutlinedInput-notchedOutline": {
-                          borderColor: alpha("#fff", 0.2),
+                        backgroundColor: alpha('#fff', 0.1),
+                        backdropFilter: 'blur(10px)',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: alpha('#fff', 0.2),
                         },
                       },
                     }}
@@ -578,9 +535,7 @@ export const EnhancedContactInfoStep: React.FC<
               }}
             >
               <Box sx={{ p: 4 }}>
-                <Box
-                  sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}
-                >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
                   <SecurityIcon color="info" />
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     Account Options
@@ -590,9 +545,9 @@ export const EnhancedContactInfoStep: React.FC<
                 {/* Sign In Option */}
                 <Box
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     p: 2,
                     mb: 2,
                     borderRadius: 2,
@@ -600,7 +555,7 @@ export const EnhancedContactInfoStep: React.FC<
                     border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <LoginIcon color="primary" />
                     <Box>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>
@@ -615,8 +570,8 @@ export const EnhancedContactInfoStep: React.FC<
                     onClick={() => setSignInDialogOpen(true)}
                     sx={{
                       backgroundColor: theme.palette.primary.main,
-                      color: "white",
-                      "&:hover": {
+                      color: 'white',
+                      '&:hover': {
                         backgroundColor: theme.palette.primary.dark,
                       },
                     }}
@@ -632,9 +587,7 @@ export const EnhancedContactInfoStep: React.FC<
                       control={
                         <Checkbox
                           checked={formData.create_account || false}
-                          onChange={(e) =>
-                            updateFormData("create_account", e.target.checked)
-                          }
+                          onChange={(e) => updateFormData('create_account', e.target.checked)}
                         />
                       }
                       label={
@@ -653,11 +606,9 @@ export const EnhancedContactInfoStep: React.FC<
                       <Box sx={{ mt: 3 }}>
                         <TextField
                           label="Password"
-                          type={showPassword ? "text" : "password"}
-                          value={formData.password || ""}
-                          onChange={(e) =>
-                            updateFormData("password", e.target.value)
-                          }
+                          type={showPassword ? 'text' : 'password'}
+                          value={formData.password || ''}
+                          onChange={(e) => updateFormData('password', e.target.value)}
                           required
                           fullWidth
                           InputProps={{
@@ -667,19 +618,15 @@ export const EnhancedContactInfoStep: React.FC<
                                   onClick={() => setShowPassword(!showPassword)}
                                   edge="end"
                                 >
-                                  {showPassword ? (
-                                    <VisibilityOffIcon />
-                                  ) : (
-                                    <VisibilityIcon />
-                                  )}
+                                  {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
                                 </IconButton>
                               </InputAdornment>
                             ),
                             sx: {
-                              backgroundColor: alpha("#fff", 0.1),
-                              backdropFilter: "blur(10px)",
-                              "& .MuiOutlinedInput-notchedOutline": {
-                                borderColor: alpha("#fff", 0.2),
+                              backgroundColor: alpha('#fff', 0.1),
+                              backdropFilter: 'blur(10px)',
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: alpha('#fff', 0.2),
                               },
                             },
                           }}

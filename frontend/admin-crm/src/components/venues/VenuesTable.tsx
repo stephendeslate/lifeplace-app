@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/components/venues/VenuesTable.tsx
 
-import React from "react";
-import { Box, Typography, Chip, Tooltip, Stack } from "@mui/material";
+import React from 'react';
+import { Box, Typography, Chip, Tooltip, Stack } from '@mui/material';
 import {
   LocationOn as VenueIcon,
   NightsStay as OvernightIcon,
@@ -10,15 +10,15 @@ import {
   Settings as RulesIcon,
   Star as StarIcon,
   StarBorder as StarBorderIcon,
-} from "@mui/icons-material";
-import type { VenueListItem } from "../../types/venues.types";
+} from '@mui/icons-material';
+import type { VenueListItem } from '../../types/venues.types';
 import {
   ModernTable,
   ModernLoadingStates,
   ModernEmptyState,
   createStandardActions,
-} from "../common";
-import type { ModernTableColumn, ModernTableAction } from "../common";
+} from '../common';
+import type { ModernTableColumn, ModernTableAction } from '../common';
 
 interface VenuesTableProps {
   venues: VenueListItem[];
@@ -37,9 +37,9 @@ export const VenuesTable: React.FC<VenuesTableProps> = ({
   const getTypeChip = (isOvernight: boolean) => (
     <Chip
       icon={isOvernight ? <OvernightIcon /> : <DayIcon />}
-      label={isOvernight ? "Overnight" : "Day Event"}
+      label={isOvernight ? 'Overnight' : 'Day Event'}
       size="small"
-      color={isOvernight ? "secondary" : "primary"}
+      color={isOvernight ? 'secondary' : 'primary'}
       variant="outlined"
     />
   );
@@ -47,16 +47,16 @@ export const VenuesTable: React.FC<VenuesTableProps> = ({
   const getStatusChip = (isActive: boolean, isBookable: boolean) => (
     <Stack direction="row" spacing={0.5}>
       <Chip
-        label={isActive ? "Active" : "Inactive"}
+        label={isActive ? 'Active' : 'Inactive'}
         size="small"
-        color={isActive ? "success" : "default"}
-        variant={isActive ? "filled" : "outlined"}
+        color={isActive ? 'success' : 'default'}
+        variant={isActive ? 'filled' : 'outlined'}
       />
       {isActive && (
         <Chip
-          label={isBookable ? "Bookable" : "Not Bookable"}
+          label={isBookable ? 'Bookable' : 'Not Bookable'}
           size="small"
-          color={isBookable ? "info" : "warning"}
+          color={isBookable ? 'info' : 'warning'}
           variant="outlined"
         />
       )}
@@ -65,8 +65,8 @@ export const VenuesTable: React.FC<VenuesTableProps> = ({
 
   const columns: ModernTableColumn[] = [
     {
-      key: "name",
-      label: "Venue",
+      key: 'name',
+      label: 'Venue',
       sortable: true,
       render: (_, row) => {
         const venue = row as unknown as VenueListItem;
@@ -86,18 +86,18 @@ export const VenuesTable: React.FC<VenuesTableProps> = ({
       },
     },
     {
-      key: "type",
-      label: "Type",
-      hideBelow: "md",
+      key: 'type',
+      label: 'Type',
+      hideBelow: 'md',
       render: (_, row) => {
         const venue = row as unknown as VenueListItem;
         return getTypeChip(venue.is_overnight);
       },
     },
     {
-      key: "capacity",
-      label: "Capacity",
-      hideBelow: "md",
+      key: 'capacity',
+      label: 'Capacity',
+      hideBelow: 'md',
       render: (_, row) => {
         const venue = row as unknown as VenueListItem;
         return (
@@ -111,18 +111,18 @@ export const VenuesTable: React.FC<VenuesTableProps> = ({
       },
     },
     {
-      key: "status",
-      label: "Status",
+      key: 'status',
+      label: 'Status',
       render: (_, row) => {
         const venue = row as unknown as VenueListItem;
         return getStatusChip(venue.is_active, venue.is_bookable);
       },
     },
     {
-      key: "is_featured",
-      label: "Featured",
-      hideBelow: "lg",
-      align: "center",
+      key: 'is_featured',
+      label: 'Featured',
+      hideBelow: 'lg',
+      align: 'center',
       render: (_, row) => {
         const venue = row as unknown as VenueListItem;
         return venue.is_featured ? (
@@ -135,10 +135,10 @@ export const VenuesTable: React.FC<VenuesTableProps> = ({
       },
     },
     {
-      key: "has_operating_rules",
-      label: "Rules",
-      hideBelow: "lg",
-      align: "center",
+      key: 'has_operating_rules',
+      label: 'Rules',
+      hideBelow: 'lg',
+      align: 'center',
       render: (_, row) => {
         const venue = row as unknown as VenueListItem;
         return venue.has_operating_rules ? (
@@ -153,10 +153,10 @@ export const VenuesTable: React.FC<VenuesTableProps> = ({
       },
     },
     {
-      key: "packages_count",
-      label: "Packages",
-      hideBelow: "lg",
-      align: "center",
+      key: 'packages_count',
+      label: 'Packages',
+      hideBelow: 'lg',
+      align: 'center',
       render: (_, row) => {
         const venue = row as unknown as VenueListItem;
         return (
@@ -164,7 +164,7 @@ export const VenuesTable: React.FC<VenuesTableProps> = ({
             label={venue.packages_count}
             size="small"
             variant="outlined"
-            color={venue.packages_count > 0 ? "primary" : "default"}
+            color={venue.packages_count > 0 ? 'primary' : 'default'}
           />
         );
       },
@@ -175,8 +175,8 @@ export const VenuesTable: React.FC<VenuesTableProps> = ({
     (venue: VenueListItem) => onEdit(venue),
     (venue: VenueListItem) => onDelete(venue.id),
     {
-      editLabel: "Edit Venue",
-      deleteLabel: "Delete Venue",
+      editLabel: 'Edit Venue',
+      deleteLabel: 'Delete Venue',
     },
   );
 
@@ -191,8 +191,8 @@ export const VenuesTable: React.FC<VenuesTableProps> = ({
         title="No venues found"
         description="Create your first venue to get started with venue-based booking rules"
         tip={{
-          text: "Venues define operating hours, capacity limits, and booking constraints",
-          type: "info",
+          text: 'Venues define operating hours, capacity limits, and booking constraints',
+          type: 'info',
         }}
       />
     );
@@ -200,13 +200,9 @@ export const VenuesTable: React.FC<VenuesTableProps> = ({
 
   return (
     <ModernTable
-      columns={
-        columns as unknown as ModernTableColumn<Record<string, unknown>>[]
-      }
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
       data={venues as unknown as Record<string, unknown>[]}
-      actions={
-        actions as unknown as ModernTableAction<Record<string, unknown>>[]
-      }
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
       onRowClick={(row) => onEdit(row as unknown as VenueListItem)}
       sortBy="name"
       sortOrder="asc"

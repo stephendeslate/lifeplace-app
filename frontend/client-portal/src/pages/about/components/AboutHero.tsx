@@ -8,7 +8,7 @@ import {
   HeroBackground,
   GlassCard,
   AnimatedElement,
-  Container
+  Container,
 } from '../../../design-system';
 
 /**
@@ -58,7 +58,11 @@ export const AboutHero: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             width: '100%',
-            px: { xs: tokens.spacing.space[3], sm: tokens.spacing.space[4], md: tokens.spacing.space[6] },
+            px: {
+              xs: tokens.spacing.space[3],
+              sm: tokens.spacing.space[4],
+              md: tokens.spacing.space[6],
+            },
             pt: { xs: tokens.spacing.space[20], md: tokens.spacing.space[24] },
             pb: { xs: tokens.spacing.space[9], md: tokens.spacing.space[14] },
             textAlign: 'center',
@@ -109,7 +113,7 @@ export const AboutHero: React.FC = () => {
                       textAlign: 'center',
                       padding: {
                         xs: tokens.spacing.space[4],
-                        md: tokens.spacing.space[5]
+                        md: tokens.spacing.space[5],
                       },
                       background: 'rgba(255, 255, 255, 0.25)',
                       backdropFilter: 'blur(12px)',
@@ -124,7 +128,7 @@ export const AboutHero: React.FC = () => {
                         ...tokens.typography.styles.quote,
                         fontSize: {
                           xs: tokens.typography.sizes.xl,
-                          md: tokens.typography.sizes['2xl']
+                          md: tokens.typography.sizes['2xl'],
                         },
                         color: tokens.color.base.neutral[900],
                         lineHeight: tokens.typography.lineHeights.relaxed,
@@ -164,8 +168,8 @@ export const AboutHero: React.FC = () => {
                     },
                   }}
                 >
-                  Located in the peaceful hills of Alfonso, Cavite, near Tagaytay,
-                  we provide a sanctuary for life's most meaningful celebrations and gatherings.
+                  Located in the peaceful hills of Alfonso, Cavite, near Tagaytay, we provide a
+                  sanctuary for life's most meaningful celebrations and gatherings.
                 </Typography>
               </AnimatedElement>
             </Stack>

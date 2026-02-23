@@ -45,8 +45,10 @@ export const venuesApi = {
     const params = new URLSearchParams();
     if (filters?.search) params.append('search', filters.search);
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    if (filters?.is_bookable !== undefined) params.append('is_bookable', filters.is_bookable.toString());
-    if (filters?.is_overnight !== undefined) params.append('is_overnight', filters.is_overnight.toString());
+    if (filters?.is_bookable !== undefined)
+      params.append('is_bookable', filters.is_bookable.toString());
+    if (filters?.is_overnight !== undefined)
+      params.append('is_overnight', filters.is_overnight.toString());
 
     const response = await api.get(`/venues/venues/?${params.toString()}`);
     const data = response.data as PaginatedResponse<VenueListItem> | VenueListItem[];
@@ -82,7 +84,11 @@ export const venuesApi = {
     return response.data;
   },
 
-  updateVenue: async (id: number, data: UpdateVenueData, formData?: FormData): Promise<VenueDetail> => {
+  updateVenue: async (
+    id: number,
+    data: UpdateVenueData,
+    formData?: FormData,
+  ): Promise<VenueDetail> => {
     // Use FormData if provided (for image uploads), otherwise use JSON
     if (formData) {
       const response = await api.patch<VenueDetail>(`/venues/venues/${id}/`, formData, {
@@ -103,12 +109,20 @@ export const venuesApi = {
   // === Operating Rules ===
 
   getOperatingRules: async (venueId: number): Promise<VenueOperatingRules> => {
-    const response = await api.get<VenueOperatingRules>(`/venues/venues/${venueId}/operating_rules/`);
+    const response = await api.get<VenueOperatingRules>(
+      `/venues/venues/${venueId}/operating_rules/`,
+    );
     return response.data;
   },
 
-  updateOperatingRules: async (venueId: number, data: CreateOperatingRulesData): Promise<VenueOperatingRules> => {
-    const response = await api.patch<VenueOperatingRules>(`/venues/venues/${venueId}/operating_rules/`, data);
+  updateOperatingRules: async (
+    venueId: number,
+    data: CreateOperatingRulesData,
+  ): Promise<VenueOperatingRules> => {
+    const response = await api.patch<VenueOperatingRules>(
+      `/venues/venues/${venueId}/operating_rules/`,
+      data,
+    );
     return response.data;
   },
 
@@ -125,7 +139,9 @@ export const venuesApi = {
   },
 
   getVenuesForPackage: async (packageId: number): Promise<PackageVenueInline[]> => {
-    const response = await api.get<PackageVenueInline[]>(`/venues/package-venues/by_package/?package_id=${packageId}`);
+    const response = await api.get<PackageVenueInline[]>(
+      `/venues/package-venues/by_package/?package_id=${packageId}`,
+    );
     return response.data;
   },
 
@@ -139,7 +155,10 @@ export const venuesApi = {
     return response.data;
   },
 
-  updatePackageVenue: async (id: number, data: Partial<CreatePackageVenueData>): Promise<PackageVenue> => {
+  updatePackageVenue: async (
+    id: number,
+    data: Partial<CreatePackageVenueData>,
+  ): Promise<PackageVenue> => {
     const response = await api.patch<PackageVenue>(`/venues/package-venues/${id}/`, data);
     return response.data;
   },
@@ -180,16 +199,22 @@ export const venuesApi = {
   getVenueAvailability: async (
     venueId: number,
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<VenueAvailabilityResponse> => {
     const response = await api.get<VenueAvailabilityResponse>(
-      `/venues/venues/${venueId}/availability/?start_date=${startDate}&end_date=${endDate}`
+      `/venues/venues/${venueId}/availability/?start_date=${startDate}&end_date=${endDate}`,
     );
     return response.data;
   },
 
-  calculateTimes: async (venueId: number, data: CalculateTimesRequest): Promise<VenueTimeCalculation> => {
-    const response = await api.post<VenueTimeCalculation>(`/venues/venues/${venueId}/calculate_times/`, data);
+  calculateTimes: async (
+    venueId: number,
+    data: CalculateTimesRequest,
+  ): Promise<VenueTimeCalculation> => {
+    const response = await api.post<VenueTimeCalculation>(
+      `/venues/venues/${venueId}/calculate_times/`,
+      data,
+    );
     return response.data;
   },
 };

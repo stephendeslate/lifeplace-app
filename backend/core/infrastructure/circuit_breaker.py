@@ -4,20 +4,20 @@ Circuit Breaker Pattern Implementation
 Provides resilience for third-party API calls (Stripe, Brevo, Expo, etc.)
 with configurable thresholds and recovery behavior.
 """
+
 import functools
 import logging
-import time
+from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Callable, Optional, Any
 
 from django.core.cache import cache
-from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
 
 class CircuitBreakerError(Exception):
     """Raised when circuit breaker is open and request is blocked"""
+
     def __init__(self, service_name: str, message: str = None):
         self.service_name = service_name
         self.message = message or f"Circuit breaker is open for {service_name}"
@@ -47,7 +47,7 @@ class CircuitBreaker:
     """
 
     # Cache key prefix for fast state lookups
-    CACHE_PREFIX = 'circuit_breaker:'
+    CACHE_PREFIX = "circuit_breaker:"
     CACHE_TTL = 300  # 5 minutes
 
     def __init__(
@@ -89,13 +89,13 @@ class CircuitBreaker:
             recovery_timeout_seconds=self.recovery_timeout,
         )
 
-    def _get_cached_state(self) -> Optional[str]:
+    def _get_cached_state(self) -> str | None:
         """Get circuit state from cache for fast lookups"""
-        return cache.get(self._get_cache_key('state'))
+        return cache.get(self._get_cache_key("state"))
 
     def _set_cached_state(self, state: str):
         """Cache circuit state for fast lookups"""
-        cache.set(self._get_cache_key('state'), state, self.CACHE_TTL)
+        cache.set(self._get_cache_key("state"), state, self.CACHE_TTL)
 
     def get_state(self) -> str:
         """Get current circuit state"""
@@ -122,10 +122,7 @@ class CircuitBreaker:
         db_state.record_success()
         self._set_cached_state(db_state.state)
 
-        logger.debug(
-            f"Circuit breaker {self.service_name}: success recorded, "
-            f"state={db_state.state}"
-        )
+        logger.debug(f"Circuit breaker {self.service_name}: success recorded, state={db_state.state}")
 
     def record_failure(self, exception: Exception = None):
         """Record a failed call"""
@@ -135,10 +132,7 @@ class CircuitBreaker:
         self._set_cached_state(db_state.state)
 
         if db_state.state != previous_state:
-            logger.warning(
-                f"Circuit breaker {self.service_name}: state changed "
-                f"{previous_state} -> {db_state.state}"
-            )
+            logger.warning(f"Circuit breaker {self.service_name}: state changed {previous_state} -> {db_state.state}")
 
         logger.debug(
             f"Circuit breaker {self.service_name}: failure recorded "
@@ -178,6 +172,7 @@ class CircuitBreaker:
             def call_api():
                 return api.call()
         """
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             if not self.can_execute():
@@ -199,12 +194,12 @@ class CircuitBreaker:
     def reset(self):
         """Manually reset circuit breaker to closed state"""
         db_state = self._get_db_state()
-        db_state.state = 'CLOSED'
+        db_state.state = "CLOSED"
         db_state.failure_count = 0
         db_state.half_open_successes = 0
         db_state.opened_at = None
         db_state.save()
-        self._set_cached_state('CLOSED')
+        self._set_cached_state("CLOSED")
 
         logger.info(f"Circuit breaker {self.service_name}: manually reset to CLOSED")
 
@@ -215,7 +210,7 @@ class CircuitBreaker:
 
 # Stripe circuit breaker with appropriate settings
 stripe_circuit_breaker = CircuitBreaker(
-    service_name='stripe',
+    service_name="stripe",
     failure_threshold=5,
     success_threshold=3,
     recovery_timeout=60,
@@ -226,7 +221,7 @@ stripe_circuit_breaker = CircuitBreaker(
 
 # Brevo (email) circuit breaker
 brevo_circuit_breaker = CircuitBreaker(
-    service_name='brevo',
+    service_name="brevo",
     failure_threshold=5,
     success_threshold=3,
     recovery_timeout=120,
@@ -235,7 +230,7 @@ brevo_circuit_breaker = CircuitBreaker(
 
 # Expo (push notifications) circuit breaker
 expo_circuit_breaker = CircuitBreaker(
-    service_name='expo',
+    service_name="expo",
     failure_threshold=5,
     success_threshold=3,
     recovery_timeout=60,
@@ -244,7 +239,7 @@ expo_circuit_breaker = CircuitBreaker(
 
 # Storage (R2) circuit breaker
 storage_circuit_breaker = CircuitBreaker(
-    service_name='storage',
+    service_name="storage",
     failure_threshold=5,
     success_threshold=3,
     recovery_timeout=30,
@@ -276,9 +271,7 @@ def with_circuit_breaker(
         def wrapper(*args, **kwargs):
             if not cb.can_execute():
                 if fallback:
-                    logger.warning(
-                        f"Circuit breaker {service_name} open, using fallback"
-                    )
+                    logger.warning(f"Circuit breaker {service_name} open, using fallback")
                     return fallback(*args, **kwargs) if callable(fallback) else fallback
                 raise CircuitBreakerError(service_name)
 
@@ -289,11 +282,10 @@ def with_circuit_breaker(
             except Exception as e:
                 cb.record_failure(e)
                 if fallback:
-                    logger.warning(
-                        f"Service {service_name} failed, using fallback: {e}"
-                    )
+                    logger.warning(f"Service {service_name} failed, using fallback: {e}")
                     return fallback(*args, **kwargs) if callable(fallback) else fallback
                 raise
 
         return wrapper
+
     return decorator

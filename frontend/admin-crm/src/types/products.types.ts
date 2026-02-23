@@ -39,9 +39,9 @@ export interface CreateCategoryData {
 
 export type UpdateCategoryData = Partial<CreateCategoryData>;
 
-export type PricingModel = "FIXED" | "HOURLY" | "TIERED" | "CUSTOM";
-export type PricingUnit = "PER_EVENT" | "PER_PERSON" | "PER_HOUR";
-export type ProductType = "PRODUCT" | "PACKAGE";
+export type PricingModel = 'FIXED' | 'HOURLY' | 'TIERED' | 'CUSTOM';
+export type PricingUnit = 'PER_EVENT' | 'PER_PERSON' | 'PER_HOUR';
+export type ProductType = 'PRODUCT' | 'PACKAGE';
 
 export interface ProductOption {
   id: number;
@@ -149,8 +149,8 @@ export interface ProductFormData {
   gallery_images: (File | string)[];
 }
 
-export type DiscountType = "PERCENTAGE" | "FIXED" | "FREE_HOURS";
-export type ApplicationType = "AUTOMATIC" | "CODE_REQUIRED" | "ADMIN_ONLY";
+export type DiscountType = 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS';
+export type ApplicationType = 'AUTOMATIC' | 'CODE_REQUIRED' | 'ADMIN_ONLY';
 
 export interface Discount {
   id: number;
@@ -183,7 +183,7 @@ export interface Discount {
 
 export interface DiscountDetail extends Omit<
   Discount,
-  "applicable_products" | "applicable_categories"
+  'applicable_products' | 'applicable_categories'
 > {
   applicable_products: ProductOption[];
   applicable_categories: ProductCategory[];

@@ -143,21 +143,12 @@ export const MobileBookingNavigation: React.FC<MobileBookingNavigationProps> = (
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <IconButton
-            onClick={toggleDrawer(true)}
-            size="small"
-            sx={{ color: 'primary.main' }}
-          >
+          <IconButton onClick={toggleDrawer(true)} size="small" sx={{ color: 'primary.main' }}>
             <MenuIcon />
           </IconButton>
-          
+
           <Box sx={{ flex: 1, mx: 2, minWidth: 0 }}>
-            <Typography 
-              variant="subtitle1" 
-              fontWeight={600}
-              noWrap
-              sx={{ color: 'primary.main' }}
-            >
+            <Typography variant="subtitle1" fontWeight={600} noWrap sx={{ color: 'primary.main' }}>
               {currentStep?.shortLabel || currentStep?.label}
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
@@ -168,20 +159,10 @@ export const MobileBookingNavigation: React.FC<MobileBookingNavigationProps> = (
                 variant="outlined"
               />
               {hasErrors && (
-                <Chip
-                  label="Needs attention"
-                  size="small"
-                  color="error"
-                  variant="outlined"
-                />
+                <Chip label="Needs attention" size="small" color="error" variant="outlined" />
               )}
               {isValidating && (
-                <Chip
-                  label="Validating..."
-                  size="small"
-                  color="warning"
-                  variant="outlined"
-                />
+                <Chip label="Validating..." size="small" color="warning" variant="outlined" />
               )}
             </Box>
           </Box>
@@ -218,7 +199,7 @@ export const MobileBookingNavigation: React.FC<MobileBookingNavigationProps> = (
             Please fix the errors above before continuing
           </Alert>
         )}
-        
+
         <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
           <Button
             onClick={onPrevious}
@@ -230,7 +211,7 @@ export const MobileBookingNavigation: React.FC<MobileBookingNavigationProps> = (
           >
             Back
           </Button>
-          
+
           <Button
             onClick={onNext}
             disabled={!canGoNext || isValidating || hasErrors}
@@ -251,7 +232,7 @@ export const MobileBookingNavigation: React.FC<MobileBookingNavigationProps> = (
         onClose={toggleDrawer(false)}
         onOpen={toggleDrawer(true)}
         PaperProps={{
-          sx: { width: '80%', maxWidth: 300 }
+          sx: { width: '80%', maxWidth: 300 },
         }}
       >
         <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -263,12 +244,12 @@ export const MobileBookingNavigation: React.FC<MobileBookingNavigationProps> = (
           </IconButton>
         </Box>
         <Divider />
-        
+
         <List>
           {steps.map((step, index) => {
             const status = getStepStatus(step, index);
             const isAccessible = index <= currentStepIndex + 1 || completedSteps.includes(step.id);
-            
+
             return (
               <ListItem key={step.id} disablePadding>
                 <ListItemButton
@@ -280,12 +261,10 @@ export const MobileBookingNavigation: React.FC<MobileBookingNavigationProps> = (
                       bgcolor: 'primary.50',
                       borderRight: 3,
                       borderColor: 'primary.main',
-                    }
+                    },
                   }}
                 >
-                  <ListItemIcon sx={{ minWidth: 40 }}>
-                    {getStepIcon(step, index)}
-                  </ListItemIcon>
+                  <ListItemIcon sx={{ minWidth: 40 }}>{getStepIcon(step, index)}</ListItemIcon>
                   <ListItemText
                     primary={step.label}
                     secondary={
@@ -310,10 +289,14 @@ export const MobileBookingNavigation: React.FC<MobileBookingNavigationProps> = (
                     }
                     primaryTypographyProps={{
                       fontWeight: index === currentStepIndex ? 600 : 400,
-                      color: status === 'error' ? 'error.main' 
-                        : status === 'completed' ? 'success.main'
-                        : status === 'current' ? 'primary.main'
-                        : 'text.secondary'
+                      color:
+                        status === 'error'
+                          ? 'error.main'
+                          : status === 'completed'
+                            ? 'success.main'
+                            : status === 'current'
+                              ? 'primary.main'
+                              : 'text.secondary',
                     }}
                   />
                 </ListItemButton>
@@ -321,14 +304,16 @@ export const MobileBookingNavigation: React.FC<MobileBookingNavigationProps> = (
             );
           })}
         </List>
-        
+
         <Box sx={{ mt: 'auto', p: 2 }}>
-          <Box sx={{ 
-            bgcolor: 'grey.50', 
-            p: 2, 
-            borderRadius: 2,
-            textAlign: 'center'
-          }}>
+          <Box
+            sx={{
+              bgcolor: 'grey.50',
+              p: 2,
+              borderRadius: 2,
+              textAlign: 'center',
+            }}
+          >
             <Typography variant="body2" color="text.secondary" gutterBottom>
               Overall Progress
             </Typography>

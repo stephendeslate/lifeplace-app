@@ -65,7 +65,10 @@ export const EnhancedSettingsProvider: React.FC<EnhancedSettingsProviderProps> =
     localStorage.setItem(STORAGE_KEYS.THEME, JSON.stringify(theme));
 
     // Apply theme to document
-    if (theme.mode === 'dark' || (theme.mode === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    if (
+      theme.mode === 'dark' ||
+      (theme.mode === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    ) {
       document.documentElement.classList.add('dark-mode');
     } else {
       document.documentElement.classList.remove('dark-mode');
@@ -73,19 +76,19 @@ export const EnhancedSettingsProvider: React.FC<EnhancedSettingsProviderProps> =
   }, [theme]);
 
   const addFavorite = useCallback((item: SettingsFavorite) => {
-    setFavorites(prev => {
-      const exists = prev.some(fav => fav.id === item.id);
+    setFavorites((prev) => {
+      const exists = prev.some((fav) => fav.id === item.id);
       if (exists) return prev;
       return [...prev, { ...item, addedAt: new Date().toISOString() }];
     });
   }, []);
 
   const removeFavorite = useCallback((id: string) => {
-    setFavorites(prev => prev.filter(fav => fav.id !== id));
+    setFavorites((prev) => prev.filter((fav) => fav.id !== id));
   }, []);
 
   const setTheme = useCallback((newTheme: Partial<ThemeSettings>) => {
-    setThemeState(prev => ({ ...prev, ...newTheme }));
+    setThemeState((prev) => ({ ...prev, ...newTheme }));
   }, []);
 
   const value: SettingsContextValue = {
@@ -97,8 +100,6 @@ export const EnhancedSettingsProvider: React.FC<EnhancedSettingsProviderProps> =
   };
 
   return (
-    <EnhancedSettingsContext.Provider value={value}>
-      {children}
-    </EnhancedSettingsContext.Provider>
+    <EnhancedSettingsContext.Provider value={value}>{children}</EnhancedSettingsContext.Provider>
   );
 };

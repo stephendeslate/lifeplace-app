@@ -1,14 +1,7 @@
 // frontend/admin-crm/src/components/events/EventFormDialog.tsx
 
 import React from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  IconButton,
-  Box,
-  Typography,
-} from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, IconButton, Box, Typography } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { EventForm } from './EventForm';
 import type { CreateEventData, UpdateEventData, Event } from '../../types/events.types';
@@ -33,9 +26,13 @@ export const EventFormDialog: React.FC<EventFormDialogProps> = ({
   title,
 }) => {
   // Create a pseudo-event object with the default client for the form
-  const eventWithDefaults = event || (defaultClientId ? {
-    client: defaultClientId,
-  } as Event : undefined);
+  const eventWithDefaults =
+    event ||
+    (defaultClientId
+      ? ({
+          client: defaultClientId,
+        } as Event)
+      : undefined);
 
   const handleClose = () => {
     if (!isLoading) {
@@ -50,7 +47,7 @@ export const EventFormDialog: React.FC<EventFormDialogProps> = ({
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { minHeight: 500 }
+        sx: { minHeight: 500 },
       }}
     >
       <DialogTitle>

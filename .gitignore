@@ -48,6 +48,9 @@ backend/test_message.json
 # Build artifacts
 *.tar.gz
 
+# Turborepo
+.turbo/
+
 # Export scripts and output
 export_files.py
 export_concatenated_files.py

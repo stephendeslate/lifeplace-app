@@ -19,7 +19,7 @@ describe('ReviewsHero', () => {
     it('renders the description text', () => {
       render(<ReviewsHero />);
       expect(
-        screen.getByText(/See what our clients and guests have to say about their experiences/)
+        screen.getByText(/See what our clients and guests have to say about their experiences/),
       ).toBeInTheDocument();
     });
 
@@ -462,9 +462,7 @@ describe('ReviewsHero', () => {
     it('communicates testimonial purpose', () => {
       render(<ReviewsHero />);
 
-      expect(
-        screen.getByText(/See what our clients and guests have to say/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/See what our clients and guests have to say/)).toBeInTheDocument();
       expect(screen.getByText(/about their experiences at LifePlace Alfonso/)).toBeInTheDocument();
     });
 

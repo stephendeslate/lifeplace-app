@@ -20,33 +20,33 @@ export const useNotificationRealtime = (options: UseNotificationRealtimeOptions 
 
     const handleNotificationCountsUpdate = () => {
       const currentCounts = queryClient.getQueryData<NotificationCounts>(['notification-counts']);
-      
+
       if (!currentCounts || !previousCountsRef.current) {
         previousCountsRef.current = currentCounts || null;
         return;
       }
 
       const previousCounts = previousCountsRef.current;
-      
+
       // Check for new notifications
       if (currentCounts.total > previousCounts.total) {
         const newNotificationCount = currentCounts.total - previousCounts.total;
-        
+
         // Show toast notification for new items
         showInfo(
           `${newNotificationCount} new notification${newNotificationCount > 1 ? 's' : ''}`,
           undefined,
           {
             duration: 4000,
-            position: 'top-right'
-          }
+            position: 'top-right',
+          },
         );
       }
 
       // Check for urgent notifications increase
       const currentUrgent = currentCounts.by_priority?.URGENT || 0;
       const previousUrgent = previousCounts.by_priority?.URGENT || 0;
-      
+
       if (currentUrgent > previousUrgent) {
         const newUrgentCount = currentUrgent - previousUrgent;
         showInfo(
@@ -55,8 +55,8 @@ export const useNotificationRealtime = (options: UseNotificationRealtimeOptions 
           {
             duration: 6000,
             position: 'top-right',
-            severity: 'warning'
-          }
+            severity: 'warning',
+          },
         );
       }
 

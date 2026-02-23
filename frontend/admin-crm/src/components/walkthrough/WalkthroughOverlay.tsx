@@ -108,13 +108,7 @@ export const WalkthroughOverlay: React.FC<WalkthroughOverlayProps> = ({
           />
         )}
         {!spotlightPath && (
-          <rect
-            x="0"
-            y="0"
-            width="100%"
-            height="100%"
-            fill="rgba(0, 0, 0, 0.75)"
-          />
+          <rect x="0" y="0" width="100%" height="100%" fill="rgba(0, 0, 0, 0.75)" />
         )}
       </Box>
 
@@ -133,7 +127,9 @@ export const WalkthroughOverlay: React.FC<WalkthroughOverlayProps> = ({
               ${fadeIn} 300ms ${tokens.animation.easing.decelerate} forwards,
               ${pulseGlow} 2s ${tokens.animation.easing.gentle} infinite
             `,
-            transition: ['top', 'left', 'width', 'height'].map(prop => createTransition(prop, 'normal')).join(', '),
+            transition: ['top', 'left', 'width', 'height']
+              .map((prop) => createTransition(prop, 'normal'))
+              .join(', '),
             pointerEvents: 'none',
           }}
           aria-hidden="true"

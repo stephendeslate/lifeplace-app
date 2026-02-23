@@ -96,12 +96,13 @@ export const AnalyticsDashboard: React.FC = () => {
   }, [timeRange]);
 
   // Fetch data from API
-  const { data: dashboard, isLoading: dashboardLoading, error: dashboardError } = useClientDashboard(
-    dateRange.startDate,
-    dateRange.endDate
-  );
+  const {
+    data: dashboard,
+    isLoading: dashboardLoading,
+    error: dashboardError,
+  } = useClientDashboard(dateRange.startDate, dateRange.endDate);
   const { data: spendingTrends, isLoading: trendsLoading } = useClientSpendingTrends(
-    timeRange === '12m' ? 12 : timeRange === '90d' ? 3 : 1
+    timeRange === '12m' ? 12 : timeRange === '90d' ? 3 : 1,
   );
   const { data: deadlines, isLoading: deadlinesLoading } = useClientDeadlines(30);
   const { data: eventHistory, isLoading: historyLoading } = useClientEventHistory(5);
@@ -140,13 +141,15 @@ export const AnalyticsDashboard: React.FC = () => {
         id: 'pending-payments',
         title: 'Pending Payments',
         value: formatCurrency(dashboard.financials.pending_amount),
-        subtitle: dashboard.financials.overdue_count > 0
-          ? `${dashboard.financials.overdue_count} overdue`
-          : 'all on track',
+        subtitle:
+          dashboard.financials.overdue_count > 0
+            ? `${dashboard.financials.overdue_count} overdue`
+            : 'all on track',
         icon: <PaymentIcon fontSize="small" />,
-        color: dashboard.financials.overdue_count > 0
-          ? theme.palette.error.main
-          : theme.palette.warning.main,
+        color:
+          dashboard.financials.overdue_count > 0
+            ? theme.palette.error.main
+            : theme.palette.warning.main,
       },
       {
         id: 'upcoming-due',
@@ -208,9 +211,7 @@ export const AnalyticsDashboard: React.FC = () => {
   if (dashboardError) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="error">
-          Unable to load analytics data. Please try again later.
-        </Alert>
+        <Alert severity="error">Unable to load analytics data. Please try again later.</Alert>
       </Box>
     );
   }
@@ -219,7 +220,16 @@ export const AnalyticsDashboard: React.FC = () => {
     <Box sx={{ p: 3 }}>
       {/* Header */}
       <AnimatedElement animation="slideDown" delay={100}>
-        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+        <Box
+          sx={{
+            mb: 4,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 2,
+          }}
+        >
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 600, color: 'primary.main' }}>
               My Dashboard
@@ -278,61 +288,65 @@ export const AnalyticsDashboard: React.FC = () => {
             mb: 4,
           }}
         >
-          {dashboardLoading ? (
-            // Loading skeletons
-            [...Array(4)].map((_, index) => (
-              <Skeleton
-                key={index}
-                variant="rectangular"
-                height={140}
-                sx={{ borderRadius: 2 }}
-              />
-            ))
-          ) : (
-            metrics.map((metric, index) => (
-              <AnimatedElement key={metric.id} animation="slideUp" delay={200 + index * 50}>
-                <GlassCard
-                  variant="light"
-                  intensity="medium"
-                  hover
-                  sx={{
-                    p: 3,
-                    height: '100%',
-                    backgroundColor: alpha('#fff', 0.08),
-                    backdropFilter: 'blur(20px)',
-                    border: `1px solid ${alpha('#fff', 0.1)}`,
-                  }}
-                >
-                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
-                    <Avatar
+          {dashboardLoading
+            ? // Loading skeletons
+              [...Array(4)].map((_, index) => (
+                <Skeleton key={index} variant="rectangular" height={140} sx={{ borderRadius: 2 }} />
+              ))
+            : metrics.map((metric, index) => (
+                <AnimatedElement key={metric.id} animation="slideUp" delay={200 + index * 50}>
+                  <GlassCard
+                    variant="light"
+                    intensity="medium"
+                    hover
+                    sx={{
+                      p: 3,
+                      height: '100%',
+                      backgroundColor: alpha('#fff', 0.08),
+                      backdropFilter: 'blur(20px)',
+                      border: `1px solid ${alpha('#fff', 0.1)}`,
+                    }}
+                  >
+                    <Box
                       sx={{
-                        backgroundColor: alpha(metric.color, 0.15),
-                        color: metric.color,
-                        width: 48,
-                        height: 48,
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'space-between',
+                        mb: 2,
                       }}
                     >
-                      {metric.icon}
-                    </Avatar>
-                  </Box>
+                      <Avatar
+                        sx={{
+                          backgroundColor: alpha(metric.color, 0.15),
+                          color: metric.color,
+                          width: 48,
+                          height: 48,
+                        }}
+                      >
+                        {metric.icon}
+                      </Avatar>
+                    </Box>
 
-                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
-                    {metric.value}
-                  </Typography>
-
-                  <Typography variant="body2" color="text.secondary">
-                    {metric.title}
-                  </Typography>
-
-                  {metric.subtitle && (
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                      {metric.subtitle}
+                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5 }}>
+                      {metric.value}
                     </Typography>
-                  )}
-                </GlassCard>
-              </AnimatedElement>
-            ))
-          )}
+
+                    <Typography variant="body2" color="text.secondary">
+                      {metric.title}
+                    </Typography>
+
+                    {metric.subtitle && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: 'block', mt: 0.5 }}
+                      >
+                        {metric.subtitle}
+                      </Typography>
+                    )}
+                  </GlassCard>
+                </AnimatedElement>
+              ))}
         </Box>
       </AnimatedElement>
 
@@ -353,7 +367,14 @@ export const AnalyticsDashboard: React.FC = () => {
                   border: `1px solid ${alpha('#fff', 0.1)}`,
                 }}
               >
-                <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box
+                  sx={{
+                    mb: 3,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}
+                >
                   <Box>
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
                       Spending Trend
@@ -383,16 +404,20 @@ export const AnalyticsDashboard: React.FC = () => {
                       <AreaChart data={chartData}>
                         <defs>
                           <linearGradient id="amountGradient" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.3} />
-                            <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0.05} />
+                            <stop
+                              offset="5%"
+                              stopColor={theme.palette.primary.main}
+                              stopOpacity={0.3}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor={theme.palette.primary.main}
+                              stopOpacity={0.05}
+                            />
                           </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke={alpha('#fff', 0.1)} />
-                        <XAxis
-                          dataKey="name"
-                          stroke={alpha('#fff', 0.6)}
-                          fontSize={12}
-                        />
+                        <XAxis dataKey="name" stroke={alpha('#fff', 0.6)} fontSize={12} />
                         <YAxis
                           stroke={alpha('#fff', 0.6)}
                           fontSize={12}
@@ -427,9 +452,7 @@ export const AnalyticsDashboard: React.FC = () => {
                         justifyContent: 'center',
                       }}
                     >
-                      <Typography color="text.secondary">
-                        No spending data available yet
-                      </Typography>
+                      <Typography color="text.secondary">No spending data available yet</Typography>
                     </Box>
                   )}
                 </Box>
@@ -478,13 +501,13 @@ export const AnalyticsDashboard: React.FC = () => {
                             deadline.urgency === 'high'
                               ? theme.palette.error.main
                               : theme.palette.primary.main,
-                            0.1
+                            0.1,
                           ),
                           border: `1px solid ${alpha(
                             deadline.urgency === 'high'
                               ? theme.palette.error.main
                               : theme.palette.primary.main,
-                            0.2
+                            0.2,
                           )}`,
                         }}
                       >
@@ -497,7 +520,7 @@ export const AnalyticsDashboard: React.FC = () => {
                                 deadline.urgency === 'high'
                                   ? theme.palette.error.main
                                   : theme.palette.primary.main,
-                                0.2
+                                0.2,
                               ),
                               color:
                                 deadline.urgency === 'high'
@@ -631,9 +654,7 @@ export const AnalyticsDashboard: React.FC = () => {
                               }}
                             />
                           </TableCell>
-                          <TableCell align="right">
-                            {formatCurrency(event.total_price)}
-                          </TableCell>
+                          <TableCell align="right">{formatCurrency(event.total_price)}</TableCell>
                           <TableCell align="right">
                             <Typography color="success.main">
                               {formatCurrency(event.amount_paid)}

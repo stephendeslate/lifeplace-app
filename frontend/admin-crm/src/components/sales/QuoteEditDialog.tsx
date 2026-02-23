@@ -20,7 +20,13 @@ import {
   Chip,
   Tooltip,
 } from '@mui/material';
-import { Add as AddIcon, Delete as DeleteIcon, Info as InfoIcon, Refresh as RefreshIcon, Download as DownloadIcon } from '@mui/icons-material';
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Info as InfoIcon,
+  Refresh as RefreshIcon,
+  Download as DownloadIcon,
+} from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
@@ -75,18 +81,13 @@ interface LineItemFormData {
   available_venues?: VenueInfo[];
 }
 
-const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
-  open,
-  onClose,
-  quote,
-  onSuccess,
-}) => {
+const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({ open, onClose, quote, onSuccess }) => {
   const { showToast } = useToast();
   const updateQuoteMutation = useUpdateEventQuote();
   const { products, isLoadingProducts } = useProducts({ is_active: true });
 
   const [validUntil, setValidUntil] = useState<Date | null>(
-    quote.valid_until ? new Date(quote.valid_until) : null
+    quote.valid_until ? new Date(quote.valid_until) : null,
   );
   const [notes, setNotes] = useState(quote.notes || '');
   const [termsAndConditions, setTermsAndConditions] = useState(quote.terms_and_conditions || '');
@@ -122,7 +123,7 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
             excess_cost: item.excess_cost,
             has_excess_hours: hasExcessHours,
           };
-        })
+        }),
       );
     } else {
       // Initialize with at least one empty line item
@@ -176,13 +177,25 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
         }));
         setLineItems(importedItems);
         setOverriddenItems(new Set());
-        showToast({ type: 'success', title: 'Import Successful', message: `Imported ${importedItems.length} line item(s) from booking session` });
+        showToast({
+          type: 'success',
+          title: 'Import Successful',
+          message: `Imported ${importedItems.length} line item(s) from booking session`,
+        });
       } else {
-        showToast({ type: 'warning', title: 'No Items', message: 'No line items found in booking session' });
+        showToast({
+          type: 'warning',
+          title: 'No Items',
+          message: 'No line items found in booking session',
+        });
       }
     } catch (error) {
       console.error('Failed to import from booking session:', error);
-      showToast({ type: 'error', title: 'Import Failed', message: 'Failed to import line items from booking session' });
+      showToast({
+        type: 'error',
+        title: 'Import Failed',
+        message: 'Failed to import line items from booking session',
+      });
     } finally {
       setIsImporting(false);
     }
@@ -265,7 +278,11 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
           venue_additional_hours: {},
           available_venues: [],
         };
-        showToast({ type: 'warning', title: 'Pricing Warning', message: 'Could not calculate excess hours pricing' });
+        showToast({
+          type: 'warning',
+          title: 'Pricing Warning',
+          message: 'Could not calculate excess hours pricing',
+        });
       } finally {
         setIsCalculating(null);
       }
@@ -392,13 +409,13 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
   const handleLineItemChange = (
     index: number,
     field: keyof LineItemFormData,
-    value: string | number
+    value: string | number,
   ) => {
     const updatedItems = [...lineItems];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
 
     // Recalculate total for free-form items (no product)
-    if ((field === 'unit_price') && !updatedItems[index].product_id) {
+    if (field === 'unit_price' && !updatedItems[index].product_id) {
       const unitPrice = parseFloat(value as string) || 0;
       updatedItems[index].total = updatedItems[index].quantity * unitPrice;
     }
@@ -410,7 +427,7 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
   const handlePricingOverride = (
     index: number,
     field: 'unit_price' | 'base_unit_price' | 'excess_hours' | 'excess_hour_price' | 'excess_cost',
-    value: string | number
+    value: string | number,
   ) => {
     const updatedItems = [...lineItems];
     updatedItems[index] = { ...updatedItems[index], [field]: value };
@@ -478,7 +495,11 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
       });
     } catch (error) {
       console.error('Failed to reset pricing:', error);
-      showToast({ type: 'error', title: 'Reset Failed', message: 'Could not reset to calculated values' });
+      showToast({
+        type: 'error',
+        title: 'Reset Failed',
+        message: 'Could not reset to calculated values',
+      });
     } finally {
       setIsCalculating(null);
     }
@@ -493,7 +514,7 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
       // Skip tax-inclusive items (tax already in price)
       if (item.is_tax_inclusive) return sum;
       const taxRate = parseFloat(item.tax_rate || '0') / 100;
-      return sum + (item.total * taxRate);
+      return sum + item.total * taxRate;
     }, 0);
   };
 
@@ -509,17 +530,25 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
   const handleSubmit = async () => {
     // Validation
     const hasInvalidLineItem = lineItems.some(
-      (item) => !item.description.trim() || item.quantity <= 0
+      (item) => !item.description.trim() || item.quantity <= 0,
     );
 
     if (hasInvalidLineItem) {
-      showToast({ type: 'error', title: 'Validation Error', message: 'Please fill in all line item fields correctly' });
+      showToast({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Please fill in all line item fields correctly',
+      });
       return;
     }
 
     const subtotal = calculateSubtotal();
     if (subtotal < 0) {
-      showToast({ type: 'error', title: 'Validation Error', message: 'Quote total cannot be negative' });
+      showToast({
+        type: 'error',
+        title: 'Validation Error',
+        message: 'Quote total cannot be negative',
+      });
       return;
     }
 
@@ -537,9 +566,10 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
           tax_rate: item.tax_rate,
           ...(item.product_id && { product_id: item.product_id }),
           // Include venue_additional_hours for recalculation
-          ...(item.venue_additional_hours && Object.keys(item.venue_additional_hours).length > 0 && {
-            venue_additional_hours: item.venue_additional_hours,
-          }),
+          ...(item.venue_additional_hours &&
+            Object.keys(item.venue_additional_hours).length > 0 && {
+              venue_additional_hours: item.venue_additional_hours,
+            }),
           // Include excess hours fields if item was overridden (to preserve overridden values)
           ...(overriddenItems.has(index) && {
             skip_recalculation: true,
@@ -586,7 +616,9 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
 
           {/* Line Items */}
           <Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+            >
               <Typography variant="h6">Line Items</Typography>
               <Box sx={{ display: 'flex', gap: 1 }}>
                 {hasBookingSession && (
@@ -721,15 +753,23 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
                               }}
                               inputProps={{ step: '0.01' }}
                               disabled={isCalculating === index}
-                              sx={overriddenItems.has(index) ? {
-                                '& .MuiOutlinedInput-root': {
-                                  '& fieldset': { borderColor: 'warning.main' }
-                                }
-                              } : undefined}
+                              sx={
+                                overriddenItems.has(index)
+                                  ? {
+                                      '& .MuiOutlinedInput-root': {
+                                        '& fieldset': { borderColor: 'warning.main' },
+                                      },
+                                    }
+                                  : undefined
+                              }
                             />
                             {item.product_id && overriddenItems.has(index) && (
                               <Tooltip title="Reset to calculated value">
-                                <IconButton size="small" onClick={() => handleResetToCalculated(index)} color="warning">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleResetToCalculated(index)}
+                                  color="warning"
+                                >
                                   <RefreshIcon fontSize="small" />
                                 </IconButton>
                               </Tooltip>
@@ -746,7 +786,9 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
                               size="small"
                               type="number"
                               value={item.tax_rate || ''}
-                              onChange={(e) => handleLineItemChange(index, 'tax_rate', e.target.value)}
+                              onChange={(e) =>
+                                handleLineItemChange(index, 'tax_rate', e.target.value)
+                              }
                               inputProps={{ step: '0.01', min: 0 }}
                               sx={{ width: '70px' }}
                               disabled={isCalculating === index}
@@ -754,7 +796,10 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
                           )}
                         </TableCell>
                         <TableCell align="right">
-                          <Typography variant="body2" color={item.total < 0 ? 'success.main' : 'inherit'}>
+                          <Typography
+                            variant="body2"
+                            color={item.total < 0 ? 'success.main' : 'inherit'}
+                          >
                             {isCalculating === index ? '...' : `₱${item.total.toFixed(2)}`}
                           </Typography>
                         </TableCell>
@@ -770,104 +815,136 @@ const QuoteEditDialog: React.FC<QuoteEditDialogProps> = ({
                         </TableCell>
                       </TableRow>
                       {/* Venue hours selection row - only shown for products with venues */}
-                      {item.product_id && item.has_excess_hours && item.available_venues && item.available_venues.length > 0 && (
-                        <TableRow>
-                          <TableCell colSpan={7} sx={{ py: 1.5, borderBottom: 'none', bgcolor: 'action.hover' }}>
-                            <Box sx={{ pl: 2 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                <Tooltip title="Set additional hours per venue to calculate excess charges">
-                                  <InfoIcon fontSize="small" color="info" />
-                                </Tooltip>
-                                <Typography variant="caption" color="text.secondary">
-                                  Additional Hours by Venue
-                                </Typography>
-                                {item.excess_hours != null && item.excess_hours > 0 && (
-                                  <Chip
-                                    size="small"
-                                    label={`Total: ${item.excess_hours}h = ₱${item.excess_cost || '0.00'}`}
-                                    color="primary"
-                                    variant="outlined"
-                                  />
-                                )}
-                              </Box>
-                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                                {item.available_venues.map((venue) => {
-                                  const currentHours = item.venue_additional_hours?.[String(venue.venue_id)] || 0;
-                                  return (
-                                    <Box
-                                      key={venue.venue_id}
-                                      sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 1,
-                                        p: 1,
-                                        border: 1,
-                                        borderColor: currentHours > 0 ? 'primary.main' : 'divider',
-                                        borderRadius: 1,
-                                        bgcolor: 'background.paper',
-                                      }}
-                                    >
-                                      <Box sx={{ minWidth: 120 }}>
-                                        <Typography variant="body2" fontWeight="medium">
-                                          {venue.venue_name}
-                                        </Typography>
-                                        <Typography variant="caption" color="text.secondary">
-                                          {venue.included_hours}h incl. | ₱{venue.excess_hour_price}/h extra
-                                        </Typography>
-                                      </Box>
-                                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                        <IconButton
-                                          size="small"
-                                          onClick={() => handleVenueHoursChange(index, venue.venue_id, Math.max(0, currentHours - 1))}
-                                          disabled={isCalculating === index || currentHours === 0}
+                      {item.product_id &&
+                        item.has_excess_hours &&
+                        item.available_venues &&
+                        item.available_venues.length > 0 && (
+                          <TableRow>
+                            <TableCell
+                              colSpan={7}
+                              sx={{ py: 1.5, borderBottom: 'none', bgcolor: 'action.hover' }}
+                            >
+                              <Box sx={{ pl: 2 }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                  <Tooltip title="Set additional hours per venue to calculate excess charges">
+                                    <InfoIcon fontSize="small" color="info" />
+                                  </Tooltip>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Additional Hours by Venue
+                                  </Typography>
+                                  {item.excess_hours != null && item.excess_hours > 0 && (
+                                    <Chip
+                                      size="small"
+                                      label={`Total: ${item.excess_hours}h = ₱${item.excess_cost || '0.00'}`}
+                                      color="primary"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                </Box>
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                                  {item.available_venues.map((venue) => {
+                                    const currentHours =
+                                      item.venue_additional_hours?.[String(venue.venue_id)] || 0;
+                                    return (
+                                      <Box
+                                        key={venue.venue_id}
+                                        sx={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          gap: 1,
+                                          p: 1,
+                                          border: 1,
+                                          borderColor:
+                                            currentHours > 0 ? 'primary.main' : 'divider',
+                                          borderRadius: 1,
+                                          bgcolor: 'background.paper',
+                                        }}
+                                      >
+                                        <Box sx={{ minWidth: 120 }}>
+                                          <Typography variant="body2" fontWeight="medium">
+                                            {venue.venue_name}
+                                          </Typography>
+                                          <Typography variant="caption" color="text.secondary">
+                                            {venue.included_hours}h incl. | ₱
+                                            {venue.excess_hour_price}/h extra
+                                          </Typography>
+                                        </Box>
+                                        <Box
+                                          sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
                                         >
-                                          <Typography variant="body1" fontWeight="bold">−</Typography>
-                                        </IconButton>
-                                        <TextField
-                                          size="small"
-                                          type="number"
-                                          value={currentHours}
-                                          onChange={(e) => handleVenueHoursChange(index, venue.venue_id, Math.max(0, parseInt(e.target.value) || 0))}
-                                          disabled={isCalculating === index}
-                                          inputProps={{ min: 0, style: { textAlign: 'center', width: '40px' } }}
-                                          sx={{ '& input': { p: 0.5 } }}
-                                        />
-                                        <IconButton
-                                          size="small"
-                                          onClick={() => handleVenueHoursChange(index, venue.venue_id, currentHours + 1)}
-                                          disabled={isCalculating === index}
-                                        >
-                                          <Typography variant="body1" fontWeight="bold">+</Typography>
-                                        </IconButton>
+                                          <IconButton
+                                            size="small"
+                                            onClick={() =>
+                                              handleVenueHoursChange(
+                                                index,
+                                                venue.venue_id,
+                                                Math.max(0, currentHours - 1),
+                                              )
+                                            }
+                                            disabled={isCalculating === index || currentHours === 0}
+                                          >
+                                            <Typography variant="body1" fontWeight="bold">
+                                              −
+                                            </Typography>
+                                          </IconButton>
+                                          <TextField
+                                            size="small"
+                                            type="number"
+                                            value={currentHours}
+                                            onChange={(e) =>
+                                              handleVenueHoursChange(
+                                                index,
+                                                venue.venue_id,
+                                                Math.max(0, parseInt(e.target.value) || 0),
+                                              )
+                                            }
+                                            disabled={isCalculating === index}
+                                            inputProps={{
+                                              min: 0,
+                                              style: { textAlign: 'center', width: '40px' },
+                                            }}
+                                            sx={{ '& input': { p: 0.5 } }}
+                                          />
+                                          <IconButton
+                                            size="small"
+                                            onClick={() =>
+                                              handleVenueHoursChange(
+                                                index,
+                                                venue.venue_id,
+                                                currentHours + 1,
+                                              )
+                                            }
+                                            disabled={isCalculating === index}
+                                          >
+                                            <Typography variant="body1" fontWeight="bold">
+                                              +
+                                            </Typography>
+                                          </IconButton>
+                                        </Box>
+                                        {currentHours > 0 && (
+                                          <Chip
+                                            size="small"
+                                            label={`₱${(currentHours * venue.excess_hour_price).toFixed(2)}`}
+                                            color="primary"
+                                            variant="filled"
+                                          />
+                                        )}
                                       </Box>
-                                      {currentHours > 0 && (
-                                        <Chip
-                                          size="small"
-                                          label={`₱${(currentHours * venue.excess_hour_price).toFixed(2)}`}
-                                          color="primary"
-                                          variant="filled"
-                                        />
-                                      )}
-                                    </Box>
-                                  );
-                                })}
+                                    );
+                                  })}
+                                </Box>
                               </Box>
-                            </Box>
-                          </TableCell>
-                        </TableRow>
-                      )}
+                            </TableCell>
+                          </TableRow>
+                        )}
                     </React.Fragment>
                   ))}
                   <TableRow>
                     <TableCell colSpan={5} align="right">
-                      <Typography variant="body2">
-                        Subtotal:
-                      </Typography>
+                      <Typography variant="body2">Subtotal:</Typography>
                     </TableCell>
                     <TableCell align="right">
-                      <Typography variant="body2">
-                        ₱{calculateSubtotal().toFixed(2)}
-                      </Typography>
+                      <Typography variant="body2">₱{calculateSubtotal().toFixed(2)}</Typography>
                     </TableCell>
                     <TableCell />
                   </TableRow>

@@ -1,7 +1,7 @@
 // frontend/client-portal/src/apis/quotes.api.ts
 
-import api from "../utils/api";
-import { formatPhilippinesTime } from "../utils/timezone";
+import api from '../utils/api';
+import { formatPhilippinesTime } from '../utils/timezone';
 import type {
   EventQuote,
   PaginatedQuoteResponse,
@@ -11,7 +11,7 @@ import type {
   QuoteAPIError,
   QuoteCalculations,
   QuoteValidation,
-} from "../types/quotes.types";
+} from '../types/quotes.types';
 
 /**
  * Quotes API service for client portal
@@ -31,15 +31,15 @@ export class QuotesApi {
     const params = new URLSearchParams();
 
     if (filters) {
-      if (filters.status) params.append("status", filters.status);
-      if (filters.event) params.append("event", filters.event.toString());
-      if (filters.search) params.append("search", filters.search);
-      if (filters.start_date) params.append("start_date", filters.start_date);
-      if (filters.end_date) params.append("end_date", filters.end_date);
+      if (filters.status) params.append('status', filters.status);
+      if (filters.event) params.append('event', filters.event.toString());
+      if (filters.search) params.append('search', filters.search);
+      if (filters.start_date) params.append('start_date', filters.start_date);
+      if (filters.end_date) params.append('end_date', filters.end_date);
     }
 
-    if (page) params.append("page", page.toString());
-    if (pageSize) params.append("page_size", pageSize.toString());
+    if (page) params.append('page', page.toString());
+    if (pageSize) params.append('page_size', pageSize.toString());
 
     const response = await api.get<PaginatedQuoteResponse>(
       `/sales/client/quotes/?${params.toString()}`,
@@ -51,19 +51,14 @@ export class QuotesApi {
    * Get single quote details
    */
   static async getQuote(quoteId: number): Promise<EventQuote> {
-    const response = await api.get<EventQuote>(
-      `/sales/client/quotes/${quoteId}/`,
-    );
+    const response = await api.get<EventQuote>(`/sales/client/quotes/${quoteId}/`);
     return response.data;
   }
 
   /**
    * Accept a quote
    */
-  static async acceptQuote(
-    quoteId: number,
-    data?: QuoteAcceptanceData,
-  ): Promise<EventQuote> {
+  static async acceptQuote(quoteId: number, data?: QuoteAcceptanceData): Promise<EventQuote> {
     const response = await api.post<EventQuote>(
       `/sales/client/quotes/${quoteId}/accept/`,
       data || {},
@@ -74,14 +69,8 @@ export class QuotesApi {
   /**
    * Reject a quote with reason
    */
-  static async rejectQuote(
-    quoteId: number,
-    data: QuoteRejectionData,
-  ): Promise<EventQuote> {
-    const response = await api.post<EventQuote>(
-      `/sales/client/quotes/${quoteId}/reject/`,
-      data,
-    );
+  static async rejectQuote(quoteId: number, data: QuoteRejectionData): Promise<EventQuote> {
+    const response = await api.post<EventQuote>(`/sales/client/quotes/${quoteId}/reject/`, data);
     return response.data;
   }
 
@@ -90,20 +79,17 @@ export class QuotesApi {
    */
   static async downloadQuotePdf(quoteId: number): Promise<Blob> {
     try {
-      const response = await api.get(
-        `/sales/client/quotes/${quoteId}/download_pdf/`,
-        {
-          responseType: "blob",
-        },
-      );
+      const response = await api.get(`/sales/client/quotes/${quoteId}/download_pdf/`, {
+        responseType: 'blob',
+      });
 
       // Check if the response is actually an error (JSON) instead of a PDF
       const dataBlob = response.data as Blob;
-      if (dataBlob.type === "application/json") {
+      if (dataBlob.type === 'application/json') {
         // Parse the error from blob
         const text = await dataBlob.text();
         const errorData = JSON.parse(text);
-        throw new Error(errorData.detail || "Failed to download quote PDF");
+        throw new Error(errorData.detail || 'Failed to download quote PDF');
       }
 
       return response.data as Blob;
@@ -114,7 +100,7 @@ export class QuotesApi {
         try {
           const text = await axiosError.response.data.text();
           const errorData = JSON.parse(text);
-          throw new Error(errorData.detail || "Failed to download quote PDF");
+          throw new Error(errorData.detail || 'Failed to download quote PDF');
         } catch (_parseError) {
           // If we can't parse it, throw the original error
           throw error;
@@ -129,23 +115,20 @@ export class QuotesApi {
   /**
    * Format amount based on currency
    */
-  static formatAmount(
-    amount: string | number,
-    currency: string = "PHP",
-  ): string {
-    const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  static formatAmount(amount: string | number, currency: string = 'PHP'): string {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
 
-    if (currency === "PHP") {
-      return new Intl.NumberFormat("en-PH", {
-        style: "currency",
-        currency: "PHP",
+    if (currency === 'PHP') {
+      return new Intl.NumberFormat('en-PH', {
+        style: 'currency',
+        currency: 'PHP',
         minimumFractionDigits: 0,
         maximumFractionDigits: 2,
       }).format(num);
     }
 
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
       currency: currency,
       minimumFractionDigits: 2,
     }).format(num);
@@ -156,11 +139,11 @@ export class QuotesApi {
    */
   static getCurrencySymbol(currency: string): string {
     const symbols: Record<string, string> = {
-      PHP: "₱",
-      USD: "$",
-      EUR: "€",
-      SGD: "S$",
-      HKD: "HK$",
+      PHP: '₱',
+      USD: '$',
+      EUR: '€',
+      SGD: 'S$',
+      HKD: 'HK$',
     };
     return symbols[currency] || currency;
   }
@@ -205,14 +188,12 @@ export class QuotesApi {
 
     const isExpired = validUntil ? validUntil < now : false;
     const daysUntilExpiry = validUntil
-      ? Math.ceil(
-          (validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-        )
+      ? Math.ceil((validUntil.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
       : 0;
 
-    const canBeAccepted = quote.status === "SENT" && !isExpired;
-    const canBeRejected = quote.status === "SENT" && !isExpired;
-    const isValid = quote.status !== "DRAFT" && !isExpired;
+    const canBeAccepted = quote.status === 'SENT' && !isExpired;
+    const canBeRejected = quote.status === 'SENT' && !isExpired;
+    const isValid = quote.status !== 'DRAFT' && !isExpired;
 
     return {
       isValid,
@@ -226,23 +207,21 @@ export class QuotesApi {
   /**
    * Get status color for UI components
    */
-  static getStatusColor(
-    status: string,
-  ): "success" | "warning" | "error" | "info" | "default" {
+  static getStatusColor(status: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
     switch (status.toLowerCase()) {
-      case "accepted":
-        return "success";
-      case "sent":
-        return "info";
-      case "rejected":
-      case "cancelled":
-        return "error";
-      case "expired":
-        return "warning";
-      case "draft":
-        return "default";
+      case 'accepted':
+        return 'success';
+      case 'sent':
+        return 'info';
+      case 'rejected':
+      case 'cancelled':
+        return 'error';
+      case 'expired':
+        return 'warning';
+      case 'draft':
+        return 'default';
       default:
-        return "default";
+        return 'default';
     }
   }
 
@@ -251,61 +230,61 @@ export class QuotesApi {
    */
   static getQuoteDisplayStatus(quote: EventQuote): {
     label: string;
-    color: "success" | "warning" | "error" | "info" | "default";
+    color: 'success' | 'warning' | 'error' | 'info' | 'default';
     description: string;
   } {
     const validation = this.validateQuote(quote);
 
     switch (quote.status) {
-      case "ACCEPTED":
+      case 'ACCEPTED':
         return {
-          label: "Accepted",
-          color: "success",
+          label: 'Accepted',
+          color: 'success',
           description: quote.accepted_at
-            ? `Accepted on ${formatPhilippinesTime(quote.accepted_at, false, "MMM d, yyyy")}`
-            : "Quote has been accepted",
+            ? `Accepted on ${formatPhilippinesTime(quote.accepted_at, false, 'MMM d, yyyy')}`
+            : 'Quote has been accepted',
         };
-      case "REJECTED":
+      case 'REJECTED':
         return {
-          label: "Rejected",
-          color: "error",
-          description: quote.rejection_reason || "Quote has been rejected",
+          label: 'Rejected',
+          color: 'error',
+          description: quote.rejection_reason || 'Quote has been rejected',
         };
-      case "SENT":
+      case 'SENT':
         if (validation.isExpired) {
           return {
-            label: "Expired",
-            color: "warning",
+            label: 'Expired',
+            color: 'warning',
             description: quote.valid_until
               ? `Expired on ${new Date(quote.valid_until).toLocaleDateString()}`
-              : "Quote has expired",
+              : 'Quote has expired',
           };
         } else {
           return {
-            label: "Pending Response",
-            color: "info",
+            label: 'Pending Response',
+            color: 'info',
             description: quote.valid_until
               ? `Valid until ${new Date(quote.valid_until).toLocaleDateString()}`
-              : "Awaiting your response",
+              : 'Awaiting your response',
           };
         }
-      case "CANCELLED":
+      case 'CANCELLED':
         return {
-          label: "Cancelled",
-          color: "error",
-          description: "Quote has been cancelled",
+          label: 'Cancelled',
+          color: 'error',
+          description: 'Quote has been cancelled',
         };
-      case "DRAFT":
+      case 'DRAFT':
         return {
-          label: "Draft",
-          color: "default",
-          description: "Quote is being prepared",
+          label: 'Draft',
+          color: 'default',
+          description: 'Quote is being prepared',
         };
       default:
         return {
-          label: quote.status_display || "Unknown",
-          color: "default",
-          description: "Status unknown",
+          label: quote.status_display || 'Unknown',
+          color: 'default',
+          description: 'Status unknown',
         };
     }
   }
@@ -337,7 +316,7 @@ export class QuotesApi {
    * Check if quote is expiring soon (within 3 days)
    */
   static isQuoteExpiringSoon(quote: EventQuote): boolean {
-    if (quote.status !== "SENT") return false;
+    if (quote.status !== 'SENT') return false;
 
     const daysUntilExpiry = this.getDaysUntilExpiry(quote);
     return daysUntilExpiry > 0 && daysUntilExpiry <= 3;
@@ -381,22 +360,22 @@ export class QuotesApi {
     }
 
     if (errorObj.response?.status === 403) {
-      return "You do not have permission to access this quote.";
+      return 'You do not have permission to access this quote.';
     }
 
     if (errorObj.response?.status === 404) {
-      return "The requested quote was not found.";
+      return 'The requested quote was not found.';
     }
 
     if (errorObj.response?.status === 409) {
-      return "This action cannot be performed on the quote in its current state.";
+      return 'This action cannot be performed on the quote in its current state.';
     }
 
     if (errorObj.response?.status && errorObj.response.status >= 500) {
-      return "A server error occurred. Please try again later.";
+      return 'A server error occurred. Please try again later.';
     }
 
-    return "An unexpected error occurred while processing your quote request.";
+    return 'An unexpected error occurred while processing your quote request.';
   }
 
   /**
@@ -404,7 +383,7 @@ export class QuotesApi {
    */
   static async downloadFile(blob: Blob, filename: string): Promise<void> {
     const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.href = url;
     link.download = filename;
     document.body.appendChild(link);
@@ -417,19 +396,16 @@ export class QuotesApi {
    * Generate filename for quote PDF download
    */
   static generateQuotePdfFilename(quote: EventQuote): string {
-    const eventName = quote.event_details.name || "Event";
+    const eventName = quote.event_details.name || 'Event';
     const version = quote.version;
-    const sanitizedEventName = eventName.replace(/[^a-zA-Z0-9\-_]/g, "_");
+    const sanitizedEventName = eventName.replace(/[^a-zA-Z0-9\-_]/g, '_');
     return `Quote_${sanitizedEventName}_v${version}.pdf`;
   }
 
   /**
    * Filter quotes by status
    */
-  static filterQuotesByStatus(
-    quotes: EventQuote[],
-    status: EventQuote["status"],
-  ): EventQuote[] {
+  static filterQuotesByStatus(quotes: EventQuote[], status: EventQuote['status']): EventQuote[] {
     return quotes.filter((quote) => quote.status === status);
   }
 
@@ -452,10 +428,7 @@ export class QuotesApi {
   /**
    * Sort quotes by creation date (newest first)
    */
-  static sortQuotesByDate(
-    quotes: EventQuote[],
-    ascending: boolean = false,
-  ): EventQuote[] {
+  static sortQuotesByDate(quotes: EventQuote[], ascending: boolean = false): EventQuote[] {
     return [...quotes].sort((a, b) => {
       const dateA = new Date(a.created_at).getTime();
       const dateB = new Date(b.created_at).getTime();
@@ -466,10 +439,7 @@ export class QuotesApi {
   /**
    * Sort quotes by total amount
    */
-  static sortQuotesByAmount(
-    quotes: EventQuote[],
-    ascending: boolean = false,
-  ): EventQuote[] {
+  static sortQuotesByAmount(quotes: EventQuote[], ascending: boolean = false): EventQuote[] {
     return [...quotes].sort((a, b) => {
       const amountA = parseFloat(a.total_amount);
       const amountB = parseFloat(b.total_amount);

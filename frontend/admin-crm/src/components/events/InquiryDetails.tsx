@@ -1,12 +1,7 @@
 // frontend/admin-crm/src/components/events/InquiryDetails.tsx
 
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Chip,
-  Stack,
-} from '@mui/material';
+import { Box, Typography, Chip, Stack } from '@mui/material';
 import {
   ContactMail as InquiryIcon,
   Phone as PhoneIcon,
@@ -28,7 +23,10 @@ const INQUIRY_TYPE_LABELS: Record<string, string> = {
   OTHER: 'Other',
 };
 
-const INQUIRY_TYPE_COLORS: Record<string, 'default' | 'primary' | 'secondary' | 'success' | 'info' | 'warning'> = {
+const INQUIRY_TYPE_COLORS: Record<
+  string,
+  'default' | 'primary' | 'secondary' | 'success' | 'info' | 'warning'
+> = {
   GENERAL: 'info',
   EVENT_QUESTION: 'primary',
   PARTNERSHIP: 'secondary',
@@ -66,7 +64,11 @@ export const InquiryDetails: React.FC<InquiryDetailsProps> = ({ inquiry }) => {
         <Stack spacing={2}>
           {/* Inquiry Type */}
           <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 600 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 600 }}
+            >
               Inquiry Type
             </Typography>
             <Box display="flex" alignItems="center" gap={2} mt={1}>
@@ -79,7 +81,11 @@ export const InquiryDetails: React.FC<InquiryDetailsProps> = ({ inquiry }) => {
 
           {/* Message */}
           <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 600 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 600 }}
+            >
               Message
             </Typography>
             <Typography variant="body2" sx={{ mt: 1, whiteSpace: 'pre-wrap' }}>
@@ -90,19 +96,29 @@ export const InquiryDetails: React.FC<InquiryDetailsProps> = ({ inquiry }) => {
           {/* Phone (if provided) */}
           {inquiry.phone && (
             <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
-              <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 600 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 600 }}
+              >
                 Phone Number
               </Typography>
               <Box display="flex" alignItems="center" gap={2} mt={1}>
                 <PhoneIcon color="action" sx={{ fontSize: 20 }} />
-                <Typography variant="body2" fontWeight={500}>{inquiry.phone}</Typography>
+                <Typography variant="body2" fontWeight={500}>
+                  {inquiry.phone}
+                </Typography>
               </Box>
             </Box>
           )}
 
           {/* Submitted At */}
           <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
-            <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 600 }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ textTransform: 'uppercase', letterSpacing: 0.5, fontWeight: 600 }}
+            >
               Submitted At
             </Typography>
             <Box display="flex" alignItems="center" gap={2} mt={1}>

@@ -7,15 +7,14 @@ Tests:
 - Discount model (validity, usage limits, applicability)
 """
 
-import pytest
-from django.utils import timezone
-from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import IntegrityError
-from datetime import timedelta
 from decimal import Decimal
+
+from django.db import IntegrityError
+
+import pytest
 from freezegun import freeze_time
 
-from core.domains.products.models import ProductCategory, ProductOption, Discount
+from core.domains.products.models import ProductCategory, ProductOption
 
 
 @pytest.mark.django_db
@@ -24,30 +23,30 @@ class TestProductCategoryModel:
 
     def test_create_category(self, product_category_factory):
         """Test creating a basic category."""
-        category = product_category_factory(name='Events')
+        category = product_category_factory(name="Events")
 
-        assert category.name == 'Events'
+        assert category.name == "Events"
         assert category.is_active
         assert category.slug is not None
 
     def test_category_string_representation(self, product_category_factory):
         """Test ProductCategory __str__ returns name."""
-        category = product_category_factory(name='Weddings')
+        category = product_category_factory(name="Weddings")
 
-        assert str(category) == 'Weddings'
+        assert str(category) == "Weddings"
 
     def test_category_string_with_parent(self, product_category_factory):
         """Test __str__ shows parent path when category has parent."""
-        parent = product_category_factory(name='Events')
-        child = product_category_factory(name='Weddings', parent=parent)
+        parent = product_category_factory(name="Events")
+        child = product_category_factory(name="Weddings", parent=parent)
 
-        assert str(child) == 'Events > Weddings'
+        assert str(child) == "Events > Weddings"
 
     def test_category_slug_auto_generation(self, product_category_factory):
         """Test slug is auto-generated from name."""
-        category = product_category_factory(name='Corporate Events')
+        category = product_category_factory(name="Corporate Events")
 
-        assert category.slug == 'corporate-events'
+        assert category.slug == "corporate-events"
 
     def test_category_slug_uniqueness(self, product_category_factory):
         """Test that duplicate slugs are handled with counter.
@@ -60,42 +59,42 @@ class TestProductCategoryModel:
 
         # First category: name 'Slug Test' -> slug 'slug-test'
         category1 = ProductCategory.objects.create(
-            name='Slug Test',
-            description='Test',
+            name="Slug Test",
+            description="Test",
             is_active=True,
         )
-        assert category1.slug == 'slug-test'
+        assert category1.slug == "slug-test"
 
         # Second category: name 'Slug--Test' -> slugify also produces 'slug-test'
         # The save() dedup logic should generate 'slug-test-1'
         category2 = ProductCategory.objects.create(
-            name='Slug--Test',
-            description='Test',
+            name="Slug--Test",
+            description="Test",
             is_active=True,
         )
 
         assert category1.slug != category2.slug
-        assert category2.slug.startswith('slug-test')
+        assert category2.slug.startswith("slug-test")
 
     def test_category_full_path_property(self, product_category_factory):
         """Test full_path returns complete category hierarchy."""
-        grandparent = product_category_factory(name='Celebrations')
-        parent = product_category_factory(name='Weddings', parent=grandparent)
-        child = product_category_factory(name='Beach Weddings', parent=parent)
+        grandparent = product_category_factory(name="Celebrations")
+        parent = product_category_factory(name="Weddings", parent=grandparent)
+        child = product_category_factory(name="Beach Weddings", parent=parent)
 
-        assert child.full_path == 'Celebrations > Weddings > Beach Weddings'
+        assert child.full_path == "Celebrations > Weddings > Beach Weddings"
 
     def test_category_full_path_root(self, product_category_factory):
         """Test full_path for root category."""
-        category = product_category_factory(name='Events')
+        category = product_category_factory(name="Events")
 
-        assert category.full_path == 'Events'
+        assert category.full_path == "Events"
 
     def test_category_level_property(self, product_category_factory):
         """Test level returns correct nesting depth."""
-        grandparent = product_category_factory(name='Level 0')
-        parent = product_category_factory(name='Level 1', parent=grandparent)
-        child = product_category_factory(name='Level 2', parent=parent)
+        grandparent = product_category_factory(name="Level 0")
+        parent = product_category_factory(name="Level 1", parent=grandparent)
+        child = product_category_factory(name="Level 2", parent=parent)
 
         assert grandparent.level == 0
         assert parent.level == 1
@@ -110,9 +109,9 @@ class TestProductCategoryModel:
 
     def test_category_ordering(self, product_category_factory):
         """Test categories are ordered by sort_order, then name."""
-        cat_c = product_category_factory(name='Cat C', sort_order=2)
-        cat_a = product_category_factory(name='Cat A', sort_order=1)
-        cat_b = product_category_factory(name='Cat B', sort_order=1)
+        cat_c = product_category_factory(name="Cat C", sort_order=2)
+        cat_a = product_category_factory(name="Cat A", sort_order=1)
+        cat_b = product_category_factory(name="Cat B", sort_order=1)
 
         categories = list(ProductCategory.objects.all())
 
@@ -123,10 +122,10 @@ class TestProductCategoryModel:
 
     def test_category_name_uniqueness(self, product_category_factory):
         """Test that category names must be unique."""
-        product_category_factory(name='Unique Category')
+        product_category_factory(name="Unique Category")
 
         with pytest.raises(IntegrityError):
-            product_category_factory(name='Unique Category')
+            product_category_factory(name="Unique Category")
 
     def test_inactive_category(self, product_category_factory):
         """Test creating an inactive category."""
@@ -141,9 +140,9 @@ class TestProductCategoryHierarchy:
 
     def test_category_children_relationship(self, product_category_factory):
         """Test children related name works correctly."""
-        parent = product_category_factory(name='Parent')
-        child1 = product_category_factory(name='Child 1', parent=parent)
-        child2 = product_category_factory(name='Child 2', parent=parent)
+        parent = product_category_factory(name="Parent")
+        child1 = product_category_factory(name="Child 1", parent=parent)
+        child2 = product_category_factory(name="Child 2", parent=parent)
 
         children = list(parent.children.all())
         assert len(children) == 2
@@ -152,15 +151,15 @@ class TestProductCategoryHierarchy:
 
     def test_category_parent_relationship(self, product_category_factory):
         """Test parent foreign key relationship."""
-        parent = product_category_factory(name='Parent')
-        child = product_category_factory(name='Child', parent=parent)
+        parent = product_category_factory(name="Parent")
+        child = product_category_factory(name="Child", parent=parent)
 
         assert child.parent == parent
 
     def test_category_cascade_delete(self, product_category_factory):
         """Test that deleting parent cascades to children."""
-        parent = product_category_factory(name='Parent')
-        child = product_category_factory(name='Child', parent=parent)
+        parent = product_category_factory(name="Parent")
+        child = product_category_factory(name="Child", parent=parent)
         child_id = child.id
 
         parent.delete()
@@ -174,56 +173,52 @@ class TestProductOptionModel:
 
     def test_create_product(self, product_option_factory):
         """Test creating a basic product."""
-        product = product_option_factory(name='Basic Product')
+        product = product_option_factory(name="Basic Product")
 
-        assert product.name == 'Basic Product'
-        assert product.type == 'PRODUCT'
+        assert product.name == "Basic Product"
+        assert product.type == "PRODUCT"
         assert product.is_active
 
     def test_create_package(self, product_option_factory):
         """Test creating a package."""
         package = product_option_factory(package=True)
 
-        assert package.type == 'PACKAGE'
-        assert 'Package' in package.name
+        assert package.type == "PACKAGE"
+        assert "Package" in package.name
 
     def test_product_string_representation(self, product_option_factory):
         """Test ProductOption __str__ returns name with type."""
-        product = product_option_factory(name='Test Product')
+        product = product_option_factory(name="Test Product")
 
-        assert str(product) == 'Test Product (Product)'
+        assert str(product) == "Test Product (Product)"
 
     def test_package_string_representation(self, product_option_factory):
         """Test package __str__ shows package type."""
-        package = product_option_factory(name='Test Package', package=True)
+        package = product_option_factory(name="Test Package", package=True)
 
-        assert str(package) == 'Test Package (Package)'
+        assert str(package) == "Test Package (Package)"
 
     def test_product_formatted_price_fixed(self, product_option_factory):
         """Test formatted_price for fixed pricing."""
-        product = product_option_factory(
-            pricing_model='FIXED',
-            base_price=Decimal('5000.00'),
-            currency='PHP'
-        )
+        product = product_option_factory(pricing_model="FIXED", base_price=Decimal("5000.00"), currency="PHP")
 
-        assert product.formatted_price == 'PHP 5000.00'
+        assert product.formatted_price == "PHP 5000.00"
 
     def test_product_formatted_price_hourly(self, product_option_factory):
         """Test formatted_price for hourly pricing."""
-        product = product_option_factory(hourly=True, base_price=Decimal('500.00'))
+        product = product_option_factory(hourly=True, base_price=Decimal("500.00"))
 
-        assert product.formatted_price == 'PHP 500.00/hour'
+        assert product.formatted_price == "PHP 500.00/hour"
 
     def test_product_formatted_price_custom(self, product_option_factory):
         """Test formatted_price for custom quote pricing."""
         product = product_option_factory(custom_quote=True)
 
-        assert product.formatted_price == 'Custom Quote'
+        assert product.formatted_price == "Custom Quote"
 
     def test_product_category_relationship(self, product_option_factory, product_category_factory):
         """Test product belongs to category."""
-        category = product_category_factory(name='Events')
+        category = product_category_factory(name="Events")
         product = product_option_factory(category=category)
 
         assert product.category == category
@@ -231,19 +226,19 @@ class TestProductOptionModel:
 
     def test_product_unique_together_name_category(self, product_option_factory, product_category_factory):
         """Test that name + category must be unique."""
-        category = product_category_factory(name='Test Category')
-        product_option_factory(name='Same Name', category=category)
+        category = product_category_factory(name="Test Category")
+        product_option_factory(name="Same Name", category=category)
 
         with pytest.raises(IntegrityError):
-            product_option_factory(name='Same Name', category=category)
+            product_option_factory(name="Same Name", category=category)
 
     def test_product_allow_same_name_different_category(self, product_option_factory, product_category_factory):
         """Test same name allowed in different categories."""
-        cat1 = product_category_factory(name='Category 1')
-        cat2 = product_category_factory(name='Category 2')
+        cat1 = product_category_factory(name="Category 1")
+        cat2 = product_category_factory(name="Category 2")
 
-        p1 = product_option_factory(name='Same Name', category=cat1)
-        p2 = product_option_factory(name='Same Name', category=cat2)
+        p1 = product_option_factory(name="Same Name", category=cat1)
+        p2 = product_option_factory(name="Same Name", category=cat2)
 
         assert p1.name == p2.name
         assert p1.category != p2.category
@@ -264,7 +259,7 @@ class TestProductOptionModel:
         """Test hourly pricing configuration."""
         product = product_option_factory(hourly=True)
 
-        assert product.pricing_model == 'HOURLY'
+        assert product.pricing_model == "HOURLY"
         assert product.minimum_hours == 2
         assert product.maximum_hours == 8
 
@@ -288,7 +283,7 @@ class TestProductOptionModel:
 
         assert package.is_custom
         assert package.booking_session_id is not None
-        assert package.bundle_discount_percent == Decimal('10.00')
+        assert package.bundle_discount_percent == Decimal("10.00")
 
     def test_tax_inclusive_product(self, product_option_factory):
         """Test tax inclusive pricing."""
@@ -298,12 +293,12 @@ class TestProductOptionModel:
 
     def test_product_ordering(self, product_option_factory, product_category_factory):
         """Test products are ordered by category sort order, then sort order, then name."""
-        cat1 = product_category_factory(name='Cat A', sort_order=1)
-        cat2 = product_category_factory(name='Cat B', sort_order=0)
+        cat1 = product_category_factory(name="Cat A", sort_order=1)
+        cat2 = product_category_factory(name="Cat B", sort_order=0)
 
-        p1 = product_option_factory(name='Product Z', category=cat1, sort_order=0)
-        p2 = product_option_factory(name='Product A', category=cat2, sort_order=0)
-        p3 = product_option_factory(name='Product B', category=cat2, sort_order=1)
+        p1 = product_option_factory(name="Product Z", category=cat1, sort_order=0)
+        p2 = product_option_factory(name="Product A", category=cat2, sort_order=0)
+        p3 = product_option_factory(name="Product B", category=cat2, sort_order=1)
 
         products = list(ProductOption.objects.all())
 
@@ -331,12 +326,9 @@ class TestProductOptionPriceWithTax:
 
     def test_price_with_tax_inclusive_returns_base_price(self, product_option_factory):
         """Test tax-inclusive products return base_price as price_with_tax."""
-        product = product_option_factory(
-            tax_inclusive=True,
-            base_price=Decimal('1000.00')
-        )
+        product = product_option_factory(tax_inclusive=True, base_price=Decimal("1000.00"))
 
-        assert product.price_with_tax == Decimal('1000.00')
+        assert product.price_with_tax == Decimal("1000.00")
 
 
 @pytest.mark.django_db
@@ -345,63 +337,59 @@ class TestDiscountModel:
 
     def test_create_discount(self, discount_factory):
         """Test creating a basic discount."""
-        discount = discount_factory(name='Summer Sale')
+        discount = discount_factory(name="Summer Sale")
 
-        assert discount.name == 'Summer Sale'
+        assert discount.name == "Summer Sale"
         assert discount.is_active
-        assert discount.discount_type == 'PERCENTAGE'
+        assert discount.discount_type == "PERCENTAGE"
 
     def test_discount_string_representation(self, discount_factory):
         """Test Discount __str__ returns informative string."""
-        discount = discount_factory(
-            name='10% Off',
-            discount_type='PERCENTAGE',
-            value=Decimal('10.00')
-        )
+        discount = discount_factory(name="10% Off", discount_type="PERCENTAGE", value=Decimal("10.00"))
 
-        assert '10% Off' in str(discount)
-        assert 'Percentage' in str(discount)
+        assert "10% Off" in str(discount)
+        assert "Percentage" in str(discount)
 
     def test_discount_code_uniqueness(self, discount_factory):
         """Test discount codes must be unique."""
-        discount_factory(code='UNIQUE')
+        discount_factory(code="UNIQUE")
 
         with pytest.raises(IntegrityError):
-            discount_factory(code='UNIQUE')
+            discount_factory(code="UNIQUE")
 
     def test_discount_percentage_type(self, discount_factory):
         """Test percentage discount configuration."""
         discount = discount_factory(percentage=True)
 
-        assert discount.discount_type == 'PERCENTAGE'
-        assert discount.value == Decimal('15.00')
+        assert discount.discount_type == "PERCENTAGE"
+        assert discount.value == Decimal("15.00")
 
     def test_discount_fixed_amount_type(self, discount_factory):
         """Test fixed amount discount configuration."""
         discount = discount_factory(fixed_amount=True)
 
-        assert discount.discount_type == 'FIXED'
-        assert discount.value == Decimal('500.00')
+        assert discount.discount_type == "FIXED"
+        assert discount.value == Decimal("500.00")
 
     def test_discount_free_hours_type(self, discount_factory):
         """Test free hours discount configuration."""
         discount = discount_factory(free_hours=True)
 
-        assert discount.discount_type == 'FREE_HOURS'
-        assert discount.value == Decimal('2.00')
+        assert discount.discount_type == "FREE_HOURS"
+        assert discount.value == Decimal("2.00")
 
     def test_discount_automatic_application(self, discount_factory):
         """Test automatic discount application type."""
         discount = discount_factory(automatic=True)
 
-        assert discount.application_type == 'AUTOMATIC'
+        assert discount.application_type == "AUTOMATIC"
         assert discount.code is None
 
     def test_discount_admin_only(self, discount_factory):
         """Test admin-only discount application type."""
         discount = discount_factory(admin_only=True)
 
-        assert discount.application_type == 'ADMIN_ONLY'
+        assert discount.application_type == "ADMIN_ONLY"
 
     def test_discount_limited_uses(self, discount_factory):
         """Test discount with usage limits."""
@@ -414,7 +402,7 @@ class TestDiscountModel:
         """Test discount with minimum order requirement."""
         discount = discount_factory(with_minimum_order=True)
 
-        assert discount.minimum_order_amount == Decimal('5000.00')
+        assert discount.minimum_order_amount == Decimal("5000.00")
 
     def test_discount_with_minimum_hours(self, discount_factory):
         """Test discount with minimum hours requirement."""
@@ -457,7 +445,7 @@ class TestDiscountValidity:
 
         assert not discount.is_valid()
 
-    @freeze_time('2024-06-15')
+    @freeze_time("2024-06-15")
     def test_discount_validity_within_date_range(self, discount_factory):
         """Test discount is valid within its date range."""
         discount = discount_factory(with_validity_period=True)
@@ -492,46 +480,28 @@ class TestDiscountCanBeUsedByClient:
 
     def test_discount_fails_minimum_order_check(self, discount_factory, user_factory):
         """Test discount fails when order amount is below minimum."""
-        discount = discount_factory(
-            with_minimum_order=True,
-            minimum_order_amount=Decimal('5000.00')
-        )
+        discount = discount_factory(with_minimum_order=True, minimum_order_amount=Decimal("5000.00"))
         client = user_factory()
 
-        assert not discount.can_be_used_by_client(
-            client,
-            order_amount=Decimal('3000.00')
-        )
+        assert not discount.can_be_used_by_client(client, order_amount=Decimal("3000.00"))
 
     def test_discount_passes_minimum_order_check(self, discount_factory, user_factory):
         """Test discount passes when order amount meets minimum."""
-        discount = discount_factory(
-            with_minimum_order=True,
-            minimum_order_amount=Decimal('5000.00')
-        )
+        discount = discount_factory(with_minimum_order=True, minimum_order_amount=Decimal("5000.00"))
         client = user_factory()
 
-        assert discount.can_be_used_by_client(
-            client,
-            order_amount=Decimal('6000.00')
-        )
+        assert discount.can_be_used_by_client(client, order_amount=Decimal("6000.00"))
 
     def test_discount_fails_minimum_hours_check(self, discount_factory, user_factory):
         """Test discount fails when hours are below minimum."""
-        discount = discount_factory(
-            with_minimum_hours=True,
-            minimum_hours=4
-        )
+        discount = discount_factory(with_minimum_hours=True, minimum_hours=4)
         client = user_factory()
 
         assert not discount.can_be_used_by_client(client, order_hours=2)
 
     def test_discount_passes_minimum_hours_check(self, discount_factory, user_factory):
         """Test discount passes when hours meet minimum."""
-        discount = discount_factory(
-            with_minimum_hours=True,
-            minimum_hours=4
-        )
+        discount = discount_factory(with_minimum_hours=True, minimum_hours=4)
         client = user_factory()
 
         assert discount.can_be_used_by_client(client, order_hours=5)
@@ -543,7 +513,7 @@ class TestDiscountApplicability:
 
     def test_discount_applicable_to_product(self, discount_factory, product_option_factory):
         """Test discount can be linked to specific products."""
-        product = product_option_factory(name='Target Product')
+        product = product_option_factory(name="Target Product")
         discount = discount_factory()
         discount.applicable_products.add(product)
 
@@ -551,7 +521,7 @@ class TestDiscountApplicability:
 
     def test_discount_applicable_to_category(self, discount_factory, product_category_factory):
         """Test discount can be linked to specific categories."""
-        category = product_category_factory(name='Target Category')
+        category = product_category_factory(name="Target Category")
         discount = discount_factory()
         discount.applicable_categories.add(category)
 

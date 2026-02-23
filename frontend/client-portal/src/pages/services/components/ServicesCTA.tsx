@@ -48,8 +48,8 @@ export const ServicesCTA: React.FC<ServicesCTAProps> = ({ onNavigateToBooking })
                 mb: 2,
               }}
             >
-              Contact us today to discuss your event needs. Our team is ready to help
-              you create an unforgettable experience at LifePlace Alfonso.
+              Contact us today to discuss your event needs. Our team is ready to help you create an
+              unforgettable experience at LifePlace Alfonso.
             </Typography>
 
             {/* CTA Buttons */}
@@ -76,7 +76,7 @@ export const ServicesCTA: React.FC<ServicesCTAProps> = ({ onNavigateToBooking })
                   variant="outlined"
                   size="large"
                   startIcon={<Phone />}
-                  onClick={() => window.location.href = 'tel:+639935260943'}
+                  onClick={() => (window.location.href = 'tel:+639935260943')}
                   ariaLabel="Call LifePlace Alfonso at +63 993 526 0943"
                 >
                   Call Us
@@ -95,10 +95,7 @@ export const ServicesCTA: React.FC<ServicesCTAProps> = ({ onNavigateToBooking })
               }}
             >
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Phone
-                  fontSize="small"
-                  sx={{ color: tokens.color.base.sage[600] }}
-                />
+                <Phone fontSize="small" sx={{ color: tokens.color.base.sage[600] }} />
                 <Typography
                   sx={{
                     ...tokens.typography.styles.bodySmall,
@@ -109,10 +106,7 @@ export const ServicesCTA: React.FC<ServicesCTAProps> = ({ onNavigateToBooking })
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Email
-                  fontSize="small"
-                  sx={{ color: tokens.color.base.sage[600] }}
-                />
+                <Email fontSize="small" sx={{ color: tokens.color.base.sage[600] }} />
                 <Typography
                   sx={{
                     ...tokens.typography.styles.bodySmall,

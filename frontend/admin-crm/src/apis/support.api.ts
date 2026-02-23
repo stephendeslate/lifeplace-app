@@ -29,7 +29,9 @@ export const supportApi = {
     if (filters?.priority) params.append('priority', filters.priority);
     if (filters?.search) params.append('search', filters.search);
 
-    const response = await api.get<PaginatedResponse<SupportInquiry>>(`/messaging/admin/support/?${params.toString()}`);
+    const response = await api.get<PaginatedResponse<SupportInquiry>>(
+      `/messaging/admin/support/?${params.toString()}`,
+    );
     return response.data.results;
   },
 
@@ -49,7 +51,7 @@ export const supportApi = {
   addReply: async (inquiryId: string, data: SupportReply): Promise<SupportMessage> => {
     const response = await api.post<SupportMessage>(
       `/messaging/admin/support/${inquiryId}/add_reply/`,
-      data
+      data,
     );
     return response.data;
   },

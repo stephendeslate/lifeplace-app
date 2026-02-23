@@ -63,8 +63,8 @@ export const NotFound: React.FC = () => {
             maxWidth: 500,
           }}
         >
-          The page you are looking for might have been removed, had its name
-          changed, or is temporarily unavailable.
+          The page you are looking for might have been removed, had its name changed, or is
+          temporarily unavailable.
         </Typography>
 
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -103,7 +103,10 @@ export const NotFound: React.FC = () => {
 
         <Box sx={{ mt: 6, color: 'text.disabled' }}>
           <Typography variant="caption">
-            Need help? <a href="/contact" style={{ color: 'inherit' }}>Contact us</a>
+            Need help?{' '}
+            <a href="/contact" style={{ color: 'inherit' }}>
+              Contact us
+            </a>
           </Typography>
         </Box>
       </Box>

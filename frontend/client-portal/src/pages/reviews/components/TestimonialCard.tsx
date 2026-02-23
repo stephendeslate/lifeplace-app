@@ -33,7 +33,12 @@ export const TestimonialCard: React.FC<TestimonialCardProps> = ({ testimonial, i
 
   return (
     <AnimatedElement animation="slideUp" delay={100 + index * 50} duration={500}>
-      <ModernCard variant="elevated" size="large" hover sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <ModernCard
+        variant="elevated"
+        size="large"
+        hover
+        sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+      >
         <Stack spacing={tokens.spacing.space[5]} sx={{ height: '100%' }}>
           {/* 5-Star Rating */}
           <Box
@@ -77,7 +82,7 @@ export const TestimonialCard: React.FC<TestimonialCardProps> = ({ testimonial, i
             sx={{
               pt: tokens.spacing.space[4],
               borderTop: `1px solid ${tokens.color.base.neutral[200]}`,
-              alignItems: 'center'
+              alignItems: 'center',
             }}
           >
             {/* Avatar */}

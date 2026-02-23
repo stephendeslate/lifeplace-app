@@ -8,113 +8,141 @@ functionality to prevent code injection and other security vulnerabilities.
 
 import logging
 import re
-from typing import Dict, Any, Optional, List, Set
-from django.template import Template, Context, TemplateSyntaxError
-from django.template.base import UNKNOWN_SOURCE
-from django.utils.html import escape
+from typing import Any
+
+from django.template import Context, Template, TemplateSyntaxError
 
 logger = logging.getLogger(__name__)
 
 
 # Safe template tags that are allowed in communication templates
 SAFE_TAGS = {
-    'if', 'endif', 'else', 'elif',
-    'for', 'endfor', 'empty',
-    'firstof',
-    'with', 'endwith',
-    'spaceless', 'endspaceless',
-    'autoescape', 'endautoescape',
-    'filter', 'endfilter',
-    'now',
-    'cycle',
-    'widthratio',
-    'resetcycle',
+    "if",
+    "endif",
+    "else",
+    "elif",
+    "for",
+    "endfor",
+    "empty",
+    "firstof",
+    "with",
+    "endwith",
+    "spaceless",
+    "endspaceless",
+    "autoescape",
+    "endautoescape",
+    "filter",
+    "endfilter",
+    "now",
+    "cycle",
+    "widthratio",
+    "resetcycle",
 }
 
 # Tags that are explicitly blocked (security risk)
 BLOCKED_TAGS = {
-    'load',        # Can load arbitrary template tags
-    'include',     # Can include arbitrary templates
-    'extends',     # Can extend arbitrary templates
-    'block',       # Used with extends
-    'endblock',
-    'ssi',         # Server-side includes
-    'debug',       # Exposes debug info
-    'csrf_token',  # Not needed in email templates
-    'url',         # Could expose URL structure
-    'static',      # Could expose static file paths
-    'templatetag', # Could be used to bypass restrictions
+    "load",  # Can load arbitrary template tags
+    "include",  # Can include arbitrary templates
+    "extends",  # Can extend arbitrary templates
+    "block",  # Used with extends
+    "endblock",
+    "ssi",  # Server-side includes
+    "debug",  # Exposes debug info
+    "csrf_token",  # Not needed in email templates
+    "url",  # Could expose URL structure
+    "static",  # Could expose static file paths
+    "templatetag",  # Could be used to bypass restrictions
 }
 
 # Safe filters that are allowed
 SAFE_FILTERS = {
     # String manipulation
-    'lower', 'upper', 'title', 'capfirst',
-    'truncatechars', 'truncatewords',
-    'ljust', 'rjust', 'center',
-    'cut', 'striptags',
-    'escape', 'escapejs',
-    'safe',  # Needed for HTML email content
-    'linebreaks', 'linebreaksbr',
-    'wordwrap', 'wordcount',
-    'join', 'length', 'length_is',
-    'first', 'last', 'random', 'slice',
-    'slugify', 'stringformat',
-    'urlencode',
-
+    "lower",
+    "upper",
+    "title",
+    "capfirst",
+    "truncatechars",
+    "truncatewords",
+    "ljust",
+    "rjust",
+    "center",
+    "cut",
+    "striptags",
+    "escape",
+    "escapejs",
+    "safe",  # Needed for HTML email content
+    "linebreaks",
+    "linebreaksbr",
+    "wordwrap",
+    "wordcount",
+    "join",
+    "length",
+    "length_is",
+    "first",
+    "last",
+    "random",
+    "slice",
+    "slugify",
+    "stringformat",
+    "urlencode",
     # Date/time formatting
-    'date', 'time', 'timesince', 'timeuntil',
-
+    "date",
+    "time",
+    "timesince",
+    "timeuntil",
     # Number formatting
-    'floatformat', 'add',
-    'divisibleby', 'filesizeformat',
-
+    "floatformat",
+    "add",
+    "divisibleby",
+    "filesizeformat",
     # List operations
-    'dictsort', 'dictsortreversed',
-    'unordered_list',
-
+    "dictsort",
+    "dictsortreversed",
+    "unordered_list",
     # Boolean
-    'default', 'default_if_none', 'yesno',
-
+    "default",
+    "default_if_none",
+    "yesno",
     # Pluralization
-    'pluralize',
-
+    "pluralize",
     # Formatting
-    'phone2numeric', 'linenumbers',
+    "phone2numeric",
+    "linenumbers",
 }
 
 # Filters that are explicitly blocked
 BLOCKED_FILTERS = {
-    'make_list',  # Can be used in template injection attacks
-    'pprint',     # Exposes object internals
+    "make_list",  # Can be used in template injection attacks
+    "pprint",  # Exposes object internals
 }
 
 # Pattern to detect template tags
-TAG_PATTERN = re.compile(r'{%\s*(\w+)')
+TAG_PATTERN = re.compile(r"{%\s*(\w+)")
 
 # Pattern to detect template filters
-FILTER_PATTERN = re.compile(r'\|\s*(\w+)')
+FILTER_PATTERN = re.compile(r"\|\s*(\w+)")
 
 # Pattern to detect potentially dangerous content
 DANGEROUS_PATTERNS = [
-    re.compile(r'__\w+__'),           # Dunder attributes
-    re.compile(r'\bimport\b'),        # Python import
-    re.compile(r'\bexec\b'),          # Python exec
-    re.compile(r'\beval\b'),          # Python eval
-    re.compile(r'\bcompile\b'),       # Python compile
-    re.compile(r'\bopen\b'),          # File operations
-    re.compile(r'\bos\.'),            # OS module
-    re.compile(r'\bsys\.'),           # Sys module
-    re.compile(r'\.mro\b'),           # Method resolution order
-    re.compile(r'\.subclasses\b'),    # Subclass access
-    re.compile(r'\.base\b'),          # Base class access
-    re.compile(r'request\.'),         # Request object access
-    re.compile(r'settings\.'),        # Settings access
+    re.compile(r"__\w+__"),  # Dunder attributes
+    re.compile(r"\bimport\b"),  # Python import
+    re.compile(r"\bexec\b"),  # Python exec
+    re.compile(r"\beval\b"),  # Python eval
+    re.compile(r"\bcompile\b"),  # Python compile
+    re.compile(r"\bopen\b"),  # File operations
+    re.compile(r"\bos\."),  # OS module
+    re.compile(r"\bsys\."),  # Sys module
+    re.compile(r"\.mro\b"),  # Method resolution order
+    re.compile(r"\.subclasses\b"),  # Subclass access
+    re.compile(r"\.base\b"),  # Base class access
+    re.compile(r"request\."),  # Request object access
+    re.compile(r"settings\."),  # Settings access
 ]
 
 
 class TemplateSandboxError(Exception):
     """Raised when a template violates sandbox restrictions"""
+
     pass
 
 
@@ -134,8 +162,8 @@ class SandboxedTemplateEngine:
 
     def __init__(
         self,
-        allowed_tags: Optional[Set[str]] = None,
-        allowed_filters: Optional[Set[str]] = None,
+        allowed_tags: set[str] | None = None,
+        allowed_filters: set[str] | None = None,
         max_template_length: int = 100000,  # 100KB max
         max_context_depth: int = 10,
     ):
@@ -144,7 +172,7 @@ class SandboxedTemplateEngine:
         self.max_template_length = max_template_length
         self.max_context_depth = max_context_depth
 
-    def validate_template(self, template_string: str) -> tuple[bool, List[str]]:
+    def validate_template(self, template_string: str) -> tuple[bool, list[str]]:
         """
         Validate a template string for sandbox compliance.
 
@@ -188,15 +216,11 @@ class SandboxedTemplateEngine:
         try:
             Template(template_string)
         except TemplateSyntaxError as e:
-            errors.append(f"Template syntax error: {str(e)}")
+            errors.append(f"Template syntax error: {e!s}")
 
         return len(errors) == 0, errors
 
-    def sanitize_context(
-        self,
-        context_data: Dict[str, Any],
-        depth: int = 0
-    ) -> Dict[str, Any]:
+    def sanitize_context(self, context_data: dict[str, Any], depth: int = 0) -> dict[str, Any]:
         """
         Sanitize context data to prevent object attribute access attacks.
 
@@ -210,22 +234,18 @@ class SandboxedTemplateEngine:
 
         for key, value in context_data.items():
             # Skip keys that look dangerous
-            if key.startswith('_') or key.startswith('__'):
+            if key.startswith("_") or key.startswith("__"):
                 logger.warning(f"Skipping context key with underscore prefix: {key}")
                 continue
 
             # Handle different types
-            if value is None:
-                sanitized[key] = value
-            elif isinstance(value, (str, int, float, bool)):
+            if value is None or isinstance(value, (str, int, float, bool)):
                 sanitized[key] = value
             elif isinstance(value, (list, tuple)):
-                sanitized[key] = [
-                    self._sanitize_value(v, depth + 1) for v in value
-                ]
+                sanitized[key] = [self._sanitize_value(v, depth + 1) for v in value]
             elif isinstance(value, dict):
                 sanitized[key] = self.sanitize_context(value, depth + 1)
-            elif hasattr(value, '__dict__'):
+            elif hasattr(value, "__dict__"):
                 # Convert model instances to safe dictionaries
                 sanitized[key] = self._model_to_dict(value, depth + 1)
             elif callable(value):
@@ -240,29 +260,27 @@ class SandboxedTemplateEngine:
 
     def _sanitize_value(self, value: Any, depth: int) -> Any:
         """Sanitize a single value."""
-        if value is None:
-            return value
-        elif isinstance(value, (str, int, float, bool)):
+        if value is None or isinstance(value, (str, int, float, bool)):
             return value
         elif isinstance(value, dict):
             return self.sanitize_context(value, depth)
         elif isinstance(value, (list, tuple)):
             return [self._sanitize_value(v, depth + 1) for v in value]
-        elif hasattr(value, '__dict__'):
+        elif hasattr(value, "__dict__"):
             return self._model_to_dict(value, depth)
         else:
             return str(value)
 
-    def _model_to_dict(self, obj: Any, depth: int) -> Dict[str, Any]:
+    def _model_to_dict(self, obj: Any, depth: int) -> dict[str, Any]:
         """Convert a model instance to a safe dictionary."""
         if depth > self.max_context_depth:
-            return {'_str': str(obj)}
+            return {"_str": str(obj)}
 
         result = {}
 
         # Get public attributes only
         for attr in dir(obj):
-            if attr.startswith('_'):
+            if attr.startswith("_"):
                 continue
 
             try:
@@ -280,12 +298,7 @@ class SandboxedTemplateEngine:
 
         return result
 
-    def render(
-        self,
-        template_string: str,
-        context_data: Dict[str, Any] = None,
-        validate_first: bool = True
-    ) -> str:
+    def render(self, template_string: str, context_data: dict[str, Any] = None, validate_first: bool = True) -> str:
         """
         Render a template with sandboxed execution.
 
@@ -323,17 +336,14 @@ class SandboxedTemplateEngine:
             return template.render(context)
         except TemplateSyntaxError as e:
             logger.error(f"Template syntax error during render: {e}")
-            raise TemplateSandboxError(f"Template syntax error: {str(e)}")
+            raise TemplateSandboxError(f"Template syntax error: {e!s}")
         except Exception as e:
             logger.error(f"Template render error: {e}")
-            raise TemplateSandboxError(f"Template render error: {str(e)}")
+            raise TemplateSandboxError(f"Template render error: {e!s}")
 
     def render_subject_and_body(
-        self,
-        subject_template: Optional[str],
-        body_template: str,
-        context_data: Dict[str, Any] = None
-    ) -> Dict[str, Optional[str]]:
+        self, subject_template: str | None, body_template: str, context_data: dict[str, Any] = None
+    ) -> dict[str, str | None]:
         """
         Render both subject and body templates.
 
@@ -345,16 +355,12 @@ class SandboxedTemplateEngine:
         Returns:
             Dict with 'subject' and 'body' keys
         """
-        result = {'subject': None, 'body': None}
+        result = {"subject": None, "body": None}
 
         if subject_template:
-            result['subject'] = self.render(
-                subject_template, context_data, validate_first=True
-            )
+            result["subject"] = self.render(subject_template, context_data, validate_first=True)
 
-        result['body'] = self.render(
-            body_template, context_data, validate_first=True
-        )
+        result["body"] = self.render(body_template, context_data, validate_first=True)
 
         return result
 
@@ -363,7 +369,7 @@ class SandboxedTemplateEngine:
 sandboxed_template_engine = SandboxedTemplateEngine()
 
 
-def validate_template_for_save(template_string: str) -> tuple[bool, List[str]]:
+def validate_template_for_save(template_string: str) -> tuple[bool, list[str]]:
     """
     Convenience function to validate a template before saving to database.
 
@@ -372,10 +378,7 @@ def validate_template_for_save(template_string: str) -> tuple[bool, List[str]]:
     return sandboxed_template_engine.validate_template(template_string)
 
 
-def render_template_safely(
-    template_string: str,
-    context_data: Dict[str, Any] = None
-) -> str:
+def render_template_safely(template_string: str, context_data: dict[str, Any] = None) -> str:
     """
     Convenience function for safe template rendering.
     """

@@ -35,14 +35,14 @@ export function useFlowchartState({
     (stage: WorkflowStage) => {
       onStageEdit?.(stage);
     },
-    [onStageEdit]
+    [onStageEdit],
   );
 
   const handleDelete = useCallback(
     (id: number) => {
       onStageDelete?.(id);
     },
-    [onStageDelete]
+    [onStageDelete],
   );
 
   const handleSelect = useCallback((id: number) => {
@@ -53,7 +53,7 @@ export function useFlowchartState({
     (stageType: StageType, position: number) => {
       onStageAdd?.(stageType, position);
     },
-    [onStageAdd]
+    [onStageAdd],
   );
 
   // Calculate initial layout
@@ -67,7 +67,7 @@ export function useFlowchartState({
         onAddStage: handleAddStage,
       },
       selectedStageId,
-      mode
+      mode,
     );
     return { initialNodes: nodes, initialEdges: edges };
   }, [stages, selectedStageId, mode, handleEdit, handleDelete, handleSelect, handleAddStage]);
@@ -87,11 +87,21 @@ export function useFlowchartState({
         onAddStage: handleAddStage,
       },
       selectedStageId,
-      mode
+      mode,
     );
     setNodes(newNodes);
     setEdges(newEdges);
-  }, [stages, selectedStageId, mode, handleEdit, handleDelete, handleSelect, handleAddStage, setNodes, setEdges]);
+  }, [
+    stages,
+    selectedStageId,
+    mode,
+    handleEdit,
+    handleDelete,
+    handleSelect,
+    handleAddStage,
+    setNodes,
+    setEdges,
+  ]);
 
   // Handle node drag end for reordering
   const handleNodeDragStop = useCallback(
@@ -129,7 +139,7 @@ export function useFlowchartState({
         updateLayout();
       }
     },
-    [mode, stages, onStagesReorder, updateLayout]
+    [mode, stages, onStagesReorder, updateLayout],
   );
 
   // Clear selection

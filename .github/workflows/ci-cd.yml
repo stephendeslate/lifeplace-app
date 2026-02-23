@@ -45,18 +45,21 @@ jobs:
       with:
         python-version: '3.12'
 
-    - name: Cache pip dependencies
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+
+    - name: Cache uv dependencies
       uses: actions/cache@v4
       with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+        path: ~/.cache/uv
+        key: ${{ runner.os }}-uv-${{ hashFiles('backend/requirements.txt') }}
         restore-keys: |
-          ${{ runner.os }}-pip-
+          ${{ runner.os }}-uv-
 
     - name: Install dependencies
       run: |
         cd backend
-        pip install -r requirements.txt
+        uv pip install --system -r requirements.txt
 
     - name: Run Django tests
       env:
@@ -79,8 +82,18 @@ jobs:
         cd backend
         python manage.py check
 
-  # Job 2a: Test Admin CRM
-  test-admin-crm:
+    - name: Run mypy type checks
+      env:
+        DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_db
+        SECRET_KEY: test-secret-key-for-ci
+        DEBUG: False
+        ENV: test
+      run: |
+        cd backend
+        mypy core/domains/ --config-file=../pyproject.toml || true
+
+  # Job 2: Test Frontends (via Turborepo)
+  test-frontends:
     runs-on: ubuntu-latest
 
     steps:
@@ -96,45 +109,35 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.npm
-        key: ${{ runner.os }}-node-admin-crm-${{ hashFiles('frontend/admin-crm/package-lock.json') }}
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
-          ${{ runner.os }}-node-admin-crm-
+          ${{ runner.os }}-node-
+
+    - name: Cache Turborepo
+      uses: actions/cache@v4
+      with:
+        path: .turbo
+        key: ${{ runner.os }}-turbo-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-turbo-
 
     - name: Install dependencies
-      run: |
-        cd frontend/shared
-        npm install
-        cd ../admin-crm
-        npm install --force
+      run: npm install --force
 
-    - name: Run TypeScript check
-      run: |
-        cd frontend/admin-crm
-        npm run type-check
+    - name: Run type-check, lint, format check, and tests
+      run: npx turbo run type-check lint format:check test
 
-    - name: Run linting
-      run: |
-        cd frontend/admin-crm
-        npm run lint
-
-    - name: Run tests
-      run: |
-        cd frontend/admin-crm
-        npm run test
-
-    - name: Build application
+    - name: Build admin-crm
       env:
         VITE_API_URL: https://lifeplace-api.fly.dev
         VITE_APP_ENV: test
         VITE_SENTRY_RELEASE: "admin-crm@${{ github.sha }}"
-      run: |
-        cd frontend/admin-crm
-        npm run build
+      run: npx turbo run build --filter=admin-crm
 
-    - name: Report bundle size
+    - name: Report admin-crm bundle size
       run: |
         cd frontend/admin-crm
-        echo "📦 Bundle Size Report for admin-crm"
+        echo "Bundle Size Report for admin-crm"
         echo "=========================================="
         TOTAL_SIZE=$(du -sh dist/ | cut -f1)
         echo "Total build size: $TOTAL_SIZE"
@@ -144,71 +147,26 @@ jobs:
         echo ""
         LARGE_BUNDLES=$(find dist/assets -name "*.js" -type f -size +1M)
         if [ -n "$LARGE_BUNDLES" ]; then
-          echo "⚠️  WARNING: Found JavaScript bundles larger than 1MB:"
+          echo "WARNING: Found JavaScript bundles larger than 1MB:"
           echo "$LARGE_BUNDLES" | while read file; do
             SIZE=$(ls -lh "$file" | awk '{print $5}')
             echo "  - $(basename $file): $SIZE"
           done
         else
-          echo "✅ All JavaScript bundles are under 1MB"
+          echo "All JavaScript bundles are under 1MB"
         fi
 
-  # Job 2b: Test Client Portal
-  test-client-portal:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-
-    - name: Cache npm dependencies
-      uses: actions/cache@v4
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-node-client-portal-${{ hashFiles('frontend/client-portal/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-client-portal-
-
-    - name: Install dependencies
-      run: |
-        cd frontend/shared
-        npm install
-        cd ../client-portal
-        npm install --force
-
-    - name: Run TypeScript check
-      run: |
-        cd frontend/client-portal
-        npm run type-check
-
-    - name: Run linting
-      run: |
-        cd frontend/client-portal
-        npm run lint
-
-    - name: Run tests
-      run: |
-        cd frontend/client-portal
-        npm run test
-
-    - name: Build application
+    - name: Build client-portal
       env:
         VITE_API_URL: https://lifeplace-api.fly.dev
         VITE_APP_ENV: test
         VITE_SENTRY_RELEASE: "client-portal@${{ github.sha }}"
-      run: |
-        cd frontend/client-portal
-        npm run build
+      run: npx turbo run build --filter=client-portal
 
-    - name: Report bundle size
+    - name: Report client-portal bundle size
       run: |
         cd frontend/client-portal
-        echo "📦 Bundle Size Report for client-portal"
+        echo "Bundle Size Report for client-portal"
         echo "=========================================="
         TOTAL_SIZE=$(du -sh build/client/ | cut -f1)
         echo "Total build size: $TOTAL_SIZE"
@@ -218,18 +176,18 @@ jobs:
         echo ""
         LARGE_BUNDLES=$(find build/client/assets -name "*.js" -type f -size +1M)
         if [ -n "$LARGE_BUNDLES" ]; then
-          echo "⚠️  WARNING: Found JavaScript bundles larger than 1MB:"
+          echo "WARNING: Found JavaScript bundles larger than 1MB:"
           echo "$LARGE_BUNDLES" | while read file; do
             SIZE=$(ls -lh "$file" | awk '{print $5}')
             echo "  - $(basename $file): $SIZE"
           done
         else
-          echo "✅ All JavaScript bundles are under 1MB"
+          echo "All JavaScript bundles are under 1MB"
         fi
 
   # Job 3a: Deploy Admin CRM to Cloudflare Pages (only on main branch)
   deploy-admin-crm:
-    needs: [test-backend, test-admin-crm, test-client-portal]
+    needs: [test-backend, test-frontends]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
@@ -246,16 +204,12 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.npm
-        key: ${{ runner.os }}-node-admin-crm-${{ hashFiles('frontend/admin-crm/package-lock.json') }}
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
-          ${{ runner.os }}-node-admin-crm-
+          ${{ runner.os }}-node-
 
     - name: Install dependencies
-      run: |
-        cd frontend/shared
-        npm install
-        cd ../admin-crm
-        npm install --force
+      run: npm install --force
 
     - name: Build for production
       env:
@@ -266,9 +220,7 @@ jobs:
         VITE_STRIPE_PUBLIC_KEY: ${{ secrets.VITE_STRIPE_PUBLIC_KEY }}
         SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      run: |
-        cd frontend/admin-crm
-        npm run build
+      run: npx turbo run build --filter=admin-crm
 
     - name: Deploy to Cloudflare Pages
       env:
@@ -283,7 +235,7 @@ jobs:
 
   # Job 3b: Deploy Client Portal to Cloudflare Pages (only on main branch)
   deploy-client-portal:
-    needs: [test-backend, test-admin-crm, test-client-portal]
+    needs: [test-backend, test-frontends]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
@@ -300,16 +252,12 @@ jobs:
       uses: actions/cache@v4
       with:
         path: ~/.npm
-        key: ${{ runner.os }}-node-client-portal-${{ hashFiles('frontend/client-portal/package-lock.json') }}
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
-          ${{ runner.os }}-node-client-portal-
+          ${{ runner.os }}-node-
 
     - name: Install dependencies
-      run: |
-        cd frontend/shared
-        npm install
-        cd ../client-portal
-        npm install --force
+      run: npm install --force
 
     - name: Build for production
       env:
@@ -321,9 +269,7 @@ jobs:
         VITE_GA_MEASUREMENT_ID: ${{ secrets.VITE_GA_MEASUREMENT_ID }}
         SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-      run: |
-        cd frontend/client-portal
-        npm run build
+      run: npx turbo run build --filter=client-portal
 
     - name: Deploy to Cloudflare Pages
       env:
@@ -338,7 +284,7 @@ jobs:
 
   # Job 4: Deploy Backend to Fly.io (only on main branch)
   deploy-backend:
-    needs: [test-backend, test-admin-crm, test-client-portal]
+    needs: [test-backend, test-frontends]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
@@ -435,7 +381,7 @@ jobs:
 
   # Job 7: Deployment Summary
   notify:
-    needs: [test-backend, test-admin-crm, test-client-portal, deploy-backend, deploy-admin-crm, deploy-client-portal, sentry-release]
+    needs: [test-backend, test-frontends, deploy-backend, deploy-admin-crm, deploy-client-portal, sentry-release]
     runs-on: ubuntu-latest
     if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
 
@@ -446,8 +392,7 @@ jobs:
         echo "================================"
         echo ""
         echo "Backend Tests:          ${{ needs.test-backend.result }}"
-        echo "Admin CRM Tests:        ${{ needs.test-admin-crm.result }}"
-        echo "Client Portal Tests:    ${{ needs.test-client-portal.result }}"
+        echo "Frontend Tests:         ${{ needs.test-frontends.result }}"
         echo "Backend Deploy:         ${{ needs.deploy-backend.result }}"
         echo "Admin CRM Deploy:       ${{ needs.deploy-admin-crm.result }}"
         echo "Client Portal Deploy:   ${{ needs.deploy-client-portal.result }}"

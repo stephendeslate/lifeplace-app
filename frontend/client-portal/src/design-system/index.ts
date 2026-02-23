@@ -14,7 +14,7 @@ export {
   LiveBookingCounter, // Legacy export
   SocialProofBadge,
   TrustIndicators,
-  SocialProofSection
+  SocialProofSection,
 } from './components/SocialProof';
 
 // Layout Components
@@ -27,13 +27,13 @@ export { ModernCard } from './components/ModernCard';
 export { Button } from './components/Button';
 
 // Patterns
-export { 
+export {
   OrganicBackground,
   LeafShape,
   WaveShape,
   BlobShape,
   CirclePattern,
-  GridPattern
+  GridPattern,
 } from './patterns/OrganicShapes';
 
 // Visualizations

@@ -1,18 +1,7 @@
 // frontend/admin-crm/src/components/contracts/SimpleSignaturePad.tsx
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import {
-  Box,
-  Typography,
-  Paper,
-  useTheme,
-  Stack,
-  Tooltip,
-  IconButton,
-} from '@mui/material';
-import {
-  Clear as ClearIcon,
-  Undo as UndoIcon,
-} from '@mui/icons-material';
+import { Box, Typography, Paper, useTheme, Stack, Tooltip, IconButton } from '@mui/material';
+import { Clear as ClearIcon, Undo as UndoIcon } from '@mui/icons-material';
 import SignaturePad from 'signature_pad';
 
 // Default configuration for signature pad
@@ -56,7 +45,7 @@ export const SimpleSignaturePad: React.FC<SimpleSignaturePadProps> = ({
   const onSignatureChangeRef = useRef(onSignatureChange);
   const [isEmpty, setIsEmpty] = useState(true);
   const [hasBeenTouched, setHasBeenTouched] = useState(false);
-  
+
   // Keep the ref updated
   useEffect(() => {
     onSignatureChangeRef.current = onSignatureChange;
@@ -109,7 +98,7 @@ export const SimpleSignaturePad: React.FC<SimpleSignaturePadProps> = ({
     const handleEndStroke = () => {
       const currentIsEmpty = signaturePad.isEmpty();
       setIsEmpty(currentIsEmpty);
-      
+
       if (!currentIsEmpty) {
         const signatureData = signaturePad.toDataURL('image/png');
         onSignatureChangeRef.current(signatureData);
@@ -154,10 +143,10 @@ export const SimpleSignaturePad: React.FC<SimpleSignaturePadProps> = ({
       if (data && data.length > 0) {
         data.pop(); // Remove the last stroke
         padRef.current.fromData(data);
-        
+
         const currentIsEmpty = padRef.current.isEmpty();
         setIsEmpty(currentIsEmpty);
-        
+
         if (!currentIsEmpty) {
           const signatureData = padRef.current.toDataURL('image/png');
           onSignatureChangeRef.current(signatureData);
@@ -170,14 +159,15 @@ export const SimpleSignaturePad: React.FC<SimpleSignaturePadProps> = ({
 
   // Validation
   const showError = error || (required && hasBeenTouched && isEmpty);
-  const displayErrorText = errorText || (required && hasBeenTouched && isEmpty ? 'Signature is required' : '');
+  const displayErrorText =
+    errorText || (required && hasBeenTouched && isEmpty ? 'Signature is required' : '');
 
   return (
     <Box>
       {/* Label */}
       {label && (
-        <Typography 
-          variant="body2" 
+        <Typography
+          variant="body2"
           color={showError ? 'error' : 'text.secondary'}
           sx={{ mb: 1, fontWeight: 500 }}
         >
@@ -231,9 +221,7 @@ export const SimpleSignaturePad: React.FC<SimpleSignaturePadProps> = ({
                 color: theme.palette.text.disabled,
               }}
             >
-              <Typography variant="body2">
-                Sign here
-              </Typography>
+              <Typography variant="body2">Sign here</Typography>
             </Box>
           )}
 

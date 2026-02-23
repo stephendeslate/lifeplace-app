@@ -16,20 +16,12 @@
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
 import { Phone, Email, LocationOn, ArrowForward } from '@mui/icons-material';
-import {
-  Section,
-  Container,
-  ModernCard,
-  tokens
-} from '../../../design-system';
+import { Section, Container, ModernCard, tokens } from '../../../design-system';
 import { Button, FadeIn } from '../../../design-system';
 
 export const PartnerContact: React.FC = () => {
   return (
-    <Section
-      background="white"
-      spacing="large"
-    >
+    <Section background="white" spacing="large">
       <Container maxWidth="narrow">
         <FadeIn delay={100}>
           <ModernCard variant="elevated" size="large">
@@ -73,10 +65,7 @@ export const PartnerContact: React.FC = () => {
               </Typography>
 
               {/* Contact Information Cards */}
-              <Stack
-                spacing={tokens.spacing.space[3]}
-                sx={{ width: '100%', maxWidth: 500 }}
-              >
+              <Stack spacing={tokens.spacing.space[3]} sx={{ width: '100%', maxWidth: 500 }}>
                 {/* Email Card */}
                 <FadeIn delay={200}>
                   <ModernCard
@@ -259,7 +248,9 @@ export const PartnerContact: React.FC = () => {
                   variant="terracotta"
                   size="large"
                   endIcon={<ArrowForward />}
-                  onClick={() => window.location.href = 'mailto:partnerships@lifeplaceretreat.com'}
+                  onClick={() =>
+                    (window.location.href = 'mailto:partnerships@lifeplaceretreat.com')
+                  }
                   ariaLabel="Email partnership team"
                   sx={{
                     mt: tokens.spacing.space[2],

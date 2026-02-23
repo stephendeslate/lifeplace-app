@@ -1,15 +1,7 @@
 // frontend/admin-crm/src/components/analytics/charts/VenueChart.tsx
 import React from 'react';
 import { Box, Paper, Typography, Skeleton } from '@mui/material';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import type { VenueUsage } from '../../../types/analytics.types';
 import { tokens } from '../../../design-system';
 
@@ -60,7 +52,12 @@ export const VenueChart: React.FC<VenueChartProps> = ({
                 return [value, name];
               }}
             />
-            <Bar dataKey="booking_count" name="Bookings" fill={tokens.color.charts.series[1]} radius={[4, 4, 0, 0]} />
+            <Bar
+              dataKey="booking_count"
+              name="Bookings"
+              fill={tokens.color.charts.series[1]}
+              radius={[4, 4, 0, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </Box>

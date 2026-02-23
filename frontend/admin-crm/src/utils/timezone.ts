@@ -56,7 +56,7 @@ function parseAsManila(date: string | Date): Date {
 export function formatPhilippinesTime(
   date: string | Date,
   includeTimezone: boolean = true,
-  formatString: string = 'MMM d, yyyy h:mm a'
+  formatString: string = 'MMM d, yyyy h:mm a',
 ): string {
   const dateObj = parseAsManila(date);
   const formatted = formatInTimeZone(dateObj, BUSINESS_TIMEZONE, formatString);
@@ -75,7 +75,7 @@ export function formatPhilippinesTime(
 export function formatWithUserPreference(
   date: string | Date,
   displayMode: TimezoneDisplayMode,
-  formatString: string = 'MMM d, yyyy h:mm a'
+  formatString: string = 'MMM d, yyyy h:mm a',
 ): { primary: string; secondary?: string } {
   const dateObj = parseAsManila(date);
 
@@ -87,23 +87,19 @@ export function formatWithUserPreference(
 
   if (displayMode.userTimezone && displayMode.userTimezone !== BUSINESS_TIMEZONE) {
     try {
-      const userFormatted = formatInTimeZone(
-        dateObj,
-        displayMode.userTimezone,
-        formatString
-      );
+      const userFormatted = formatInTimeZone(dateObj, displayMode.userTimezone, formatString);
       const tzAbbr = formatInTimeZone(dateObj, displayMode.userTimezone, 'zzz');
 
       if (displayMode.mode === 'business_with_local') {
         // Show as secondary info
         return {
           primary,
-          secondary: `(${userFormatted} ${tzAbbr})`
+          secondary: `(${userFormatted} ${tzAbbr})`,
         };
       } else if (displayMode.mode === 'dual_display') {
         // Show side by side
         return {
-          primary: `${primary} / ${userFormatted} ${tzAbbr}`
+          primary: `${primary} / ${userFormatted} ${tzAbbr}`,
         };
       }
     } catch (error) {
@@ -129,7 +125,7 @@ export function getUserTimezone(): string {
 export function convertTimezone(
   date: string | Date,
   fromTimezone: string,
-  toTimezone: string
+  toTimezone: string,
 ): Date {
   const dateObj = parseAsManila(date);
 
@@ -147,7 +143,7 @@ export function convertTimezone(
  */
 export function formatDualTimezone(
   date: string | Date,
-  adminTimezone: string = 'America/Los_Angeles'
+  adminTimezone: string = 'America/Los_Angeles',
 ): {
   business: string;
   admin: string;
@@ -155,17 +151,9 @@ export function formatDualTimezone(
 } {
   const dateObj = parseAsManila(date);
 
-  const businessFormatted = formatInTimeZone(
-    dateObj,
-    BUSINESS_TIMEZONE,
-    'MMM d, yyyy h:mm a'
-  );
+  const businessFormatted = formatInTimeZone(dateObj, BUSINESS_TIMEZONE, 'MMM d, yyyy h:mm a');
 
-  const adminFormatted = formatInTimeZone(
-    dateObj,
-    adminTimezone,
-    'MMM d, yyyy h:mm a'
-  );
+  const adminFormatted = formatInTimeZone(dateObj, adminTimezone, 'MMM d, yyyy h:mm a');
 
   const businessDate = formatInTimeZone(dateObj, BUSINESS_TIMEZONE, 'yyyy-MM-dd');
   const adminDate = formatInTimeZone(dateObj, adminTimezone, 'yyyy-MM-dd');
@@ -173,7 +161,7 @@ export function formatDualTimezone(
   return {
     business: `${businessFormatted} ${BUSINESS_TIMEZONE_DISPLAY}`,
     admin: `${adminFormatted} ${formatInTimeZone(dateObj, adminTimezone, 'zzz')}`,
-    isSameDay: businessDate === adminDate
+    isSameDay: businessDate === adminDate,
   };
 }
 
@@ -187,12 +175,12 @@ export function isWithinBusinessHours(date: Date | string): boolean {
   const philippinesTime = toZonedTime(dateObj, BUSINESS_TIMEZONE);
   const hours = philippinesTime.getHours();
   const dayOfWeek = philippinesTime.getDay();
-  
+
   // Check if weekend (0 = Sunday, 6 = Saturday)
   if (dayOfWeek === 0 || dayOfWeek === 6) {
     return false;
   }
-  
+
   // Check if within business hours (9 AM - 6 PM)
   return hours >= 9 && hours < 18;
 }
@@ -207,20 +195,20 @@ export function getBusinessHoursStatus(): {
 } {
   const now = new Date();
   const isOpen = isWithinBusinessHours(now);
-  
+
   if (isOpen) {
     return {
       isOpen: true,
-      message: 'Business is currently open'
+      message: 'Business is currently open',
     };
   }
-  
+
   const philippinesNow = toZonedTime(now, BUSINESS_TIMEZONE);
   const hours = philippinesNow.getHours();
   const dayOfWeek = philippinesNow.getDay();
-  
+
   let nextOpenTime: Date;
-  
+
   if (dayOfWeek === 0) {
     // Sunday - next open is Monday 9 AM
     nextOpenTime = new Date(philippinesNow);
@@ -239,21 +227,21 @@ export function getBusinessHoursStatus(): {
     // After business hours - open tomorrow at 9 AM
     nextOpenTime = new Date(philippinesNow);
     nextOpenTime.setDate(philippinesNow.getDate() + 1);
-    
+
     // Skip to Monday if tomorrow is weekend
     if (nextOpenTime.getDay() === 0) {
       nextOpenTime.setDate(nextOpenTime.getDate() + 1);
     } else if (nextOpenTime.getDay() === 6) {
       nextOpenTime.setDate(nextOpenTime.getDate() + 2);
     }
-    
+
     nextOpenTime.setHours(9, 0, 0, 0);
   }
-  
+
   return {
     isOpen: false,
     message: 'Business is currently closed',
-    nextOpenTime: formatPhilippinesTime(nextOpenTime)
+    nextOpenTime: formatPhilippinesTime(nextOpenTime),
   };
 }
 
@@ -265,7 +253,7 @@ export function getBusinessHoursStatus(): {
 export function formatForCalendar(
   date: string | Date,
   showBothTimezones: boolean = false,
-  adminTimezone?: string
+  adminTimezone?: string,
 ): string {
   const dateObj = parseAsManila(date);
 
@@ -453,7 +441,11 @@ export function parseDateStringAsManila(dateStr: string): Date {
  */
 export function parseDateTimeAsManila(dateTimeStr: string): Date {
   // If the string already has a timezone, parse it directly
-  if (dateTimeStr.includes('+') || dateTimeStr.includes('Z') || dateTimeStr.match(/[+-]\d{2}:\d{2}$/)) {
+  if (
+    dateTimeStr.includes('+') ||
+    dateTimeStr.includes('Z') ||
+    dateTimeStr.match(/[+-]\d{2}:\d{2}$/)
+  ) {
     return parseISO(dateTimeStr);
   }
   // Otherwise, interpret as Manila time

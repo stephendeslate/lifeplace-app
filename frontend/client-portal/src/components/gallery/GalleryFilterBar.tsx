@@ -1,6 +1,6 @@
-import React from "react";
-import { Box, Chip } from "@mui/material";
-import { tokens } from "../../design-system/tokens";
+import React from 'react';
+import { Box, Chip } from '@mui/material';
+import { tokens } from '../../design-system/tokens';
 
 interface FilterCategory {
   id: string;
@@ -22,27 +22,25 @@ export const GalleryFilterBar: React.FC<GalleryFilterBarProps> = ({
   return (
     <Box
       sx={{
-        display: "flex",
+        display: 'flex',
         gap: 1,
-        overflowX: "auto",
-        scrollbarWidth: "none",
-        "&::-webkit-scrollbar": { display: "none" },
+        overflowX: 'auto',
+        scrollbarWidth: 'none',
+        '&::-webkit-scrollbar': { display: 'none' },
         pb: 0.5,
       }}
     >
       {categories.map((category) => {
         const isActive = activeCategory === category.id;
         const label =
-          category.count !== undefined
-            ? `${category.label} (${category.count})`
-            : category.label;
+          category.count !== undefined ? `${category.label} (${category.count})` : category.label;
 
         return (
           <Chip
             key={category.id}
             label={label}
             onClick={() => onCategoryChange(category.id)}
-            variant={isActive ? "filled" : "outlined"}
+            variant={isActive ? 'filled' : 'outlined'}
             sx={{
               flexShrink: 0,
               fontFamily: tokens.typography.families.body,
@@ -55,17 +53,17 @@ export const GalleryFilterBar: React.FC<GalleryFilterBarProps> = ({
               ...(isActive
                 ? {
                     backgroundColor: tokens.color.base.sage[600],
-                    color: "#FFFFFF",
+                    color: '#FFFFFF',
                     borderColor: tokens.color.base.sage[600],
-                    "&:hover": {
+                    '&:hover': {
                       backgroundColor: tokens.color.base.sage[700],
                     },
                   }
                 : {
-                    backgroundColor: "transparent",
+                    backgroundColor: 'transparent',
                     color: tokens.color.base.neutral[600],
                     borderColor: tokens.color.base.neutral[300],
-                    "&:hover": {
+                    '&:hover': {
                       backgroundColor: tokens.color.base.sage[50],
                       borderColor: tokens.color.base.sage[400],
                     },

@@ -35,7 +35,6 @@ export const SmartCard: React.FC<SmartCardProps> = ({
 }) => {
   const theme = useTheme();
 
-
   const getCardStyles = () => {
     const baseStyles = {
       height: '100%',
@@ -89,7 +88,6 @@ export const SmartCard: React.FC<SmartCardProps> = ({
 
   const cardContent = (
     <CardContent sx={{ p: 3, height: '100%' }}>
-
       {/* Header */}
       <Box display="flex" alignItems="flex-start" justifyContent="space-between" mb={2}>
         <Box display="flex" alignItems="center" gap={2} flex={1}>
@@ -143,7 +141,11 @@ export const SmartCard: React.FC<SmartCardProps> = ({
                     },
                   }}
                 >
-                  {action.icon ? <action.icon fontSize="small" /> : <MoreVertIcon fontSize="small" />}
+                  {action.icon ? (
+                    <action.icon fontSize="small" />
+                  ) : (
+                    <MoreVertIcon fontSize="small" />
+                  )}
                 </IconButton>
               </Tooltip>
             ))}
@@ -225,9 +227,7 @@ export const SmartCard: React.FC<SmartCardProps> = ({
       )}
 
       {/* Main Content */}
-      <Box sx={{ flex: 1 }}>
-        {children}
-      </Box>
+      <Box sx={{ flex: 1 }}>{children}</Box>
     </CardContent>
   );
 

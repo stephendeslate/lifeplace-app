@@ -18,16 +18,16 @@ export const useQuestionnaires = (eventTypeId?: number) => {
   const fetchQuestionnaires = useCallback(async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       let data: Questionnaire[];
-      
+
       if (eventTypeId) {
         data = await QuestionnaireApi.getQuestionnairesByEventType(eventTypeId);
       } else {
         data = await QuestionnaireApi.getQuestionnaires();
       }
-      
+
       setQuestionnaires(data);
     } catch (err) {
       const errorMessage = ErrorHandler.extractMessage(err);
@@ -57,10 +57,10 @@ export const useQuestionnaireDetail = (questionnaireId?: number) => {
 
   const fetchQuestionnaire = useCallback(async () => {
     if (!questionnaireId) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await QuestionnaireApi.getQuestionnaireDetail(questionnaireId);
       setQuestionnaire(data);
@@ -92,10 +92,10 @@ export const useQuestionnaireFields = (questionnaireId?: number) => {
 
   const fetchFields = useCallback(async () => {
     if (!questionnaireId) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const data = await QuestionnaireApi.getQuestionnaireFields(questionnaireId);
       setFields(data.sort((a, b) => a.order - b.order));
@@ -127,7 +127,7 @@ export const useQuestionnaireResponses = (fields: QuestionnaireField[] = []) => 
 
   // Update a single response
   const updateResponse = useCallback((fieldId: string | number, value: Record<string, unknown>) => {
-    setResponses(prev => ({
+    setResponses((prev) => ({
       ...prev,
       [fieldId.toString()]: value,
     }));
@@ -135,7 +135,7 @@ export const useQuestionnaireResponses = (fields: QuestionnaireField[] = []) => 
 
   // Update multiple responses
   const updateResponses = useCallback((newResponses: Record<string, unknown>) => {
-    setResponses(prev => ({
+    setResponses((prev) => ({
       ...prev,
       ...newResponses,
     }));
@@ -149,7 +149,7 @@ export const useQuestionnaireResponses = (fields: QuestionnaireField[] = []) => 
 
   // Clear a specific response
   const clearResponse = useCallback((fieldId: string | number) => {
-    setResponses(prev => {
+    setResponses((prev) => {
       const updated = { ...prev };
       delete updated[fieldId.toString()];
       return updated;
@@ -170,25 +170,37 @@ export const useQuestionnaireResponses = (fields: QuestionnaireField[] = []) => 
   }, [fields, responses]);
 
   // Get response for a specific field
-  const getResponse = useCallback((fieldId: string | number) => {
-    return responses[fieldId.toString()];
-  }, [responses]);
+  const getResponse = useCallback(
+    (fieldId: string | number) => {
+      return responses[fieldId.toString()];
+    },
+    [responses],
+  );
 
   // Check if a field has a response
-  const hasResponse = useCallback((fieldId: string | number) => {
-    const response = responses[fieldId.toString()];
-    return response !== undefined && response !== null && response !== '';
-  }, [responses]);
+  const hasResponse = useCallback(
+    (fieldId: string | number) => {
+      const response = responses[fieldId.toString()];
+      return response !== undefined && response !== null && response !== '';
+    },
+    [responses],
+  );
 
   // Get validation error for a field
-  const getFieldError = useCallback((fieldId: string | number) => {
-    return validationErrors[fieldId.toString()]?.[0];
-  }, [validationErrors]);
+  const getFieldError = useCallback(
+    (fieldId: string | number) => {
+      return validationErrors[fieldId.toString()]?.[0];
+    },
+    [validationErrors],
+  );
 
   // Check if a field has validation errors
-  const hasFieldError = useCallback((fieldId: string | number) => {
-    return !!(validationErrors[fieldId.toString()]?.length > 0);
-  }, [validationErrors]);
+  const hasFieldError = useCallback(
+    (fieldId: string | number) => {
+      return !!(validationErrors[fieldId.toString()]?.length > 0);
+    },
+    [validationErrors],
+  );
 
   // Auto-validate when responses or fields change
   useEffect(() => {
@@ -200,19 +212,15 @@ export const useQuestionnaireResponses = (fields: QuestionnaireField[] = []) => 
   // Calculate completion percentage
   const completionPercentage = useMemo(() => {
     if (fields.length === 0) return 0;
-    
-    const responseCount = fields.filter(field => 
-      hasResponse(field.id)
-    ).length;
-    
+
+    const responseCount = fields.filter((field) => hasResponse(field.id)).length;
+
     return Math.round((responseCount / fields.length) * 100);
   }, [fields, hasResponse]);
 
   // Get required fields that are missing responses
   const missingRequiredFields = useMemo(() => {
-    return fields.filter(field => 
-      field.required && !hasResponse(field.id)
-    );
+    return fields.filter((field) => field.required && !hasResponse(field.id));
   }, [fields, hasResponse]);
 
   return {
@@ -240,42 +248,41 @@ export const useQuestionnaireFileUpload = () => {
   const [uploadLoading, setUploadLoading] = useState<Record<string, boolean>>({});
   const [uploadErrors, setUploadErrors] = useState<Record<string, string>>({});
 
-  const uploadFiles = useCallback(async (
-    questionnaireId: number,
-    fieldId: number,
-    files: File[]
-  ) => {
-    const fieldKey = fieldId.toString();
-    
-    setUploadLoading(prev => ({ ...prev, [fieldKey]: true }));
-    setUploadErrors(prev => ({ ...prev, [fieldKey]: '' }));
-    
-    try {
-      const uploadedUrls = await QuestionnaireApi.processFileUploads(
-        questionnaireId,
-        fieldId,
-        files
-      );
-      
-      setUploadedFiles(prev => ({
-        ...prev,
-        [fieldKey]: [...(prev[fieldKey] || []), ...uploadedUrls],
-      }));
-      
-      return uploadedUrls;
-    } catch (err) {
-      const errorMessage = QuestionnaireApi.handleQuestionnaireError(err);
-      setUploadErrors(prev => ({ ...prev, [fieldKey]: errorMessage }));
-      throw err;
-    } finally {
-      setUploadLoading(prev => ({ ...prev, [fieldKey]: false }));
-    }
-  }, []);
+  const uploadFiles = useCallback(
+    async (questionnaireId: number, fieldId: number, files: File[]) => {
+      const fieldKey = fieldId.toString();
+
+      setUploadLoading((prev) => ({ ...prev, [fieldKey]: true }));
+      setUploadErrors((prev) => ({ ...prev, [fieldKey]: '' }));
+
+      try {
+        const uploadedUrls = await QuestionnaireApi.processFileUploads(
+          questionnaireId,
+          fieldId,
+          files,
+        );
+
+        setUploadedFiles((prev) => ({
+          ...prev,
+          [fieldKey]: [...(prev[fieldKey] || []), ...uploadedUrls],
+        }));
+
+        return uploadedUrls;
+      } catch (err) {
+        const errorMessage = QuestionnaireApi.handleQuestionnaireError(err);
+        setUploadErrors((prev) => ({ ...prev, [fieldKey]: errorMessage }));
+        throw err;
+      } finally {
+        setUploadLoading((prev) => ({ ...prev, [fieldKey]: false }));
+      }
+    },
+    [],
+  );
 
   const removeFile = useCallback((fieldId: number, fileIndex: number) => {
     const fieldKey = fieldId.toString();
-    
-    setUploadedFiles(prev => ({
+
+    setUploadedFiles((prev) => ({
       ...prev,
       [fieldKey]: prev[fieldKey]?.filter((_, index) => index !== fileIndex) || [],
     }));
@@ -283,24 +290,33 @@ export const useQuestionnaireFileUpload = () => {
 
   const clearFiles = useCallback((fieldId: number) => {
     const fieldKey = fieldId.toString();
-    
-    setUploadedFiles(prev => ({
+
+    setUploadedFiles((prev) => ({
       ...prev,
       [fieldKey]: [],
     }));
   }, []);
 
-  const getUploadedFiles = useCallback((fieldId: number) => {
-    return uploadedFiles[fieldId.toString()] || [];
-  }, [uploadedFiles]);
+  const getUploadedFiles = useCallback(
+    (fieldId: number) => {
+      return uploadedFiles[fieldId.toString()] || [];
+    },
+    [uploadedFiles],
+  );
 
-  const isUploading = useCallback((fieldId: number) => {
-    return uploadLoading[fieldId.toString()] || false;
-  }, [uploadLoading]);
+  const isUploading = useCallback(
+    (fieldId: number) => {
+      return uploadLoading[fieldId.toString()] || false;
+    },
+    [uploadLoading],
+  );
 
-  const getUploadError = useCallback((fieldId: number) => {
-    return uploadErrors[fieldId.toString()] || '';
-  }, [uploadErrors]);
+  const getUploadError = useCallback(
+    (fieldId: number) => {
+      return uploadErrors[fieldId.toString()] || '';
+    },
+    [uploadErrors],
+  );
 
   return {
     uploadedFiles,
@@ -316,28 +332,28 @@ export const useQuestionnaireFileUpload = () => {
 // Hook for questionnaire summary and display
 export const useQuestionnaireSummary = (
   questionnaires: QuestionnaireDetailResponse[],
-  responses: Record<string, unknown>
+  responses: Record<string, unknown>,
 ) => {
   const summary = useMemo(() => {
     return QuestionnaireApi.generateResponseSummary(questionnaires, responses);
   }, [questionnaires, responses]);
 
-  const getDisplayValue = useCallback((
-    field: QuestionnaireField,
-    response: Record<string, unknown>
-  ) => {
-    return QuestionnaireApi.getResponseDisplayValue(field, response);
-  }, []);
+  const getDisplayValue = useCallback(
+    (field: QuestionnaireField, response: Record<string, unknown>) => {
+      return QuestionnaireApi.getResponseDisplayValue(field, response);
+    },
+    [],
+  );
 
   const hasAnyResponses = useMemo(() => {
-    return Object.keys(responses).some(key => {
+    return Object.keys(responses).some((key) => {
       const value = responses[key];
       return value !== undefined && value !== null && value !== '';
     });
   }, [responses]);
 
   const responseCount = useMemo(() => {
-    return Object.keys(responses).filter(key => {
+    return Object.keys(responses).filter((key) => {
       const value = responses[key];
       return value !== undefined && value !== null && value !== '';
     }).length;
@@ -354,7 +370,7 @@ export const useQuestionnaireSummary = (
 // Hook for dynamic questionnaire logic
 export const useDynamicQuestionnaire = (
   questionnaires: QuestionnaireDetailResponse[],
-  _responses: Record<string, unknown>
+  _responses: Record<string, unknown>,
 ) => {
   // Get visible questionnaires based on conditions
   const visibleQuestionnaires = useMemo(() => {
@@ -375,20 +391,23 @@ export const useDynamicQuestionnaire = (
   }, []);
 
   // Check if questionnaire should be shown
-  const shouldShowQuestionnaire = useCallback((questionnaire: QuestionnaireDetailResponse) => {
-    return visibleQuestionnaires.some(q => q.id === questionnaire.id);
-  }, [visibleQuestionnaires]);
+  const shouldShowQuestionnaire = useCallback(
+    (questionnaire: QuestionnaireDetailResponse) => {
+      return visibleQuestionnaires.some((q) => q.id === questionnaire.id);
+    },
+    [visibleQuestionnaires],
+  );
 
   // Check if field should be shown
-  const shouldShowField = useCallback((
-    questionnaire: QuestionnaireDetailResponse,
-    field: QuestionnaireField
-  ) => {
-    if (!shouldShowQuestionnaire(questionnaire)) return false;
-    
-    const visibleFields = getVisibleFields(questionnaire);
-    return visibleFields.some(f => f.id === field.id);
-  }, [shouldShowQuestionnaire, getVisibleFields]);
+  const shouldShowField = useCallback(
+    (questionnaire: QuestionnaireDetailResponse, field: QuestionnaireField) => {
+      if (!shouldShowQuestionnaire(questionnaire)) return false;
+
+      const visibleFields = getVisibleFields(questionnaire);
+      return visibleFields.some((f) => f.id === field.id);
+    },
+    [shouldShowQuestionnaire, getVisibleFields],
+  );
 
   return {
     visibleQuestionnaires,

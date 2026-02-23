@@ -36,7 +36,13 @@ const intensityMap = {
 const StyledGlassCard = styled(Box, {
   shouldForwardProp: (prop) =>
     !['variant', 'intensity', 'hover', 'gradient', 'overflow'].includes(prop as string),
-})<GlassCardProps>(({ variant = 'light', intensity = 'medium', hover = true, gradient = false, overflow = 'hidden' }) => {
+})<GlassCardProps>(({
+  variant = 'light',
+  intensity = 'medium',
+  hover = true,
+  gradient = false,
+  overflow = 'hidden',
+}) => {
   const getGlassEffect = () => {
     switch (variant) {
       case 'dark':
@@ -57,7 +63,7 @@ const StyledGlassCard = styled(Box, {
 
   return {
     position: 'relative',
-    background: gradient 
+    background: gradient
       ? `${tokens.color.gradients.glassOverlay}, ${glass.background}`
       : glass.background,
     backdropFilter: `blur(${intensitySettings.blur})`,
@@ -67,24 +73,26 @@ const StyledGlassCard = styled(Box, {
     padding: tokens.spacing.space[3],
     transition: tokens.animation.transition.all,
     overflow,
-    
-    '&::before': gradient ? {
-      content: '""',
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: tokens.color.gradients.glassOverlay,
-      pointerEvents: 'none',
-      zIndex: 0,
-    } : {},
-    
+
+    '&::before': gradient
+      ? {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: tokens.color.gradients.glassOverlay,
+          pointerEvents: 'none',
+          zIndex: 0,
+        }
+      : {},
+
     '& > *': {
       position: 'relative',
       zIndex: 1,
     },
-    
+
     ...(hover && {
       cursor: 'pointer',
       '&:hover': {
@@ -99,11 +107,7 @@ const StyledGlassCard = styled(Box, {
 });
 
 export const GlassCard: React.FC<GlassCardProps> = ({ children, ...props }) => {
-  return (
-    <StyledGlassCard {...props}>
-      {children}
-    </StyledGlassCard>
-  );
+  return <StyledGlassCard {...props}>{children}</StyledGlassCard>;
 };
 
 export default GlassCard;

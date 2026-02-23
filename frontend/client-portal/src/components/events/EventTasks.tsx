@@ -51,13 +51,13 @@ const EventTasks: React.FC<EventTasksProps> = ({
   eventId,
   loading: externalLoading = false,
   showEmpty = true,
-  maxItems
+  maxItems,
 }) => {
   const PHILIPPINE_TIMEZONE = 'Asia/Manila';
   const { useEventTasks, useUpdateEventTask } = useEvents();
   const { data: tasks, isLoading, error, refetch } = useEventTasks(eventId);
   const updateTaskMutation = useUpdateEventTask();
-  
+
   // Task update dialog state
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<EventTask | null>(null);
@@ -116,7 +116,9 @@ const EventTasks: React.FC<EventTasksProps> = ({
     }
   };
 
-  const getPriorityColor = (priority: TaskPriority): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
+  const getPriorityColor = (
+    priority: TaskPriority,
+  ): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (priority) {
       case 'URGENT':
         return 'error';
@@ -131,7 +133,9 @@ const EventTasks: React.FC<EventTasksProps> = ({
     }
   };
 
-  const getTaskStatusColor = (status: TaskStatus): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
+  const getTaskStatusColor = (
+    status: TaskStatus,
+  ): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (status) {
       case 'COMPLETED':
         return 'success';
@@ -195,9 +199,9 @@ const EventTasks: React.FC<EventTasksProps> = ({
 
   if (!tasks || tasks.length === 0) {
     return showEmpty ? (
-      <Paper 
-        sx={{ 
-          p: 3, 
+      <Paper
+        sx={{
+          p: 3,
           textAlign: 'center',
           backgroundColor: 'grey.50',
         }}
@@ -224,23 +228,23 @@ const EventTasks: React.FC<EventTasksProps> = ({
             divider
             sx={{
               py: 2,
-              backgroundColor: isTaskOverdue(task) ? 'error.light' : 
-                             isTaskDueSoon(task) ? 'warning.light' : 
-                             'transparent',
+              backgroundColor: isTaskOverdue(task)
+                ? 'error.light'
+                : isTaskDueSoon(task)
+                  ? 'warning.light'
+                  : 'transparent',
               opacity: task.status === 'CANCELLED' ? 0.6 : 1,
             }}
           >
-            <ListItemIcon sx={{ minWidth: 48 }}>
-              {getTaskIcon(task.status)}
-            </ListItemIcon>
-            
+            <ListItemIcon sx={{ minWidth: 48 }}>{getTaskIcon(task.status)}</ListItemIcon>
+
             <ListItemText
               primary={
                 <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
-                  <Typography 
-                    variant="body1" 
+                  <Typography
+                    variant="body1"
                     component="h4"
-                    sx={{ 
+                    sx={{
                       fontWeight: 500,
                       textDecoration: task.status === 'COMPLETED' ? 'line-through' : 'none',
                       flex: 1,
@@ -249,17 +253,21 @@ const EventTasks: React.FC<EventTasksProps> = ({
                   >
                     {task.title}
                   </Typography>
-                  
+
                   {task.priority !== 'LOW' && (
                     <Chip
                       label={task.priority}
                       size="small"
                       color={getPriorityColor(task.priority)}
                       variant="outlined"
-                      icon={task.priority === 'URGENT' ? <HighPriorityIcon fontSize="small" /> : undefined}
+                      icon={
+                        task.priority === 'URGENT' ? (
+                          <HighPriorityIcon fontSize="small" />
+                        ) : undefined
+                      }
                     />
                   )}
-                  
+
                   <Chip
                     label={task.status.replace('_', ' ')}
                     size="small"
@@ -282,21 +290,21 @@ const EventTasks: React.FC<EventTasksProps> = ({
                       </Typography>
                     </Stack>
                   )}
-                  
+
                   {isTaskOverdue(task) && (
-                    <Chip 
-                      label="OVERDUE" 
-                      size="small" 
+                    <Chip
+                      label="OVERDUE"
+                      size="small"
                       color="error"
                       variant="filled"
                       sx={{ height: 20, fontSize: '0.6875rem' }}
                     />
                   )}
-                  
+
                   {isTaskDueSoon(task) && !isTaskOverdue(task) && (
-                    <Chip 
-                      label="DUE SOON" 
-                      size="small" 
+                    <Chip
+                      label="DUE SOON"
+                      size="small"
                       color="warning"
                       variant="filled"
                       sx={{ height: 20, fontSize: '0.6875rem' }}
@@ -305,15 +313,17 @@ const EventTasks: React.FC<EventTasksProps> = ({
                 </Stack>
               }
             />
-            
+
             {/* Action buttons for client-updatable tasks */}
             {task.can_update && (
               <ListItemSecondaryAction>
-                <Tooltip title={
-                  task.status === 'PENDING' 
-                    ? 'Start working on this task' 
-                    : 'Mark task as complete'
-                }>
+                <Tooltip
+                  title={
+                    task.status === 'PENDING'
+                      ? 'Start working on this task'
+                      : 'Mark task as complete'
+                  }
+                >
                   <IconButton
                     onClick={() => handleTaskUpdate(task)}
                     disabled={updateTaskMutation.isPending}
@@ -328,7 +338,7 @@ const EventTasks: React.FC<EventTasksProps> = ({
           </ListItem>
         ))}
       </List>
-      
+
       {maxItems && tasks.length > maxItems && (
         <Box sx={{ mt: 2, px: 2, textAlign: 'center' }}>
           <Typography variant="caption" color="text.secondary">
@@ -336,7 +346,7 @@ const EventTasks: React.FC<EventTasksProps> = ({
           </Typography>
         </Box>
       )}
-      
+
       <Box sx={{ mt: 2, px: 2, textAlign: 'center' }}>
         <Typography variant="caption" color="text.secondary">
           {displayTasks.length} task{displayTasks.length !== 1 ? 's' : ''}
@@ -344,25 +354,20 @@ const EventTasks: React.FC<EventTasksProps> = ({
       </Box>
 
       {/* Task Update Dialog */}
-      <Dialog
-        open={updateDialogOpen}
-        onClose={handleUpdateDialogClose}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          Update Task: {selectedTask?.title}
-        </DialogTitle>
+      <Dialog open={updateDialogOpen} onClose={handleUpdateDialogClose} maxWidth="sm" fullWidth>
+        <DialogTitle>Update Task: {selectedTask?.title}</DialogTitle>
         <DialogContent>
           <Stack spacing={3} sx={{ mt: 1 }}>
             <TextField
               label="Status"
               select
               value={updateData.status || ''}
-              onChange={(e) => setUpdateData(prev => ({ 
-                ...prev, 
-                status: e.target.value as TaskUpdate['status'] 
-              }))}
+              onChange={(e) =>
+                setUpdateData((prev) => ({
+                  ...prev,
+                  status: e.target.value as TaskUpdate['status'],
+                }))
+              }
               fullWidth
             >
               <MenuItem value="IN_PROGRESS">In Progress</MenuItem>
@@ -374,18 +379,20 @@ const EventTasks: React.FC<EventTasksProps> = ({
               multiline
               rows={3}
               value={updateData.completion_notes || ''}
-              onChange={(e) => setUpdateData(prev => ({ 
-                ...prev, 
-                completion_notes: e.target.value 
-              }))}
+              onChange={(e) =>
+                setUpdateData((prev) => ({
+                  ...prev,
+                  completion_notes: e.target.value,
+                }))
+              }
               placeholder={
-                updateData.status === 'COMPLETED' 
-                  ? 'Add completion notes...' 
+                updateData.status === 'COMPLETED'
+                  ? 'Add completion notes...'
                   : 'Add progress notes...'
               }
               helperText={
-                updateData.status === 'COMPLETED' 
-                  ? 'Briefly describe what was completed' 
+                updateData.status === 'COMPLETED'
+                  ? 'Briefly describe what was completed'
                   : 'Optional: Add any notes about your progress'
               }
               fullWidth
@@ -393,9 +400,7 @@ const EventTasks: React.FC<EventTasksProps> = ({
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleUpdateDialogClose}>
-            Cancel
-          </Button>
+          <Button onClick={handleUpdateDialogClose}>Cancel</Button>
           <Button
             onClick={handleTaskUpdateSubmit}
             variant="contained"

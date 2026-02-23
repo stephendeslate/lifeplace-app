@@ -6,9 +6,10 @@ import json
 import logging
 from datetime import timedelta
 
-import requests
-from django.db import models, transaction
+from django.db import models
 from django.utils import timezone
+
+import requests
 
 from .models import WorkflowWebhook, WorkflowWebhookDelivery
 
@@ -57,8 +58,7 @@ class WorkflowWebhookService:
         # Filter by workflow template if specified
         if workflow_template_id:
             webhooks = webhooks.filter(
-                models.Q(workflow_template_id=workflow_template_id) |
-                models.Q(workflow_template__isnull=True)
+                models.Q(workflow_template_id=workflow_template_id) | models.Q(workflow_template__isnull=True)
             )
         else:
             webhooks = webhooks.filter(workflow_template__isnull=True)
@@ -91,9 +91,9 @@ class WorkflowWebhookService:
         """
         # Build payload
         payload = {
-            'event_type': event_type,
-            'timestamp': timezone.now().isoformat(),
-            'data': event_data,
+            "event_type": event_type,
+            "timestamp": timezone.now().isoformat(),
+            "data": event_data,
         }
 
         # Create delivery record
@@ -101,7 +101,7 @@ class WorkflowWebhookService:
             webhook=webhook,
             event_type=event_type,
             payload=payload,
-            status='PENDING',
+            status="PENDING",
             attempt_count=0,
         )
 
@@ -133,10 +133,10 @@ class WorkflowWebhookService:
 
             # Build headers
             headers = {
-                'Content-Type': 'application/json',
-                'X-Webhook-Signature': signature,
-                'X-Webhook-Event': delivery.event_type,
-                'X-Webhook-Delivery-ID': str(delivery.id),
+                "Content-Type": "application/json",
+                "X-Webhook-Signature": signature,
+                "X-Webhook-Event": delivery.event_type,
+                "X-Webhook-Delivery-ID": str(delivery.id),
                 **webhook.headers,
             }
 
@@ -154,37 +154,30 @@ class WorkflowWebhookService:
 
             if 200 <= response.status_code < 300:
                 # Success
-                delivery.status = 'SUCCESS'
-                delivery.error_message = ''
+                delivery.status = "SUCCESS"
+                delivery.error_message = ""
                 delivery.save()
 
                 # Update webhook success tracking
                 webhook.last_triggered_at = timezone.now()
                 webhook.failure_count = 0
-                webhook.save(update_fields=['last_triggered_at', 'failure_count'])
+                webhook.save(update_fields=["last_triggered_at", "failure_count"])
 
-                logger.info(
-                    f"Webhook delivery {delivery.id} successful: "
-                    f"{webhook.name} -> {webhook.url}"
-                )
+                logger.info(f"Webhook delivery {delivery.id} successful: {webhook.name} -> {webhook.url}")
                 return True
             else:
                 # Non-2xx response - treat as failure
-                cls._handle_failure(
-                    delivery,
-                    webhook,
-                    f"HTTP {response.status_code}: {response.text[:200]}"
-                )
+                cls._handle_failure(delivery, webhook, f"HTTP {response.status_code}: {response.text[:200]}")
                 return False
 
         except requests.exceptions.Timeout:
             cls._handle_failure(delivery, webhook, "Request timed out")
             return False
         except requests.exceptions.ConnectionError as e:
-            cls._handle_failure(delivery, webhook, f"Connection error: {str(e)}")
+            cls._handle_failure(delivery, webhook, f"Connection error: {e!s}")
             return False
         except Exception as e:
-            cls._handle_failure(delivery, webhook, f"Unexpected error: {str(e)}")
+            cls._handle_failure(delivery, webhook, f"Unexpected error: {e!s}")
             logger.exception(f"Webhook delivery {delivery.id} failed with exception")
             return False
 
@@ -207,30 +200,21 @@ class WorkflowWebhookService:
 
         if delivery.attempt_count < cls.MAX_RETRIES:
             # Schedule retry
-            retry_delay = cls.RETRY_DELAYS[min(
-                delivery.attempt_count - 1,
-                len(cls.RETRY_DELAYS) - 1
-            )]
-            delivery.status = 'RETRYING'
+            retry_delay = cls.RETRY_DELAYS[min(delivery.attempt_count - 1, len(cls.RETRY_DELAYS) - 1)]
+            delivery.status = "RETRYING"
             delivery.next_retry_at = timezone.now() + timedelta(seconds=retry_delay)
-            logger.warning(
-                f"Webhook delivery {delivery.id} failed, retry scheduled in "
-                f"{retry_delay}s: {error_message}"
-            )
+            logger.warning(f"Webhook delivery {delivery.id} failed, retry scheduled in {retry_delay}s: {error_message}")
         else:
             # Max retries reached
-            delivery.status = 'FAILED'
+            delivery.status = "FAILED"
             delivery.next_retry_at = None
-            logger.error(
-                f"Webhook delivery {delivery.id} failed after "
-                f"{cls.MAX_RETRIES} attempts: {error_message}"
-            )
+            logger.error(f"Webhook delivery {delivery.id} failed after {cls.MAX_RETRIES} attempts: {error_message}")
 
         delivery.save()
 
         # Update webhook failure tracking
         webhook.failure_count += 1
-        webhook.save(update_fields=['failure_count'])
+        webhook.save(update_fields=["failure_count"])
 
     @classmethod
     def _generate_signature(cls, payload: str, secret: str) -> str:
@@ -244,11 +228,7 @@ class WorkflowWebhookService:
         Returns:
             Hex-encoded HMAC signature
         """
-        return hmac.new(
-            secret.encode('utf-8'),
-            payload.encode('utf-8'),
-            hashlib.sha256
-        ).hexdigest()
+        return hmac.new(secret.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()
 
     @classmethod
     def retry_pending_deliveries(cls) -> int:
@@ -260,9 +240,9 @@ class WorkflowWebhookService:
         """
         now = timezone.now()
         pending_deliveries = WorkflowWebhookDelivery.objects.filter(
-            status='RETRYING',
+            status="RETRYING",
             next_retry_at__lte=now,
-        ).select_related('webhook')
+        ).select_related("webhook")
 
         retried_count = 0
         for delivery in pending_deliveries:
@@ -271,8 +251,8 @@ class WorkflowWebhookService:
                 retried_count += 1
             else:
                 # Webhook was deactivated - mark as failed
-                delivery.status = 'FAILED'
-                delivery.error_message = 'Webhook deactivated'
+                delivery.status = "FAILED"
+                delivery.error_message = "Webhook deactivated"
                 delivery.next_retry_at = None
                 delivery.save()
 
@@ -293,20 +273,20 @@ class WorkflowWebhookService:
             The test delivery record
         """
         test_payload = {
-            'event_type': 'TEST',
-            'timestamp': timezone.now().isoformat(),
-            'data': {
-                'message': 'This is a test webhook from LifePlace',
-                'webhook_id': webhook.id,
-                'webhook_name': webhook.name,
+            "event_type": "TEST",
+            "timestamp": timezone.now().isoformat(),
+            "data": {
+                "message": "This is a test webhook from LifePlace",
+                "webhook_id": webhook.id,
+                "webhook_name": webhook.name,
             },
         }
 
         delivery = WorkflowWebhookDelivery.objects.create(
             webhook=webhook,
-            event_type='TEST',
+            event_type="TEST",
             payload=test_payload,
-            status='PENDING',
+            status="PENDING",
             attempt_count=0,
         )
 
@@ -329,9 +309,9 @@ class WorkflowWebhookService:
         Returns:
             List of delivery records
         """
-        queryset = WorkflowWebhookDelivery.objects.select_related('webhook')
+        queryset = WorkflowWebhookDelivery.objects.select_related("webhook")
 
         if webhook_id:
             queryset = queryset.filter(webhook_id=webhook_id)
 
-        return list(queryset.order_by('-created_at')[:limit])
+        return list(queryset.order_by("-created_at")[:limit])

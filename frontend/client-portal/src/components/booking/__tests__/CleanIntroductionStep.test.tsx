@@ -17,7 +17,9 @@ vi.mock('../../accessibility', () => ({
 // Mock design system components
 vi.mock('../../../design-system/components/GlassCard', () => ({
   GlassCard: ({ children, ...props }: { children: React.ReactNode }) => (
-    <div data-testid="glass-card" {...props}>{children}</div>
+    <div data-testid="glass-card" {...props}>
+      {children}
+    </div>
   ),
 }));
 
@@ -52,7 +54,7 @@ describe('CleanIntroductionStep', () => {
       render(
         <TestWrapper>
           <CleanIntroductionStep {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Welcome to Booking')).toBeInTheDocument();
@@ -61,11 +63,8 @@ describe('CleanIntroductionStep', () => {
     it('renders default title when config title is not provided', () => {
       render(
         <TestWrapper>
-          <CleanIntroductionStep
-            {...defaultProps}
-            config={null}
-          />
-        </TestWrapper>
+          <CleanIntroductionStep {...defaultProps} config={null} />
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Welcome to Your Event Booking')).toBeInTheDocument();
@@ -75,7 +74,7 @@ describe('CleanIntroductionStep', () => {
       render(
         <TestWrapper>
           <CleanIntroductionStep {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Please review the terms before proceeding.')).toBeInTheDocument();
@@ -85,7 +84,7 @@ describe('CleanIntroductionStep', () => {
       render(
         <TestWrapper>
           <CleanIntroductionStep {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Booking: Wedding')).toBeInTheDocument();
@@ -94,11 +93,8 @@ describe('CleanIntroductionStep', () => {
     it('uses default event type name when not provided', () => {
       render(
         <TestWrapper>
-          <CleanIntroductionStep
-            {...defaultProps}
-            eventTypeName={undefined}
-          />
-        </TestWrapper>
+          <CleanIntroductionStep {...defaultProps} eventTypeName={undefined} />
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Booking: Your Event')).toBeInTheDocument();
@@ -108,7 +104,7 @@ describe('CleanIntroductionStep', () => {
       render(
         <TestWrapper>
           <CleanIntroductionStep {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Terms & Conditions')).toBeInTheDocument();
@@ -118,12 +114,12 @@ describe('CleanIntroductionStep', () => {
       render(
         <TestWrapper>
           <CleanIntroductionStep {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByRole('checkbox')).toBeInTheDocument();
       expect(
-        screen.getByText('I acknowledge that I have read and agree to the terms and conditions')
+        screen.getByText('I acknowledge that I have read and agree to the terms and conditions'),
       ).toBeInTheDocument();
     });
   });
@@ -133,7 +129,7 @@ describe('CleanIntroductionStep', () => {
       render(
         <TestWrapper>
           <CleanIntroductionStep {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const checkbox = screen.getByRole('checkbox');
@@ -143,11 +139,8 @@ describe('CleanIntroductionStep', () => {
     it('checkbox reflects stepData.acknowledged state', () => {
       render(
         <TestWrapper>
-          <CleanIntroductionStep
-            {...defaultProps}
-            stepData={{ acknowledged: true }}
-          />
-        </TestWrapper>
+          <CleanIntroductionStep {...defaultProps} stepData={{ acknowledged: true }} />
+        </TestWrapper>,
       );
 
       const checkbox = screen.getByRole('checkbox');
@@ -158,11 +151,8 @@ describe('CleanIntroductionStep', () => {
       const onDataChange = vi.fn();
       render(
         <TestWrapper>
-          <CleanIntroductionStep
-            {...defaultProps}
-            onDataChange={onDataChange}
-          />
-        </TestWrapper>
+          <CleanIntroductionStep {...defaultProps} onDataChange={onDataChange} />
+        </TestWrapper>,
       );
 
       const checkbox = screen.getByRole('checkbox');
@@ -180,7 +170,7 @@ describe('CleanIntroductionStep', () => {
             stepData={{ acknowledged: true }}
             onDataChange={onDataChange}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const checkbox = screen.getByRole('checkbox');
@@ -192,11 +182,8 @@ describe('CleanIntroductionStep', () => {
     it('checkbox is disabled when isValidating is true', () => {
       render(
         <TestWrapper>
-          <CleanIntroductionStep
-            {...defaultProps}
-            isValidating={true}
-          />
-        </TestWrapper>
+          <CleanIntroductionStep {...defaultProps} isValidating={true} />
+        </TestWrapper>,
       );
 
       const checkbox = screen.getByRole('checkbox');
@@ -209,18 +196,15 @@ describe('CleanIntroductionStep', () => {
       const onDataChange = vi.fn();
       render(
         <TestWrapper>
-          <CleanIntroductionStep
-            {...defaultProps}
-            onDataChange={onDataChange}
-          />
-        </TestWrapper>
+          <CleanIntroductionStep {...defaultProps} onDataChange={onDataChange} />
+        </TestWrapper>,
       );
 
       const checkbox = screen.getByRole('checkbox');
       fireEvent.click(checkbox);
 
       expect(mockAnnounceToScreenReader).toHaveBeenCalledWith(
-        'Terms and conditions acknowledged. You can now proceed to the next step.'
+        'Terms and conditions acknowledged. You can now proceed to the next step.',
       );
     });
 
@@ -233,7 +217,7 @@ describe('CleanIntroductionStep', () => {
             stepData={{ acknowledged: true }}
             onDataChange={onDataChange}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       mockAnnounceToScreenReader.mockClear();
@@ -254,7 +238,7 @@ describe('CleanIntroductionStep', () => {
               acknowledged: ['You must accept the terms and conditions'],
             }}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('You must accept the terms and conditions')).toBeInTheDocument();
@@ -269,7 +253,7 @@ describe('CleanIntroductionStep', () => {
               acknowledged: ['First error', 'Second error'],
             }}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('First error')).toBeInTheDocument();
@@ -280,7 +264,7 @@ describe('CleanIntroductionStep', () => {
       render(
         <TestWrapper>
           <CleanIntroductionStep {...defaultProps} />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
@@ -291,30 +275,24 @@ describe('CleanIntroductionStep', () => {
     it('shows completion message when acknowledged', () => {
       render(
         <TestWrapper>
-          <CleanIntroductionStep
-            {...defaultProps}
-            stepData={{ acknowledged: true }}
-          />
-        </TestWrapper>
+          <CleanIntroductionStep {...defaultProps} stepData={{ acknowledged: true }} />
+        </TestWrapper>,
       );
 
       expect(
-        screen.getByText('Thank you! You can now proceed to the next step.')
+        screen.getByText('Thank you! You can now proceed to the next step.'),
       ).toBeInTheDocument();
     });
 
     it('does not show completion message when not acknowledged', () => {
       render(
         <TestWrapper>
-          <CleanIntroductionStep
-            {...defaultProps}
-            stepData={{ acknowledged: false }}
-          />
-        </TestWrapper>
+          <CleanIntroductionStep {...defaultProps} stepData={{ acknowledged: false }} />
+        </TestWrapper>,
       );
 
       expect(
-        screen.queryByText('Thank you! You can now proceed to the next step.')
+        screen.queryByText('Thank you! You can now proceed to the next step.'),
       ).not.toBeInTheDocument();
     });
   });
@@ -329,7 +307,7 @@ describe('CleanIntroductionStep', () => {
             validationErrors={{}}
             isValidating={false}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const checkbox = screen.getByRole('checkbox');
@@ -348,7 +326,7 @@ describe('CleanIntroductionStep', () => {
               content: undefined,
             }}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Custom Title')).toBeInTheDocument();
@@ -357,11 +335,8 @@ describe('CleanIntroductionStep', () => {
     it('handles empty config object', () => {
       render(
         <TestWrapper>
-          <CleanIntroductionStep
-            {...defaultProps}
-            config={{} as typeof defaultProps.config}
-          />
-        </TestWrapper>
+          <CleanIntroductionStep {...defaultProps} config={{} as typeof defaultProps.config} />
+        </TestWrapper>,
       );
 
       // Should render default title

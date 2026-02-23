@@ -1,22 +1,22 @@
 // frontend/admin-crm/src/components/events/EventTypesTable.tsx
 
-import React from "react";
-import { Chip, Typography, Box, Tooltip } from "@mui/material";
+import React from 'react';
+import { Chip, Typography, Box, Tooltip } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   EventNote as EventIcon,
   CheckCircle as ActiveIcon,
   Cancel as InactiveIcon,
-} from "@mui/icons-material";
-import type { EventTypeTableProps, EventType } from "../../types/events.types";
+} from '@mui/icons-material';
+import type { EventTypeTableProps, EventType } from '../../types/events.types';
 import {
   ModernTable,
   ModernEmptyState,
   type ModernTableColumn,
   type ModernTableAction,
-} from "../common";
-import { tokens } from "../../design-system";
+} from '../common';
+import { tokens } from '../../design-system';
 
 export const EventTypesTable: React.FC<EventTypeTableProps> = ({
   eventTypes,
@@ -27,17 +27,17 @@ export const EventTypesTable: React.FC<EventTypeTableProps> = ({
   const getStatusChip = (isActive: boolean) => (
     <Chip
       icon={isActive ? <ActiveIcon /> : <InactiveIcon />}
-      label={isActive ? "Active" : "Inactive"}
+      label={isActive ? 'Active' : 'Inactive'}
       size="small"
-      color={isActive ? "success" : "default"}
-      variant={isActive ? "filled" : "outlined"}
+      color={isActive ? 'success' : 'default'}
+      variant={isActive ? 'filled' : 'outlined'}
     />
   );
 
   const columns: ModernTableColumn<EventType>[] = [
     {
-      key: "name",
-      label: "Event Type",
+      key: 'name',
+      label: 'Event Type',
       sortable: true,
       render: (_, eventType) => (
         <Box display="flex" alignItems="center" gap={2}>
@@ -68,9 +68,9 @@ export const EventTypesTable: React.FC<EventTypeTableProps> = ({
       ),
     },
     {
-      key: "description",
-      label: "Description",
-      hideBelow: "lg",
+      key: 'description',
+      label: 'Description',
+      hideBelow: 'lg',
       render: (_, eventType) => (
         <Box>
           {eventType.description ? (
@@ -80,9 +80,9 @@ export const EventTypesTable: React.FC<EventTypeTableProps> = ({
                 color="text.primary"
                 sx={{
                   maxWidth: 280,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
                   lineHeight: 1.5,
                 }}
               >
@@ -90,11 +90,7 @@ export const EventTypesTable: React.FC<EventTypeTableProps> = ({
               </Typography>
             </Tooltip>
           ) : (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              fontStyle="italic"
-            >
+            <Typography variant="body2" color="text.secondary" fontStyle="italic">
               No description
             </Typography>
           )}
@@ -102,14 +98,14 @@ export const EventTypesTable: React.FC<EventTypeTableProps> = ({
       ),
     },
     {
-      key: "is_active",
-      label: "Status",
+      key: 'is_active',
+      label: 'Status',
       render: (_, eventType) => getStatusChip(eventType.is_active),
     },
     {
-      key: "created_at",
-      label: "Created Date",
-      hideBelow: "md",
+      key: 'created_at',
+      label: 'Created Date',
+      hideBelow: 'md',
       render: (_, eventType) => (
         <Box>
           <Typography variant="body2" color="text.secondary" fontWeight="500">
@@ -125,16 +121,16 @@ export const EventTypesTable: React.FC<EventTypeTableProps> = ({
 
   const actions: ModernTableAction<EventType>[] = [
     {
-      label: "Edit Event Type",
+      label: 'Edit Event Type',
       icon: <EditIcon />,
       onClick: (eventType) => onEdit(eventType),
-      color: "primary",
+      color: 'primary',
     },
     {
-      label: "Delete Event Type",
+      label: 'Delete Event Type',
       icon: <DeleteIcon />,
       onClick: (eventType) => onDelete(eventType.id),
-      color: "error",
+      color: 'error',
     },
   ];
 
@@ -144,8 +140,8 @@ export const EventTypesTable: React.FC<EventTypeTableProps> = ({
       title="No event types found"
       description="Create your first event type to organize your events by category and streamline your booking process."
       tip={{
-        text: "Event types help categorize your events and can be used in booking flows, questionnaires, and reports.",
-        type: "info",
+        text: 'Event types help categorize your events and can be used in booking flows, questionnaires, and reports.',
+        type: 'info',
       }}
       size="medium"
       color="primary"
@@ -154,13 +150,9 @@ export const EventTypesTable: React.FC<EventTypeTableProps> = ({
 
   return (
     <ModernTable
-      columns={
-        columns as unknown as ModernTableColumn<Record<string, unknown>>[]
-      }
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
       data={eventTypes as unknown as Record<string, unknown>[]}
-      actions={
-        actions as unknown as ModernTableAction<Record<string, unknown>>[]
-      }
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
       onRowClick={(row) => onEdit(row as unknown as EventType)}
       loading={isLoading}
       emptyState={emptyState}

@@ -13,7 +13,11 @@ import {
   Error as ErrorIcon,
   Block as BlockIcon,
 } from '@mui/icons-material';
-import type { PaymentStatus, PaymentPlanStatus, InstallmentStatus } from '../../types/payments.types';
+import type {
+  PaymentStatus,
+  PaymentPlanStatus,
+  InstallmentStatus,
+} from '../../types/payments.types';
 
 type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
 
@@ -78,7 +82,7 @@ export const PaymentStatusChip: React.FC<PaymentStatusChipProps> = ({
       color={paymentStatusColorMap[status]}
       size={size}
       variant={variant}
-      icon={showIcon ? getIcon() ?? undefined : undefined}
+      icon={showIcon ? (getIcon() ?? undefined) : undefined}
     />
   );
 };
@@ -140,7 +144,7 @@ export const PaymentPlanStatusChip: React.FC<PaymentPlanStatusChipProps> = ({
       color={paymentPlanStatusColorMap[status]}
       size={size}
       variant={variant}
-      icon={showIcon ? getIcon() ?? undefined : undefined}
+      icon={showIcon ? (getIcon() ?? undefined) : undefined}
     />
   );
 };
@@ -202,7 +206,7 @@ export const InstallmentStatusChip: React.FC<InstallmentStatusChipProps> = ({
       color={installmentStatusColorMap[status]}
       size={size}
       variant={variant}
-      icon={showIcon ? getIcon() ?? undefined : undefined}
+      icon={showIcon ? (getIcon() ?? undefined) : undefined}
     />
   );
 };

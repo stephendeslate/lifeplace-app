@@ -1,14 +1,7 @@
 // frontend/admin-crm/src/components/analytics/charts/LeadSourceChart.tsx
 import React from 'react';
 import { Box, Paper, Typography, Skeleton } from '@mui/material';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Legend,
-  Tooltip,
-} from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import type { LeadSource } from '../../../types/analytics.types';
 import { tokens } from '../../../design-system';
 
@@ -60,16 +53,16 @@ export const LeadSourceChart: React.FC<LeadSourceChartProps> = ({
               label={({ name, percent }) => `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`}
             >
               {chartData.map((_, index) => (
-                <Cell key={`cell-${index}`} fill={tokens.color.charts.series[index % tokens.color.charts.series.length]} />
+                <Cell
+                  key={`cell-${index}`}
+                  fill={tokens.color.charts.series[index % tokens.color.charts.series.length]}
+                />
               ))}
             </Pie>
             <Tooltip
               formatter={(value: number, name: string, props) => {
                 if (name === 'value') {
-                  return [
-                    `${value} leads (${props.payload.conversionRate}% conversion)`,
-                    'Leads',
-                  ];
+                  return [`${value} leads (${props.payload.conversionRate}% conversion)`, 'Leads'];
                 }
                 return [value, name];
               }}

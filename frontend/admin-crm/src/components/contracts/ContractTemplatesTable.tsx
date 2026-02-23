@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/components/contracts/ContractTemplatesTable.tsx
 
-import React from "react";
-import { Typography, Box, Chip, Tooltip } from "@mui/material";
+import React from 'react';
+import { Typography, Box, Chip, Tooltip } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -11,10 +11,10 @@ import {
   Gavel as SignatureIcon,
   EditNote as AmendmentIcon,
   Preview as PreviewIcon,
-} from "@mui/icons-material";
-import type { ContractTemplate } from "../../types/contracts.types";
-import { ModernTable, ModernLoadingStates, ModernEmptyState } from "../common";
-import type { ModernTableColumn, ModernTableAction } from "../common";
+} from '@mui/icons-material';
+import type { ContractTemplate } from '../../types/contracts.types';
+import { ModernTable, ModernLoadingStates, ModernEmptyState } from '../common';
+import type { ModernTableColumn, ModernTableAction } from '../common';
 
 interface ContractTemplateTableProps {
   templates: ContractTemplate[];
@@ -37,14 +37,7 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
 }) => {
   const getEventTypeChip = (eventTypeName?: string) => {
     if (!eventTypeName) {
-      return (
-        <Chip
-          label="Any Event Type"
-          size="small"
-          variant="outlined"
-          color="default"
-        />
-      );
+      return <Chip label="Any Event Type" size="small" variant="outlined" color="default" />;
     }
 
     return (
@@ -61,27 +54,27 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
   const getSignatureChip = (requiresSignature: boolean) => (
     <Chip
       icon={<SignatureIcon />}
-      label={requiresSignature ? "Required" : "Not Required"}
+      label={requiresSignature ? 'Required' : 'Not Required'}
       size="small"
-      color={requiresSignature ? "success" : "default"}
-      variant={requiresSignature ? "filled" : "outlined"}
+      color={requiresSignature ? 'success' : 'default'}
+      variant={requiresSignature ? 'filled' : 'outlined'}
     />
   );
 
   const getAmendmentChip = (allowsAmendments: boolean) => (
     <Chip
       icon={<AmendmentIcon />}
-      label={allowsAmendments ? "Allowed" : "Not Allowed"}
+      label={allowsAmendments ? 'Allowed' : 'Not Allowed'}
       size="small"
-      color={allowsAmendments ? "info" : "default"}
-      variant={allowsAmendments ? "filled" : "outlined"}
+      color={allowsAmendments ? 'info' : 'default'}
+      variant={allowsAmendments ? 'filled' : 'outlined'}
     />
   );
 
   const columns: ModernTableColumn[] = [
     {
-      key: "name",
-      label: "Template Name",
+      key: 'name',
+      label: 'Template Name',
       sortable: true,
       render: (_, row) => {
         const template = row as unknown as ContractTemplate;
@@ -103,63 +96,61 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
       },
     },
     {
-      key: "event_type",
-      label: "Event Type",
+      key: 'event_type',
+      label: 'Event Type',
       render: (_, row) => {
         const template = row as unknown as ContractTemplate;
         return getEventTypeChip(template.event_type_name);
       },
     },
     {
-      key: "signature_requirements",
-      label: "Signature",
-      hideBelow: "lg",
-      align: "center",
+      key: 'signature_requirements',
+      label: 'Signature',
+      hideBelow: 'lg',
+      align: 'center',
       render: (_, row) => {
         const template = row as unknown as ContractTemplate;
         return getSignatureChip(template.requires_signature);
       },
     },
     {
-      key: "amendments",
-      label: "Amendments",
-      hideBelow: "lg",
-      align: "center",
+      key: 'amendments',
+      label: 'Amendments',
+      hideBelow: 'lg',
+      align: 'center',
       render: (_, row) => {
         const template = row as unknown as ContractTemplate;
         return getAmendmentChip(template.allows_amendments);
       },
     },
     {
-      key: "variables",
-      label: "Variables",
-      hideBelow: "lg",
-      align: "center",
+      key: 'variables',
+      label: 'Variables',
+      hideBelow: 'lg',
+      align: 'center',
       render: (_, row) => {
         const template = row as unknown as ContractTemplate;
         const variableCount = template.variables?.length || 0;
         return (
           <Tooltip
             title={
-              variableCount > 0
-                ? `Variables: ${template.variables?.join(", ")}`
-                : "No variables"
+              variableCount > 0 ? `Variables: ${template.variables?.join(', ')}` : 'No variables'
             }
           >
             <Chip
               label={`${variableCount} variables`}
               size="small"
-              color={variableCount > 0 ? "secondary" : "default"}
-              variant={variableCount > 0 ? "outlined" : "filled"}
+              color={variableCount > 0 ? 'secondary' : 'default'}
+              variant={variableCount > 0 ? 'outlined' : 'filled'}
             />
           </Tooltip>
         );
       },
     },
     {
-      key: "created_at",
-      label: "Created",
-      hideBelow: "md",
+      key: 'created_at',
+      label: 'Created',
+      hideBelow: 'md',
       sortable: true,
       render: (_, row) => {
         const template = row as unknown as ContractTemplate;
@@ -175,33 +166,32 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
 
   const actions: ModernTableAction[] = [
     {
-      label: "Preview",
+      label: 'Preview',
       icon: <PreviewIcon />,
       onClick: (row: Record<string, unknown>) =>
         onPreview && onPreview(row as unknown as ContractTemplate),
-      color: "primary",
+      color: 'primary',
       show: () => !!onPreview,
     },
     {
-      label: "Edit",
+      label: 'Edit',
       icon: <EditIcon />,
-      onClick: (row: Record<string, unknown>) =>
-        onEdit(row as unknown as ContractTemplate),
-      color: "primary",
+      onClick: (row: Record<string, unknown>) => onEdit(row as unknown as ContractTemplate),
+      color: 'primary',
     },
     {
-      label: "Duplicate",
+      label: 'Duplicate',
       icon: <DuplicateIcon />,
       onClick: (row: Record<string, unknown>) =>
         onDuplicate && onDuplicate(row as unknown as ContractTemplate),
-      color: "secondary",
+      color: 'secondary',
       show: () => !!onDuplicate,
     },
     {
-      label: "Delete",
+      label: 'Delete',
       icon: <DeleteIcon />,
       onClick: (row) => onDelete((row as { id: number }).id),
-      color: "error",
+      color: 'error',
     },
   ];
 
@@ -222,13 +212,9 @@ export const ContractTemplatesTable: React.FC<ContractTemplateTableProps> = ({
 
   return (
     <ModernTable
-      columns={
-        columns as unknown as ModernTableColumn<Record<string, unknown>>[]
-      }
+      columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
       data={templates as unknown as Record<string, unknown>[]}
-      actions={
-        actions as unknown as ModernTableAction<Record<string, unknown>>[]
-      }
+      actions={actions as unknown as ModernTableAction<Record<string, unknown>>[]}
       loading={isDeleting}
     />
   );

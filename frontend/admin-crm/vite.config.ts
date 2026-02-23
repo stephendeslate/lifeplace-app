@@ -1,8 +1,8 @@
 // lifeplace-app/frontend/admin-crm/vite.config.ts
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
-import { sentryVitePlugin } from '@sentry/vite-plugin'
-import path from 'path'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { sentryVitePlugin } from '@sentry/vite-plugin';
+import path from 'path';
 
 export default defineConfig({
   plugins: [
@@ -28,7 +28,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@shared': path.resolve(__dirname, '../shared'),
-    }
+    },
   },
   build: {
     outDir: 'dist',
@@ -57,26 +57,26 @@ export default defineConfig({
         chunkFileNames: (chunkInfo) => {
           const facadeModuleId = chunkInfo.facadeModuleId
             ? chunkInfo.facadeModuleId.split('/').pop()?.replace('.tsx', '').replace('.ts', '')
-            : 'chunk'
-          return `js/${facadeModuleId}-[hash].js`
+            : 'chunk';
+          return `js/${facadeModuleId}-[hash].js`;
         },
         assetFileNames: (assetInfo) => {
-          const info = assetInfo.name?.split('.') || []
-          const extType = info[info.length - 1] || ''
+          const info = assetInfo.name?.split('.') || [];
+          const extType = info[info.length - 1] || '';
           if (/\.(png|jpe?g|svg|gif|tiff|bmp|ico)$/i.test(assetInfo.name || '')) {
-            return `images/[name]-[hash][extname]`
+            return `images/[name]-[hash][extname]`;
           }
           if (/\.(woff2?|eot|ttf|otf)$/i.test(assetInfo.name || '')) {
-            return `fonts/[name]-[hash][extname]`
+            return `fonts/[name]-[hash][extname]`;
           }
-          return `${extType}/[name]-[hash][extname]`
-        }
+          return `${extType}/[name]-[hash][extname]`;
+        },
       },
       // Optimize external dependencies
       external: () => {
         // Don't externalize shared components - we want them bundled
-        return false
-      }
+        return false;
+      },
     },
     // Performance optimizations
     chunkSizeWarningLimit: 1000,
@@ -92,15 +92,15 @@ export default defineConfig({
       '@mui/material',
       '@mui/icons-material',
       '@tanstack/react-query',
-      'axios'
+      'axios',
     ],
-    exclude: ['@vite/client', '@vite/env']
+    exclude: ['@vite/client', '@vite/env'],
   },
   server: {
     port: 5173,
     host: true,
     hmr: {
-      overlay: false // Reduce HMR overlay noise
+      overlay: false, // Reduce HMR overlay noise
     },
     proxy: {
       '/api': {
@@ -112,5 +112,5 @@ export default defineConfig({
   // Performance monitoring
   define: {
     __VITE_BUILD_TIME__: JSON.stringify(new Date().toISOString()),
-  }
-})
+  },
+});

@@ -54,9 +54,12 @@ const formatFileSize = (bytes: number): string => {
 };
 
 const getFileIcon = (mimeType: string): React.ReactNode => {
-  if (mimeType?.includes('pdf')) return <PdfIcon sx={{ fontSize: 64, color: tokens.color.error[600] }} />;
-  if (mimeType?.includes('image')) return <ImageIcon sx={{ fontSize: 64, color: tokens.color.primary[600] }} />;
-  if (mimeType?.includes('word') || mimeType?.includes('document')) return <DocIcon sx={{ fontSize: 64, color: tokens.color.primary[700] }} />;
+  if (mimeType?.includes('pdf'))
+    return <PdfIcon sx={{ fontSize: 64, color: tokens.color.error[600] }} />;
+  if (mimeType?.includes('image'))
+    return <ImageIcon sx={{ fontSize: 64, color: tokens.color.primary[600] }} />;
+  if (mimeType?.includes('word') || mimeType?.includes('document'))
+    return <DocIcon sx={{ fontSize: 64, color: tokens.color.primary[700] }} />;
   return <FileIcon sx={{ fontSize: 64, color: tokens.color.neutral[500] }} />;
 };
 
@@ -172,11 +175,7 @@ export const FileViewerDialog: React.FC<FileViewerDialogProps> = ({
           <Typography variant="h6" component="div" noWrap sx={{ maxWidth: 400 }}>
             {file.name}
           </Typography>
-          <Chip
-            label={formatFileSize(file.size)}
-            size="small"
-            variant="outlined"
-          />
+          <Chip label={formatFileSize(file.size)} size="small" variant="outlined" />
         </Stack>
         <Stack direction="row" spacing={1} alignItems="center">
           {previewType === 'image' && (
@@ -245,11 +244,7 @@ export const FileViewerDialog: React.FC<FileViewerDialogProps> = ({
           >
             <Typography color="error">{error}</Typography>
             {onDownload && (
-              <Button
-                variant="contained"
-                startIcon={<DownloadIcon />}
-                onClick={onDownload}
-              >
+              <Button variant="contained" startIcon={<DownloadIcon />} onClick={onDownload}>
                 Download Instead
               </Button>
             )}
@@ -332,11 +327,7 @@ export const FileViewerDialog: React.FC<FileViewerDialogProps> = ({
       <DialogActions sx={{ borderTop: '1px solid', borderColor: 'divider', py: 1.5, px: 2 }}>
         <Button onClick={onClose}>Close</Button>
         {onDownload && (
-          <Button
-            variant="contained"
-            startIcon={<DownloadIcon />}
-            onClick={onDownload}
-          >
+          <Button variant="contained" startIcon={<DownloadIcon />} onClick={onDownload}>
             Download
           </Button>
         )}

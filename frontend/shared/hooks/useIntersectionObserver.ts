@@ -20,9 +20,7 @@ export interface IntersectionObserverEntry {
  * Custom hook for using IntersectionObserver API
  * Provides a way to asynchronously observe changes in the intersection of a target element
  */
-export const useIntersectionObserver = (
-  options: IntersectionObserverOptions = {}
-) => {
+export const useIntersectionObserver = (options: IntersectionObserverOptions = {}) => {
   const [entries, setEntries] = useState<IntersectionObserverEntry[]>([]);
   const [isSupported, setIsSupported] = useState<boolean>(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -41,21 +39,23 @@ export const useIntersectionObserver = (
 
     const observer = new IntersectionObserver(
       (observerEntries) => {
-        setEntries(observerEntries.map(entry => ({
-          isIntersecting: entry.isIntersecting,
-          target: entry.target,
-          intersectionRatio: entry.intersectionRatio,
-          boundingClientRect: entry.boundingClientRect,
-          intersectionRect: entry.intersectionRect,
-          rootBounds: entry.rootBounds,
-          time: entry.time,
-        })));
+        setEntries(
+          observerEntries.map((entry) => ({
+            isIntersecting: entry.isIntersecting,
+            target: entry.target,
+            intersectionRatio: entry.intersectionRatio,
+            boundingClientRect: entry.boundingClientRect,
+            intersectionRect: entry.intersectionRect,
+            rootBounds: entry.rootBounds,
+            time: entry.time,
+          })),
+        );
       },
       {
         threshold,
         root,
         rootMargin,
-      }
+      },
     );
 
     observerRef.current = observer;
@@ -66,20 +66,26 @@ export const useIntersectionObserver = (
   }, [isSupported, options.threshold, options.root, options.rootMargin]);
 
   // Observe element
-  const observe = useCallback((element: Element | null) => {
-    if (!element || !observerRef.current || !isSupported) return;
+  const observe = useCallback(
+    (element: Element | null) => {
+      if (!element || !observerRef.current || !isSupported) return;
 
-    observerRef.current.observe(element);
-    elementsRef.current.add(element);
-  }, [isSupported]);
+      observerRef.current.observe(element);
+      elementsRef.current.add(element);
+    },
+    [isSupported],
+  );
 
   // Unobserve element
-  const unobserve = useCallback((element: Element | null) => {
-    if (!element || !observerRef.current || !isSupported) return;
+  const unobserve = useCallback(
+    (element: Element | null) => {
+      if (!element || !observerRef.current || !isSupported) return;
 
-    observerRef.current.unobserve(element);
-    elementsRef.current.delete(element);
-  }, [isSupported]);
+      observerRef.current.unobserve(element);
+      elementsRef.current.delete(element);
+    },
+    [isSupported],
+  );
 
   // Disconnect all observations
   const disconnect = useCallback(() => {
@@ -104,7 +110,7 @@ export const useIntersectionObserver = (
  */
 export const useIntersectionObserverSingle = (
   elementRef: React.RefObject<Element>,
-  options: IntersectionObserverOptions = {}
+  options: IntersectionObserverOptions = {},
 ) => {
   const [entry, setEntry] = useState<IntersectionObserverEntry | null>(null);
   const [isIntersecting, setIsIntersecting] = useState<boolean>(false);
@@ -126,7 +132,7 @@ export const useIntersectionObserverSingle = (
     const element = elementRef.current;
     if (!element) return;
 
-    const elementEntry = entries.find(e => e.target === element);
+    const elementEntry = entries.find((e) => e.target === element);
     if (elementEntry) {
       setEntry(elementEntry);
       setIsIntersecting(elementEntry.isIntersecting);

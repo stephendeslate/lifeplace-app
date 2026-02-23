@@ -76,10 +76,7 @@ export const useNotifications = () => {
       mutationFn: (id: number) => notificationsApi.markAsRead(id),
       onSuccess: (updatedNotification) => {
         // Update the specific notification in cache
-        queryClient.setQueryData(
-          ['notification', updatedNotification.id],
-          updatedNotification
-        );
+        queryClient.setQueryData(['notification', updatedNotification.id], updatedNotification);
 
         // Invalidate related queries
         queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -87,8 +84,7 @@ export const useNotifications = () => {
       },
       onError: (error: unknown) => {
         const err = error as { response?: { data?: { detail?: string } } };
-        const message =
-          err.response?.data?.detail || 'Failed to mark notification as read.';
+        const message = err.response?.data?.detail || 'Failed to mark notification as read.';
         showError('Action Failed', message);
       },
     });
@@ -100,10 +96,7 @@ export const useNotifications = () => {
       mutationFn: (id: number) => notificationsApi.markAsUnread(id),
       onSuccess: (updatedNotification) => {
         // Update the specific notification in cache
-        queryClient.setQueryData(
-          ['notification', updatedNotification.id],
-          updatedNotification
-        );
+        queryClient.setQueryData(['notification', updatedNotification.id], updatedNotification);
 
         // Invalidate related queries
         queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -111,8 +104,7 @@ export const useNotifications = () => {
       },
       onError: (error: unknown) => {
         const err = error as { response?: { data?: { detail?: string } } };
-        const message =
-          err.response?.data?.detail || 'Failed to mark notification as unread.';
+        const message = err.response?.data?.detail || 'Failed to mark notification as unread.';
         showError('Action Failed', message);
       },
     });
@@ -126,7 +118,7 @@ export const useNotifications = () => {
         if (result.marked_read > 0) {
           showSuccess(
             'All Read',
-            `Marked ${result.marked_read} notification${result.marked_read > 1 ? 's' : ''} as read.`
+            `Marked ${result.marked_read} notification${result.marked_read > 1 ? 's' : ''} as read.`,
           );
         }
 
@@ -136,8 +128,7 @@ export const useNotifications = () => {
       },
       onError: (error: unknown) => {
         const err = error as { response?: { data?: { detail?: string } } };
-        const message =
-          err.response?.data?.detail || 'Failed to mark all notifications as read.';
+        const message = err.response?.data?.detail || 'Failed to mark all notifications as read.';
         showError('Action Failed', message);
       },
     });
@@ -157,8 +148,7 @@ export const useNotifications = () => {
       },
       onError: (error: unknown) => {
         const err = error as { response?: { data?: { detail?: string } } };
-        const message =
-          err.response?.data?.detail || 'Failed to delete notification.';
+        const message = err.response?.data?.detail || 'Failed to delete notification.';
         showError('Action Failed', message);
       },
     });
@@ -176,9 +166,7 @@ export const useNotifications = () => {
   };
 
   // Get cached notifications
-  const getCachedNotifications = (
-    filters?: NotificationFilters
-  ): Notification[] | undefined => {
+  const getCachedNotifications = (filters?: NotificationFilters): Notification[] | undefined => {
     return queryClient.getQueryData(['notifications', filters]);
   };
 

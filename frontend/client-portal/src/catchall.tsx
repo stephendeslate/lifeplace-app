@@ -3,7 +3,7 @@
 // Renders the existing App router for all routes not yet migrated
 // to framework mode route modules.
 
-import { AppRouter } from "./App";
+import { AppRouter } from './App';
 
 export default function Catchall() {
   return <AppRouter />;

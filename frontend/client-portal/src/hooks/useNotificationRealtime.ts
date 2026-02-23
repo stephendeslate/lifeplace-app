@@ -15,9 +15,7 @@ interface UseNotificationRealtimeOptions {
  * Subscribes to query cache updates and shows toast notifications
  * when new notifications arrive.
  */
-export const useNotificationRealtime = (
-  options: UseNotificationRealtimeOptions = {}
-) => {
+export const useNotificationRealtime = (options: UseNotificationRealtimeOptions = {}) => {
   const { enabled = true, showToasts = true } = options;
   const queryClient = useQueryClient();
   const { showInfo, showWarning } = useToastActions();
@@ -57,7 +55,7 @@ export const useNotificationRealtime = (
           showWarning(
             'Urgent Notification',
             `You have ${newUrgentCount} new urgent notification${newUrgentCount > 1 ? 's' : ''}`,
-            { duration: 8000 }
+            { duration: 8000 },
           );
         } else {
           // Show regular notification toast
@@ -66,7 +64,7 @@ export const useNotificationRealtime = (
             newCount === 1
               ? 'You have a new notification'
               : `You have ${newCount} new notifications`,
-            { duration: 5000 }
+            { duration: 5000 },
           );
         }
       }
@@ -74,7 +72,7 @@ export const useNotificationRealtime = (
       // Update reference
       previousCountsRef.current = currentCounts;
     },
-    [showToasts, showInfo, showWarning]
+    [showToasts, showInfo, showWarning],
   );
 
   useEffect(() => {
@@ -108,17 +106,13 @@ export const useNotificationRealtime = (
 
   // Get current unread count from cache
   const getUnreadCount = useCallback((): number => {
-    const counts = queryClient.getQueryData<NotificationCounts>([
-      'notification-counts',
-    ]);
+    const counts = queryClient.getQueryData<NotificationCounts>(['notification-counts']);
     return counts?.unread ?? 0;
   }, [queryClient]);
 
   // Check if there are urgent notifications
   const hasUrgentNotifications = useCallback((): boolean => {
-    const counts = queryClient.getQueryData<NotificationCounts>([
-      'notification-counts',
-    ]);
+    const counts = queryClient.getQueryData<NotificationCounts>(['notification-counts']);
     return (counts?.by_priority?.URGENT ?? 0) > 0;
   }, [queryClient]);
 

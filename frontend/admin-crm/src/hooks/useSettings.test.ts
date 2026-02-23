@@ -1,21 +1,21 @@
 // frontend/admin-crm/src/hooks/useSettings.test.ts
 
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import {
   useAccountSettings,
   useAdminUsers,
   useCompanySettings,
   useAdminPermissions,
-} from "./useSettings";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+} from './useSettings';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
-describe("useAccountSettings", () => {
-  it("provides mutation functions and initial states", () => {
+describe('useAccountSettings', () => {
+  it('provides mutation functions and initial states', () => {
     const { result } = renderHook(() => useAccountSettings(), {
       wrapper: createTestWrapper(),
     });
@@ -28,16 +28,16 @@ describe("useAccountSettings", () => {
     expect(result.current.passwordChangeError).toBeFalsy();
   });
 
-  it("updates profile successfully", async () => {
+  it('updates profile successfully', async () => {
     const { result } = renderHook(() => useAccountSettings(), {
       wrapper: createTestWrapper(),
     });
 
     act(() => {
       result.current.updateProfile({
-        first_name: "Updated",
-        last_name: "User",
-        email: "updated@example.com",
+        first_name: 'Updated',
+        last_name: 'User',
+        email: 'updated@example.com',
       });
     });
 
@@ -51,16 +51,16 @@ describe("useAccountSettings", () => {
     expect(result.current.profileUpdateError).toBeFalsy();
   });
 
-  it("changes password successfully", async () => {
+  it('changes password successfully', async () => {
     const { result } = renderHook(() => useAccountSettings(), {
       wrapper: createTestWrapper(),
     });
 
     act(() => {
       result.current.changePassword({
-        current_password: "oldpassword",
-        new_password: "newpassword123",
-        confirm_password: "newpassword123",
+        current_password: 'oldpassword',
+        new_password: 'newpassword123',
+        confirm_password: 'newpassword123',
       });
     });
 
@@ -74,13 +74,10 @@ describe("useAccountSettings", () => {
     expect(result.current.passwordChangeError).toBeFalsy();
   });
 
-  it("handles password change error with wrong current password", async () => {
+  it('handles password change error with wrong current password', async () => {
     server.use(
       http.post(`${BASE_URL}/users/me/change-password/`, () => {
-        return HttpResponse.json(
-          { detail: "Current password is incorrect" },
-          { status: 400 },
-        );
+        return HttpResponse.json({ detail: 'Current password is incorrect' }, { status: 400 });
       }),
     );
 
@@ -90,9 +87,9 @@ describe("useAccountSettings", () => {
 
     act(() => {
       result.current.changePassword({
-        current_password: "wrong-password",
-        new_password: "newpassword123",
-        confirm_password: "newpassword123",
+        current_password: 'wrong-password',
+        new_password: 'newpassword123',
+        confirm_password: 'newpassword123',
       });
     });
 
@@ -106,8 +103,8 @@ describe("useAccountSettings", () => {
   });
 });
 
-describe("useAdminUsers", () => {
-  it("fetches admin users and invitations", async () => {
+describe('useAdminUsers', () => {
+  it('fetches admin users and invitations', async () => {
     const { result } = renderHook(() => useAdminUsers(), {
       wrapper: createTestWrapper(),
     });
@@ -126,10 +123,10 @@ describe("useAdminUsers", () => {
     expect(Array.isArray(result.current.invitations)).toBe(true);
   });
 
-  it("handles admin users API error", async () => {
+  it('handles admin users API error', async () => {
     server.use(
       http.get(`${BASE_URL}/users/`, () => {
-        return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+        return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
       }),
     );
 
@@ -148,7 +145,7 @@ describe("useAdminUsers", () => {
     expect(Array.isArray(result.current.adminUsers)).toBe(true);
   });
 
-  it("creates an invitation", async () => {
+  it('creates an invitation', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useAdminUsers(), { wrapper });
 
@@ -161,10 +158,10 @@ describe("useAdminUsers", () => {
 
     act(() => {
       result.current.createInvitation({
-        email: "newadmin@example.com",
-        first_name: "New",
-        last_name: "Admin",
-        role: "ADMIN",
+        email: 'newadmin@example.com',
+        first_name: 'New',
+        last_name: 'Admin',
+        role: 'ADMIN',
       });
     });
 
@@ -176,7 +173,7 @@ describe("useAdminUsers", () => {
     );
   });
 
-  it("deletes an admin user", async () => {
+  it('deletes an admin user', async () => {
     // Override the users endpoint to return users with uppercase ADMIN role
     // (getAdminUsers filters by user.role === 'ADMIN')
     server.use(
@@ -188,25 +185,25 @@ describe("useAdminUsers", () => {
           results: [
             {
               id: 101,
-              email: "admin1@lifeplace.com",
-              first_name: "Admin",
-              last_name: "One",
-              role: "ADMIN",
+              email: 'admin1@lifeplace.com',
+              first_name: 'Admin',
+              last_name: 'One',
+              role: 'ADMIN',
               is_active: true,
-              date_joined: "2024-01-15T10:00:00Z",
-              profile: { phone: "555-0100", company: "LifePlace" },
+              date_joined: '2024-01-15T10:00:00Z',
+              profile: { phone: '555-0100', company: 'LifePlace' },
               admin_permissions: {},
               is_full_admin: false,
             },
             {
               id: 102,
-              email: "admin2@lifeplace.com",
-              first_name: "Admin",
-              last_name: "Two",
-              role: "ADMIN",
+              email: 'admin2@lifeplace.com',
+              first_name: 'Admin',
+              last_name: 'Two',
+              role: 'ADMIN',
               is_active: true,
-              date_joined: "2024-01-15T10:00:00Z",
-              profile: { phone: "555-0101", company: "LifePlace" },
+              date_joined: '2024-01-15T10:00:00Z',
+              profile: { phone: '555-0101', company: 'LifePlace' },
               admin_permissions: {},
               is_full_admin: false,
             },
@@ -241,8 +238,8 @@ describe("useAdminUsers", () => {
   });
 });
 
-describe("useCompanySettings", () => {
-  it("fetches company settings", async () => {
+describe('useCompanySettings', () => {
+  it('fetches company settings', async () => {
     const { result } = renderHook(() => useCompanySettings(), {
       wrapper: createTestWrapper(),
     });
@@ -260,7 +257,7 @@ describe("useCompanySettings", () => {
     expect(result.current.error).toBeFalsy();
   });
 
-  it("updates company settings", async () => {
+  it('updates company settings', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useCompanySettings(), { wrapper });
 
@@ -273,7 +270,7 @@ describe("useCompanySettings", () => {
 
     act(() => {
       result.current.updateCompanySettings({
-        company_name: "Updated Company",
+        company_name: 'Updated Company',
       });
     });
 
@@ -288,8 +285,8 @@ describe("useCompanySettings", () => {
   });
 });
 
-describe("useAdminPermissions", () => {
-  it("fetches permission presets", async () => {
+describe('useAdminPermissions', () => {
+  it('fetches permission presets', async () => {
     // Add a handler for the permissions endpoint
     server.use(
       http.get(`${BASE_URL}/users/permissions/`, () => {
@@ -299,9 +296,9 @@ describe("useAdminPermissions", () => {
             events_only: { events: true, clients: false, settings: false },
           },
           descriptions: {
-            events: "Manage events",
-            clients: "Manage clients",
-            settings: "Manage settings",
+            events: 'Manage events',
+            clients: 'Manage clients',
+            settings: 'Manage settings',
           },
         });
       }),
@@ -322,7 +319,7 @@ describe("useAdminPermissions", () => {
     expect(result.current.presetsError).toBeFalsy();
   });
 
-  it("provides mutation functions", () => {
+  it('provides mutation functions', () => {
     const { result } = renderHook(() => useAdminPermissions(), {
       wrapper: createTestWrapper(),
     });

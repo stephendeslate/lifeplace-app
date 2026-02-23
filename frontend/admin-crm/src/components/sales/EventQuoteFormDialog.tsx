@@ -21,18 +21,14 @@ import {
   Autocomplete,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material/Select';
-import {
-  Save as SaveIcon,
-  Cancel as CancelIcon,
-  Receipt as QuoteIcon,
-} from '@mui/icons-material';
+import { Save as SaveIcon, Cancel as CancelIcon, Receipt as QuoteIcon } from '@mui/icons-material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { addDays, format } from 'date-fns';
 import { useEvents } from '../../hooks/useEvents';
 import { useActiveQuoteTemplates } from '../../hooks/useSales';
-import type { 
-  EventQuote, 
-  CreateEventQuoteData, 
+import type {
+  EventQuote,
+  CreateEventQuoteData,
   UpdateEventQuoteData,
   EventQuoteFormData,
 } from '../../types/sales.types';
@@ -86,7 +82,7 @@ export const EventQuoteFormDialog: React.FC<EventQuoteFormDialogProps> = ({
       });
 
       // Find and set the selected event
-      const event = events.find(e => e.id === editingQuote.event);
+      const event = events.find((e) => e.id === editingQuote.event);
       setSelectedEvent(event || null);
     } else if (open && !editingQuote) {
       setFormData(initialFormData);
@@ -103,40 +99,39 @@ export const EventQuoteFormDialog: React.FC<EventQuoteFormDialogProps> = ({
     }
   }, [open]);
 
-  const handleInputChange = (field: keyof EventQuoteFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = event.target.value;
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    // Clear error for this field
-    if (errors[field]) {
-      setErrors((prev) => ({
+  const handleInputChange =
+    (field: keyof EventQuoteFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
         ...prev,
-        [field]: undefined,
+        [field]: value,
       }));
-    }
-  };
 
-  const handleSelectChange = (field: keyof EventQuoteFormData) => (
-    event: SelectChangeEvent<string>
-  ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: event.target.value as string,
-    }));
+      // Clear error for this field
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: undefined,
+        }));
+      }
+    };
 
-    // Clear error for this field
-    if (errors[field]) {
-      setErrors((prev) => ({
+  const handleSelectChange =
+    (field: keyof EventQuoteFormData) => (event: SelectChangeEvent<string>) => {
+      setFormData((prev) => ({
         ...prev,
-        [field]: undefined,
+        [field]: event.target.value as string,
       }));
-    }
-  };
+
+      // Clear error for this field
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: undefined,
+        }));
+      }
+    };
 
   const handleEventChange = (_event: React.SyntheticEvent, newValue: Event | null) => {
     setSelectedEvent(newValue);
@@ -182,7 +177,7 @@ export const EventQuoteFormDialog: React.FC<EventQuoteFormDialogProps> = ({
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -234,7 +229,7 @@ export const EventQuoteFormDialog: React.FC<EventQuoteFormDialogProps> = ({
               <Typography variant="subtitle2" gutterBottom color="text.secondary">
                 Event Information
               </Typography>
-              
+
               <Stack spacing={2.5}>
                 {editingQuote ? (
                   <Box
@@ -323,7 +318,7 @@ export const EventQuoteFormDialog: React.FC<EventQuoteFormDialogProps> = ({
               <Typography variant="subtitle2" gutterBottom color="text.secondary">
                 Quote Details
               </Typography>
-              
+
               <Stack spacing={2.5}>
                 <DatePicker
                   label="Valid Until"
@@ -372,7 +367,7 @@ export const EventQuoteFormDialog: React.FC<EventQuoteFormDialogProps> = ({
               <Typography variant="subtitle2" gutterBottom color="text.secondary">
                 Terms and Conditions
               </Typography>
-              
+
               <TextField
                 fullWidth
                 label="Terms and Conditions"
@@ -387,11 +382,9 @@ export const EventQuoteFormDialog: React.FC<EventQuoteFormDialogProps> = ({
 
             {/* Info Alert */}
             <Alert severity="info" variant="outlined">
-              {editingQuote ? (
-                'Quote line items and pricing can be managed after updating the quote details.'
-              ) : (
-                'After creating the quote, you can add line items, adjust pricing, and send it to the client.'
-              )}
+              {editingQuote
+                ? 'Quote line items and pricing can be managed after updating the quote details.'
+                : 'After creating the quote, you can add line items, adjust pricing, and send it to the client.'}
             </Alert>
           </Stack>
         </DialogContent>

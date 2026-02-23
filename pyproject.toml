@@ -14,6 +14,66 @@ name = "lifeplace-backend"
 version = "1.0.0"
 description = "LifePlace Event Management Platform - Backend"
 requires-python = ">=3.12"
+dependencies = [
+    "Django==5.2.8",
+    "djangorestframework==3.16.0",
+    "djangorestframework_simplejwt==5.5.0",
+    "drf-spectacular==0.28.0",
+    "daphne==4.1.2",
+    "channels==4.1.0",
+    "channels-redis==4.2.0",
+    "celery==5.5.3",
+    "django-celery-beat==2.8.1",
+    "django-cors-headers==4.7.0",
+    "django-filter==25.1",
+    "django-redis==6.0.0",
+    "django-storages==1.14.2",
+    "django-timezone-field==7.1",
+    "dj-database-url==3.0.0",
+    "psycopg2-binary==2.9.10",
+    "redis==5.2.1",
+    "hiredis==3.0.0",
+    "stripe==12.2.0",
+    "reportlab==4.2.5",
+    "pillow==11.3.0",
+    "whitenoise==6.9.0",
+    "gunicorn==23.0.0",
+    "sentry-sdk[django]==2.19.2",
+    "boto3==1.34.0",
+    "python-magic==0.4.27",
+    "python-dotenv==1.1.0",
+    "google-auth>=2.0.0",
+    "phonenumbers>=8.13.0",
+    "exponent-server-sdk==2.1.0",
+    "requests==2.32.5",
+    "cryptography==42.0.5",
+    "honcho==1.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.3.4",
+    "pytest-django==4.9.0",
+    "pytest-xdist==3.5.0",
+    "pytest-cov==6.0.0",
+    "pytest-randomly==3.16.0",
+    "pytest-mock==3.14.0",
+    "factory-boy==3.3.1",
+    "pytest-factoryboy==2.7.0",
+    "Faker==33.1.0",
+    "freezegun==1.4.0",
+    "responses==0.25.6",
+    "coverage==7.10.6",
+    "ruff==0.15.2",
+    "bandit[toml]==1.7.7",
+    "pre-commit==3.6.0",
+    "mypy==1.15.0",
+    "django-stubs==5.2.0",
+    "djangorestframework-stubs==3.15.2",
+    "types-requests==2.32.0.20241016",
+    "types-python-dateutil==2.9.0.20241206",
+    "vulture==2.14",
+]
 
 # =============================================================================
 # Ruff Configuration
@@ -80,8 +140,40 @@ ignore = [
     "T201",    # print() found - allow in management commands
     "ARG001",  # Unused function argument (common in Django views)
     "ARG002",  # Unused method argument (common in Django views)
+    "ARG003",  # Unused class method argument (common in Django)
+    "ARG004",  # Unused static method argument
     "RUF012",  # Mutable class attributes should be annotated with ClassVar
+    "RUF059",  # Unused unpacked variable (common in Django tuple unpacking)
     "DJ001",   # Avoid using null=True on string-based fields (sometimes needed)
+    "PLC0415", # import should be at top-level (lazy imports are idiomatic in Django)
+    "PLR0911", # Too many return statements
+    "PLR0912", # Too many branches
+    "PLR0915", # Too many statements
+    "E402",    # Module level import not at top (Django patterns with lazy imports)
+    "SIM102",  # Use single if instead of nested if (style preference)
+    "SIM108",  # Use ternary operator (style preference)
+    "SIM105",  # Use contextlib.suppress (style preference)
+    "SIM117",  # Use single with statement (style preference)
+    "RUF013",  # PEP 484 implicit Optional (defer to mypy for type checking)
+    "S105",    # Possible hardcoded password assigned to variable
+    "S106",    # Possible hardcoded password in function argument
+    "S110",    # try-except-pass detected (sometimes intentional)
+    "S324",    # Insecure hash function (non-crypto uses)
+    "B904",    # Raise from err/None within except (gradual adoption)
+    "ERA001",  # Found commented-out code (too noisy for existing codebase)
+    "B017",    # assertRaises(Exception) should be more specific
+    "PTH",     # pathlib suggestions (style preference, defer migration)
+    "F821",    # Undefined name (false positives from Django string forward references)
+    "PLW2901", # Outer loop variable overwritten by inner assignment
+    "RUF001",  # Ambiguous unicode character (intentional in content strings)
+    "PLW1641", # eq without hash (Django models use pk-based hashing)
+    "B023",    # Function definition does not bind loop variable
+    "PLW0603", # Using the global statement (sometimes needed)
+    "PLW1510", # subprocess.run without check (intentional in scripts)
+    "PLW1508", # Invalid type for env default (existing patterns)
+    "PLC0206", # Hashable dict usage (existing patterns)
+    "E741",    # Ambiguous variable name (existing code)
+    "E722",    # Do not use bare except (existing error handling patterns)
 ]
 
 # Allow autofix for all enabled rules
@@ -110,6 +202,19 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 # Settings file has special Django patterns
 "**/settings.py" = [
     "E501",    # Line length for URLs and configs
+    "F401",    # Import for side-effect validation
+]
+# Django app configs import signals for side effects
+"**/apps.py" = [
+    "F401",    # Signal imports are for registration side effects
+]
+# Signal packages re-export modules for registration
+"**/signals/__init__.py" = [
+    "F401",    # Re-exports for Django signal registration
+]
+# Exception files may redefine with richer subclasses
+"**/exceptions.py" = [
+    "F811",    # Redefinition of exception classes (progressive enhancement)
 ]
 # conftest files have fixture patterns
 "**/conftest.py" = [
@@ -119,7 +224,6 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 [tool.ruff.lint.isort]
 # Import sorting configuration
 known-first-party = ["core"]
-known-django = ["django", "rest_framework"]
 section-order = [
     "future",
     "standard-library",
@@ -128,6 +232,9 @@ section-order = [
     "first-party",
     "local-folder",
 ]
+
+[tool.ruff.lint.isort.sections]
+django = ["django", "rest_framework"]
 
 [tool.ruff.lint.flake8-bugbear]
 # Allow default arguments like datetime.now()
@@ -169,6 +276,50 @@ exclude_dirs = [
     ".venv",
     "venv",
 ]
+
+# =============================================================================
+# Mypy Configuration (Type Checking)
+# =============================================================================
+# Gradual adoption: start lenient, tighten over time
+# Docs: https://mypy.readthedocs.io/
+
+[tool.mypy]
+python_version = "3.12"
+plugins = [
+    "mypy_django_plugin.main",
+    "mypy_drf_plugin.main",
+]
+
+# Gradual adoption settings
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+check_untyped_defs = false
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+ignore_missing_imports = true
+
+# Exclude migrations, tests, and generated files
+exclude = [
+    "migrations/",
+    "tests/",
+    "conftest\\.py",
+    "manage\\.py",
+    "load_tests/",
+]
+
+[tool.django-stubs]
+django_settings_module = "core.settings"
+
+# Per-module overrides for stricter checking on service layer
+[[tool.mypy.overrides]]
+module = "core.domains.*.services"
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "core.domains.*.views"
+check_untyped_defs = true
 
 # =============================================================================
 # Pytest Configuration

@@ -1,12 +1,8 @@
-import React, { useState, useCallback } from "react";
-import { TextField, MenuItem, Stack, Box, Typography } from "@mui/material";
-import {
-  ModernDialog,
-  createDialogActions,
-  GalleryUploadField,
-} from "../common";
-import { GALLERY_CATEGORIES } from "../../types/gallery.types";
-import { glassInputStyles } from "../../design-system/utils/glassmorphism";
+import React, { useState, useCallback } from 'react';
+import { TextField, MenuItem, Stack, Box, Typography } from '@mui/material';
+import { ModernDialog, createDialogActions, GalleryUploadField } from '../common';
+import { GALLERY_CATEGORIES } from '../../types/gallery.types';
+import { glassInputStyles } from '../../design-system/utils/glassmorphism';
 
 interface BulkUploadDialogProps {
   open: boolean;
@@ -23,16 +19,16 @@ export const BulkUploadDialog: React.FC<BulkUploadDialogProps> = ({
   onSubmit,
   isLoading,
 }) => {
-  const [category, setCategory] = useState("GENERAL");
+  const [category, setCategory] = useState('GENERAL');
   const [files, setFiles] = useState<(string | File)[]>([]);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
 
   // Reset state whenever the dialog opens/closes
   React.useEffect(() => {
     if (!open) {
-      setCategory("GENERAL");
+      setCategory('GENERAL');
       setFiles([]);
-      setError("");
+      setError('');
     }
   }, [open]);
 
@@ -45,24 +41,24 @@ export const BulkUploadDialog: React.FC<BulkUploadDialogProps> = ({
   const handleSubmit = useCallback(() => {
     const imageFiles = files.filter((f): f is File => f instanceof File);
     if (imageFiles.length === 0) {
-      setError("Please select at least one image.");
+      setError('Please select at least one image.');
       return;
     }
 
     const formData = new FormData();
-    formData.append("category", category);
+    formData.append('category', category);
     for (const file of imageFiles) {
-      formData.append("images", file);
+      formData.append('images', file);
     }
 
     onSubmit(formData);
   }, [files, category, onSubmit]);
 
   const actions = createDialogActions(handleClose, handleSubmit, {
-    cancelLabel: "Cancel",
+    cancelLabel: 'Cancel',
     confirmLabel: isLoading
-      ? "Uploading..."
-      : `Upload ${files.length} Photo${files.length === 1 ? "" : "s"}`,
+      ? 'Uploading...'
+      : `Upload ${files.length} Photo${files.length === 1 ? '' : 's'}`,
     isLoading,
     confirmDisabled: isLoading || files.length === 0,
   });
@@ -80,8 +76,8 @@ export const BulkUploadDialog: React.FC<BulkUploadDialogProps> = ({
         <Box component="form" noValidate>
           <Stack spacing={3}>
             <Typography variant="body2" color="text.secondary">
-              Select a category and upload multiple photos at once. Titles will
-              be auto-generated from filenames.
+              Select a category and upload multiple photos at once. Titles will be auto-generated
+              from filenames.
             </Typography>
 
             <TextField
@@ -104,11 +100,11 @@ export const BulkUploadDialog: React.FC<BulkUploadDialogProps> = ({
               value={files}
               onChange={(newFiles) => {
                 setFiles(newFiles);
-                if (error) setError("");
+                if (error) setError('');
               }}
               maxImages={MAX_IMAGES}
               maxSizeMB={10}
-              helperText={error || "JPEG, PNG, GIF, or WebP. Max 10MB each."}
+              helperText={error || 'JPEG, PNG, GIF, or WebP. Max 10MB each.'}
             />
           </Stack>
         </Box>

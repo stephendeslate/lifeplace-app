@@ -1,7 +1,7 @@
 // frontend/shared/vitest.config.ts
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import path from 'path'
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
@@ -39,4 +39,4 @@ export default defineConfig({
       '@test-utils': path.resolve(__dirname, './test-utils'),
     },
   },
-})
+});

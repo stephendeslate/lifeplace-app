@@ -1,12 +1,7 @@
 // frontend/admin-crm/src/components/workflows/flowchart/edges/ProgressionEdge.tsx
 
 import React from 'react';
-import {
-  BaseEdge,
-  EdgeLabelRenderer,
-  getBezierPath,
-  type EdgeProps,
-} from '@xyflow/react';
+import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react';
 import { Chip } from '@mui/material';
 import type { ProgressionEdgeData } from '../types';
 
@@ -32,7 +27,8 @@ export const ProgressionEdge: React.FC<EdgeProps> = ({
   });
 
   const edgeData = data as ProgressionEdgeData | undefined;
-  const label = edgeData?.label || (edgeData?.condition ? edgeData.condition.replace(/_/g, ' ') : null);
+  const label =
+    edgeData?.label || (edgeData?.condition ? edgeData.condition.replace(/_/g, ' ') : null);
 
   return (
     <>

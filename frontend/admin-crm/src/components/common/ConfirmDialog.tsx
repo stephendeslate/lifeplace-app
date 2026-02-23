@@ -85,16 +85,16 @@ export const ConfirmDialogProvider: React.FC<ConfirmDialogProviderProps> = ({ ch
           if (options.allowAsync) {
             setLoading(true);
             try {
-              await new Promise(resolve => setTimeout(resolve, 0)); // Allow for async operations
+              await new Promise((resolve) => setTimeout(resolve, 0)); // Allow for async operations
             } finally {
               setLoading(false);
             }
           }
-          setDialogState(prev => ({ ...prev, open: false }));
+          setDialogState((prev) => ({ ...prev, open: false }));
           resolve(true);
         },
         onCancel: () => {
-          setDialogState(prev => ({ ...prev, open: false }));
+          setDialogState((prev) => ({ ...prev, open: false }));
           resolve(false);
         },
       });
@@ -128,7 +128,6 @@ export const ConfirmDialogProvider: React.FC<ConfirmDialogProviderProps> = ({ ch
         return <InfoIcon sx={{ fontSize: 48 }} color="info" />;
     }
   };
-
 
   return (
     <ConfirmDialogContext.Provider value={{ confirm, confirmDelete }}>

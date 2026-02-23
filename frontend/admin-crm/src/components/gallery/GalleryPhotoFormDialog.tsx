@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/gallery/GalleryPhotoFormDialog.tsx
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   TextField,
   FormControlLabel,
@@ -9,15 +9,12 @@ import {
   Stack,
   Typography,
   MenuItem,
-} from "@mui/material";
-import { ModernDialog, createDialogActions, ImageUploadField } from "../common";
-import type {
-  GalleryPhoto,
-  GalleryPhotoFormData,
-} from "../../types/gallery.types";
-import { GALLERY_CATEGORIES } from "../../types/gallery.types";
-import { tokens } from "../../design-system";
-import { glassInputStyles } from "../../design-system/utils/glassmorphism";
+} from '@mui/material';
+import { ModernDialog, createDialogActions, ImageUploadField } from '../common';
+import type { GalleryPhoto, GalleryPhotoFormData } from '../../types/gallery.types';
+import { GALLERY_CATEGORIES } from '../../types/gallery.types';
+import { tokens } from '../../design-system';
+import { glassInputStyles } from '../../design-system/utils/glassmorphism';
 
 interface GalleryPhotoFormDialogProps {
   open: boolean;
@@ -29,9 +26,9 @@ interface GalleryPhotoFormDialogProps {
 
 const defaultFormData: GalleryPhotoFormData = {
   image: null,
-  title: "",
-  description: "",
-  category: "GENERAL",
+  title: '',
+  description: '',
+  category: 'GENERAL',
   venue: null,
   event_type: null,
   is_featured: false,
@@ -46,8 +43,7 @@ export const GalleryPhotoFormDialog: React.FC<GalleryPhotoFormDialogProps> = ({
   onSubmit,
   isLoading,
 }) => {
-  const [formData, setFormData] =
-    useState<GalleryPhotoFormData>(defaultFormData);
+  const [formData, setFormData] = useState<GalleryPhotoFormData>(defaultFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -55,9 +51,9 @@ export const GalleryPhotoFormDialog: React.FC<GalleryPhotoFormDialogProps> = ({
       if (editingPhoto) {
         setFormData({
           image: editingPhoto.image || null,
-          title: editingPhoto.title || "",
-          description: editingPhoto.description || "",
-          category: editingPhoto.category || "GENERAL",
+          title: editingPhoto.title || '',
+          description: editingPhoto.description || '',
+          category: editingPhoto.category || 'GENERAL',
           venue: editingPhoto.venue,
           event_type: editingPhoto.event_type,
           is_featured: editingPhoto.is_featured ?? false,
@@ -83,14 +79,13 @@ export const GalleryPhotoFormDialog: React.FC<GalleryPhotoFormDialogProps> = ({
       if (errors[field]) {
         setErrors((prev) => ({
           ...prev,
-          [field]: "",
+          [field]: '',
         }));
       }
     };
 
   const handleSwitchChange =
-    (field: keyof GalleryPhotoFormData) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+    (field: keyof GalleryPhotoFormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
       setFormData((prev) => ({
         ...prev,
         [field]: event.target.checked,
@@ -103,7 +98,7 @@ export const GalleryPhotoFormDialog: React.FC<GalleryPhotoFormDialogProps> = ({
       image: file,
     }));
     if (errors.image) {
-      setErrors((prev) => ({ ...prev, image: "" }));
+      setErrors((prev) => ({ ...prev, image: '' }));
     }
   };
 
@@ -111,11 +106,11 @@ export const GalleryPhotoFormDialog: React.FC<GalleryPhotoFormDialogProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.image && !editingPhoto) {
-      newErrors.image = "Photo is required";
+      newErrors.image = 'Photo is required';
     }
 
     if (!formData.title.trim()) {
-      newErrors.title = "Title is required";
+      newErrors.title = 'Title is required';
     }
 
     setErrors(newErrors);
@@ -129,21 +124,21 @@ export const GalleryPhotoFormDialog: React.FC<GalleryPhotoFormDialogProps> = ({
 
     // Image
     if (formData.image instanceof File) {
-      formDataObj.append("image", formData.image);
+      formDataObj.append('image', formData.image);
     }
 
-    formDataObj.append("title", formData.title.trim());
-    formDataObj.append("description", formData.description.trim());
-    formDataObj.append("category", formData.category);
-    formDataObj.append("is_featured", String(formData.is_featured));
-    formDataObj.append("is_active", String(formData.is_active));
-    formDataObj.append("sort_order", String(formData.sort_order));
+    formDataObj.append('title', formData.title.trim());
+    formDataObj.append('description', formData.description.trim());
+    formDataObj.append('category', formData.category);
+    formDataObj.append('is_featured', String(formData.is_featured));
+    formDataObj.append('is_active', String(formData.is_active));
+    formDataObj.append('sort_order', String(formData.sort_order));
 
     if (formData.venue !== null) {
-      formDataObj.append("venue", String(formData.venue));
+      formDataObj.append('venue', String(formData.venue));
     }
     if (formData.event_type !== null) {
-      formDataObj.append("event_type", String(formData.event_type));
+      formDataObj.append('event_type', String(formData.event_type));
     }
 
     onSubmit(formDataObj);
@@ -156,12 +151,8 @@ export const GalleryPhotoFormDialog: React.FC<GalleryPhotoFormDialogProps> = ({
   };
 
   const actions = createDialogActions(handleClose, handleSubmit, {
-    cancelLabel: "Cancel",
-    confirmLabel: isLoading
-      ? "Saving..."
-      : editingPhoto
-        ? "Update Photo"
-        : "Add Photo",
+    cancelLabel: 'Cancel',
+    confirmLabel: isLoading ? 'Saving...' : editingPhoto ? 'Update Photo' : 'Add Photo',
     isLoading,
     confirmDisabled: isLoading,
   });
@@ -170,7 +161,7 @@ export const GalleryPhotoFormDialog: React.FC<GalleryPhotoFormDialogProps> = ({
     <ModernDialog
       open={open}
       onClose={handleClose}
-      title={editingPhoto ? "Edit Gallery Photo" : "Add Gallery Photo"}
+      title={editingPhoto ? 'Edit Gallery Photo' : 'Add Gallery Photo'}
       actions={actions}
       maxWidth="sm"
       fullWidth
@@ -193,7 +184,7 @@ export const GalleryPhotoFormDialog: React.FC<GalleryPhotoFormDialogProps> = ({
               fullWidth
               label="Title"
               value={formData.title}
-              onChange={handleInputChange("title")}
+              onChange={handleInputChange('title')}
               error={!!errors.title}
               helperText={errors.title}
               required
@@ -205,7 +196,7 @@ export const GalleryPhotoFormDialog: React.FC<GalleryPhotoFormDialogProps> = ({
               fullWidth
               label="Description"
               value={formData.description}
-              onChange={handleInputChange("description")}
+              onChange={handleInputChange('description')}
               multiline
               rows={3}
               placeholder="Describe this photo..."
@@ -218,7 +209,7 @@ export const GalleryPhotoFormDialog: React.FC<GalleryPhotoFormDialogProps> = ({
               select
               label="Category"
               value={formData.category}
-              onChange={handleInputChange("category")}
+              onChange={handleInputChange('category')}
               sx={glassInputStyles}
             >
               {GALLERY_CATEGORIES.map((cat) => (
@@ -232,7 +223,7 @@ export const GalleryPhotoFormDialog: React.FC<GalleryPhotoFormDialogProps> = ({
               fullWidth
               label="Sort Order"
               value={formData.sort_order}
-              onChange={handleInputChange("sort_order")}
+              onChange={handleInputChange('sort_order')}
               type="number"
               helperText="Lower numbers appear first"
               InputProps={{ inputProps: { min: 0 } }}
@@ -252,15 +243,14 @@ export const GalleryPhotoFormDialog: React.FC<GalleryPhotoFormDialogProps> = ({
                   control={
                     <Switch
                       checked={formData.is_featured}
-                      onChange={handleSwitchChange("is_featured")}
+                      onChange={handleSwitchChange('is_featured')}
                       sx={{
-                        "& .MuiSwitch-switchBase.Mui-checked": {
+                        '& .MuiSwitch-switchBase.Mui-checked': {
                           color: tokens.color.success[500],
                         },
-                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: tokens.color.success[500],
-                          },
+                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                          backgroundColor: tokens.color.success[500],
+                        },
                       }}
                     />
                   }
@@ -270,45 +260,35 @@ export const GalleryPhotoFormDialog: React.FC<GalleryPhotoFormDialogProps> = ({
                     </Typography>
                   }
                 />
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ ml: 6 }}
-                >
-                  Featured photos are highlighted in the gallery and may appear
-                  on the homepage
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 6 }}>
+                  Featured photos are highlighted in the gallery and may appear on the homepage
                 </Typography>
 
                 <FormControlLabel
                   control={
                     <Switch
                       checked={formData.is_active}
-                      onChange={handleSwitchChange("is_active")}
+                      onChange={handleSwitchChange('is_active')}
                       sx={{
-                        "& .MuiSwitch-switchBase.Mui-checked": {
+                        '& .MuiSwitch-switchBase.Mui-checked': {
                           color: tokens.color.success[500],
                         },
-                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: tokens.color.success[500],
-                          },
+                        '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                          backgroundColor: tokens.color.success[500],
+                        },
                       }}
                     />
                   }
                   label={
                     <Typography variant="subtitle2" fontWeight="600">
-                      {formData.is_active ? "Active" : "Inactive"}
+                      {formData.is_active ? 'Active' : 'Inactive'}
                     </Typography>
                   }
                 />
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ ml: 6 }}
-                >
+                <Typography variant="body2" color="text.secondary" sx={{ ml: 6 }}>
                   {formData.is_active
-                    ? "This photo is visible in the public gallery"
-                    : "This photo is hidden from the public gallery"}
+                    ? 'This photo is visible in the public gallery'
+                    : 'This photo is hidden from the public gallery'}
                 </Typography>
               </Stack>
             </Box>

@@ -46,10 +46,7 @@ export const useTemplateVariables = (domain: TemplateDomain) => {
  * Hook that returns variables filtered by context type.
  * Use this when you need to show only variables available for a specific context.
  */
-export const useFilteredVariables = (
-  domain: TemplateDomain,
-  contextType?: ContextType
-) => {
+export const useFilteredVariables = (domain: TemplateDomain, contextType?: ContextType) => {
   const { data: schemas, ...queryResult } = useTemplateVariables(domain);
 
   const filteredGroups = useMemo(() => {
@@ -85,7 +82,7 @@ export const useFilteredVariables = (
  */
 export const getVariablesForContext = (
   schemas: VariableSchemas | undefined,
-  contextType: ContextType
+  contextType: ContextType,
 ): VariableForInsertion[] => {
   if (!schemas?.variable_groups) return [];
 
@@ -140,41 +137,42 @@ export const getVariableGroupTitle = (groupKey: string): string => {
     signature_variables: 'Signature Placeholders',
   };
 
-  return titles[groupKey] || groupKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  return titles[groupKey] || groupKey.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
 /**
  * Helper to get color for variable group chips
  */
 export const getVariableGroupColor = (
-  groupKey: string
+  groupKey: string,
 ): 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'error' => {
-  const colors: Record<string, 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'error'> = {
-    // New group names
-    client: 'secondary',
-    event: 'primary',
-    financial: 'success',
-    booking: 'info',
-    quote: 'warning',
-    contract: 'info',
-    admin: 'error',
-    notification: 'warning',
-    system: 'primary',
-    company: 'secondary',
-    urls: 'info',
-    invoice: 'success',
-    payment: 'success',
+  const colors: Record<string, 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'error'> =
+    {
+      // New group names
+      client: 'secondary',
+      event: 'primary',
+      financial: 'success',
+      booking: 'info',
+      quote: 'warning',
+      contract: 'info',
+      admin: 'error',
+      notification: 'warning',
+      system: 'primary',
+      company: 'secondary',
+      urls: 'info',
+      invoice: 'success',
+      payment: 'success',
 
-    // Legacy names
-    client_variables: 'secondary',
-    system_variables: 'primary',
-    admin_invitation_variables: 'info',
-    manual_template_variables: 'warning',
-    event_variables: 'primary',
-    financial_variables: 'success',
-    contract_variables: 'info',
-    signature_variables: 'warning',
-  };
+      // Legacy names
+      client_variables: 'secondary',
+      system_variables: 'primary',
+      admin_invitation_variables: 'info',
+      manual_template_variables: 'warning',
+      event_variables: 'primary',
+      financial_variables: 'success',
+      contract_variables: 'info',
+      signature_variables: 'warning',
+    };
 
   return colors[groupKey] || 'primary';
 };
@@ -207,16 +205,14 @@ export const getVariableGroupIcon = (groupKey: string): string => {
  * e.g., 'client_first_name' -> 'Client First Name'
  */
 export const getVariableLabel = (variableName: string): string => {
-  return variableName
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (l) => l.toUpperCase());
+  return variableName.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 };
 
 /**
  * Get context type options for select dropdowns
  */
 export const getContextTypeOptions = (
-  schemas: VariableSchemas | undefined
+  schemas: VariableSchemas | undefined,
 ): Array<{ value: ContextType; label: string; description: string }> => {
   if (!schemas?.context_types) return [];
 

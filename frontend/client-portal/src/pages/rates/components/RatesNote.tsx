@@ -4,13 +4,7 @@
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
 import { InfoOutlined } from '@mui/icons-material';
-import {
-  Section,
-  Container,
-  ModernCard,
-  AnimatedElement,
-  tokens,
-} from '../../../design-system';
+import { Section, Container, ModernCard, AnimatedElement, tokens } from '../../../design-system';
 
 /**
  * RatesNote Component

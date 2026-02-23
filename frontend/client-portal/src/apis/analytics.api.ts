@@ -17,7 +17,9 @@ export const analyticsApi = {
     if (endDate) params.append('end_date', endDate);
 
     const queryString = params.toString();
-    const url = queryString ? `/client/analytics/dashboard/?${queryString}` : '/client/analytics/dashboard/';
+    const url = queryString
+      ? `/client/analytics/dashboard/?${queryString}`
+      : '/client/analytics/dashboard/';
 
     const response = await api.get<ClientDashboard>(url);
     return response.data;
@@ -26,7 +28,7 @@ export const analyticsApi = {
   // Get client's event history with payment info
   getEventHistory: async (limit: number = 10): Promise<ClientEventHistory[]> => {
     const response = await api.get<ClientEventHistory[]>(
-      `/client/analytics/events/?limit=${limit}`
+      `/client/analytics/events/?limit=${limit}`,
     );
     return response.data;
   },
@@ -34,16 +36,14 @@ export const analyticsApi = {
   // Get monthly spending trends
   getSpendingTrends: async (months: number = 12): Promise<ClientSpendingTrend[]> => {
     const response = await api.get<ClientSpendingTrend[]>(
-      `/client/analytics/spending/?months=${months}`
+      `/client/analytics/spending/?months=${months}`,
     );
     return response.data;
   },
 
   // Get upcoming deadlines (payments, events, contracts)
   getUpcomingDeadlines: async (days: number = 30): Promise<ClientDeadline[]> => {
-    const response = await api.get<ClientDeadline[]>(
-      `/client/analytics/deadlines/?days=${days}`
-    );
+    const response = await api.get<ClientDeadline[]>(`/client/analytics/deadlines/?days=${days}`);
     return response.data;
   },
 };

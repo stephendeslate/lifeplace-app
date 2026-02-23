@@ -1,68 +1,67 @@
 // Products Settings Page - Standardized Version
 // Migrated to use the unified settings system
 
-import React from "react";
-import { Inventory as ProductIcon } from "@mui/icons-material";
+import React from 'react';
+import { Inventory as ProductIcon } from '@mui/icons-material';
 import {
   PermissionAwareSettingsPage,
   type SettingsPageConfig,
   type SettingsTableColumn,
-} from "../../../components/common/settings";
-import { useProducts, useProductCategories } from "../../../hooks/useProducts";
+} from '../../../components/common/settings';
+import { useProducts, useProductCategories } from '../../../hooks/useProducts';
 import type {
   ProductOption,
   CreateProductData,
   UpdateProductData,
-} from "../../../types/products.types";
-import type { ModernFormSection } from "../../../components/common/ModernForm";
+} from '../../../types/products.types';
+import type { ModernFormSection } from '../../../components/common/ModernForm';
 
 // Table columns configuration
 const columns: SettingsTableColumn<ProductOption>[] = [
   {
-    key: "name",
-    label: "Product Name",
+    key: 'name',
+    label: 'Product Name',
     sortable: true,
     searchable: true,
   },
   {
-    key: "type_display",
-    label: "Type",
+    key: 'type_display',
+    label: 'Type',
     render: (value) => String(value),
   },
   {
-    key: "category_name",
-    label: "Category",
-    render: (value) => String(value || "-"),
+    key: 'category_name',
+    label: 'Category',
+    render: (value) => String(value || '-'),
   },
   {
-    key: "formatted_price",
-    label: "Price",
-    align: "right",
+    key: 'formatted_price',
+    label: 'Price',
+    align: 'right',
     render: (value) => String(value),
   },
   {
-    key: "pricing_model_display",
-    label: "Pricing Model",
+    key: 'pricing_model_display',
+    label: 'Pricing Model',
     render: (value) => String(value),
   },
   {
-    key: "is_featured",
-    label: "Featured",
-    align: "center",
-    render: (value) => (value ? "⭐" : "-"),
+    key: 'is_featured',
+    label: 'Featured',
+    align: 'center',
+    render: (value) => (value ? '⭐' : '-'),
   },
   {
-    key: "is_active",
-    label: "Status",
-    align: "center",
-    render: (value) => (value ? "Active" : "Inactive"),
+    key: 'is_active',
+    label: 'Status',
+    align: 'center',
+    render: (value) => (value ? 'Active' : 'Inactive'),
   },
   {
-    key: "updated_at",
-    label: "Last Modified",
+    key: 'updated_at',
+    label: 'Last Modified',
     sortable: true,
-    render: (value) =>
-      value ? new Date(String(value)).toLocaleDateString() : "-",
+    render: (value) => (value ? new Date(String(value)).toLocaleDateString() : '-'),
   },
 ];
 
@@ -71,103 +70,103 @@ const createFormSections = (
   categories: Array<{ id: number; name: string }>,
 ): ModernFormSection[] => [
   {
-    title: "Basic Information",
+    title: 'Basic Information',
     fields: [
       {
-        name: "name",
-        label: "Product Name",
-        type: "text",
+        name: 'name',
+        label: 'Product Name',
+        type: 'text',
         required: true,
-        placeholder: "e.g., Wedding Photography Package",
-        helperText: "A descriptive name for this product or package",
+        placeholder: 'e.g., Wedding Photography Package',
+        helperText: 'A descriptive name for this product or package',
       },
       {
-        name: "description",
-        label: "Description",
-        type: "textarea",
+        name: 'description',
+        label: 'Description',
+        type: 'textarea',
         multiline: true,
         rows: 3,
-        placeholder: "Describe what this product includes...",
-        helperText: "Detailed description shown to clients",
+        placeholder: 'Describe what this product includes...',
+        helperText: 'Detailed description shown to clients',
       },
       {
-        name: "type",
-        label: "Type",
-        type: "select",
+        name: 'type',
+        label: 'Type',
+        type: 'select',
         required: true,
-        helperText: "Whether this is an individual product or a package bundle",
+        helperText: 'Whether this is an individual product or a package bundle',
         options: [
-          { value: "PRODUCT", label: "Product (Individual Service)" },
-          { value: "PACKAGE", label: "Package (Bundle of Services)" },
+          { value: 'PRODUCT', label: 'Product (Individual Service)' },
+          { value: 'PACKAGE', label: 'Package (Bundle of Services)' },
         ],
       },
       {
-        name: "category",
-        label: "Category",
-        type: "select",
+        name: 'category',
+        label: 'Category',
+        type: 'select',
         required: true,
-        helperText: "Select the category this product belongs to",
+        helperText: 'Select the category this product belongs to',
         options: categories.map((cat) => ({ value: cat.id, label: cat.name })),
       },
     ],
   },
   {
-    title: "Pricing",
+    title: 'Pricing',
     fields: [
       {
-        name: "pricing_model",
-        label: "Pricing Model",
-        type: "select",
+        name: 'pricing_model',
+        label: 'Pricing Model',
+        type: 'select',
         required: true,
-        helperText: "How this product is priced",
+        helperText: 'How this product is priced',
         options: [
-          { value: "FIXED", label: "Fixed Price" },
-          { value: "HOURLY", label: "Hourly Rate" },
-          { value: "TIERED", label: "Tiered Pricing" },
-          { value: "CUSTOM", label: "Custom Quote" },
+          { value: 'FIXED', label: 'Fixed Price' },
+          { value: 'HOURLY', label: 'Hourly Rate' },
+          { value: 'TIERED', label: 'Tiered Pricing' },
+          { value: 'CUSTOM', label: 'Custom Quote' },
         ],
       },
       {
-        name: "base_price",
-        label: "Base Price",
-        type: "number",
+        name: 'base_price',
+        label: 'Base Price',
+        type: 'number',
         required: true,
-        helperText: "Base price in your default currency",
+        helperText: 'Base price in your default currency',
       },
       {
-        name: "is_tax_inclusive",
-        label: "Tax Inclusive",
-        type: "switch",
-        helperText: "If enabled, the base price already includes tax",
+        name: 'is_tax_inclusive',
+        label: 'Tax Inclusive',
+        type: 'switch',
+        helperText: 'If enabled, the base price already includes tax',
       },
     ],
   },
   {
-    title: "Settings",
+    title: 'Settings',
     fields: [
       {
-        name: "is_active",
-        label: "Active",
-        type: "switch",
-        helperText: "Active products are available for booking",
+        name: 'is_active',
+        label: 'Active',
+        type: 'switch',
+        helperText: 'Active products are available for booking',
       },
       {
-        name: "is_featured",
-        label: "Featured",
-        type: "switch",
-        helperText: "Featured products are highlighted to clients",
+        name: 'is_featured',
+        label: 'Featured',
+        type: 'switch',
+        helperText: 'Featured products are highlighted to clients',
       },
       {
-        name: "allow_multiple",
-        label: "Allow Multiple",
-        type: "switch",
-        helperText: "Clients can select multiple quantities of this product",
+        name: 'allow_multiple',
+        label: 'Allow Multiple',
+        type: 'switch',
+        helperText: 'Clients can select multiple quantities of this product',
       },
       {
-        name: "requires_approval",
-        label: "Requires Approval",
-        type: "switch",
-        helperText: "Bookings with this product require admin approval",
+        name: 'requires_approval',
+        label: 'Requires Approval',
+        type: 'switch',
+        helperText: 'Bookings with this product require admin approval',
       },
     ],
   },
@@ -176,24 +175,24 @@ const createFormSections = (
 // Default values for new products
 const defaultProduct: ProductOption = {
   id: 0,
-  name: "",
-  description: "",
+  name: '',
+  description: '',
   category: 0,
-  category_name: "",
-  category_path: "",
-  pricing_model: "FIXED",
-  pricing_model_display: "Fixed Price",
-  pricing_unit: "PER_EVENT",
-  pricing_unit_display: "Per Event",
-  base_price: "0.00",
-  currency: "USD",
+  category_name: '',
+  category_path: '',
+  pricing_model: 'FIXED',
+  pricing_model_display: 'Fixed Price',
+  pricing_unit: 'PER_EVENT',
+  pricing_unit_display: 'Per Event',
+  base_price: '0.00',
+  currency: 'USD',
   is_tax_inclusive: false,
-  type: "PRODUCT",
-  type_display: "Product",
+  type: 'PRODUCT',
+  type_display: 'Product',
   is_active: true,
   is_featured: false,
   is_highlighted: false,
-  tier_label: "",
+  tier_label: '',
   allow_multiple: false,
   maximum_quantity: null,
   requires_approval: false,
@@ -206,12 +205,12 @@ const defaultProduct: ProductOption = {
   sort_order: 1,
   event_type_ids: [],
   event_type_names: [],
-  formatted_price: "$0.00",
+  formatted_price: '$0.00',
   price_with_tax: null,
   featured_image: null,
   gallery_images: [],
-  created_at: "",
-  updated_at: "",
+  created_at: '',
+  updated_at: '',
 };
 
 export const Products = () => {
@@ -235,33 +234,32 @@ export const Products = () => {
   // Settings page configuration
   const config: SettingsPageConfig<ProductOption> = {
     page: {
-      title: "Products & Packages",
-      subtitle: "Manage your service offerings and package bundles",
+      title: 'Products & Packages',
+      subtitle: 'Manage your service offerings and package bundles',
       icon: React.createElement(ProductIcon),
       breadcrumbs: [
-        { label: "Settings", href: "/settings" },
-        { label: "Commerce", href: "/settings/commerce" },
-        { label: "Products & Packages" },
+        { label: 'Settings', href: '/settings' },
+        { label: 'Commerce', href: '/settings/commerce' },
+        { label: 'Products & Packages' },
       ],
     },
 
     table: {
       columns,
-      searchFields: ["name", "description"],
-      defaultSort: { key: "name", order: "asc" },
+      searchFields: ['name', 'description'],
+      defaultSort: { key: 'name', order: 'asc' },
       emptyState: {
         icon: React.createElement(ProductIcon),
-        title: "No Products Found",
-        description:
-          "Create your first product or package to start offering services.",
+        title: 'No Products Found',
+        description: 'Create your first product or package to start offering services.',
       },
     },
 
     form: {
-      title: "Product & Package",
-      subtitle: "Configure your service offerings and pricing.",
+      title: 'Product & Package',
+      subtitle: 'Configure your service offerings and pricing.',
       sections: createFormSections(categories),
-      maxWidth: "lg",
+      maxWidth: 'lg',
     },
 
     features: {
@@ -344,17 +342,15 @@ export const Products = () => {
   };
 
   // Fetch fresh product data before editing to ensure we have the latest values
-  const handleFetchItem = async (
-    id: string | number,
-  ): Promise<ProductOption> => {
-    const { productsApi } = await import("../../../apis/products.api");
+  const handleFetchItem = async (id: string | number): Promise<ProductOption> => {
+    const { productsApi } = await import('../../../apis/products.api');
     return productsApi.getProduct(Number(id));
   };
 
   return (
     <PermissionAwareSettingsPage
       config={config}
-      requiredPermissions={["can_manage_financial_settings"]}
+      requiredPermissions={['can_manage_financial_settings']}
       data={products}
       defaultValues={defaultProduct}
       isLoading={isLoadingProducts}

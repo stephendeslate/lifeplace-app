@@ -62,7 +62,10 @@ interface ResponseFormData {
 }
 
 // Status chip colors and labels
-const STATUS_CONFIG: Record<EventQuestionnaireStatus, { color: 'default' | 'primary' | 'warning' | 'success'; label: string }> = {
+const STATUS_CONFIG: Record<
+  EventQuestionnaireStatus,
+  { color: 'default' | 'primary' | 'warning' | 'success'; label: string }
+> = {
   PENDING: { color: 'default', label: 'Pending' },
   SENT: { color: 'primary', label: 'Awaiting Response' },
   PARTIAL: { color: 'warning', label: 'In Progress' },
@@ -74,11 +77,8 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
   const [formData, setFormData] = useState<ResponseFormData>({});
   const [expandedPanel, setExpandedPanel] = useState<string | false>(false);
 
-  const {
-    useEventQuestionnairesForEvent,
-    useEventResponses,
-    useSaveEventResponses
-  } = useEventQuestionnaires();
+  const { useEventQuestionnairesForEvent, useEventResponses, useSaveEventResponses } =
+    useEventQuestionnaires();
 
   // Fetch EventQuestionnaire assignments for this event
   const {
@@ -91,7 +91,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
   const {
     data: responses = [],
     isLoading: isLoadingResponses,
-    error: responsesError
+    error: responsesError,
   } = useEventResponses(eventId);
 
   const saveResponsesMutation = useSaveEventResponses();
@@ -103,8 +103,8 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
       responses.forEach((response: QuestionnaireResponse) => {
         // Handle multi-select values (stored as comma-separated strings)
         const field = eventQuestionnaires
-          .flatMap(eq => eq.questionnaire_detail?.fields || [])
-          .find(f => f.id === response.field);
+          .flatMap((eq) => eq.questionnaire_detail?.fields || [])
+          .find((f) => f.id === response.field);
 
         if (field?.type === 'multi-select') {
           initialData[response.field] = response.value ? response.value.split(',') : [];
@@ -121,9 +121,9 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
   };
 
   const handleFieldChange = (fieldId: number, value: string | string[]) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [fieldId]: value
+      [fieldId]: value,
     }));
   };
 
@@ -140,15 +140,15 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
         })
         .map(([fieldId, value]) => ({
           field_id: parseInt(fieldId),
-          value: Array.isArray(value) ? value.join(',') : String(value)
-        }))
+          value: Array.isArray(value) ? value.join(',') : String(value),
+        })),
     };
 
     saveResponsesMutation.mutate(responsesData, {
       onSuccess: () => {
         setEditMode(false);
         refetchQuestionnaires();
-      }
+      },
     });
   };
 
@@ -159,8 +159,8 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
       const savedData: ResponseFormData = {};
       responses.forEach((response: QuestionnaireResponse) => {
         const field = eventQuestionnaires
-          .flatMap(eq => eq.questionnaire_detail?.fields || [])
-          .find(f => f.id === response.field);
+          .flatMap((eq) => eq.questionnaire_detail?.fields || [])
+          .find((f) => f.id === response.field);
 
         if (field?.type === 'multi-select') {
           savedData[response.field] = response.value ? response.value.split(',') : [];
@@ -231,7 +231,9 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
             <DatePicker
               label={field.name}
               value={value ? new Date(value as string) : null}
-              onChange={(date) => handleFieldChange(field.id, date?.toISOString().split('T')[0] || '')}
+              onChange={(date) =>
+                handleFieldChange(field.id, date?.toISOString().split('T')[0] || '')
+              }
               slotProps={{
                 textField: {
                   fullWidth: true,
@@ -249,7 +251,9 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
             <TimePicker
               label={field.name}
               value={value ? new Date(`2000-01-01T${value}`) : null}
-              onChange={(time) => handleFieldChange(field.id, time?.toTimeString().split(' ')[0] || '')}
+              onChange={(time) =>
+                handleFieldChange(field.id, time?.toTimeString().split(' ')[0] || '')
+              }
               slotProps={{
                 textField: {
                   fullWidth: true,
@@ -273,9 +277,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
               }
               label={value === 'true' ? 'Yes' : 'No'}
             />
-            {field.description && (
-              <FormHelperText>{field.description}</FormHelperText>
-            )}
+            {field.description && <FormHelperText>{field.description}</FormHelperText>}
           </FormControl>
         );
 
@@ -298,9 +300,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
                 </MenuItem>
               ))}
             </Select>
-            {field.description && (
-              <FormHelperText>{field.description}</FormHelperText>
-            )}
+            {field.description && <FormHelperText>{field.description}</FormHelperText>}
           </FormControl>
         );
 
@@ -328,9 +328,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
                 </MenuItem>
               ))}
             </Select>
-            {field.description && (
-              <FormHelperText>{field.description}</FormHelperText>
-            )}
+            {field.description && <FormHelperText>{field.description}</FormHelperText>}
           </FormControl>
         );
 
@@ -419,9 +417,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
     <Box role="region" aria-label="Event questionnaires">
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h6">
-          Event Questionnaires
-        </Typography>
+        <Typography variant="h6">Event Questionnaires</Typography>
         {!editMode ? (
           <Button
             variant="contained"
@@ -437,11 +433,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
           </Button>
         ) : (
           <Stack direction="row" spacing={2}>
-            <Button
-              variant="outlined"
-              startIcon={<CancelIcon />}
-              onClick={handleCancel}
-            >
+            <Button variant="outlined" startIcon={<CancelIcon />} onClick={handleCancel}>
               Cancel
             </Button>
             <Button
@@ -474,21 +466,9 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
                 <Box sx={{ flex: 1 }}>
                   <Stack direction="row" spacing={2} alignItems="center">
                     {renderStatusIcon(eq)}
-                    <Typography variant="subtitle1">
-                      {eq.questionnaire_name}
-                    </Typography>
-                    <Chip
-                      label={statusConfig.label}
-                      size="small"
-                      color={statusConfig.color}
-                    />
-                    {eq.is_overdue && (
-                      <Chip
-                        label="Overdue"
-                        size="small"
-                        color="error"
-                      />
-                    )}
+                    <Typography variant="subtitle1">{eq.questionnaire_name}</Typography>
+                    <Chip label={statusConfig.label} size="small" color={statusConfig.color} />
+                    {eq.is_overdue && <Chip label="Overdue" size="small" color="error" />}
                   </Stack>
                   {eq.due_date && !eq.is_overdue && (
                     <Typography variant="caption" color="text.secondary" sx={{ ml: 5 }}>
@@ -512,7 +492,8 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
             <AccordionDetails>
               {editMode && (
                 <Alert severity="info" sx={{ mb: 2 }}>
-                  You are editing responses for this questionnaire. Fields marked with * are required.
+                  You are editing responses for this questionnaire. Fields marked with * are
+                  required.
                 </Alert>
               )}
 
@@ -537,7 +518,11 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
                       </Typography>
                       {renderFieldInput(field)}
                       {formData[field.id] && !editMode && (
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ mt: 1, display: 'block' }}
+                        >
                           Last updated: {format(new Date(), 'MMM d, yyyy')}
                         </Typography>
                       )}
@@ -577,11 +562,7 @@ const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ eventId }) =>
                         : `${stats.answered_count}/${stats.total_fields} fields completed`
                     }
                   />
-                  <Chip
-                    label={statusConfig.label}
-                    size="small"
-                    color={statusConfig.color}
-                  />
+                  <Chip label={statusConfig.label} size="small" color={statusConfig.color} />
                 </ListItem>
               );
             })}

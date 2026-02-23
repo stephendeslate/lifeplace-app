@@ -17,13 +17,7 @@ import {
   alpha,
   CircularProgress,
 } from '@mui/material';
-import {
-  Visibility,
-  VisibilityOff,
-  Email,
-  Lock,
-  ArrowBack,
-} from '@mui/icons-material';
+import { Visibility, VisibilityOff, Email, Lock, ArrowBack } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToastActions } from '../../contexts/ToastContext';
 import { validateLoginForm } from '../../utils/validation';
@@ -59,23 +53,22 @@ const Login: React.FC<LoginProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleInputChange = (field: keyof LoginCredentials) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = field === 'remember_me' ? event.target.checked : event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    // Clear field error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
+  const handleInputChange =
+    (field: keyof LoginCredentials) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = field === 'remember_me' ? event.target.checked : event.target.value;
+      setFormData((prev) => ({
         ...prev,
-        [field]: '',
+        [field]: value,
       }));
-    }
-  };
+
+      // Clear field error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: '',
+        }));
+      }
+    };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -91,19 +84,16 @@ const Login: React.FC<LoginProps> = ({
 
     try {
       await login(formData);
-      showSuccess(
-        'Welcome back!',
-        'You have been successfully logged in.'
-      );
+      showSuccess('Welcome back!', 'You have been successfully logged in.');
       onLoginSuccess?.();
     } catch (error: unknown) {
       if (import.meta.env.DEV) console.error('Login error:', error);
-      
+
       // Handle different types of errors
       const statusCode = ErrorHandler.getStatusCode(error);
       if (statusCode === 400 || statusCode === 401) {
         setErrors({
-          form: 'Invalid email or password. Please check your credentials and try again.'
+          form: 'Invalid email or password. Please check your credentials and try again.',
         });
       } else {
         const errorMessage = ErrorHandler.extractMessage(error);
@@ -115,7 +105,7 @@ const Login: React.FC<LoginProps> = ({
   };
 
   const handleTogglePasswordVisibility = () => {
-    setShowPassword(prev => !prev);
+    setShowPassword((prev) => !prev);
   };
 
   return (
@@ -258,7 +248,13 @@ const Login: React.FC<LoginProps> = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Email sx={{ color: errors.email ? theme.palette.error.main : tokens.color.base.neutral[600] }} />
+                          <Email
+                            sx={{
+                              color: errors.email
+                                ? theme.palette.error.main
+                                : tokens.color.base.neutral[600],
+                            }}
+                          />
                         </InputAdornment>
                       ),
                     }}
@@ -305,7 +301,13 @@ const Login: React.FC<LoginProps> = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Lock sx={{ color: errors.password ? theme.palette.error.main : tokens.color.base.neutral[600] }} />
+                          <Lock
+                            sx={{
+                              color: errors.password
+                                ? theme.palette.error.main
+                                : tokens.color.base.neutral[600],
+                            }}
+                          />
                         </InputAdornment>
                       ),
                       endAdornment: (
@@ -360,7 +362,7 @@ const Login: React.FC<LoginProps> = ({
                       component="button"
                       type="button"
                       variant="body2"
-                      onClick={() => window.location.href = '/forgot-password'}
+                      onClick={() => (window.location.href = '/forgot-password')}
                       disabled={isSubmitting}
                       sx={{
                         color: tokens.color.base.sage[700],
@@ -419,10 +421,7 @@ const Login: React.FC<LoginProps> = ({
                   </Button>
 
                   {/* Google Sign-In */}
-                  <GoogleLoginButton
-                    onSuccess={onLoginSuccess}
-                    text="signin_with"
-                  />
+                  <GoogleLoginButton onSuccess={onLoginSuccess} text="signin_with" />
                 </Stack>
               </Box>
             </GlassCard>

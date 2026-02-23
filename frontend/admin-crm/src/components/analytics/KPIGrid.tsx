@@ -2,12 +2,9 @@
 // Reusable grid container for KPI cards
 // Replaces 6+ repeated KPI card layouts in analytics tabs
 
-import React from "react";
-import { Box, type SxProps, type Theme } from "@mui/material";
-import {
-  KPI_CARD_MIN_WIDTH,
-  KPI_CARD_DEFAULT_GAP,
-} from "../../constants/analytics.constants";
+import React from 'react';
+import { Box, type SxProps, type Theme } from '@mui/material';
+import { KPI_CARD_MIN_WIDTH, KPI_CARD_DEFAULT_GAP } from '../../constants/analytics.constants';
 
 interface KPIGridProps {
   /** KPICard components to display in the grid */
@@ -35,9 +32,9 @@ export const KPIGrid: React.FC<KPIGridProps> = ({
       display="flex"
       gap={gap}
       sx={{
-        flexWrap: "wrap",
-        "& > *": {
-          flex: { xs: "1 1 100%", sm: `1 1 ${minCardWidth}px` },
+        flexWrap: 'wrap',
+        '& > *': {
+          flex: { xs: '1 1 100%', sm: `1 1 ${minCardWidth}px` },
           minWidth: { xs: 0, sm: minCardWidth },
         },
         mb: 3,
@@ -64,8 +61,8 @@ export const KPIGridFixed: React.FC<KPIGridProps> = ({
       gap={gap}
       sx={{
         gridTemplateColumns: {
-          xs: "1fr",
-          sm: "repeat(2, 1fr)",
+          xs: '1fr',
+          sm: 'repeat(2, 1fr)',
           md: `repeat(${Math.min(columns, 3)}, 1fr)`,
           lg: `repeat(${columns}, 1fr)`,
         },

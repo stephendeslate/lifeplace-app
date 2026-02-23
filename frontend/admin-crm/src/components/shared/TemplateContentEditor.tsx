@@ -12,11 +12,7 @@ import {
   Switch,
   Tooltip,
 } from '@mui/material';
-import {
-  Code as CodeIcon,
-  Edit as EditIcon,
-  TextFields as TextIcon,
-} from '@mui/icons-material';
+import { Code as CodeIcon, Edit as EditIcon, TextFields as TextIcon } from '@mui/icons-material';
 import RichTextEditor, { type RichTextEditorHandle } from './RichTextEditor';
 import type {
   TemplateContentEditorProps,
@@ -68,272 +64,290 @@ import { glassInputStyles } from '../../design-system/utils/glassmorphism';
 export const TemplateContentEditor = forwardRef<
   TemplateContentEditorHandle,
   TemplateContentEditorProps
->(({
-  value,
-  onChange,
-  mode,
-  onModeChange,
-  showModeToggle = false,
-  availableModes = ['visual', 'html'],
-  hideAdvancedModes = true,
-  placeholder = 'Enter content...',
-  rows = 10,
-  minHeight = 200,
-  error = false,
-  helperText,
-  label,
-  disabled = false,
-  showCharacterCount = false,
-  maxCharacters,
-  variableSchemas,
-  contextType,
-}, ref) => {
-  const richTextEditorRef = useRef<RichTextEditorHandle>(null);
-  const textareaId = useId();
-  const [showAdvanced, setShowAdvanced] = useState(false);
+>(
+  (
+    {
+      value,
+      onChange,
+      mode,
+      onModeChange,
+      showModeToggle = false,
+      availableModes = ['visual', 'html'],
+      hideAdvancedModes = true,
+      placeholder = 'Enter content...',
+      rows = 10,
+      minHeight = 200,
+      error = false,
+      helperText,
+      label,
+      disabled = false,
+      showCharacterCount = false,
+      maxCharacters,
+      variableSchemas,
+      contextType,
+    },
+    ref,
+  ) => {
+    const richTextEditorRef = useRef<RichTextEditorHandle>(null);
+    const textareaId = useId();
+    const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // Filter available modes based on Advanced toggle state
-  // HTML mode is considered "advanced" for non-technical users
-  const visibleModes = hideAdvancedModes && !showAdvanced
-    ? availableModes.filter(m => m === 'visual' || m === 'text')
-    : availableModes;
+    // Filter available modes based on Advanced toggle state
+    // HTML mode is considered "advanced" for non-technical users
+    const visibleModes =
+      hideAdvancedModes && !showAdvanced
+        ? availableModes.filter((m) => m === 'visual' || m === 'text')
+        : availableModes;
 
-  // Handle Advanced toggle change
-  const handleAdvancedToggle = (checked: boolean) => {
-    setShowAdvanced(checked);
-    // If disabling advanced mode and currently in HTML mode, switch to visual
-    if (!checked && mode === 'html' && onModeChange) {
-      onModeChange('visual');
-    }
-  };
-
-  // Insert variable at cursor position
-  const insertVariable = (variable: string) => {
-    const variableText = `{{ ${variable} }}`;
-
-    if (mode === 'visual' && richTextEditorRef.current) {
-      richTextEditorRef.current.insertVariable(variable);
-    } else {
-      // For HTML/text mode, insert at textarea cursor position
-      const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
-      if (textarea) {
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const text = value;
-        const before = text.substring(0, start);
-        const after = text.substring(end);
-
-        const newText = before + variableText + after;
-        onChange(newText);
-
-        // Set cursor position after inserted variable
-        setTimeout(() => {
-          textarea.focus();
-          textarea.selectionStart = textarea.selectionEnd = start + variableText.length;
-        }, 0);
-      } else {
-        // Fallback: append to end
-        onChange(value + variableText);
+    // Handle Advanced toggle change
+    const handleAdvancedToggle = (checked: boolean) => {
+      setShowAdvanced(checked);
+      // If disabling advanced mode and currently in HTML mode, switch to visual
+      if (!checked && mode === 'html' && onModeChange) {
+        onModeChange('visual');
       }
-    }
-  };
+    };
 
-  const focus = () => {
-    if (mode === 'visual' && richTextEditorRef.current) {
-      richTextEditorRef.current.focus();
-    } else {
-      const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
-      textarea?.focus();
-    }
-  };
+    // Insert variable at cursor position
+    const insertVariable = (variable: string) => {
+      const variableText = `{{ ${variable} }}`;
 
-  // Expose methods via ref
-  useImperativeHandle(ref, () => ({
-    insertVariable,
-    focus,
-  }));
+      if (mode === 'visual' && richTextEditorRef.current) {
+        richTextEditorRef.current.insertVariable(variable);
+      } else {
+        // For HTML/text mode, insert at textarea cursor position
+        const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
+        if (textarea) {
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          const text = value;
+          const before = text.substring(0, start);
+          const after = text.substring(end);
 
-  const handleModeChange = (_: React.MouseEvent<HTMLElement>, newMode: TemplateEditorMode | null) => {
-    if (newMode && onModeChange) {
-      onModeChange(newMode);
-    }
-  };
+          const newText = before + variableText + after;
+          onChange(newText);
 
-  const getModeIcon = (m: TemplateEditorMode) => {
-    switch (m) {
-      case 'visual':
-        return <EditIcon sx={{ fontSize: 16, mr: 0.5 }} />;
-      case 'html':
-        return <CodeIcon sx={{ fontSize: 16, mr: 0.5 }} />;
-      case 'text':
-        return <TextIcon sx={{ fontSize: 16, mr: 0.5 }} />;
-    }
-  };
+          // Set cursor position after inserted variable
+          setTimeout(() => {
+            textarea.focus();
+            textarea.selectionStart = textarea.selectionEnd = start + variableText.length;
+          }, 0);
+        } else {
+          // Fallback: append to end
+          onChange(value + variableText);
+        }
+      }
+    };
 
-  const getModeLabel = (m: TemplateEditorMode) => {
-    switch (m) {
-      case 'visual':
-        return 'Visual';
-      case 'html':
-        return 'HTML';
-      case 'text':
-        return 'Text';
-    }
-  };
+    const focus = () => {
+      if (mode === 'visual' && richTextEditorRef.current) {
+        richTextEditorRef.current.focus();
+      } else {
+        const textarea = document.getElementById(textareaId) as HTMLTextAreaElement;
+        textarea?.focus();
+      }
+    };
 
-  const getPlaceholder = () => {
-    if (placeholder !== 'Enter content...') return placeholder;
+    // Expose methods via ref
+    useImperativeHandle(ref, () => ({
+      insertVariable,
+      focus,
+    }));
 
-    switch (mode) {
-      case 'visual':
-        return 'Start typing your content... Use variables for dynamic content.';
-      case 'html':
-        return '<div>Your HTML content here...</div>';
-      case 'text':
-        return 'Hi {{ first_name }}! Your message here...';
-    }
-  };
+    const handleModeChange = (
+      _: React.MouseEvent<HTMLElement>,
+      newMode: TemplateEditorMode | null,
+    ) => {
+      if (newMode && onModeChange) {
+        onModeChange(newMode);
+      }
+    };
 
-  const characterCount = value.length;
-  const isOverLimit = maxCharacters !== undefined && characterCount > maxCharacters;
+    const getModeIcon = (m: TemplateEditorMode) => {
+      switch (m) {
+        case 'visual':
+          return <EditIcon sx={{ fontSize: 16, mr: 0.5 }} />;
+        case 'html':
+          return <CodeIcon sx={{ fontSize: 16, mr: 0.5 }} />;
+        case 'text':
+          return <TextIcon sx={{ fontSize: 16, mr: 0.5 }} />;
+      }
+    };
 
-  return (
-    <Box>
-      {/* Header with label and mode toggle */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
-        {label && (
-          <Typography
-            variant="body2"
-            color={error ? 'error.main' : 'text.secondary'}
-            fontWeight={500}
-          >
-            {label}
-            {mode !== 'visual' && (
-              <span> ({mode === 'html' ? 'HTML Source' : 'Plain Text'})</span>
-            )}
-          </Typography>
-        )}
+    const getModeLabel = (m: TemplateEditorMode) => {
+      switch (m) {
+        case 'visual':
+          return 'Visual';
+        case 'html':
+          return 'HTML';
+        case 'text':
+          return 'Text';
+      }
+    };
 
-        {showModeToggle && availableModes.length > 1 && (
-          <Box display="flex" alignItems="center" gap={2}>
-            {/* Mode toggle - shows visible modes based on Advanced toggle state */}
-            <ToggleButtonGroup
-              value={mode}
-              exclusive
-              onChange={handleModeChange}
-              size="small"
+    const getPlaceholder = () => {
+      if (placeholder !== 'Enter content...') return placeholder;
+
+      switch (mode) {
+        case 'visual':
+          return 'Start typing your content... Use variables for dynamic content.';
+        case 'html':
+          return '<div>Your HTML content here...</div>';
+        case 'text':
+          return 'Hi {{ first_name }}! Your message here...';
+      }
+    };
+
+    const characterCount = value.length;
+    const isOverLimit = maxCharacters !== undefined && characterCount > maxCharacters;
+
+    return (
+      <Box>
+        {/* Header with label and mode toggle */}
+        <Box display="flex" justifyContent="space-between" alignItems="center" mb={1}>
+          {label && (
+            <Typography
+              variant="body2"
+              color={error ? 'error.main' : 'text.secondary'}
+              fontWeight={500}
+            >
+              {label}
+              {mode !== 'visual' && (
+                <span> ({mode === 'html' ? 'HTML Source' : 'Plain Text'})</span>
+              )}
+            </Typography>
+          )}
+
+          {showModeToggle && availableModes.length > 1 && (
+            <Box display="flex" alignItems="center" gap={2}>
+              {/* Mode toggle - shows visible modes based on Advanced toggle state */}
+              <ToggleButtonGroup
+                value={mode}
+                exclusive
+                onChange={handleModeChange}
+                size="small"
+                sx={{
+                  borderRadius: tokens.spacing.radius.full,
+                  border: `1px solid ${tokens.color.borders.glass}`,
+                  overflow: 'hidden',
+                  '& .MuiToggleButton-root': {
+                    border: 'none',
+                    borderRadius: 0,
+                    px: 2,
+                    py: 0.5,
+                    fontWeight: 500,
+                  },
+                }}
+              >
+                {visibleModes.map((m) => (
+                  <ToggleButton key={m} value={m} disabled={disabled}>
+                    {getModeIcon(m)}
+                    {getModeLabel(m)}
+                  </ToggleButton>
+                ))}
+              </ToggleButtonGroup>
+
+              {/* Advanced toggle - shows when HTML mode is available and hideAdvancedModes is true */}
+              {hideAdvancedModes && availableModes.includes('html') && (
+                <Tooltip
+                  title="Show HTML source editing mode for advanced users"
+                  arrow
+                  placement="top"
+                >
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={showAdvanced}
+                        onChange={(e) => handleAdvancedToggle(e.target.checked)}
+                        size="small"
+                        disabled={disabled}
+                      />
+                    }
+                    label={
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ fontSize: '0.8125rem' }}
+                      >
+                        Advanced
+                      </Typography>
+                    }
+                    sx={{ ml: 0, mr: 0 }}
+                  />
+                </Tooltip>
+              )}
+            </Box>
+          )}
+        </Box>
+
+        {/* Editor content */}
+        {mode === 'visual' ? (
+          <RichTextEditor
+            ref={richTextEditorRef}
+            value={value}
+            onChange={onChange}
+            placeholder={getPlaceholder()}
+            minHeight={minHeight}
+            disabled={disabled}
+            error={error}
+            helperText={helperText}
+            variableSchemas={variableSchemas}
+            contextType={contextType}
+          />
+        ) : (
+          <Box>
+            <TextField
+              id={textareaId}
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              multiline
+              rows={rows}
+              fullWidth
+              disabled={disabled}
+              error={error}
+              placeholder={getPlaceholder()}
               sx={{
-                borderRadius: tokens.spacing.radius.full,
-                border: `1px solid ${tokens.color.borders.glass}`,
-                overflow: 'hidden',
-                '& .MuiToggleButton-root': {
-                  border: 'none',
-                  borderRadius: 0,
-                  px: 2,
-                  py: 0.5,
-                  fontWeight: 500,
+                ...glassInputStyles,
+                '& .MuiInputBase-input': {
+                  fontFamily: mode === 'html' ? 'monospace' : 'inherit',
+                  fontSize: mode === 'html' ? '0.875rem' : '1rem',
                 },
               }}
-            >
-              {visibleModes.map((m) => (
-                <ToggleButton key={m} value={m} disabled={disabled}>
-                  {getModeIcon(m)}
-                  {getModeLabel(m)}
-                </ToggleButton>
-              ))}
-            </ToggleButtonGroup>
+            />
 
-            {/* Advanced toggle - shows when HTML mode is available and hideAdvancedModes is true */}
-            {hideAdvancedModes && availableModes.includes('html') && (
-              <Tooltip title="Show HTML source editing mode for advanced users" arrow placement="top">
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={showAdvanced}
-                      onChange={(e) => handleAdvancedToggle(e.target.checked)}
-                      size="small"
-                      disabled={disabled}
-                    />
-                  }
-                  label={
-                    <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
-                      Advanced
-                    </Typography>
-                  }
-                  sx={{ ml: 0, mr: 0 }}
-                />
-              </Tooltip>
+            {/* Character count for text mode */}
+            {showCharacterCount && (
+              <Box mt={1} display="flex" justifyContent="space-between" alignItems="center">
+                <Typography variant="caption" color="text.secondary">
+                  {helperText}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color={isOverLimit ? 'warning.main' : 'text.secondary'}
+                >
+                  {characterCount}
+                  {maxCharacters && `/${maxCharacters}`}
+                  {isOverLimit && ' (will be sent as multiple messages)'}
+                </Typography>
+              </Box>
+            )}
+
+            {/* Helper text for non-text modes */}
+            {!showCharacterCount && helperText && (
+              <Typography
+                variant="caption"
+                color={error ? 'error.main' : 'text.secondary'}
+                sx={{ mt: 0.5, display: 'block' }}
+              >
+                {helperText}
+              </Typography>
             )}
           </Box>
         )}
       </Box>
-
-      {/* Editor content */}
-      {mode === 'visual' ? (
-        <RichTextEditor
-          ref={richTextEditorRef}
-          value={value}
-          onChange={onChange}
-          placeholder={getPlaceholder()}
-          minHeight={minHeight}
-          disabled={disabled}
-          error={error}
-          helperText={helperText}
-          variableSchemas={variableSchemas}
-          contextType={contextType}
-        />
-      ) : (
-        <Box>
-          <TextField
-            id={textareaId}
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            multiline
-            rows={rows}
-            fullWidth
-            disabled={disabled}
-            error={error}
-            placeholder={getPlaceholder()}
-            sx={{
-              ...glassInputStyles,
-              '& .MuiInputBase-input': {
-                fontFamily: mode === 'html' ? 'monospace' : 'inherit',
-                fontSize: mode === 'html' ? '0.875rem' : '1rem',
-              },
-            }}
-          />
-
-          {/* Character count for text mode */}
-          {showCharacterCount && (
-            <Box mt={1} display="flex" justifyContent="space-between" alignItems="center">
-              <Typography variant="caption" color="text.secondary">
-                {helperText}
-              </Typography>
-              <Typography
-                variant="caption"
-                color={isOverLimit ? 'warning.main' : 'text.secondary'}
-              >
-                {characterCount}{maxCharacters && `/${maxCharacters}`}
-                {isOverLimit && ' (will be sent as multiple messages)'}
-              </Typography>
-            </Box>
-          )}
-
-          {/* Helper text for non-text modes */}
-          {!showCharacterCount && helperText && (
-            <Typography
-              variant="caption"
-              color={error ? 'error.main' : 'text.secondary'}
-              sx={{ mt: 0.5, display: 'block' }}
-            >
-              {helperText}
-            </Typography>
-          )}
-        </Box>
-      )}
-    </Box>
-  );
-});
+    );
+  },
+);
 
 TemplateContentEditor.displayName = 'TemplateContentEditor';
 

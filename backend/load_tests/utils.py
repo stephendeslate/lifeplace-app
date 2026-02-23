@@ -4,11 +4,11 @@ Utility functions for smoke testing.
 Handles JWT authentication and common helpers.
 """
 
-import time
-import random
 import logging
-from typing import Optional, Dict, Any
+import random
+import time
 from datetime import datetime, timedelta
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -23,16 +23,16 @@ class TokenManager:
     def __init__(self, client, base_url: str):
         self.client = client
         self.base_url = base_url
-        self.access_token: Optional[str] = None
-        self.refresh_token: Optional[str] = None
-        self.token_expiry: Optional[datetime] = None
+        self.access_token: str | None = None
+        self.refresh_token: str | None = None
+        self.token_expiry: datetime | None = None
 
     def login(self, email: str, password: str) -> bool:
         with self.client.post(
             f"{self.base_url}/api/users/login/",
             json={"email": email, "password": password},
             catch_response=True,
-            name="/api/users/login/"
+            name="/api/users/login/",
         ) as response:
             if response.status_code == 200:
                 data = response.json()
@@ -54,7 +54,7 @@ class TokenManager:
             f"{self.base_url}/api/users/token/refresh/",
             json={"refresh": self.refresh_token},
             catch_response=True,
-            name="/api/users/token/refresh/"
+            name="/api/users/token/refresh/",
         ) as response:
             if response.status_code == 200:
                 data = response.json()
@@ -68,7 +68,7 @@ class TokenManager:
                 response.failure(f"Token refresh failed: {response.status_code}")
                 return False
 
-    def get_auth_headers(self) -> Dict[str, str]:
+    def get_auth_headers(self) -> dict[str, str]:
         if self.token_expiry and datetime.now() >= self.token_expiry - timedelta(minutes=5):
             self.refresh_tokens()
 
@@ -86,7 +86,7 @@ class TokenManager:
             json={"refresh": self.refresh_token},
             headers=headers,
             catch_response=True,
-            name="/api/users/logout/"
+            name="/api/users/logout/",
         ) as response:
             self.access_token = None
             self.refresh_token = None
@@ -124,7 +124,7 @@ def think_time(min_seconds: float = 0.5, max_seconds: float = 1.5):
     time.sleep(random.uniform(min_seconds, max_seconds))
 
 
-def generate_test_contact_info() -> Dict[str, Any]:
+def generate_test_contact_info() -> dict[str, Any]:
     """
     Generate fake contact info for booking flow.
     Fields match ContactInfoStep validation in booking_session_service.py.
@@ -137,7 +137,7 @@ def generate_test_contact_info() -> Dict[str, Any]:
     }
 
 
-def generate_test_event_datetime() -> Dict[str, str]:
+def generate_test_event_datetime() -> dict[str, str]:
     """
     Generate a test date/time 30-60 days in the future.
     Fields match date_time step validation in booking_session_service.py.

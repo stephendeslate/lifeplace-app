@@ -13,10 +13,7 @@ import {
   Tooltip,
   CircularProgress,
 } from '@mui/material';
-import {
-  Close as CloseIcon,
-  Preview as PreviewIcon,
-} from '@mui/icons-material';
+import { Close as CloseIcon, Preview as PreviewIcon } from '@mui/icons-material';
 import { QuestionnairePreview } from './QuestionnairePreview';
 import { useQuestionnaireFields } from '../../hooks/useQuestionnaires';
 import type { Questionnaire } from '../../types/questionnaires.types';
@@ -34,10 +31,7 @@ export const QuestionnairePreviewDialog: React.FC<QuestionnairePreviewDialogProp
 }) => {
   // Fetch fields for the questionnaire
   const { useQuestionnaireFields: useFields } = useQuestionnaireFields();
-  const {
-    data: fields = [],
-    isLoading: isLoadingFields,
-  } = useFields(questionnaire?.id || 0);
+  const { data: fields = [], isLoading: isLoadingFields } = useFields(questionnaire?.id || 0);
 
   // Build questionnaire object with fields for preview
   const questionnaireWithFields: Questionnaire | null = questionnaire

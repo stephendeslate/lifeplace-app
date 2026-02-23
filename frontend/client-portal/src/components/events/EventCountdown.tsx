@@ -14,10 +14,10 @@ interface EventCountdownProps {
   showIcon?: boolean;
 }
 
-const EventCountdown: React.FC<EventCountdownProps> = ({ 
-  daysUntil, 
-  compact = false, 
-  showIcon = true 
+const EventCountdown: React.FC<EventCountdownProps> = ({
+  daysUntil,
+  compact = false,
+  showIcon = true,
 }) => {
   const getCountdownConfig = (days: number) => {
     if (days < 0) {
@@ -29,7 +29,7 @@ const EventCountdown: React.FC<EventCountdownProps> = ({
         chipColor: 'default' as const,
       };
     }
-    
+
     if (days === 0) {
       return {
         color: 'error.main' as const,
@@ -39,7 +39,7 @@ const EventCountdown: React.FC<EventCountdownProps> = ({
         chipColor: 'error' as const,
       };
     }
-    
+
     if (days === 1) {
       return {
         color: 'warning.main' as const,
@@ -49,7 +49,7 @@ const EventCountdown: React.FC<EventCountdownProps> = ({
         chipColor: 'warning' as const,
       };
     }
-    
+
     if (days <= 7) {
       return {
         color: 'warning.main' as const,
@@ -59,7 +59,7 @@ const EventCountdown: React.FC<EventCountdownProps> = ({
         chipColor: 'warning' as const,
       };
     }
-    
+
     if (days <= 30) {
       return {
         color: 'info.main' as const,
@@ -69,7 +69,7 @@ const EventCountdown: React.FC<EventCountdownProps> = ({
         chipColor: 'info' as const,
       };
     }
-    
+
     return {
       color: 'success.main' as const,
       bgColor: 'success.light',
@@ -112,12 +112,8 @@ const EventCountdown: React.FC<EventCountdownProps> = ({
       role="status"
       aria-label={`Event countdown: ${config.text}`}
     >
-      {showIcon && (
-        <Box sx={{ mb: 1, color: config.color }}>
-          {config.icon}
-        </Box>
-      )}
-      
+      {showIcon && <Box sx={{ mb: 1, color: config.color }}>{config.icon}</Box>}
+
       <Typography
         variant="h6"
         component="span"
@@ -129,7 +125,7 @@ const EventCountdown: React.FC<EventCountdownProps> = ({
       >
         {config.text}
       </Typography>
-      
+
       {daysUntil > 0 && (
         <Typography
           variant="caption"

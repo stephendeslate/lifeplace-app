@@ -1,9 +1,9 @@
 // shared/test-utils/test-providers.tsx
-import React from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ThemeProvider } from '@mui/material/styles'
-import { createTheme } from '@mui/material/styles'
-import { MemoryRouter } from 'react-router-dom'
+import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from '@mui/material/styles';
+import { createTheme } from '@mui/material/styles';
+import { MemoryRouter } from 'react-router-dom';
 // Using vitest globals
 
 // Create a mock theme for testing
@@ -17,7 +17,7 @@ const testTheme = createTheme({
       main: '#dc004e',
     },
   },
-})
+});
 
 // Mock WebSocket functionality for tests
 const mockWebSocketContext = {
@@ -28,7 +28,7 @@ const mockWebSocketContext = {
   connect: vi.fn(),
   disconnect: vi.fn(),
   error: null,
-}
+};
 
 // Mock Messaging Context for tests
 const mockMessagingContext = {
@@ -39,7 +39,7 @@ const mockMessagingContext = {
   markAsRead: vi.fn(),
   deleteMessage: vi.fn(),
   refreshMessages: vi.fn(),
-}
+};
 
 // Create test query client with disabled retries for faster tests
 export const createTestQueryClient = () => {
@@ -54,16 +54,16 @@ export const createTestQueryClient = () => {
         retry: false,
       },
     },
-  })
-}
+  });
+};
 
 interface TestProvidersProps {
-  children: React.ReactNode
-  queryClient?: QueryClient
-  initialRoutes?: string[]
-  theme?: typeof testTheme
-  mockWebSocket?: typeof mockWebSocketContext
-  mockMessaging?: typeof mockMessagingContext
+  children: React.ReactNode;
+  queryClient?: QueryClient;
+  initialRoutes?: string[];
+  theme?: typeof testTheme;
+  mockWebSocket?: typeof mockWebSocketContext;
+  mockMessaging?: typeof mockMessagingContext;
 }
 
 /**
@@ -78,52 +78,44 @@ export const TestProviders: React.FC<TestProvidersProps> = ({
   mockWebSocket: _mockWebSocket = mockWebSocketContext,
   mockMessaging: _mockMessaging = mockMessagingContext,
 }) => {
-  const testQueryClient = queryClient || createTestQueryClient()
+  const testQueryClient = queryClient || createTestQueryClient();
 
   return (
     <QueryClientProvider client={testQueryClient}>
       <ThemeProvider theme={theme}>
-        <MemoryRouter initialEntries={initialRoutes}>
-          {children}
-        </MemoryRouter>
+        <MemoryRouter initialEntries={initialRoutes}>{children}</MemoryRouter>
       </ThemeProvider>
     </QueryClientProvider>
-  )
-}
+  );
+};
 
 /**
  * Simple theme-only wrapper for testing pure UI components
  */
-export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ 
-  children 
-}) => (
+export const ThemeWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ThemeProvider theme={testTheme}>{children}</ThemeProvider>
-)
+);
 
 /**
  * Router-only wrapper for testing routing functionality
  */
-export const RouterWrapper: React.FC<{ 
-  children: React.ReactNode
-  initialRoutes?: string[]
+export const RouterWrapper: React.FC<{
+  children: React.ReactNode;
+  initialRoutes?: string[];
 }> = ({ children, initialRoutes = ['/'] }) => (
   <MemoryRouter initialEntries={initialRoutes}>{children}</MemoryRouter>
-)
+);
 
 /**
  * Query-only wrapper for testing hooks and API interactions
  */
 export const QueryWrapper: React.FC<{
-  children: React.ReactNode
-  queryClient?: QueryClient
+  children: React.ReactNode;
+  queryClient?: QueryClient;
 }> = ({ children, queryClient }) => {
-  const testQueryClient = queryClient || createTestQueryClient()
-  return (
-    <QueryClientProvider client={testQueryClient}>
-      {children}
-    </QueryClientProvider>
-  )
-}
+  const testQueryClient = queryClient || createTestQueryClient();
+  return <QueryClientProvider client={testQueryClient}>{children}</QueryClientProvider>;
+};
 
 // Export mock contexts for individual use
-export { mockWebSocketContext, mockMessagingContext }
+export { mockWebSocketContext, mockMessagingContext };

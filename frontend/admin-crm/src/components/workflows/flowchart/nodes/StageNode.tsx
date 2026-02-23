@@ -2,14 +2,7 @@
 
 import React, { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import {
-  Box,
-  Typography,
-  Chip,
-  IconButton,
-  Tooltip,
-  Stack,
-} from '@mui/material';
+import { Box, Typography, Chip, IconButton, Tooltip, Stack } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -141,12 +134,7 @@ const StageNodeComponent: React.FC<NodeProps> = ({ data, selected }) => {
                 </Box>
               </Tooltip>
             )}
-            <Typography
-              variant="subtitle2"
-              fontWeight="bold"
-              noWrap
-              sx={{ flex: 1 }}
-            >
+            <Typography variant="subtitle2" fontWeight="bold" noWrap sx={{ flex: 1 }}>
               {stage.name}
             </Typography>
           </Box>

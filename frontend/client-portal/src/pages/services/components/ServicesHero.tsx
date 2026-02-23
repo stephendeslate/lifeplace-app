@@ -3,12 +3,7 @@
 import React from 'react';
 import { Box, Typography, Stack, Button as MuiButton } from '@mui/material';
 import { KeyboardArrowDown, EventAvailable, CalendarMonth } from '@mui/icons-material';
-import {
-  tokens,
-  HeroBackground,
-  AnimatedElement,
-  Container,
-} from '../../../design-system';
+import { tokens, HeroBackground, AnimatedElement, Container } from '../../../design-system';
 
 /**
  * ServicesHero Component
@@ -70,7 +65,11 @@ export const ServicesHero: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             width: '100%',
-            px: { xs: tokens.spacing.space[3], sm: tokens.spacing.space[4], md: tokens.spacing.space[6] },
+            px: {
+              xs: tokens.spacing.space[3],
+              sm: tokens.spacing.space[4],
+              md: tokens.spacing.space[6],
+            },
             pt: { xs: tokens.spacing.space[20], md: tokens.spacing.space[24] },
             pb: { xs: tokens.spacing.space[9], md: tokens.spacing.space[14] },
             textAlign: 'center',
@@ -127,9 +126,9 @@ export const ServicesHero: React.FC = () => {
                     },
                   }}
                 >
-                  From intimate retreats to grand celebrations, we provide the perfect venue
-                  for your most meaningful gatherings. Experience world-class facilities
-                  in the serene hills of Alfonso.
+                  From intimate retreats to grand celebrations, we provide the perfect venue for
+                  your most meaningful gatherings. Experience world-class facilities in the serene
+                  hills of Alfonso.
                 </Typography>
               </AnimatedElement>
 

@@ -2,15 +2,7 @@
 // Following the exact Account Management pattern
 
 import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  Alert,
-  Button,
-  Stack,
-  TextField,
-  InputAdornment,
-} from '@mui/material';
+import { Box, Typography, Alert, Button, Stack, TextField, InputAdornment } from '@mui/material';
 import {
   CurrencyExchange as CurrencyIcon,
   Refresh as RefreshIcon,
@@ -25,7 +17,11 @@ import {
   ModernDialog,
   createDeleteActions,
 } from '../../../components/common';
-import { type HeaderAction, createRefreshAction, createAddAction } from '../../../components/common/ModernPageHeader';
+import {
+  type HeaderAction,
+  createRefreshAction,
+  createAddAction,
+} from '../../../components/common/ModernPageHeader';
 import { CurrencySettingsForm } from '../../../components/settings/CurrencySettingsForm';
 import { TaxRateTable } from '../../../components/payments/TaxRateTable';
 import { TaxRateFormDialog } from '../../../components/payments/TaxRateFormDialog';
@@ -59,11 +55,7 @@ export const CurrencyTaxes: React.FC = () => {
 
   // Set breadcrumbs
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Settings' },
-      { label: 'Commerce' },
-      { label: 'Currency & Taxes' },
-    ]);
+    setBreadcrumbs([{ label: 'Settings' }, { label: 'Commerce' }, { label: 'Currency & Taxes' }]);
   }, [setBreadcrumbs]);
 
   const handleEditTaxRate = (taxRate: TaxRate) => {
@@ -100,12 +92,11 @@ export const CurrencyTaxes: React.FC = () => {
   };
 
   // Filter tax rates based on search
-  const filteredTaxRates = taxRates.filter(rate => {
+  const filteredTaxRates = taxRates.filter((rate) => {
     if (!searchQuery) return true;
     const searchLower = searchQuery.toLowerCase();
     return (
-      rate.name.toLowerCase().includes(searchLower) ||
-      rate.rate.toString().includes(searchLower)
+      rate.name.toLowerCase().includes(searchLower) || rate.rate.toString().includes(searchLower)
     );
   });
 
@@ -149,17 +140,16 @@ export const CurrencyTaxes: React.FC = () => {
         title="Currency & Taxes"
         subtitle="Configure currency display settings and manage tax rates for your business"
         icon={<CurrencyIcon />}
-        breadcrumbs={[
-          { label: 'Settings' },
-          { label: 'Commerce' },
-          { label: 'Currency & Taxes' },
-        ]}
+        breadcrumbs={[{ label: 'Settings' }, { label: 'Commerce' }, { label: 'Currency & Taxes' }]}
         primaryAction={primaryAction}
         secondaryActions={headerActions}
         stats={[
           { label: 'Currency', value: currencySettings?.defaultCurrency || 'USD' },
           { label: 'Tax Rates', value: taxRates.length },
-          { label: 'Default Rate', value: filteredTaxRates.filter(rate => rate.is_default).length },
+          {
+            label: 'Default Rate',
+            value: filteredTaxRates.filter((rate) => rate.is_default).length,
+          },
         ]}
         size="medium"
       />
@@ -202,7 +192,8 @@ export const CurrencyTaxes: React.FC = () => {
           </Typography>
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          These settings affect invoices, payments, and all financial data display throughout the system.
+          These settings affect invoices, payments, and all financial data display throughout the
+          system.
         </Typography>
 
         {currencyError && (
@@ -238,13 +229,16 @@ export const CurrencyTaxes: React.FC = () => {
           </Typography>
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          {searchQuery ? `Search results for "${searchQuery}" - ${filteredTaxRates.length} found` : 'Tax rates are automatically applied to invoices and payments based on the client\'s location or service type.'}
+          {searchQuery
+            ? `Search results for "${searchQuery}" - ${filteredTaxRates.length} found`
+            : "Tax rates are automatically applied to invoices and payments based on the client's location or service type."}
         </Typography>
 
         <Alert severity="info" sx={{ mb: 3 }}>
           <Typography variant="body2">
-            <strong>Philippine Tax Context:</strong> Standard VAT rate is 12% for most goods and services.
-            Some services may be VAT-exempt or zero-rated. Consult with a tax professional for specific requirements.
+            <strong>Philippine Tax Context:</strong> Standard VAT rate is 12% for most goods and
+            services. Some services may be VAT-exempt or zero-rated. Consult with a tax professional
+            for specific requirements.
           </Typography>
         </Alert>
 
@@ -253,7 +247,7 @@ export const CurrencyTaxes: React.FC = () => {
           isLoading={isLoadingTaxRates}
           onEdit={handleEditTaxRate}
           onDelete={(id) => {
-            const taxRate = filteredTaxRates.find(rate => rate.id === id);
+            const taxRate = filteredTaxRates.find((rate) => rate.id === id);
             if (taxRate) handleDeleteTaxRate(taxRate);
           }}
           isDeleting={deleteTaxRateMutation.isPending}
@@ -274,10 +268,15 @@ export const CurrencyTaxes: React.FC = () => {
         title="Delete Tax Rate"
         maxWidth="sm"
         fullWidth
-        actions={createDeleteActions(handleDeleteCancel, handleDeleteConfirm, deleteTaxRateMutation.isPending)}
+        actions={createDeleteActions(
+          handleDeleteCancel,
+          handleDeleteConfirm,
+          deleteTaxRateMutation.isPending,
+        )}
       >
         <Typography>
-          Are you sure you want to delete the tax rate "{taxRateToDelete?.name}"? This action cannot be undone.
+          Are you sure you want to delete the tax rate "{taxRateToDelete?.name}"? This action cannot
+          be undone.
         </Typography>
       </ModernDialog>
     </ModernSettingsLayout>

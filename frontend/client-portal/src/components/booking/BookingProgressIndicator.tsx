@@ -47,10 +47,10 @@ export const BookingProgressIndicator: React.FC<BookingProgressIndicatorProps> =
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   // Calculate progress percentage
   const progressPercentage = (completedSteps.length / steps.length) * 100;
-  
+
   // Get step status
   const getStepStatus = (step: BookingStep, index: number) => {
     if (completedSteps.includes(step.id)) return 'completed';
@@ -61,7 +61,7 @@ export const BookingProgressIndicator: React.FC<BookingProgressIndicatorProps> =
   // Custom step icon component
   const StepIcon: React.FC<{ step: BookingStep; index: number }> = ({ step, index }) => {
     const status = getStepStatus(step, index);
-    
+
     switch (status) {
       case 'completed':
         return <CompletedIcon sx={{ color: theme.palette.success.main, fontSize: 24 }} />;
@@ -83,9 +83,9 @@ export const BookingProgressIndicator: React.FC<BookingProgressIndicatorProps> =
             {Math.round(progressPercentage)}% Complete
           </Typography>
         </Box>
-        <LinearProgress 
-          variant="determinate" 
-          value={progressPercentage} 
+        <LinearProgress
+          variant="determinate"
+          value={progressPercentage}
           sx={{ height: 8, borderRadius: 4 }}
         />
         {showLabels && (
@@ -115,9 +115,12 @@ export const BookingProgressIndicator: React.FC<BookingProgressIndicatorProps> =
                   width: `${100 / steps.length}%`,
                   height: 4,
                   borderRadius: 2,
-                  bgcolor: status === 'completed' ? 'success.main' 
-                    : status === 'current' ? 'primary.main' 
-                    : 'grey.300',
+                  bgcolor:
+                    status === 'completed'
+                      ? 'success.main'
+                      : status === 'current'
+                        ? 'primary.main'
+                        : 'grey.300',
                   transition: 'background-color 0.3s ease',
                 }}
               />
@@ -142,8 +145,8 @@ export const BookingProgressIndicator: React.FC<BookingProgressIndicatorProps> =
   // Default stepper variant
   return (
     <Box className={className} sx={{ width: '100%', mb: 4 }}>
-      <Stepper 
-        activeStep={currentStepIndex} 
+      <Stepper
+        activeStep={currentStepIndex}
         alternativeLabel={!isMobile}
         orientation={isMobile ? 'vertical' : 'horizontal'}
         sx={{
@@ -163,7 +166,7 @@ export const BookingProgressIndicator: React.FC<BookingProgressIndicatorProps> =
       >
         {steps.map((step, index) => {
           const status = getStepStatus(step, index);
-          
+
           return (
             <Step key={step.id} completed={status === 'completed'}>
               <StepLabel
@@ -179,11 +182,12 @@ export const BookingProgressIndicator: React.FC<BookingProgressIndicatorProps> =
                   '& .MuiStepLabel-label': {
                     fontSize: isMobile ? '0.875rem' : '1rem',
                     fontWeight: status === 'current' ? 600 : 400,
-                    color: status === 'current' 
-                      ? theme.palette.primary.main
-                      : status === 'completed'
-                      ? theme.palette.success.main
-                      : theme.palette.text.secondary,
+                    color:
+                      status === 'current'
+                        ? theme.palette.primary.main
+                        : status === 'completed'
+                          ? theme.palette.success.main
+                          : theme.palette.text.secondary,
                   },
                 }}
               >
@@ -200,7 +204,7 @@ export const BookingProgressIndicator: React.FC<BookingProgressIndicatorProps> =
           );
         })}
       </Stepper>
-      
+
       {/* Mobile description */}
       {isMobile && steps[currentStepIndex]?.description && (
         <Box sx={{ mt: 2, px: 2 }}>
@@ -209,37 +213,41 @@ export const BookingProgressIndicator: React.FC<BookingProgressIndicatorProps> =
           </Typography>
         </Box>
       )}
-      
+
       {/* Progress summary */}
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        mt: 3,
-        px: 2,
-      }}>
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 2, 
-          alignItems: 'center',
-          bgcolor: 'grey.50',
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          mt: 3,
           px: 2,
-          py: 1,
-          borderRadius: 2,
-        }}>
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 2,
+            alignItems: 'center',
+            bgcolor: 'grey.50',
+            px: 2,
+            py: 1,
+            borderRadius: 2,
+          }}
+        >
           <Typography variant="body2" color="text.secondary">
             Progress:
           </Typography>
-          <LinearProgress 
-            variant="determinate" 
-            value={progressPercentage} 
-            sx={{ 
-              width: 100, 
-              height: 6, 
+          <LinearProgress
+            variant="determinate"
+            value={progressPercentage}
+            sx={{
+              width: 100,
+              height: 6,
               borderRadius: 3,
               bgcolor: 'grey.200',
               '& .MuiLinearProgress-bar': {
                 borderRadius: 3,
-              }
+              },
             }}
           />
           <Typography variant="body2" color="primary.main" fontWeight={500}>

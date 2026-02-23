@@ -1,21 +1,19 @@
 // frontend/client-portal/src/apis/booking/payment.api.ts
 
 import api from '../../utils/api';
-import type {
-  PaymentGateway,
-  PaymentGatewayResponse,
-} from '../../types/booking';
+import type { PaymentGateway, PaymentGatewayResponse } from '../../types/booking';
 
 /**
  * Payment API functions for managing payment gateways and processing
  */
 export class PaymentApi {
-  
   /**
    * Get available payment gateways for a booking flow
    */
   static async getFlowPaymentGateways(flowId: number): Promise<PaymentGatewayResponse> {
-    const response = await api.get<PaymentGatewayResponse>(`/bookingflow/public/flows/${flowId}/payment_gateways/`);
+    const response = await api.get<PaymentGatewayResponse>(
+      `/bookingflow/public/flows/${flowId}/payment_gateways/`,
+    );
     return response.data;
   }
 
@@ -24,7 +22,7 @@ export class PaymentApi {
    */
   static async getPaymentGateways(): Promise<PaymentGateway[]> {
     const response = await api.get<PaymentGateway[]>('/payments/gateways/', {
-      params: { is_active: true }
+      params: { is_active: true },
     });
     return response.data;
   }
@@ -41,7 +39,9 @@ export class PaymentApi {
    * Get payment gateway public configuration (safe for client-side)
    */
   static async getGatewayPublicConfig(gatewayCode: string): Promise<Record<string, unknown>> {
-    const response = await api.get<Record<string, unknown>>(`/payments/gateways/${gatewayCode}/public-config/`);
+    const response = await api.get<Record<string, unknown>>(
+      `/payments/gateways/${gatewayCode}/public-config/`,
+    );
     return response.data;
   }
 
@@ -59,13 +59,13 @@ export class PaymentApi {
   static calculateDepositAmount(
     totalAmount: string | number,
     depositType: 'PERCENTAGE' | 'FIXED',
-    depositValue: string | number
+    depositValue: string | number,
   ): number {
     const total = this.safeParseAmount(totalAmount);
     const value = this.safeParseAmount(depositValue);
 
     if (depositType === 'PERCENTAGE') {
-      return Math.round((total * value)) / 100;
+      return Math.round(total * value) / 100;
     }
 
     return value;
@@ -76,7 +76,7 @@ export class PaymentApi {
    */
   static calculateRemainingBalance(
     totalAmount: string | number,
-    depositAmount: string | number
+    depositAmount: string | number,
   ): number {
     const total = this.safeParseAmount(totalAmount);
     const deposit = this.safeParseAmount(depositAmount);
@@ -112,7 +112,7 @@ export class PaymentApi {
    */
   static validatePaymentMethod(
     gateway: PaymentGateway,
-    paymentData: Record<string, unknown>
+    paymentData: Record<string, unknown>,
   ): { isValid: boolean; errors: Record<string, string[]> } {
     const errors: Record<string, string[]> = {};
 
@@ -147,7 +147,7 @@ export class PaymentApi {
 
     return {
       isValid: Object.keys(errors).length === 0,
-      errors
+      errors,
     };
   }
 
@@ -243,7 +243,7 @@ export class PaymentApi {
     gateway: PaymentGateway,
     paymentMethod: string,
     paymentType: 'FULL' | 'DEPOSIT',
-    additionalData: Record<string, unknown> = {}
+    additionalData: Record<string, unknown> = {},
   ): Record<string, unknown> {
     const formatted: Record<string, unknown> = {
       payment_method: paymentMethod,
@@ -288,7 +288,7 @@ export class PaymentApi {
    */
   static validateAmountLimits(
     gateway: PaymentGateway,
-    amount: number
+    amount: number,
   ): { isValid: boolean; error?: string } {
     const config = gateway.public_config || {};
 
@@ -296,7 +296,7 @@ export class PaymentApi {
     if (config.min_amount && amount < Number(config.min_amount)) {
       return {
         isValid: false,
-        error: `Minimum amount is ${this.formatAmount(Number(config.min_amount))}`
+        error: `Minimum amount is ${this.formatAmount(Number(config.min_amount))}`,
       };
     }
 
@@ -304,7 +304,7 @@ export class PaymentApi {
     if (config.max_amount && amount > Number(config.max_amount)) {
       return {
         isValid: false,
-        error: `Maximum amount is ${this.formatAmount(Number(config.max_amount))}`
+        error: `Maximum amount is ${this.formatAmount(Number(config.max_amount))}`,
       };
     }
 
@@ -317,8 +317,10 @@ export class PaymentApi {
    * Check if gateway is in test mode
    */
   static isTestMode(gateway: PaymentGateway): boolean {
-    return gateway.public_config?.environment === 'test' || 
-           gateway.public_config?.environment === 'sandbox';
+    return (
+      gateway.public_config?.environment === 'test' ||
+      gateway.public_config?.environment === 'sandbox'
+    );
   }
 
   /**
@@ -342,22 +344,22 @@ export class PaymentApi {
     switch (feature) {
       case 'saved_payment_methods':
         return config.supports_saved_methods === true;
-      
+
       case 'recurring_payments':
         return config.supports_recurring === true;
-      
+
       case 'refunds':
         return config.supports_refunds === true;
-      
+
       case 'partial_payments':
         return config.supports_partial_payments === true;
-      
+
       case 'apple_pay':
         return config.supports_apple_pay === true;
-      
+
       case 'google_pay':
         return config.supports_google_pay === true;
-      
+
       default:
         return false;
     }
@@ -376,7 +378,7 @@ export class PaymentApi {
       'google_pay',
     ];
 
-    return features.filter(feature => this.supportsFeature(gateway, feature));
+    return features.filter((feature) => this.supportsFeature(gateway, feature));
   }
 }
 

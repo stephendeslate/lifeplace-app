@@ -14,12 +14,7 @@
 
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
-import {
-  LocationOn,
-  Phone,
-  Email,
-  ArrowForward,
-} from '@mui/icons-material';
+import { LocationOn, Phone, Email, ArrowForward } from '@mui/icons-material';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Section, Container, tokens } from '../../../design-system';
 import { GlassCard } from '../../../design-system/components/GlassCard';
@@ -64,8 +59,10 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
   return (
     <Section background="sage" spacing="xlarge">
       <Container maxWidth="content">
-        <Stack spacing={{ xs: tokens.spacing.space[6], md: tokens.spacing.space[8] }} alignItems="center">
-
+        <Stack
+          spacing={{ xs: tokens.spacing.space[6], md: tokens.spacing.space[8] }}
+          alignItems="center"
+        >
           {/* Heading */}
           <AnimatedElement animation="fadeIn" delay={0}>
             <Box sx={{ textAlign: 'center', maxWidth: 700, mx: 'auto' }}>
@@ -98,7 +95,8 @@ export const ContactSection: React.FC<ContactSectionProps> = ({
                   mx: 'auto',
                 }}
               >
-                Contact us today to discuss your event and let us help bring your vision to life at LifePlace Alfonso.
+                Contact us today to discuss your event and let us help bring your vision to life at
+                LifePlace Alfonso.
               </Typography>
             </Box>
           </AnimatedElement>

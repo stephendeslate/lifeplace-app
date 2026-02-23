@@ -3,13 +3,7 @@
 import React from 'react';
 import { Box, Typography, Stack, Button } from '@mui/material';
 import { OpenInNew } from '@mui/icons-material';
-import {
-  tokens,
-  Section,
-  Container,
-  ModernCard,
-  AnimatedElement,
-} from '../../../design-system';
+import { tokens, Section, Container, ModernCard, AnimatedElement } from '../../../design-system';
 
 /**
  * ContactMap Component
@@ -33,7 +27,7 @@ export const ContactMap: React.FC = () => {
     window.open(
       'https://www.google.com/maps/search/?api=1&query=Patutong+Malaki+North+Alfonso+Cavite+4120',
       '_blank',
-      'noopener,noreferrer'
+      'noopener,noreferrer',
     );
   };
 
@@ -121,8 +115,8 @@ export const ContactMap: React.FC = () => {
                   lineHeight: tokens.typography.lineHeights.relaxed,
                 }}
               >
-                Just a short drive from Tagaytay City, LifePlace Alfonso offers easy access
-                while providing a peaceful retreat from the busy city life.
+                Just a short drive from Tagaytay City, LifePlace Alfonso offers easy access while
+                providing a peaceful retreat from the busy city life.
               </Typography>
             </Stack>
           </ModernCard>

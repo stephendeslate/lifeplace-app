@@ -6,14 +6,14 @@
  * Each context type has specific required objects at send time.
  */
 export type ContextType =
-  | "CLIENT"
-  | "EVENT"
-  | "BOOKING"
-  | "QUOTE"
-  | "CONTRACT"
-  | "ADMIN"
-  | "NOTIFICATION"
-  | "MANUAL";
+  | 'CLIENT'
+  | 'EVENT'
+  | 'BOOKING'
+  | 'QUOTE'
+  | 'CONTRACT'
+  | 'ADMIN'
+  | 'NOTIFICATION'
+  | 'MANUAL';
 
 /**
  * Context type metadata from the API
@@ -84,16 +84,13 @@ export interface TemplateVariableInserterProps {
   /** Whether to show formatting tips section (default: false) */
   showFormattingTips?: boolean;
   /** Optional group colors for variable chips */
-  groupColors?: Record<
-    string,
-    "primary" | "secondary" | "info" | "success" | "warning" | "error"
-  >;
+  groupColors?: Record<string, 'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'error'>;
 }
 
 /**
  * Editor mode for template content editing
  */
-export type TemplateEditorMode = "visual" | "html" | "text";
+export type TemplateEditorMode = 'visual' | 'html' | 'text';
 
 /**
  * Props for shared TemplateContentEditor component
@@ -150,7 +147,7 @@ export interface TemplateContentEditorHandle {
 /**
  * Template domain type for the useTemplateVariables hook
  */
-export type TemplateDomain = "communications" | "contracts";
+export type TemplateDomain = 'communications' | 'contracts';
 
 /**
  * Helper type for flattened variable with group info
@@ -168,26 +165,26 @@ export interface VariableForInsertion {
  * Context type display labels
  */
 export const CONTEXT_TYPE_LABELS: Record<ContextType, string> = {
-  CLIENT: "Client",
-  EVENT: "Event",
-  BOOKING: "Booking",
-  QUOTE: "Quote",
-  CONTRACT: "Contract",
-  ADMIN: "Admin",
-  NOTIFICATION: "Notification",
-  MANUAL: "Manual",
+  CLIENT: 'Client',
+  EVENT: 'Event',
+  BOOKING: 'Booking',
+  QUOTE: 'Quote',
+  CONTRACT: 'Contract',
+  ADMIN: 'Admin',
+  NOTIFICATION: 'Notification',
+  MANUAL: 'Manual',
 };
 
 /**
  * Context type descriptions for UI display
  */
 export const CONTEXT_TYPE_DESCRIPTIONS: Record<ContextType, string> = {
-  CLIENT: "For client-focused communications (welcome emails, invitations)",
-  EVENT: "For event-related communications (reminders, updates)",
-  BOOKING: "For booking flow communications (confirmations, payment reminders)",
-  QUOTE: "For quote-related communications (quote sent, follow-ups)",
-  CONTRACT: "For contract communications (signature requests)",
-  ADMIN: "For admin user communications (invitations, role changes)",
-  NOTIFICATION: "For system notifications (alerts, digests)",
-  MANUAL: "For ad-hoc staff communications (custom messages)",
+  CLIENT: 'For client-focused communications (welcome emails, invitations)',
+  EVENT: 'For event-related communications (reminders, updates)',
+  BOOKING: 'For booking flow communications (confirmations, payment reminders)',
+  QUOTE: 'For quote-related communications (quote sent, follow-ups)',
+  CONTRACT: 'For contract communications (signature requests)',
+  ADMIN: 'For admin user communications (invitations, role changes)',
+  NOTIFICATION: 'For system notifications (alerts, digests)',
+  MANUAL: 'For ad-hoc staff communications (custom messages)',
 };

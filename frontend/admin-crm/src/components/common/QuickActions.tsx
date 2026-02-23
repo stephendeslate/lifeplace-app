@@ -62,7 +62,7 @@ interface QuickActionsProps {
 
 export const QuickActions: React.FC<QuickActionsProps> = ({
   actions,
-  title = "Quick Actions",
+  title = 'Quick Actions',
   orientation = 'vertical',
   maxPrimaryActions = 3,
   showCategoryHeaders = false,
@@ -71,10 +71,14 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   // Categorize actions
-  const primaryActions = actions.filter(a => a.category === 'primary' || (!a.category && actions.indexOf(a) < maxPrimaryActions));
-  const secondaryActions = actions.filter(a => a.category === 'secondary');
-  const tertiaryActions = actions.filter(a => a.category === 'tertiary');
-  const overflowActions = actions.filter(a => !a.category && actions.indexOf(a) >= maxPrimaryActions);
+  const primaryActions = actions.filter(
+    (a) => a.category === 'primary' || (!a.category && actions.indexOf(a) < maxPrimaryActions),
+  );
+  const secondaryActions = actions.filter((a) => a.category === 'secondary');
+  const tertiaryActions = actions.filter((a) => a.category === 'tertiary');
+  const overflowActions = actions.filter(
+    (a) => !a.category && actions.indexOf(a) >= maxPrimaryActions,
+  );
 
   const allSecondaryActions = [...secondaryActions, ...tertiaryActions, ...overflowActions];
 
@@ -89,7 +93,11 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   const handleActionClick = (action: QuickAction) => {
     if (action.requiresConfirmation) {
       // In a real implementation, you'd show a confirmation dialog
-      if (window.confirm(action.confirmationMessage || `Are you sure you want to ${action.label.toLowerCase()}?`)) {
+      if (
+        window.confirm(
+          action.confirmationMessage || `Are you sure you want to ${action.label.toLowerCase()}?`,
+        )
+      ) {
         action.onClick();
       }
     } else {
@@ -157,8 +165,12 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
               {...commonProps}
               size="small"
               sx={{
-                bgcolor: action.variant === 'contained' ? `${action.color || 'primary'}.main` : 'transparent',
-                color: action.variant === 'contained' ? 'white' : `${action.color || 'primary'}.main`,
+                bgcolor:
+                  action.variant === 'contained'
+                    ? `${action.color || 'primary'}.main`
+                    : 'transparent',
+                color:
+                  action.variant === 'contained' ? 'white' : `${action.color || 'primary'}.main`,
                 '&:hover': {
                   bgcolor: `${action.color || 'primary'}.${action.variant === 'contained' ? 'dark' : 'light'}`,
                 },
@@ -186,7 +198,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
   if (compactMode) {
     return (
       <Box display="flex" gap={0.5} flexWrap="wrap">
-        {primaryActions.map(action => renderAction(action))}
+        {primaryActions.map((action) => renderAction(action))}
         {allSecondaryActions.length > 0 && (
           <>
             <Tooltip title="More actions">
@@ -194,12 +206,8 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                 <MoreVertIcon />
               </IconButton>
             </Tooltip>
-            <Menu
-              anchorEl={anchorEl}
-              open={Boolean(anchorEl)}
-              onClose={handleMenuClose}
-            >
-              {allSecondaryActions.map(action => renderAction(action, true))}
+            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+              {allSecondaryActions.map((action) => renderAction(action, true))}
             </Menu>
           </>
         )}
@@ -225,7 +233,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
               Primary Actions
             </Typography>
           )}
-          {primaryActions.map(action => renderAction(action))}
+          {primaryActions.map((action) => renderAction(action))}
 
           {/* Secondary Actions */}
           {secondaryActions.length > 0 && (
@@ -235,7 +243,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
                   Secondary Actions
                 </Typography>
               )}
-              {secondaryActions.map(action => renderAction(action))}
+              {secondaryActions.map((action) => renderAction(action))}
             </>
           )}
 
@@ -251,21 +259,22 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
               >
                 More Actions
               </Button>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-              >
-                {showCategoryHeaders && tertiaryActions.length > 0 && [
-                  <Typography key="tertiary-header" variant="subtitle2" sx={{ px: 2, py: 1, color: 'text.secondary' }}>
-                    Additional Actions
-                  </Typography>,
-                  <Divider key="tertiary-divider" />
-                ]}
-                {tertiaryActions.map(action => renderAction(action, true))}
-                
+              <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+                {showCategoryHeaders &&
+                  tertiaryActions.length > 0 && [
+                    <Typography
+                      key="tertiary-header"
+                      variant="subtitle2"
+                      sx={{ px: 2, py: 1, color: 'text.secondary' }}
+                    >
+                      Additional Actions
+                    </Typography>,
+                    <Divider key="tertiary-divider" />,
+                  ]}
+                {tertiaryActions.map((action) => renderAction(action, true))}
+
                 {overflowActions.length > 0 && tertiaryActions.length > 0 && <Divider />}
-                {overflowActions.map(action => renderAction(action, true))}
+                {overflowActions.map((action) => renderAction(action, true))}
               </Menu>
             </>
           )}
@@ -276,7 +285,10 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
 };
 
 // Predefined action creators for common use cases
-export const createEventActions = (eventId: number, onAction: (actionType: string, eventId: number) => void): QuickAction[] => [
+export const createEventActions = (
+  eventId: number,
+  onAction: (actionType: string, eventId: number) => void,
+): QuickAction[] => [
   {
     id: 'send-contract',
     label: 'Send Contract',
@@ -336,7 +348,7 @@ export const createEventActions = (eventId: number, onAction: (actionType: strin
 export const createClientActions = (
   clientId: number,
   onAction: (actionType: string, clientId: number) => void,
-  clientPhone?: string
+  clientPhone?: string,
 ): QuickAction[] => {
   const actions: QuickAction[] = [
     {
@@ -386,13 +398,17 @@ export const createClientActions = (
       icon: <NoteIcon />,
       category: 'tertiary',
       onClick: () => onAction('add-note', clientId),
-    }
+    },
   );
 
   return actions;
 };
 
-export const createPaymentActions = (paymentId: number, status: string, onAction: (actionType: string, paymentId: number) => void): QuickAction[] => {
+export const createPaymentActions = (
+  paymentId: number,
+  status: string,
+  onAction: (actionType: string, paymentId: number) => void,
+): QuickAction[] => {
   const actions: QuickAction[] = [
     {
       id: 'send-reminder',
@@ -446,7 +462,7 @@ export const createPaymentActions = (paymentId: number, status: string, onAction
       icon: <NoteIcon />,
       category: 'tertiary',
       onClick: () => onAction('add-note', paymentId),
-    }
+    },
   );
 
   return actions;

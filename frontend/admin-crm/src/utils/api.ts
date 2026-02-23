@@ -1,33 +1,31 @@
 // frontend/admin-crm/src/utils/api.ts
 
-import axios from "axios";
-import { storage } from "./storage";
-import type {
-  LoginCredentials,
-  ChangePasswordData
-} from '../types/auth.types';
+import axios from 'axios';
+import { storage } from './storage';
+import { env } from '@/env';
+import type { LoginCredentials, ChangePasswordData } from '../types/auth.types';
 import type {
   CreateAdminUserData,
   UpdateAdminUserData,
   InviteAdminFormData,
-  AcceptInvitationFormData
+  AcceptInvitationFormData,
 } from '../types/settings.types';
 
 // Get base URL based on environment
 const getBaseUrl = () => {
-  if (import.meta.env.PROD) {
-    return import.meta.env.VITE_API_URL + "/api";
+  if (env.PROD) {
+    return env.VITE_API_URL + '/api';
   }
 
   // In development, use the environment variable or default to localhost
-  return import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+  return env.VITE_API_URL || 'http://localhost:8000/api';
 };
 
 // Create axios instance
 const api = axios.create({
   baseURL: getBaseUrl(),
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
   withCredentials: true,
 });
@@ -42,7 +40,7 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Token refresh mutex to prevent concurrent refresh requests
@@ -85,8 +83,8 @@ api.interceptors.response.use(
 
         if (!tokens?.refresh) {
           storage.clearAuth();
-          if (window.location.pathname !== "/login") {
-            window.location.href = "/login";
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login';
           }
           processQueue(error, null);
           return Promise.reject(error);
@@ -111,8 +109,8 @@ api.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError, null);
         storage.clearAuth();
-        if (window.location.pathname !== "/login") {
-          window.location.href = "/login";
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
         }
         return Promise.reject(error);
       } finally {
@@ -121,14 +119,15 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // Convenience methods for common API operations
 export const apiMethods = {
   // Auth endpoints
   login: (credentials: LoginCredentials) => api.post('/users/login/', credentials),
-  refreshToken: (refreshToken: string) => api.post('/users/token/refresh/', { refresh: refreshToken }),
+  refreshToken: (refreshToken: string) =>
+    api.post('/users/token/refresh/', { refresh: refreshToken }),
   getCurrentUser: () => api.get('/users/me/'),
   changePassword: (data: ChangePasswordData) => api.post('/users/me/change-password/', data),
 
@@ -143,7 +142,8 @@ export const apiMethods = {
   getInvitations: () => api.get('/users/invitations/'),
   createInvitation: (data: InviteAdminFormData) => api.post('/users/invitations/', data),
   deleteInvitation: (id: string) => api.delete(`/users/invitations/${id}/`),
-  acceptInvitation: (id: string, data: AcceptInvitationFormData) => api.post(`/users/invitations/${id}/accept/`, data),
+  acceptInvitation: (id: string, data: AcceptInvitationFormData) =>
+    api.post(`/users/invitations/${id}/accept/`, data),
 };
 
 export default api;

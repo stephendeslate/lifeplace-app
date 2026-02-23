@@ -93,6 +93,7 @@ class DateNoLongerAvailableException(Exception):
 
 class DateNoLongerAvailableAPIException(APIException):
     """API-friendly version of DateNoLongerAvailableException"""
+
     status_code = status.HTTP_409_CONFLICT
     default_detail = "This date is no longer available for booking."
     default_code = "date_no_longer_available"
@@ -114,6 +115,7 @@ class ReservationExpiredException(Exception):
 
 class ReservationExpiredAPIException(APIException):
     """API-friendly version of ReservationExpiredException"""
+
     status_code = status.HTTP_410_GONE
     default_detail = "Your date reservation has expired. Please try again."
     default_code = "reservation_expired"
@@ -132,6 +134,7 @@ class ReservationNotFoundException(Exception):
 
 class ReservationNotFoundAPIException(APIException):
     """API-friendly version of ReservationNotFoundException"""
+
     status_code = status.HTTP_404_NOT_FOUND
     default_detail = "Reservation not found."
     default_code = "reservation_not_found"
@@ -154,6 +157,7 @@ class DateAlreadyReservedException(Exception):
 
 class DateAlreadyReservedAPIException(APIException):
     """API-friendly version of DateAlreadyReservedException"""
+
     status_code = status.HTTP_409_CONFLICT
     default_detail = "This date is currently being booked by another customer. Please wait or select a different date."
     default_code = "date_already_reserved"

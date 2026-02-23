@@ -7,9 +7,10 @@ Based on actual models in core/domains/communications/models.py:
 - CommunicationRecord (sent communications)
 """
 
+from django.utils import timezone
+
 import factory
 from factory.django import DjangoModelFactory
-from django.utils import timezone
 
 
 class CommunicationTemplateFactory(DjangoModelFactory):
@@ -20,61 +21,38 @@ class CommunicationTemplateFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'communications.CommunicationTemplate'
-        django_get_or_create = ('name',)
+        model = "communications.CommunicationTemplate"
+        django_get_or_create = ("name",)
 
-    name = factory.Sequence(lambda n: f'template_{n}')
-    channel = 'EMAIL'
-    category = 'MANUAL'
-    context_type = 'MANUAL'
+    name = factory.Sequence(lambda n: f"template_{n}")
+    channel = "EMAIL"
+    category = "MANUAL"
+    context_type = "MANUAL"
     include_client_context = False
     include_event_context = False
-    subject_template = factory.Sequence(lambda n: f'Subject {n}')
-    body_template = factory.Faker('paragraph')
+    subject_template = factory.Sequence(lambda n: f"Subject {n}")
+    body_template = factory.Faker("paragraph")
     is_system = False
 
     class Params:
         """Traits for template types."""
 
-        email = factory.Trait(
-            channel='EMAIL',
-            subject_template='Email Subject'
-        )
+        email = factory.Trait(channel="EMAIL", subject_template="Email Subject")
 
-        sms = factory.Trait(
-            channel='SMS',
-            subject_template=None
-        )
+        sms = factory.Trait(channel="SMS", subject_template=None)
 
-        system = factory.Trait(
-            category='SYSTEM',
-            is_system=True
-        )
+        system = factory.Trait(category="SYSTEM", is_system=True)
 
-        auto = factory.Trait(
-            category='AUTO'
-        )
+        auto = factory.Trait(category="AUTO")
 
-        marketing = factory.Trait(
-            category='MARKETING'
-        )
+        marketing = factory.Trait(category="MARKETING")
 
-        event_context = factory.Trait(
-            context_type='EVENT',
-            include_client_context=True,
-            include_event_context=True
-        )
+        event_context = factory.Trait(context_type="EVENT", include_client_context=True, include_event_context=True)
 
-        quote_context = factory.Trait(
-            context_type='QUOTE',
-            include_client_context=True,
-            include_event_context=True
-        )
+        quote_context = factory.Trait(context_type="QUOTE", include_client_context=True, include_event_context=True)
 
         contract_context = factory.Trait(
-            context_type='CONTRACT',
-            include_client_context=True,
-            include_event_context=True
+            context_type="CONTRACT", include_client_context=True, include_event_context=True
         )
 
 
@@ -86,40 +64,32 @@ class CommunicationTemplateHistoryFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'communications.CommunicationTemplateHistory'
+        model = "communications.CommunicationTemplateHistory"
 
     template = factory.SubFactory(CommunicationTemplateFactory)
     version = factory.Sequence(lambda n: n + 1)
-    name = factory.SelfAttribute('template.name')
-    channel = factory.SelfAttribute('template.channel')
-    category = factory.SelfAttribute('template.category')
-    context_type = factory.SelfAttribute('template.context_type')
-    include_client_context = factory.SelfAttribute('template.include_client_context')
-    include_event_context = factory.SelfAttribute('template.include_event_context')
-    subject_template = factory.SelfAttribute('template.subject_template')
-    body_template = factory.SelfAttribute('template.body_template')
-    reason = 'UPDATE'
-    notes = ''
-    changed_by = factory.SubFactory('core.factories.users.UserFactory', admin=True)
+    name = factory.SelfAttribute("template.name")
+    channel = factory.SelfAttribute("template.channel")
+    category = factory.SelfAttribute("template.category")
+    context_type = factory.SelfAttribute("template.context_type")
+    include_client_context = factory.SelfAttribute("template.include_client_context")
+    include_event_context = factory.SelfAttribute("template.include_event_context")
+    subject_template = factory.SelfAttribute("template.subject_template")
+    body_template = factory.SelfAttribute("template.body_template")
+    reason = "UPDATE"
+    notes = ""
+    changed_by = factory.SubFactory("core.factories.users.UserFactory", admin=True)
 
     class Params:
         """Traits for history reasons."""
 
-        create = factory.Trait(
-            reason='CREATE'
-        )
+        create = factory.Trait(reason="CREATE")
 
-        update = factory.Trait(
-            reason='UPDATE'
-        )
+        update = factory.Trait(reason="UPDATE")
 
-        rollback = factory.Trait(
-            reason='ROLLBACK'
-        )
+        rollback = factory.Trait(reason="ROLLBACK")
 
-        system_update = factory.Trait(
-            reason='SYSTEM'
-        )
+        system_update = factory.Trait(reason="SYSTEM")
 
 
 class CommunicationRecordFactory(DjangoModelFactory):
@@ -130,19 +100,19 @@ class CommunicationRecordFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'communications.CommunicationRecord'
+        model = "communications.CommunicationRecord"
 
-    template_name = factory.Sequence(lambda n: f'template_{n}')
-    channel = 'EMAIL'
-    category = 'MANUAL'
-    recipient = factory.Faker('email')
-    subject = factory.Faker('sentence')
-    body = factory.Faker('paragraph')
-    client = factory.SubFactory('core.factories.users.UserFactory')
-    sent_by = factory.SubFactory('core.factories.users.UserFactory', admin=True)
+    template_name = factory.Sequence(lambda n: f"template_{n}")
+    channel = "EMAIL"
+    category = "MANUAL"
+    recipient = factory.Faker("email")
+    subject = factory.Faker("sentence")
+    body = factory.Faker("paragraph")
+    client = factory.SubFactory("core.factories.users.UserFactory")
+    sent_by = factory.SubFactory("core.factories.users.UserFactory", admin=True)
     event = None
-    external_message_id = ''
-    delivery_status = 'PENDING'
+    external_message_id = ""
+    delivery_status = "PENDING"
     sent_at = None
     delivered_at = None
     opened_at = None
@@ -155,49 +125,28 @@ class CommunicationRecordFactory(DjangoModelFactory):
     class Params:
         """Traits for delivery states."""
 
-        pending = factory.Trait(
-            delivery_status='PENDING'
-        )
+        pending = factory.Trait(delivery_status="PENDING")
 
-        sent = factory.Trait(
-            delivery_status='SENT',
-            sent_at=factory.LazyFunction(timezone.now)
-        )
+        sent = factory.Trait(delivery_status="SENT", sent_at=factory.LazyFunction(timezone.now))
 
         delivered = factory.Trait(
-            delivery_status='DELIVERED',
-            sent_at=factory.LazyFunction(
-                lambda: timezone.now() - timezone.timedelta(minutes=5)
-            ),
-            delivered_at=factory.LazyFunction(timezone.now)
+            delivery_status="DELIVERED",
+            sent_at=factory.LazyFunction(lambda: timezone.now() - timezone.timedelta(minutes=5)),
+            delivered_at=factory.LazyFunction(timezone.now),
         )
 
-        failed = factory.Trait(
-            delivery_status='FAILED'
-        )
+        failed = factory.Trait(delivery_status="FAILED")
 
-        bounced = factory.Trait(
-            delivery_status='BOUNCED'
-        )
+        bounced = factory.Trait(delivery_status="BOUNCED")
 
         opened = factory.Trait(
-            delivery_status='DELIVERED',
-            sent_at=factory.LazyFunction(
-                lambda: timezone.now() - timezone.timedelta(hours=1)
-            ),
-            delivered_at=factory.LazyFunction(
-                lambda: timezone.now() - timezone.timedelta(minutes=55)
-            ),
+            delivery_status="DELIVERED",
+            sent_at=factory.LazyFunction(lambda: timezone.now() - timezone.timedelta(hours=1)),
+            delivered_at=factory.LazyFunction(lambda: timezone.now() - timezone.timedelta(minutes=55)),
             opened_at=factory.LazyFunction(timezone.now),
-            is_opened=True
+            is_opened=True,
         )
 
-        sms = factory.Trait(
-            channel='SMS',
-            subject=None
-        )
+        sms = factory.Trait(channel="SMS", subject=None)
 
-        deleted = factory.Trait(
-            is_deleted=True,
-            deleted_at=factory.LazyFunction(timezone.now)
-        )
+        deleted = factory.Trait(is_deleted=True, deleted_at=factory.LazyFunction(timezone.now))

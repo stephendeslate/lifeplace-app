@@ -51,12 +51,12 @@ export const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
     // Basic phone validation - adjust regex based on your requirements
     const phoneRegex = /^[\d\s\-+()]+$/;
     if (!phoneRegex.test(phoneNumber)) {
-      setErrors(prev => ({ ...prev, phone: 'Please enter a valid phone number' }));
+      setErrors((prev) => ({ ...prev, phone: 'Please enter a valid phone number' }));
       return false;
     }
 
     if (phoneNumber.replace(/\D/g, '').length < 10) {
-      setErrors(prev => ({ ...prev, phone: 'Phone number must be at least 10 digits' }));
+      setErrors((prev) => ({ ...prev, phone: 'Phone number must be at least 10 digits' }));
       return false;
     }
 
@@ -86,10 +86,7 @@ export const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
       // Update local user state
       updateUser(updatedUser);
 
-      showSuccess(
-        'Profile Updated',
-        'Your profile has been completed successfully!'
-      );
+      showSuccess('Profile Updated', 'Your profile has been completed successfully!');
       onClose();
     } catch (error: unknown) {
       if (import.meta.env.DEV) {
@@ -110,7 +107,7 @@ export const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
     setPhone(e.target.value);
     // Clear error when user starts typing
     if (errors.phone) {
-      setErrors(prev => ({ ...prev, phone: '' }));
+      setErrors((prev) => ({ ...prev, phone: '' }));
     }
   };
 
@@ -144,8 +141,8 @@ export const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
       <DialogContent>
         <Stack spacing={3} sx={{ mt: 2 }}>
           <Typography variant="body2" sx={{ color: alpha('#fff', 0.8), textAlign: 'center' }}>
-            You've successfully signed up with <strong>{userEmail}</strong>.
-            Add a few more details to complete your profile.
+            You've successfully signed up with <strong>{userEmail}</strong>. Add a few more details
+            to complete your profile.
           </Typography>
 
           <TextField
@@ -154,7 +151,7 @@ export const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
             value={phone}
             onChange={handlePhoneChange}
             error={!!errors.phone}
-            helperText={errors.phone || 'We\'ll use this to contact you about your bookings'}
+            helperText={errors.phone || "We'll use this to contact you about your bookings"}
             disabled={isSubmitting}
             placeholder="+63 123 456 7890"
             sx={{
@@ -185,7 +182,9 @@ export const ProfileCompletionModal: React.FC<ProfileCompletionModalProps> = ({
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <Phone sx={{ color: errors.phone ? theme.palette.error.light : alpha('#fff', 0.7) }} />
+                  <Phone
+                    sx={{ color: errors.phone ? theme.palette.error.light : alpha('#fff', 0.7) }}
+                  />
                 </InputAdornment>
               ),
             }}

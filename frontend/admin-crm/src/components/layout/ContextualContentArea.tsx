@@ -1,15 +1,11 @@
 import React from 'react';
-import {
-  Box,
-  Container,
-} from '@mui/material';
+import { Box, Container } from '@mui/material';
 
 interface ContextualContentAreaProps {
   children: React.ReactNode;
 }
 
 export const ContextualContentArea: React.FC<ContextualContentAreaProps> = ({ children }) => {
-
   return (
     <Box
       sx={{
@@ -19,7 +15,6 @@ export const ContextualContentArea: React.FC<ContextualContentAreaProps> = ({ ch
         flexDirection: 'column',
       }}
     >
-
       {/* Main Content */}
       <Box
         sx={{

@@ -155,18 +155,10 @@ const FlowchartInner: React.FC<WorkflowFlowchartProps> = ({
         proOptions={{ hideAttribution: true }}
       >
         {/* Controls */}
-        <Controls
-          position="bottom-right"
-          showInteractive={false}
-        />
+        <Controls position="bottom-right" showInteractive={false} />
 
         {/* Background */}
-        <Background
-          variant={BackgroundVariant.Dots}
-          gap={20}
-          size={1}
-          color="#e2e8f0"
-        />
+        <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="#e2e8f0" />
 
         {/* Mini Map */}
         <MiniMap
@@ -189,24 +181,14 @@ const FlowchartInner: React.FC<WorkflowFlowchartProps> = ({
         {/* Info Panel */}
         <Panel position="top-left">
           <Stack direction="row" spacing={1} alignItems="center">
-            <Chip
-              label={`${stages.length} stages`}
-              size="small"
-              variant="outlined"
-            />
+            <Chip label={`${stages.length} stages`} size="small" variant="outlined" />
             <Chip
               label={`${stages.filter((s) => s.is_automated).length} automated`}
               size="small"
               color="secondary"
               variant="outlined"
             />
-            {mode === 'edit' && (
-              <Chip
-                label="Edit Mode"
-                size="small"
-                color="primary"
-              />
-            )}
+            {mode === 'edit' && <Chip label="Edit Mode" size="small" color="primary" />}
           </Stack>
         </Panel>
 
@@ -227,9 +209,7 @@ const FlowchartInner: React.FC<WorkflowFlowchartProps> = ({
 
 // Main component wrapper
 export const WorkflowFlowchart: React.FC<WorkflowFlowchartProps> = (props) => {
-  return (
-    <FlowchartInner {...props} />
-  );
+  return <FlowchartInner {...props} />;
 };
 
 export default WorkflowFlowchart;

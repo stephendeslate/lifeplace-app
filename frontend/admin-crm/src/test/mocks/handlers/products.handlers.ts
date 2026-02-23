@@ -1,142 +1,142 @@
 // frontend/admin-crm/src/test/mocks/handlers/products.handlers.ts
 
-import { http, HttpResponse, delay } from "msw";
+import { http, HttpResponse, delay } from 'msw';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
 // Mock data
 const mockCategories = [
   {
     id: 1,
-    name: "Venue Services",
-    description: "Venue rental services",
+    name: 'Venue Services',
+    description: 'Venue rental services',
     parent: null,
     is_active: true,
     includes: [],
     notes: [],
-    badge_text: "",
-    rates_page_section: "",
+    badge_text: '',
+    rates_page_section: '',
   },
   {
     id: 2,
-    name: "Catering",
-    description: "Food and beverage services",
+    name: 'Catering',
+    description: 'Food and beverage services',
     parent: null,
     is_active: true,
     includes: [],
     notes: [],
-    badge_text: "",
-    rates_page_section: "",
+    badge_text: '',
+    rates_page_section: '',
   },
   {
     id: 3,
-    name: "Photography",
-    description: "Photo services",
+    name: 'Photography',
+    description: 'Photo services',
     parent: null,
     is_active: true,
     includes: [],
     notes: [],
-    badge_text: "",
-    rates_page_section: "",
+    badge_text: '',
+    rates_page_section: '',
   },
   {
     id: 4,
-    name: "Premium Catering",
-    description: "High-end catering",
+    name: 'Premium Catering',
+    description: 'High-end catering',
     parent: 2,
     is_active: true,
     includes: [],
     notes: [],
-    badge_text: "",
-    rates_page_section: "",
+    badge_text: '',
+    rates_page_section: '',
   },
 ];
 
 const mockProducts = [
   {
     id: 1,
-    name: "Basic Venue Package",
-    description: "Standard venue rental",
+    name: 'Basic Venue Package',
+    description: 'Standard venue rental',
     category: 1,
-    category_name: "Venue Services",
+    category_name: 'Venue Services',
     base_price: 5000,
-    currency: "USD",
-    sku: "VEN-001",
+    currency: 'USD',
+    sku: 'VEN-001',
     is_active: true,
     is_package: true,
     is_featured: false,
     is_highlighted: false,
-    tier_label: "",
+    tier_label: '',
   },
   {
     id: 2,
-    name: "Premium Catering",
-    description: "Full catering service",
+    name: 'Premium Catering',
+    description: 'Full catering service',
     category: 2,
-    category_name: "Catering",
+    category_name: 'Catering',
     base_price: 3000,
-    currency: "USD",
-    sku: "CAT-001",
+    currency: 'USD',
+    sku: 'CAT-001',
     is_active: true,
     is_package: false,
     is_featured: true,
     is_highlighted: false,
-    tier_label: "",
+    tier_label: '',
   },
   {
     id: 3,
-    name: "Photography Package",
-    description: "8 hour photography coverage",
+    name: 'Photography Package',
+    description: '8 hour photography coverage',
     category: 3,
-    category_name: "Photography",
+    category_name: 'Photography',
     base_price: 2500,
-    currency: "USD",
-    sku: "PHO-001",
+    currency: 'USD',
+    sku: 'PHO-001',
     is_active: true,
     is_package: true,
     is_featured: true,
     is_highlighted: false,
-    tier_label: "",
+    tier_label: '',
   },
   {
     id: 4,
-    name: "Inactive Product",
-    description: "No longer available",
+    name: 'Inactive Product',
+    description: 'No longer available',
     category: 1,
-    category_name: "Venue Services",
+    category_name: 'Venue Services',
     base_price: 1000,
-    currency: "USD",
-    sku: "VEN-002",
+    currency: 'USD',
+    sku: 'VEN-002',
     is_active: false,
     is_package: false,
     is_featured: false,
     is_highlighted: false,
-    tier_label: "",
+    tier_label: '',
   },
 ];
 
 const mockDiscounts = [
   {
     id: 1,
-    name: "Early Bird",
-    code: "EARLY20",
-    discount_type: "PERCENTAGE",
+    name: 'Early Bird',
+    code: 'EARLY20',
+    discount_type: 'PERCENTAGE',
     value: 20,
     is_active: true,
-    valid_from: "2024-01-01T00:00:00Z",
-    valid_until: "2024-12-31T23:59:59Z",
+    valid_from: '2024-01-01T00:00:00Z',
+    valid_until: '2024-12-31T23:59:59Z',
     max_uses: 100,
     current_uses: 25,
   },
   {
     id: 2,
-    name: "Flat $500 Off",
-    code: "FLAT500",
-    discount_type: "FIXED",
+    name: 'Flat $500 Off',
+    code: 'FLAT500',
+    discount_type: 'FIXED',
     value: 500,
     is_active: true,
-    valid_from: "2024-01-01T00:00:00Z",
-    valid_until: "2024-06-30T23:59:59Z",
+    valid_from: '2024-01-01T00:00:00Z',
+    valid_until: '2024-06-30T23:59:59Z',
     max_uses: 50,
     current_uses: 10,
   },
@@ -193,10 +193,7 @@ export const productsHandlers = [
     const { id } = params;
     const category = categoriesStore.find((c) => c.id === Number(id));
     if (!category) {
-      return HttpResponse.json(
-        { detail: "Category not found" },
-        { status: 404 },
-      );
+      return HttpResponse.json({ detail: 'Category not found' }, { status: 404 });
     }
     return HttpResponse.json(category);
   }),
@@ -212,38 +209,30 @@ export const productsHandlers = [
     const newCategory = {
       id: Math.max(...categoriesStore.map((c) => c.id)) + 1,
       name: body.name,
-      description: body.description || "",
+      description: body.description || '',
       parent: body.parent || null,
       is_active: true,
       includes: [],
       notes: [],
-      badge_text: "",
-      rates_page_section: "",
+      badge_text: '',
+      rates_page_section: '',
     };
     categoriesStore.push(newCategory);
     return HttpResponse.json(newCategory, { status: 201 });
   }),
 
   // PATCH /api/products/categories/:id/
-  http.patch(
-    `${BASE_URL}/products/categories/:id/`,
-    async ({ params, request }) => {
-      await delay(50);
-      const { id } = params;
-      const body = (await request.json()) as Partial<
-        (typeof mockCategories)[0]
-      >;
-      const index = categoriesStore.findIndex((c) => c.id === Number(id));
-      if (index === -1) {
-        return HttpResponse.json(
-          { detail: "Category not found" },
-          { status: 404 },
-        );
-      }
-      categoriesStore[index] = { ...categoriesStore[index], ...body };
-      return HttpResponse.json(categoriesStore[index]);
-    },
-  ),
+  http.patch(`${BASE_URL}/products/categories/:id/`, async ({ params, request }) => {
+    await delay(50);
+    const { id } = params;
+    const body = (await request.json()) as Partial<(typeof mockCategories)[0]>;
+    const index = categoriesStore.findIndex((c) => c.id === Number(id));
+    if (index === -1) {
+      return HttpResponse.json({ detail: 'Category not found' }, { status: 404 });
+    }
+    categoriesStore[index] = { ...categoriesStore[index], ...body };
+    return HttpResponse.json(categoriesStore[index]);
+  }),
 
   // DELETE /api/products/categories/:id/
   http.delete(`${BASE_URL}/products/categories/:id/`, async ({ params }) => {
@@ -251,10 +240,7 @@ export const productsHandlers = [
     const { id } = params;
     const index = categoriesStore.findIndex((c) => c.id === Number(id));
     if (index === -1) {
-      return HttpResponse.json(
-        { detail: "Category not found" },
-        { status: 404 },
-      );
+      return HttpResponse.json({ detail: 'Category not found' }, { status: 404 });
     }
     categoriesStore.splice(index, 1);
     return HttpResponse.json({ success: true });
@@ -264,22 +250,22 @@ export const productsHandlers = [
   http.get(`${BASE_URL}/products/products/all/`, async ({ request }) => {
     await delay(30);
     const url = new URL(request.url);
-    const categoryId = url.searchParams.get("category_id");
-    const isActive = url.searchParams.get("is_active");
-    const isFeatured = url.searchParams.get("is_featured");
-    const search = url.searchParams.get("search");
+    const categoryId = url.searchParams.get('category_id');
+    const isActive = url.searchParams.get('is_active');
+    const isFeatured = url.searchParams.get('is_featured');
+    const search = url.searchParams.get('search');
 
     let filtered = [...productsStore];
 
     if (categoryId) {
       filtered = filtered.filter((p) => p.category === Number(categoryId));
     }
-    if (isActive === "true") {
+    if (isActive === 'true') {
       filtered = filtered.filter((p) => p.is_active);
-    } else if (isActive === "false") {
+    } else if (isActive === 'false') {
       filtered = filtered.filter((p) => !p.is_active);
     }
-    if (isFeatured === "true") {
+    if (isFeatured === 'true') {
       filtered = filtered.filter((p) => p.is_featured);
     }
     if (search) {
@@ -298,18 +284,18 @@ export const productsHandlers = [
   http.get(`${BASE_URL}/products/products/`, async ({ request }) => {
     await delay(30);
     const url = new URL(request.url);
-    const categoryId = url.searchParams.get("category_id");
-    const isActive = url.searchParams.get("is_active");
-    const search = url.searchParams.get("search");
+    const categoryId = url.searchParams.get('category_id');
+    const isActive = url.searchParams.get('is_active');
+    const search = url.searchParams.get('search');
 
     let filtered = [...productsStore];
 
     if (categoryId) {
       filtered = filtered.filter((p) => p.category === Number(categoryId));
     }
-    if (isActive === "true") {
+    if (isActive === 'true') {
       filtered = filtered.filter((p) => p.is_active);
-    } else if (isActive === "false") {
+    } else if (isActive === 'false') {
       filtered = filtered.filter((p) => !p.is_active);
     }
     if (search) {
@@ -327,17 +313,13 @@ export const productsHandlers = [
   // GET /api/products/products/products/ (products only, not packages)
   http.get(`${BASE_URL}/products/products/products/`, async () => {
     await delay(30);
-    return HttpResponse.json(
-      productsStore.filter((p) => !p.is_package && p.is_active),
-    );
+    return HttpResponse.json(productsStore.filter((p) => !p.is_package && p.is_active));
   }),
 
   // GET /api/products/products/packages/ (packages only)
   http.get(`${BASE_URL}/products/products/packages/`, async () => {
     await delay(30);
-    return HttpResponse.json(
-      productsStore.filter((p) => p.is_package && p.is_active),
-    );
+    return HttpResponse.json(productsStore.filter((p) => p.is_package && p.is_active));
   }),
 
   // GET /api/products/products/active/
@@ -349,25 +331,18 @@ export const productsHandlers = [
   // GET /api/products/products/featured/
   http.get(`${BASE_URL}/products/products/featured/`, async () => {
     await delay(30);
-    return HttpResponse.json(
-      productsStore.filter((p) => p.is_featured && p.is_active),
-    );
+    return HttpResponse.json(productsStore.filter((p) => p.is_featured && p.is_active));
   }),
 
   // GET /api/products/products/by_category/
-  http.get(
-    `${BASE_URL}/products/products/by_category/`,
-    async ({ request }) => {
-      await delay(30);
-      const url = new URL(request.url);
-      const categoryId = url.searchParams.get("category_id");
-      return HttpResponse.json(
-        productsStore.filter(
-          (p) => p.category === Number(categoryId) && p.is_active,
-        ),
-      );
-    },
-  ),
+  http.get(`${BASE_URL}/products/products/by_category/`, async ({ request }) => {
+    await delay(30);
+    const url = new URL(request.url);
+    const categoryId = url.searchParams.get('category_id');
+    return HttpResponse.json(
+      productsStore.filter((p) => p.category === Number(categoryId) && p.is_active),
+    );
+  }),
 
   // GET /api/products/products/:id/
   http.get(`${BASE_URL}/products/products/:id/`, async ({ params }) => {
@@ -375,10 +350,7 @@ export const productsHandlers = [
     const { id } = params;
     const product = productsStore.find((p) => p.id === Number(id));
     if (!product) {
-      return HttpResponse.json(
-        { detail: "Product not found" },
-        { status: 404 },
-      );
+      return HttpResponse.json({ detail: 'Product not found' }, { status: 404 });
     }
     return HttpResponse.json(product);
   }),
@@ -399,9 +371,9 @@ export const productsHandlers = [
     const newProduct = {
       id: Math.max(...productsStore.map((p) => p.id)) + 1,
       name: body.name,
-      description: body.description || "",
+      description: body.description || '',
       category: body.category,
-      category_name: category?.name || "Unknown",
+      category_name: category?.name || 'Unknown',
       base_price: body.base_price,
       currency: body.currency,
       sku: `PRD-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
@@ -409,7 +381,7 @@ export const productsHandlers = [
       is_package: false,
       is_featured: false,
       is_highlighted: false,
-      tier_label: "",
+      tier_label: '',
     };
 
     productsStore.push(newProduct);
@@ -417,23 +389,17 @@ export const productsHandlers = [
   }),
 
   // PATCH /api/products/products/:id/
-  http.patch(
-    `${BASE_URL}/products/products/:id/`,
-    async ({ params, request }) => {
-      await delay(50);
-      const { id } = params;
-      const body = (await request.json()) as Partial<(typeof mockProducts)[0]>;
-      const index = productsStore.findIndex((p) => p.id === Number(id));
-      if (index === -1) {
-        return HttpResponse.json(
-          { detail: "Product not found" },
-          { status: 404 },
-        );
-      }
-      productsStore[index] = { ...productsStore[index], ...body };
-      return HttpResponse.json(productsStore[index]);
-    },
-  ),
+  http.patch(`${BASE_URL}/products/products/:id/`, async ({ params, request }) => {
+    await delay(50);
+    const { id } = params;
+    const body = (await request.json()) as Partial<(typeof mockProducts)[0]>;
+    const index = productsStore.findIndex((p) => p.id === Number(id));
+    if (index === -1) {
+      return HttpResponse.json({ detail: 'Product not found' }, { status: 404 });
+    }
+    productsStore[index] = { ...productsStore[index], ...body };
+    return HttpResponse.json(productsStore[index]);
+  }),
 
   // DELETE /api/products/products/:id/
   http.delete(`${BASE_URL}/products/products/:id/`, async ({ params }) => {
@@ -441,10 +407,7 @@ export const productsHandlers = [
     const { id } = params;
     const index = productsStore.findIndex((p) => p.id === Number(id));
     if (index === -1) {
-      return HttpResponse.json(
-        { detail: "Product not found" },
-        { status: 404 },
-      );
+      return HttpResponse.json({ detail: 'Product not found' }, { status: 404 });
     }
     productsStore.splice(index, 1);
     return HttpResponse.json({ success: true });
@@ -487,10 +450,7 @@ export const productsHandlers = [
     const { id } = params;
     const discount = discountsStore.find((d) => d.id === Number(id));
     if (!discount) {
-      return HttpResponse.json(
-        { detail: "Discount not found" },
-        { status: 404 },
-      );
+      return HttpResponse.json({ detail: 'Discount not found' }, { status: 404 });
     }
     return HttpResponse.json(discount);
   }),
@@ -513,9 +473,7 @@ export const productsHandlers = [
       value: body.value,
       is_active: true,
       valid_from: new Date().toISOString(),
-      valid_until: new Date(
-        Date.now() + 365 * 24 * 60 * 60 * 1000,
-      ).toISOString(),
+      valid_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
       max_uses: 100,
       current_uses: 0,
     };
@@ -530,10 +488,7 @@ export const productsHandlers = [
     const { id } = params;
     const index = discountsStore.findIndex((d) => d.id === Number(id));
     if (index === -1) {
-      return HttpResponse.json(
-        { detail: "Discount not found" },
-        { status: 404 },
-      );
+      return HttpResponse.json({ detail: 'Discount not found' }, { status: 404 });
     }
     discountsStore.splice(index, 1);
     return HttpResponse.json({ success: true });

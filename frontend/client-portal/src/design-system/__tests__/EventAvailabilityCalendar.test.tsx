@@ -11,11 +11,7 @@ import { theme } from '../../utils/theme';
 import { format } from 'date-fns';
 
 const renderWithTheme = (component: React.ReactElement) => {
-  return render(
-    <ThemeProvider theme={theme}>
-      {component}
-    </ThemeProvider>
-  );
+  return render(<ThemeProvider theme={theme}>{component}</ThemeProvider>);
 };
 
 describe('EventAvailabilityCalendar', () => {
@@ -50,21 +46,15 @@ describe('EventAvailabilityCalendar', () => {
   ];
 
   it('renders calendar with correct month header', () => {
-    renderWithTheme(
-      <EventAvailabilityCalendar />
-    );
-    
+    renderWithTheme(<EventAvailabilityCalendar />);
+
     const currentMonth = format(new Date(), 'MMMM yyyy');
     expect(screen.getByText(currentMonth)).toBeInTheDocument();
   });
 
   it('displays events correctly', () => {
-    renderWithTheme(
-      <EventAvailabilityCalendar 
-        events={mockEvents}
-      />
-    );
-    
+    renderWithTheme(<EventAvailabilityCalendar events={mockEvents} />);
+
     // Should show the days with events
     expect(screen.getByText('15')).toBeInTheDocument();
     expect(screen.getByText('16')).toBeInTheDocument();
@@ -79,7 +69,7 @@ describe('EventAvailabilityCalendar', () => {
         events={[]} // No events to interfere
         onDateSelect={mockOnDateSelect}
         minAdvanceBookingDays={0} // Allow immediate booking for testing
-      />
+      />,
     );
 
     // Navigate to next month to ensure we're clicking on future dates
@@ -97,44 +87,37 @@ describe('EventAvailabilityCalendar', () => {
 
   it('respects booking constraints', () => {
     renderWithTheme(
-      <EventAvailabilityCalendar 
+      <EventAvailabilityCalendar
         events={mockEvents}
         minAdvanceBookingDays={7}
         maxAdvanceBookingDays={90}
         maxEventsPerDay={1}
-      />
+      />,
     );
-    
+
     // Calendar should render with booking constraints applied
     expect(screen.getByText('Available')).toBeInTheDocument();
     expect(screen.getByText('Unavailable')).toBeInTheDocument();
   });
 
   it('shows event details in tooltip when enabled', () => {
-    renderWithTheme(
-      <EventAvailabilityCalendar 
-        events={mockEvents}
-        showEventDetails={true}
-      />
-    );
-    
+    renderWithTheme(<EventAvailabilityCalendar events={mockEvents} showEventDetails={true} />);
+
     // The calendar should render - tooltip content is tested through DOM structure
     expect(screen.getByText('15')).toBeInTheDocument();
   });
 
   it('navigates months correctly', () => {
-    renderWithTheme(
-      <EventAvailabilityCalendar />
-    );
-    
+    renderWithTheme(<EventAvailabilityCalendar />);
+
     const currentMonth = format(new Date(), 'MMMM yyyy');
     const prevButton = screen.getAllByRole('button')[0];
     const nextButton = screen.getAllByRole('button')[1];
-    
+
     // Test previous month navigation
     fireEvent.click(prevButton);
     expect(screen.queryByText(currentMonth)).not.toBeInTheDocument();
-    
+
     // Test next month navigation
     fireEvent.click(nextButton);
     fireEvent.click(nextButton);
@@ -152,13 +135,8 @@ describe('EventAvailabilityCalendar', () => {
       payment_status: 'PAID',
     }));
 
-    renderWithTheme(
-      <EventAvailabilityCalendar 
-        events={manyEvents}
-        maxEventsPerDay={2}
-      />
-    );
-    
+    renderWithTheme(<EventAvailabilityCalendar events={manyEvents} maxEventsPerDay={2} />);
+
     // Should show indicators for days with events
     expect(screen.getByText('15')).toBeInTheDocument();
   });
@@ -176,37 +154,23 @@ describe('EventAvailabilityCalendar', () => {
       },
     ];
 
-    renderWithTheme(
-      <EventAvailabilityCalendar 
-        events={cancelledEvents}
-        maxEventsPerDay={1}
-      />
-    );
-    
+    renderWithTheme(<EventAvailabilityCalendar events={cancelledEvents} maxEventsPerDay={1} />);
+
     // Cancelled events shouldn't count towards the booking limit
     expect(screen.getByText('15')).toBeInTheDocument();
   });
 
   it('shows legend with correct status indicators', () => {
-    renderWithTheme(
-      <EventAvailabilityCalendar 
-        events={mockEvents}
-      />
-    );
-    
+    renderWithTheme(<EventAvailabilityCalendar events={mockEvents} />);
+
     expect(screen.getByText('Available')).toBeInTheDocument();
     expect(screen.getByText('Has Events')).toBeInTheDocument();
     expect(screen.getByText('Unavailable')).toBeInTheDocument();
   });
 
   it('handles compact mode correctly', () => {
-    renderWithTheme(
-      <EventAvailabilityCalendar 
-        events={mockEvents}
-        compact={true}
-      />
-    );
-    
+    renderWithTheme(<EventAvailabilityCalendar events={mockEvents} compact={true} />);
+
     // In compact mode, day headers might not be shown
     // But the calendar should still render
     expect(screen.getByText(format(new Date(), 'MMMM yyyy'))).toBeInTheDocument();

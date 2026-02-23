@@ -1,16 +1,7 @@
 // frontend/admin-crm/src/pages/settings/commerce/ProductsPackages.tsx
 
 import React, { useState, useMemo } from 'react';
-import {
-  Box,
-  Typography,
-  Tabs,
-  Tab,
-  Alert,
-  Chip,
-  TextField,
-  InputAdornment,
-} from '@mui/material';
+import { Box, Typography, Tabs, Tab, Alert, Chip, TextField, InputAdornment } from '@mui/material';
 import {
   Search as SearchIcon,
   Category as CategoryIcon,
@@ -27,9 +18,13 @@ import {
   ModernPageHeader,
   ModernDialog,
   createDeleteActions,
-  ModernSettingsLayout
+  ModernSettingsLayout,
 } from '../../../components/common';
-import { type HeaderAction, createRefreshAction, createAddAction } from '../../../components/common/ModernPageHeader';
+import {
+  type HeaderAction,
+  createRefreshAction,
+  createAddAction,
+} from '../../../components/common/ModernPageHeader';
 import { CategoriesTable } from '../../../components/products/CategoriesTable';
 import { ProductsTable } from '../../../components/products/ProductsTable';
 import { DiscountsTable } from '../../../components/products/DiscountsTable';
@@ -84,23 +79,31 @@ const TabPanel = ({ children, value, index, ...other }: TabPanelProps) => {
 
 export const ProductsPackages: React.FC = () => {
   const [activeTab, setActiveTab] = useState(0);
-  
+
   // Search and filter states
   const [categorySearch, setCategorySearch] = useState('');
-  const [categoryActiveFilter, _setCategoryActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [categoryActiveFilter, _setCategoryActiveFilter] = useState<'all' | 'active' | 'inactive'>(
+    'all',
+  );
   const [productSearch, setProductSearch] = useState('');
   const [productTypeFilter, _setProductTypeFilter] = useState<'all' | 'PRODUCT' | 'PACKAGE'>('all');
-  const [productActiveFilter, _setProductActiveFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [productActiveFilter, _setProductActiveFilter] = useState<'all' | 'active' | 'inactive'>(
+    'all',
+  );
   const [discountSearch, setDiscountSearch] = useState('');
-  const [discountTypeFilter, _setDiscountTypeFilter] = useState<'all' | 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS'>('all');
-  const [discountValidFilter, _setDiscountValidFilter] = useState<'all' | 'valid' | 'invalid'>('all');
+  const [discountTypeFilter, _setDiscountTypeFilter] = useState<
+    'all' | 'PERCENTAGE' | 'FIXED' | 'FREE_HOURS'
+  >('all');
+  const [discountValidFilter, _setDiscountValidFilter] = useState<'all' | 'valid' | 'invalid'>(
+    'all',
+  );
   const [venueSearch, setVenueSearch] = useState('');
   const [vendorSearch, setVendorSearch] = useState('');
 
   // Header search functionality
   const [showSearchField, setShowSearchField] = useState(false);
   const [headerSearchQuery, setHeaderSearchQuery] = useState('');
-  
+
   // Dialog states
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [productDialogOpen, setProductDialogOpen] = useState(false);
@@ -120,33 +123,48 @@ export const ProductsPackages: React.FC = () => {
   } | null>(null);
 
   // Get filters for API calls - Note: use_pagination: false to get all results
-  const categoryFilters = useMemo(() => ({
-    search: categorySearch || undefined,
-    is_active: categoryActiveFilter === 'all' ? undefined : categoryActiveFilter === 'active',
-    use_pagination: false, // This will ensure we get all categories
-  }), [categorySearch, categoryActiveFilter]);
+  const categoryFilters = useMemo(
+    () => ({
+      search: categorySearch || undefined,
+      is_active: categoryActiveFilter === 'all' ? undefined : categoryActiveFilter === 'active',
+      use_pagination: false, // This will ensure we get all categories
+    }),
+    [categorySearch, categoryActiveFilter],
+  );
 
-  const productFilters = useMemo(() => ({
-    search: productSearch || undefined,
-    type: productTypeFilter === 'all' ? undefined : productTypeFilter,
-    is_active: productActiveFilter === 'all' ? undefined : productActiveFilter === 'active',
-    use_pagination: false, // This will ensure we get all products
-  }), [productSearch, productTypeFilter, productActiveFilter]);
+  const productFilters = useMemo(
+    () => ({
+      search: productSearch || undefined,
+      type: productTypeFilter === 'all' ? undefined : productTypeFilter,
+      is_active: productActiveFilter === 'all' ? undefined : productActiveFilter === 'active',
+      use_pagination: false, // This will ensure we get all products
+    }),
+    [productSearch, productTypeFilter, productActiveFilter],
+  );
 
-  const discountFilters = useMemo(() => ({
-    search: discountSearch || undefined,
-    discount_type: discountTypeFilter === 'all' ? undefined : discountTypeFilter,
-    is_valid: discountValidFilter === 'all' ? undefined : discountValidFilter === 'valid',
-    use_pagination: false, // This will ensure we get all discounts
-  }), [discountSearch, discountTypeFilter, discountValidFilter]);
+  const discountFilters = useMemo(
+    () => ({
+      search: discountSearch || undefined,
+      discount_type: discountTypeFilter === 'all' ? undefined : discountTypeFilter,
+      is_valid: discountValidFilter === 'all' ? undefined : discountValidFilter === 'valid',
+      use_pagination: false, // This will ensure we get all discounts
+    }),
+    [discountSearch, discountTypeFilter, discountValidFilter],
+  );
 
-  const venueFilters = useMemo(() => ({
-    search: venueSearch || undefined,
-  }), [venueSearch]);
+  const venueFilters = useMemo(
+    () => ({
+      search: venueSearch || undefined,
+    }),
+    [venueSearch],
+  );
 
-  const vendorFilters = useMemo(() => ({
-    search: vendorSearch || undefined,
-  }), [vendorSearch]);
+  const vendorFilters = useMemo(
+    () => ({
+      search: vendorSearch || undefined,
+    }),
+    [vendorSearch],
+  );
 
   // Hooks
   const {
@@ -221,12 +239,12 @@ export const ProductsPackages: React.FC = () => {
   };
 
   const handleDeleteCategory = (id: number) => {
-    const category = categories.find(c => c.id === id);
+    const category = categories.find((c) => c.id === id);
     if (category) {
       setItemToDelete({
         type: 'category',
         id,
-        name: category.name
+        name: category.name,
       });
       setDeleteDialogOpen(true);
     }
@@ -253,18 +271,21 @@ export const ProductsPackages: React.FC = () => {
   };
 
   const handleDeleteProduct = (id: number) => {
-    const product = products.find(p => p.id === id);
+    const product = products.find((p) => p.id === id);
     if (product) {
       setItemToDelete({
         type: 'product',
         id,
-        name: product.name
+        name: product.name,
       });
       setDeleteDialogOpen(true);
     }
   };
 
-  const handleProductSubmit = (data: CreateProductData | UpdateProductData, formData?: FormData) => {
+  const handleProductSubmit = (
+    data: CreateProductData | UpdateProductData,
+    formData?: FormData,
+  ) => {
     if (editingProduct) {
       updateProduct({ id: editingProduct.id, data: data as UpdateProductData, formData });
     } else {
@@ -285,12 +306,12 @@ export const ProductsPackages: React.FC = () => {
   };
 
   const handleDeleteDiscount = (id: number) => {
-    const discount = discounts.find(d => d.id === id);
+    const discount = discounts.find((d) => d.id === id);
     if (discount) {
       setItemToDelete({
         type: 'discount',
         id,
-        name: discount.name
+        name: discount.name,
       });
       setDeleteDialogOpen(true);
     }
@@ -317,12 +338,12 @@ export const ProductsPackages: React.FC = () => {
   };
 
   const handleDeleteVenue = (id: number) => {
-    const venue = venues.find(v => v.id === id);
+    const venue = venues.find((v) => v.id === id);
     if (venue) {
       setItemToDelete({
         type: 'venue',
         id,
-        name: venue.name
+        name: venue.name,
       });
       setDeleteDialogOpen(true);
     }
@@ -349,12 +370,12 @@ export const ProductsPackages: React.FC = () => {
   };
 
   const handleDeleteVendor = (id: number) => {
-    const vendor = vendors.find(v => v.id === id);
+    const vendor = vendors.find((v) => v.id === id);
     if (vendor) {
       setItemToDelete({
         type: 'vendor',
         id,
-        name: vendor.name
+        name: vendor.name,
       });
       setDeleteDialogOpen(true);
     }
@@ -374,7 +395,7 @@ export const ProductsPackages: React.FC = () => {
     if (!itemToDelete) return;
 
     const { type, id } = itemToDelete;
-    
+
     const deleteActions = {
       category: () => deleteCategory(id),
       product: () => deleteProduct(id),
@@ -470,7 +491,6 @@ export const ProductsPackages: React.FC = () => {
     }[type];
   };
 
-
   return (
     <ModernSettingsLayout>
       {/* Modern Header */}
@@ -482,28 +502,37 @@ export const ProductsPackages: React.FC = () => {
             label: showSearchField ? 'Hide Search' : 'Search',
             onClick: handleToggleSearch,
             variant: 'icon',
-            tooltip: showSearchField ? 'Hide search field' : 'Search products, categories, and discounts',
+            tooltip: showSearchField
+              ? 'Hide search field'
+              : 'Search products, categories, and discounts',
           },
           createRefreshAction(handleRefresh),
         ];
 
         const getTabLabel = () => {
           switch (activeTab) {
-            case 0: return 'Product';
-            case 1: return 'Package';
-            case 2: return 'Category';
-            case 3: return 'Discount';
-            case 4: return 'Venue';
-            case 5: return 'Vendor';
-            default: return 'Item';
+            case 0:
+              return 'Product';
+            case 1:
+              return 'Package';
+            case 2:
+              return 'Category';
+            case 3:
+              return 'Discount';
+            case 4:
+              return 'Venue';
+            case 5:
+              return 'Vendor';
+            default:
+              return 'Item';
           }
         };
 
         const primaryAction = createAddAction(`Add ${getTabLabel()}`, handleCreateNew, 'primary');
 
         // Calculate product and package counts
-        const productCount = products.filter(p => p.type === 'PRODUCT').length;
-        const packageCount = products.filter(p => p.type === 'PACKAGE').length;
+        const productCount = products.filter((p) => p.type === 'PRODUCT').length;
+        const packageCount = products.filter((p) => p.type === 'PACKAGE').length;
 
         return (
           <ModernPageHeader
@@ -521,7 +550,7 @@ export const ProductsPackages: React.FC = () => {
               { label: 'Products', value: productCount },
               { label: 'Packages', value: packageCount },
               { label: 'Categories', value: categories.length },
-              { label: 'Discounts', value: discounts.filter(d => d.is_active).length },
+              { label: 'Discounts', value: discounts.filter((d) => d.is_active).length },
             ]}
             size="medium"
           />
@@ -571,7 +600,7 @@ export const ProductsPackages: React.FC = () => {
               <Box display="flex" alignItems="center" gap={1}>
                 <ProductIcon />
                 Products
-                <Chip label={products.filter(p => p.type === 'PRODUCT').length} size="small" />
+                <Chip label={products.filter((p) => p.type === 'PRODUCT').length} size="small" />
               </Box>
             }
           />
@@ -580,7 +609,7 @@ export const ProductsPackages: React.FC = () => {
               <Box display="flex" alignItems="center" gap={1}>
                 <PackageIcon />
                 Packages
-                <Chip label={products.filter(p => p.type === 'PACKAGE').length} size="small" />
+                <Chip label={products.filter((p) => p.type === 'PACKAGE').length} size="small" />
               </Box>
             }
           />
@@ -625,11 +654,10 @@ export const ProductsPackages: React.FC = () => {
         {/* Products Tab */}
         <TabPanel value={activeTab} index={0}>
           <Box p={3}>
-
             {/* Products Alert */}
             <Alert severity="info" sx={{ mb: 3 }}>
-              Products are individual services you offer to clients.
-              Configure pricing, timing, and booking requirements for each product.
+              Products are individual services you offer to clients. Configure pricing, timing, and
+              booking requirements for each product.
             </Alert>
 
             {/* Products Table */}
@@ -647,11 +675,10 @@ export const ProductsPackages: React.FC = () => {
         {/* Packages Tab */}
         <TabPanel value={activeTab} index={1}>
           <Box p={3}>
-
             {/* Packages Alert */}
             <Alert severity="info" sx={{ mb: 3 }}>
-              Packages are bundles of products and services offered together.
-              Create packages to provide clients with comprehensive service offerings.
+              Packages are bundles of products and services offered together. Create packages to
+              provide clients with comprehensive service offerings.
             </Alert>
 
             {/* Packages Table */}
@@ -669,10 +696,9 @@ export const ProductsPackages: React.FC = () => {
         {/* Categories Tab */}
         <TabPanel value={activeTab} index={2}>
           <Box p={3}>
-
             {/* Categories Alert */}
             <Alert severity="info" sx={{ mb: 3 }}>
-              Categories help organize your products and packages. Create a hierarchical structure 
+              Categories help organize your products and packages. Create a hierarchical structure
               that makes sense for your business offerings.
             </Alert>
 
@@ -690,11 +716,10 @@ export const ProductsPackages: React.FC = () => {
         {/* Discounts Tab */}
         <TabPanel value={activeTab} index={3}>
           <Box p={3}>
-
             {/* Discounts Alert */}
             <Alert severity="info" sx={{ mb: 3 }}>
-              Create promotional discounts to incentivize bookings. Set validity periods,
-              usage limits, and specific requirements for each discount.
+              Create promotional discounts to incentivize bookings. Set validity periods, usage
+              limits, and specific requirements for each discount.
             </Alert>
 
             {/* Discounts Table */}
@@ -711,12 +736,11 @@ export const ProductsPackages: React.FC = () => {
         {/* Venues Tab */}
         <TabPanel value={activeTab} index={4}>
           <Box p={3}>
-
             {/* Venues Alert */}
             <Alert severity="info" sx={{ mb: 3 }}>
-              Venues define physical locations and their operating rules. Each venue has configurable
-              check-in/checkout times, duration limits, and optional early/late fees. Assign venues to
-              packages to determine booking rules.
+              Venues define physical locations and their operating rules. Each venue has
+              configurable check-in/checkout times, duration limits, and optional early/late fees.
+              Assign venues to packages to determine booking rules.
             </Alert>
 
             {/* Venues Table */}
@@ -733,12 +757,11 @@ export const ProductsPackages: React.FC = () => {
         {/* Vendors Tab */}
         <TabPanel value={activeTab} index={5}>
           <Box p={3}>
-
             {/* Vendors Alert */}
             <Alert severity="info" sx={{ mb: 3 }}>
               Vendors are service providers (catering, photography, florists, DJs, etc.) that can be
-              included in packages. Configure vendor details, contact information, and optional operating
-              rules for lead times and service duration.
+              included in packages. Configure vendor details, contact information, and optional
+              operating rules for lead times and service duration.
             </Alert>
 
             {/* Vendors Table */}

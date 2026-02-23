@@ -99,10 +99,11 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
   // Check if notification has expandable content
   const hasExpandableContent = () => {
     const contentLength = notification.content?.length || 0;
-    const hasContext = notification.context_data && Object.keys(notification.context_data).length > 0;
+    const hasContext =
+      notification.context_data && Object.keys(notification.context_data).length > 0;
     const hasLongContent = contentLength > 100;
     const hasMetadata = notification.delivered_via && notification.delivered_via.length > 0;
-    
+
     return hasLongContent || hasContext || hasMetadata;
   };
 
@@ -110,39 +111,62 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'URGENT': return 'error';
-      case 'HIGH': return 'warning';
-      case 'NORMAL': return 'info';
-      case 'LOW': return 'default';
-      default: return 'default';
+      case 'URGENT':
+        return 'error';
+      case 'HIGH':
+        return 'warning';
+      case 'NORMAL':
+        return 'info';
+      case 'LOW':
+        return 'default';
+      default:
+        return 'default';
     }
   };
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'SYSTEM': return tokens.color.notification.system;
-      case 'EVENT': return tokens.color.notification.event;
-      case 'TASK': return tokens.color.notification.task;
-      case 'PAYMENT': return tokens.color.notification.payment;
-      case 'CLIENT': return tokens.color.notification.client;
-      case 'CONTRACT': return tokens.color.notification.contract;
-      case 'WORKFLOW': return tokens.color.notification.workflow;
-      case 'COMMUNICATION': return tokens.color.notification.communication;
-      default: return tokens.color.notification.system;
+      case 'SYSTEM':
+        return tokens.color.notification.system;
+      case 'EVENT':
+        return tokens.color.notification.event;
+      case 'TASK':
+        return tokens.color.notification.task;
+      case 'PAYMENT':
+        return tokens.color.notification.payment;
+      case 'CLIENT':
+        return tokens.color.notification.client;
+      case 'CONTRACT':
+        return tokens.color.notification.contract;
+      case 'WORKFLOW':
+        return tokens.color.notification.workflow;
+      case 'COMMUNICATION':
+        return tokens.color.notification.communication;
+      default:
+        return tokens.color.notification.system;
     }
   };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'SYSTEM': return <NotificationIcon fontSize="small" />;
-      case 'EVENT': return <Schedule fontSize="small" />;
-      case 'TASK': return <NotificationIcon fontSize="small" />;
-      case 'PAYMENT': return <NotificationIcon fontSize="small" />;
-      case 'CLIENT': return <Person fontSize="small" />;
-      case 'CONTRACT': return <NotificationIcon fontSize="small" />;
-      case 'WORKFLOW': return <NotificationIcon fontSize="small" />;
-      case 'COMMUNICATION': return <NotificationIcon fontSize="small" />;
-      default: return <NotificationIcon fontSize="small" />;
+      case 'SYSTEM':
+        return <NotificationIcon fontSize="small" />;
+      case 'EVENT':
+        return <Schedule fontSize="small" />;
+      case 'TASK':
+        return <NotificationIcon fontSize="small" />;
+      case 'PAYMENT':
+        return <NotificationIcon fontSize="small" />;
+      case 'CLIENT':
+        return <Person fontSize="small" />;
+      case 'CONTRACT':
+        return <NotificationIcon fontSize="small" />;
+      case 'WORKFLOW':
+        return <NotificationIcon fontSize="small" />;
+      case 'COMMUNICATION':
+        return <NotificationIcon fontSize="small" />;
+      default:
+        return <NotificationIcon fontSize="small" />;
     }
   };
 
@@ -178,20 +202,21 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
               opacity: 0.75,
             }
           : {
-              bgcolor: notification.notification_type_details?.priority === 'URGENT'
-                ? tokens.color.error[50]
-                : notification.notification_type_details?.priority === 'HIGH'
-                ? tokens.color.warning[50]
-                : tokens.color.primary[50],
-            }
-        ),
+              bgcolor:
+                notification.notification_type_details?.priority === 'URGENT'
+                  ? tokens.color.error[50]
+                  : notification.notification_type_details?.priority === 'HIGH'
+                    ? tokens.color.warning[50]
+                    : tokens.color.primary[50],
+            }),
 
         '&:hover': {
-          bgcolor: notification.notification_type_details?.priority === 'URGENT'
-            ? tokens.color.error[100]
-            : notification.notification_type_details?.priority === 'HIGH'
-            ? tokens.color.warning[100]
-            : tokens.color.neutral[100],
+          bgcolor:
+            notification.notification_type_details?.priority === 'URGENT'
+              ? tokens.color.error[100]
+              : notification.notification_type_details?.priority === 'HIGH'
+                ? tokens.color.warning[100]
+                : tokens.color.neutral[100],
         },
       }}
       onClick={handleCardClick}
@@ -204,15 +229,18 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
               {!notification.is_read && (
                 <Circle
                   sx={{
-                    fontSize: notification.notification_type_details?.priority === 'URGENT' ? 10 : 8,
-                    color: notification.notification_type_details?.priority === 'URGENT' 
-                      ? 'error.main' 
-                      : notification.notification_type_details?.priority === 'HIGH'
-                      ? 'warning.main'
-                      : 'primary.main',
-                    animation: notification.notification_type_details?.priority === 'URGENT' 
-                      ? 'pulse 2s infinite' 
-                      : 'none',
+                    fontSize:
+                      notification.notification_type_details?.priority === 'URGENT' ? 10 : 8,
+                    color:
+                      notification.notification_type_details?.priority === 'URGENT'
+                        ? 'error.main'
+                        : notification.notification_type_details?.priority === 'HIGH'
+                          ? 'warning.main'
+                          : 'primary.main',
+                    animation:
+                      notification.notification_type_details?.priority === 'URGENT'
+                        ? 'pulse 2s infinite'
+                        : 'none',
                     '@keyframes pulse': {
                       '0%': {
                         transform: 'scale(1)',
@@ -231,11 +259,13 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 />
               )}
 
-              <Box 
-                sx={{ 
-                  color: getCategoryColor(notification.notification_type_details?.category || 'SYSTEM'),
+              <Box
+                sx={{
+                  color: getCategoryColor(
+                    notification.notification_type_details?.category || 'SYSTEM',
+                  ),
                   display: 'flex',
-                  alignItems: 'center'
+                  alignItems: 'center',
                 }}
               >
                 {getCategoryIcon(notification.notification_type_details?.category || 'SYSTEM')}
@@ -243,24 +273,32 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
 
               <Typography
                 variant={compact ? 'body2' : 'subtitle2'}
-                fontWeight={notification.is_read ? 'medium' : (notification.notification_type_details?.priority === 'URGENT' ? '800' : 'bold')}
+                fontWeight={
+                  notification.is_read
+                    ? 'medium'
+                    : notification.notification_type_details?.priority === 'URGENT'
+                      ? '800'
+                      : 'bold'
+                }
                 sx={{
-                  color: notification.is_read 
-                    ? 'text.secondary' 
-                    : notification.notification_type_details?.priority === 'URGENT' 
-                    ? 'error.dark'
-                    : notification.notification_type_details?.priority === 'HIGH'
-                    ? 'warning.dark'
-                    : 'text.primary',
+                  color: notification.is_read
+                    ? 'text.secondary'
+                    : notification.notification_type_details?.priority === 'URGENT'
+                      ? 'error.dark'
+                      : notification.notification_type_details?.priority === 'HIGH'
+                        ? 'warning.dark'
+                        : 'text.primary',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
                   flexGrow: 1,
                   fontSize: compact ? '0.85rem' : '0.9rem',
                   lineHeight: compact ? 1.3 : 1.4,
-                  textShadow: notification.notification_type_details?.priority === 'URGENT' && !notification.is_read 
-                    ? '0 1px 2px rgba(211, 47, 47, 0.1)' 
-                    : 'none',
+                  textShadow:
+                    notification.notification_type_details?.priority === 'URGENT' &&
+                    !notification.is_read
+                      ? '0 1px 2px rgba(211, 47, 47, 0.1)'
+                      : 'none',
                 }}
               >
                 {notification.title}
@@ -271,15 +309,29 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 <Chip
                   label={notification.notification_type_details?.priority}
                   size="small"
-                  color={getPriorityColor(notification.notification_type_details?.priority || 'NORMAL') as 'error' | 'warning' | 'info' | 'default'}
-                  variant={notification.notification_type_details?.priority === 'URGENT' ? 'filled' : 'outlined'}
-                  sx={{ 
-                    height: notification.notification_type_details?.priority === 'URGENT' ? 22 : 20, 
-                    fontSize: notification.notification_type_details?.priority === 'URGENT' ? '0.8rem' : '0.75rem',
-                    fontWeight: notification.notification_type_details?.priority === 'URGENT' ? '700' : '500',
-                    animation: notification.notification_type_details?.priority === 'URGENT' && !notification.is_read 
-                      ? 'glow 3s ease-in-out infinite alternate' 
-                      : 'none',
+                  color={
+                    getPriorityColor(
+                      notification.notification_type_details?.priority || 'NORMAL',
+                    ) as 'error' | 'warning' | 'info' | 'default'
+                  }
+                  variant={
+                    notification.notification_type_details?.priority === 'URGENT'
+                      ? 'filled'
+                      : 'outlined'
+                  }
+                  sx={{
+                    height: notification.notification_type_details?.priority === 'URGENT' ? 22 : 20,
+                    fontSize:
+                      notification.notification_type_details?.priority === 'URGENT'
+                        ? '0.8rem'
+                        : '0.75rem',
+                    fontWeight:
+                      notification.notification_type_details?.priority === 'URGENT' ? '700' : '500',
+                    animation:
+                      notification.notification_type_details?.priority === 'URGENT' &&
+                      !notification.is_read
+                        ? 'glow 3s ease-in-out infinite alternate'
+                        : 'none',
                     '@keyframes glow': {
                       '0%': {
                         boxShadow: '0 0 5px rgba(211, 47, 47, 0.3)',
@@ -300,8 +352,12 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 sx={{
                   height: 20,
                   fontSize: '0.75rem',
-                  borderColor: getCategoryColor(notification.notification_type_details?.category || 'SYSTEM'),
-                  color: getCategoryColor(notification.notification_type_details?.category || 'SYSTEM'),
+                  borderColor: getCategoryColor(
+                    notification.notification_type_details?.category || 'SYSTEM',
+                  ),
+                  color: getCategoryColor(
+                    notification.notification_type_details?.category || 'SYSTEM',
+                  ),
                 }}
               />
             </Box>
@@ -310,23 +366,28 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
             <Box>
               <Typography
                 variant="body2"
-                color={notification.is_read 
-                  ? 'text.secondary' 
-                  : notification.notification_type_details?.priority === 'URGENT' 
-                  ? 'error.dark'
-                  : notification.notification_type_details?.priority === 'HIGH'
-                  ? 'warning.dark'
-                  : 'text.primary'
+                color={
+                  notification.is_read
+                    ? 'text.secondary'
+                    : notification.notification_type_details?.priority === 'URGENT'
+                      ? 'error.dark'
+                      : notification.notification_type_details?.priority === 'HIGH'
+                        ? 'warning.dark'
+                        : 'text.primary'
                 }
                 sx={{
                   mb: compact ? 0.75 : 1,
                   overflow: expanded ? 'visible' : 'hidden',
                   display: expanded ? 'block' : '-webkit-box',
-                  WebkitLineClamp: expanded ? 'none' : (compact ? 1 : 2),
+                  WebkitLineClamp: expanded ? 'none' : compact ? 1 : 2,
                   WebkitBoxOrient: 'vertical',
                   lineHeight: compact ? 1.3 : 1.4,
                   fontSize: compact ? '0.82rem' : '0.875rem',
-                  fontWeight: notification.notification_type_details?.priority === 'URGENT' && !notification.is_read ? '500' : '400',
+                  fontWeight:
+                    notification.notification_type_details?.priority === 'URGENT' &&
+                    !notification.is_read
+                      ? '500'
+                      : '400',
                 }}
               >
                 {notification.content}
@@ -336,28 +397,52 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
               {expanded && (
                 <Box sx={{ mt: 2, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                   {/* Context Information */}
-                  {notification.context_data && Object.keys(notification.context_data).length > 0 && (
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="caption" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                        Details
-                      </Typography>
-                      <Box sx={{ mt: 1 }}>
-                        {Object.entries(notification.context_data).map(([key, value]) => (
-                          <Typography key={key} variant="body2" sx={{ fontSize: '0.8rem', mb: 0.5 }}>
-                            <strong>{key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}:</strong> {String(value)}
-                          </Typography>
-                        ))}
+                  {notification.context_data &&
+                    Object.keys(notification.context_data).length > 0 && (
+                      <Box sx={{ mb: 2 }}>
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            fontWeight: 600,
+                            color: 'text.secondary',
+                            textTransform: 'uppercase',
+                            letterSpacing: 0.5,
+                          }}
+                        >
+                          Details
+                        </Typography>
+                        <Box sx={{ mt: 1 }}>
+                          {Object.entries(notification.context_data).map(([key, value]) => (
+                            <Typography
+                              key={key}
+                              variant="body2"
+                              sx={{ fontSize: '0.8rem', mb: 0.5 }}
+                            >
+                              <strong>
+                                {key.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}:
+                              </strong>{' '}
+                              {String(value)}
+                            </Typography>
+                          ))}
+                        </Box>
                       </Box>
-                    </Box>
-                  )}
+                    )}
 
                   {/* Full metadata */}
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+                    >
                       <Schedule sx={{ fontSize: 12 }} />
-                      Created: {new Date(notification.created_at).toLocaleString('en-PH', { timeZone: 'Asia/Manila' })} PHT
+                      Created:{' '}
+                      {new Date(notification.created_at).toLocaleString('en-PH', {
+                        timeZone: 'Asia/Manila',
+                      })}{' '}
+                      PHT
                     </Typography>
-                    
+
                     {notification.delivered_via && notification.delivered_via.length > 0 && (
                       <Typography variant="caption" color="text.secondary">
                         Delivered via: {notification.delivered_via.join(', ')}
@@ -373,10 +458,10 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                   <IconButton
                     size="small"
                     onClick={handleExpandToggle}
-                    sx={{ 
+                    sx={{
                       color: 'text.secondary',
                       opacity: 0.7,
-                      '&:hover': { opacity: 1 }
+                      '&:hover': { opacity: 1 },
                     }}
                   >
                     {expanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
@@ -391,12 +476,12 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 <Typography
                   variant="caption"
                   color="text.secondary"
-                  sx={{ 
+                  sx={{
                     opacity: 0.8,
                     fontSize: compact ? '0.7rem' : '0.75rem',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 0.3
+                    gap: 0.3,
                   }}
                 >
                   <Schedule sx={{ fontSize: 12 }} />
@@ -404,19 +489,20 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 </Typography>
 
                 {/* Compact delivery status */}
-                {Array.isArray(notification.delivered_via) && notification.delivered_via.length > 0 && (
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      fontSize: '0.65rem',
-                      opacity: 0.6,
-                      textTransform: 'uppercase',
-                      letterSpacing: 0.5,
-                    }}
-                  >
-                    {notification.delivered_via.join('+')}
-                  </Typography>
-                )}
+                {Array.isArray(notification.delivered_via) &&
+                  notification.delivered_via.length > 0 && (
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        fontSize: '0.65rem',
+                        opacity: 0.6,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5,
+                      }}
+                    >
+                      {notification.delivered_via.join('+')}
+                    </Typography>
+                  )}
               </Box>
 
               {notification.action_url && (
@@ -429,7 +515,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: 0.3,
-                    '&:hover': { opacity: 1 }
+                    '&:hover': { opacity: 1 },
                   }}
                 >
                   View
@@ -457,9 +543,9 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                   sx={{
                     color: notification.is_read ? 'text.secondary' : 'primary.main',
                     opacity: 0.8,
-                    '&:hover': { 
+                    '&:hover': {
                       opacity: 1,
-                      backgroundColor: notification.is_read ? 'action.hover' : 'primary.50'
+                      backgroundColor: notification.is_read ? 'action.hover' : 'primary.50',
                     },
                   }}
                 >
@@ -482,10 +568,10 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                   sx={{
                     color: 'text.secondary',
                     opacity: 0.7,
-                    '&:hover': { 
+                    '&:hover': {
                       opacity: 1,
                       color: 'error.main',
-                      backgroundColor: 'error.50'
+                      backgroundColor: 'error.50',
                     },
                   }}
                 >
@@ -517,14 +603,16 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
               >
                 {notification.action_url && (
-                  <MenuItem onClick={() => {
-                    handleMenuClose();
-                    if (notification.action_url?.startsWith('http')) {
-                      window.open(notification.action_url, '_blank');
-                    } else if (notification.action_url) {
-                      navigate(notification.action_url);
-                    }
-                  }}>
+                  <MenuItem
+                    onClick={() => {
+                      handleMenuClose();
+                      if (notification.action_url?.startsWith('http')) {
+                        window.open(notification.action_url, '_blank');
+                      } else if (notification.action_url) {
+                        navigate(notification.action_url);
+                      }
+                    }}
+                  >
                     <ListItemIcon>
                       <OpenInNew fontSize="small" />
                     </ListItemIcon>

@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/layouts/LayoutPreviewDialog.tsx
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -14,13 +14,10 @@ import {
   CircularProgress,
   IconButton,
   Paper,
-} from "@mui/material";
-import {
-  Close as CloseIcon,
-  Refresh as RefreshIcon,
-} from "@mui/icons-material";
-import { useLayouts } from "../../hooks/useLayouts";
-import type { EmailLayout } from "../../types/layouts.types";
+} from '@mui/material';
+import { Close as CloseIcon, Refresh as RefreshIcon } from '@mui/icons-material';
+import { useLayouts } from '../../hooks/useLayouts';
+import type { EmailLayout } from '../../types/layouts.types';
 
 interface LayoutPreviewDialogProps {
   open: boolean;
@@ -33,8 +30,8 @@ export const LayoutPreviewDialog: React.FC<LayoutPreviewDialogProps> = ({
   onClose,
   layout,
 }) => {
-  const [headerTitle, setHeaderTitle] = useState("Email Preview");
-  const [headerSubtitle, setHeaderSubtitle] = useState("");
+  const [headerTitle, setHeaderTitle] = useState('Email Preview');
+  const [headerSubtitle, setHeaderSubtitle] = useState('');
   const [sampleContent, setSampleContent] = useState(
     '<h2 style="color: #333; margin-bottom: 16px;">Hello John!</h2>\n<p style="color: #666; line-height: 1.6;">This is a preview of how your email content will look within this layout.</p>\n<p style="color: #666; line-height: 1.6;">The layout wraps your content with consistent headers, footers, and styling.</p>',
   );
@@ -76,9 +73,9 @@ export const LayoutPreviewDialog: React.FC<LayoutPreviewDialogProps> = ({
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle
         sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
         <Typography variant="h6">Preview: {layout.name}</Typography>
@@ -90,17 +87,14 @@ export const LayoutPreviewDialog: React.FC<LayoutPreviewDialogProps> = ({
       <DialogContent dividers>
         <Box
           sx={{
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
             gap: 3,
-            height: { xs: "auto", md: "70vh" },
+            height: { xs: 'auto', md: '70vh' },
           }}
         >
           {/* Preview Controls */}
-          <Paper
-            variant="outlined"
-            sx={{ width: { xs: "100%", md: 300 }, p: 2, flexShrink: 0 }}
-          >
+          <Paper variant="outlined" sx={{ width: { xs: '100%', md: 300 }, p: 2, flexShrink: 0 }}>
             <Typography variant="subtitle2" gutterBottom>
               Preview Options
             </Typography>
@@ -131,19 +125,13 @@ export const LayoutPreviewDialog: React.FC<LayoutPreviewDialogProps> = ({
                 size="small"
                 fullWidth
                 InputProps={{
-                  sx: { fontFamily: "monospace", fontSize: 12 },
+                  sx: { fontFamily: 'monospace', fontSize: 12 },
                 }}
               />
 
               <Button
                 variant="outlined"
-                startIcon={
-                  isPreviewing ? (
-                    <CircularProgress size={16} />
-                  ) : (
-                    <RefreshIcon />
-                  )
-                }
+                startIcon={isPreviewing ? <CircularProgress size={16} /> : <RefreshIcon />}
                 onClick={handleRefreshPreview}
                 disabled={isPreviewing}
               >
@@ -156,18 +144,18 @@ export const LayoutPreviewDialog: React.FC<LayoutPreviewDialogProps> = ({
           <Box
             sx={{
               flex: 1,
-              bgcolor: "#f5f5f5",
+              bgcolor: '#f5f5f5',
               borderRadius: 1,
-              overflow: "hidden",
+              overflow: 'hidden',
             }}
           >
             {isPreviewing ? (
               <Box
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: "100%",
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
                 }}
               >
                 <CircularProgress />
@@ -177,19 +165,19 @@ export const LayoutPreviewDialog: React.FC<LayoutPreviewDialogProps> = ({
                 srcDoc={previewResult.html}
                 title="Layout Preview"
                 style={{
-                  width: "100%",
-                  height: "100%",
-                  border: "none",
-                  backgroundColor: "white",
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                  backgroundColor: 'white',
                 }}
               />
             ) : (
               <Box
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  height: "100%",
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
                 }}
               >
                 <Typography color="text.secondary">

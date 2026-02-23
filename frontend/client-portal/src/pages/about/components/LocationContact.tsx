@@ -88,8 +88,8 @@ export const LocationContact: React.FC<Pick<AboutPageProps, 'onNavigateToBooking
                   fontWeight: tokens.typography.weights.regular,
                 }}
               >
-                We're located near Tagaytay, easily accessible from Metro Manila.
-                Come visit us or get in touch to start planning your event.
+                We're located near Tagaytay, easily accessible from Metro Manila. Come visit us or
+                get in touch to start planning your event.
               </Typography>
             </Stack>
           </AnimatedElement>
@@ -166,14 +166,14 @@ export const LocationContact: React.FC<Pick<AboutPageProps, 'onNavigateToBooking
                             contact.type === 'location'
                               ? tokens.color.base.terracotta[100]
                               : contact.type === 'phone'
-                              ? tokens.color.base.sage[100]
-                              : tokens.color.base.neutral[100],
+                                ? tokens.color.base.sage[100]
+                                : tokens.color.base.neutral[100],
                           color:
                             contact.type === 'location'
                               ? tokens.color.base.terracotta[700]
                               : contact.type === 'phone'
-                              ? tokens.color.base.sage[700]
-                              : tokens.color.base.neutral[700],
+                                ? tokens.color.base.sage[700]
+                                : tokens.color.base.neutral[700],
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',

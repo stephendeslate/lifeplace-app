@@ -1,23 +1,23 @@
 // frontend/client-portal/src/types/booking/stepConfigurations.types.ts
 
-import type { StepConfiguration } from "./core.types";
-import type { QuestionnaireStepItem } from "./questionnaire.types";
+import type { StepConfiguration } from './core.types';
+import type { QuestionnaireStepItem } from './questionnaire.types';
 
 export interface CustomField {
   id: string;
   name: string;
   type:
-    | "text"
-    | "textarea"
-    | "select"
-    | "multiselect"
-    | "checkbox"
-    | "radio"
-    | "date"
-    | "number"
-    | "email"
-    | "phone"
-    | "file";
+    | 'text'
+    | 'textarea'
+    | 'select'
+    | 'multiselect'
+    | 'checkbox'
+    | 'radio'
+    | 'date'
+    | 'number'
+    | 'email'
+    | 'phone'
+    | 'file';
   required: boolean;
   options?: string[];
   placeholder?: string;
@@ -48,11 +48,11 @@ export interface DateTimeStepConfiguration extends StepConfiguration {
   buffer_after_hours: number;
   check_resource_availability: boolean;
   check_staff_availability: boolean;
-  availability_display_mode: "FULL" | "LIMITED" | "SIMPLE";
+  availability_display_mode: 'FULL' | 'LIMITED' | 'SIMPLE';
   allow_overbooking: boolean;
   overbooking_threshold: number;
   sync_with_calendar: boolean;
-  calendar_source: "GOOGLE" | "OUTLOOK" | "EXTERNAL" | "";
+  calendar_source: 'GOOGLE' | 'OUTLOOK' | 'EXTERNAL' | '';
 }
 
 export interface QuestionnaireStepConfiguration extends StepConfiguration {
@@ -67,7 +67,7 @@ export interface PackageSelectionStepConfiguration extends StepConfiguration {
   available_categories_details: ProductCategory[];
   available_packages: number[];
   available_packages_details: ProductOption[];
-  selection_type: "SINGLE" | "MULTIPLE";
+  selection_type: 'SINGLE' | 'MULTIPLE';
   min_selection: number;
   max_selection: number;
   show_pricing: boolean;
@@ -109,7 +109,7 @@ export interface ContactInfoStepConfiguration extends StepConfiguration {
 // Returned by backend PaymentTermsResolver.get_terms_for_step()
 export interface EffectivePaymentTerms {
   // Deposit settings
-  deposit_type: "PERCENTAGE" | "FIXED";
+  deposit_type: 'PERCENTAGE' | 'FIXED';
   deposit_percentage: number;
   deposit_fixed_amount: number | null;
   deposit_is_refundable: boolean;
@@ -117,7 +117,7 @@ export interface EffectivePaymentTerms {
   deposit_waived_on_full_payment: boolean;
   // Late fee settings
   late_fee_enabled: boolean;
-  late_fee_type: "FIXED" | "PERCENTAGE";
+  late_fee_type: 'FIXED' | 'PERCENTAGE';
   late_fee_amount: number;
   late_fee_percentage: number;
   // Security deposit settings
@@ -134,7 +134,7 @@ export interface EffectivePaymentTerms {
   downpayment_percentage: number;
   downpayment_due_days: number;
   balance_due_days: number;
-  balance_due_type: "DAYS_BEFORE" | "DAY_BEFORE";
+  balance_due_type: 'DAYS_BEFORE' | 'DAY_BEFORE';
   // Other settings
   currency: string;
   grace_period_days?: number;
@@ -229,9 +229,9 @@ export interface ProductOption {
   category: number;
   category_name: string;
   category_path: string;
-  pricing_model: "FIXED" | "HOURLY" | "TIERED" | "CUSTOM";
+  pricing_model: 'FIXED' | 'HOURLY' | 'TIERED' | 'CUSTOM';
   pricing_model_display: string;
-  pricing_unit?: "PER_EVENT" | "PER_PERSON" | "PER_HOUR";
+  pricing_unit?: 'PER_EVENT' | 'PER_PERSON' | 'PER_HOUR';
   pricing_unit_display?: string;
   minimum_guests?: number;
   maximum_guests?: number;
@@ -239,7 +239,7 @@ export interface ProductOption {
   base_price: string;
   currency: string;
   is_tax_inclusive: boolean;
-  type: "PRODUCT" | "PACKAGE";
+  type: 'PRODUCT' | 'PACKAGE';
   type_display: string;
   is_active: boolean;
   is_featured: boolean;

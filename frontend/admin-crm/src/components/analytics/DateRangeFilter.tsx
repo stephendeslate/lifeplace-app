@@ -80,18 +80,10 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
             anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             transformOrigin={{ vertical: 'top', horizontal: 'right' }}
           >
-            <MenuItem onClick={() => handlePresetSelect(presets.last7Days)}>
-              Last 7 Days
-            </MenuItem>
-            <MenuItem onClick={() => handlePresetSelect(presets.last30Days)}>
-              Last 30 Days
-            </MenuItem>
-            <MenuItem onClick={() => handlePresetSelect(presets.last90Days)}>
-              Last 90 Days
-            </MenuItem>
-            <MenuItem onClick={() => handlePresetSelect(presets.thisYear)}>
-              This Year
-            </MenuItem>
+            <MenuItem onClick={() => handlePresetSelect(presets.last7Days)}>Last 7 Days</MenuItem>
+            <MenuItem onClick={() => handlePresetSelect(presets.last30Days)}>Last 30 Days</MenuItem>
+            <MenuItem onClick={() => handlePresetSelect(presets.last90Days)}>Last 90 Days</MenuItem>
+            <MenuItem onClick={() => handlePresetSelect(presets.thisYear)}>This Year</MenuItem>
             {presets.lastYear && (
               <MenuItem onClick={() => presets.lastYear && handlePresetSelect(presets.lastYear)}>
                 Last 12 Months

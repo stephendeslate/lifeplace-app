@@ -1,18 +1,19 @@
 # backend/core/domains/venues/services/venue_service.py
+from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
-from typing import Optional, List, Dict, Any
-from dataclasses import dataclass
+from typing import Any
 
 from django.db.models import QuerySet
 from django.utils import timezone
 
-from ..models import Venue, VenueOperatingRules, PackageVenue
+from ..models import PackageVenue, Venue
 
 
 @dataclass
 class CalculatedEventTimes:
     """Data class for calculated event times"""
+
     program_date: date
     ingress_start: datetime
     program_start: datetime
@@ -27,20 +28,21 @@ class CalculatedEventTimes:
     total_hours: Decimal
 
     # Optional early/late
-    early_checkin_time: Optional[datetime] = None
-    early_checkin_hours: Optional[Decimal] = None
-    early_checkin_fee: Optional[Decimal] = None
-    late_checkout_time: Optional[datetime] = None
-    late_checkout_hours: Optional[Decimal] = None
-    late_checkout_fee: Optional[Decimal] = None
+    early_checkin_time: datetime | None = None
+    early_checkin_hours: Decimal | None = None
+    early_checkin_fee: Decimal | None = None
+    late_checkout_time: datetime | None = None
+    late_checkout_hours: Decimal | None = None
+    late_checkout_fee: Decimal | None = None
 
 
 @dataclass
 class ValidationResult:
     """Data class for validation results"""
+
     is_valid: bool
-    errors: List[str]
-    warnings: List[str]
+    errors: list[str]
+    warnings: list[str]
 
 
 class VenueService:
@@ -52,49 +54,52 @@ class VenueService:
     @staticmethod
     def get_active_venues() -> QuerySet[Venue]:
         """Get all active and bookable venues"""
-        return Venue.objects.filter(
-            is_active=True,
-            is_bookable=True
-        ).select_related('venue_operating_rules').order_by('sort_order', 'name')
+        return (
+            Venue.objects.filter(is_active=True, is_bookable=True)
+            .select_related("venue_operating_rules")
+            .order_by("sort_order", "name")
+        )
 
     @staticmethod
-    def get_venue_by_id(venue_id: int) -> Optional[Venue]:
+    def get_venue_by_id(venue_id: int) -> Venue | None:
         """Get a venue by ID with operating rules"""
         try:
-            return Venue.objects.select_related('venue_operating_rules').get(id=venue_id)
+            return Venue.objects.select_related("venue_operating_rules").get(id=venue_id)
         except Venue.DoesNotExist:
             return None
 
     @staticmethod
-    def get_venue_by_code(code: str) -> Optional[Venue]:
+    def get_venue_by_code(code: str) -> Venue | None:
         """Get a venue by code with operating rules"""
         try:
-            return Venue.objects.select_related('venue_operating_rules').get(code=code.upper())
+            return Venue.objects.select_related("venue_operating_rules").get(code=code.upper())
         except Venue.DoesNotExist:
             return None
 
     @staticmethod
     def get_package_venues(package_id: int) -> QuerySet[PackageVenue]:
         """Get all venues for a package, ordered by access_order"""
-        return PackageVenue.objects.filter(
-            package_id=package_id
-        ).select_related(
-            'venue', 'venue__venue_operating_rules'
-        ).order_by('access_order')
+        return (
+            PackageVenue.objects.filter(package_id=package_id)
+            .select_related("venue", "venue__venue_operating_rules")
+            .order_by("access_order")
+        )
 
     @staticmethod
-    def get_primary_venue_for_package(package_id: int) -> Optional[Venue]:
+    def get_primary_venue_for_package(package_id: int) -> Venue | None:
         """Get the primary venue for a package"""
         try:
-            package_venue = PackageVenue.objects.select_related(
-                'venue', 'venue__venue_operating_rules'
-            ).get(package_id=package_id, is_primary=True)
+            package_venue = PackageVenue.objects.select_related("venue", "venue__venue_operating_rules").get(
+                package_id=package_id, is_primary=True
+            )
             return package_venue.venue
         except PackageVenue.DoesNotExist:
             # Fallback to first venue if no primary set
-            first_pv = PackageVenue.objects.filter(
-                package_id=package_id
-            ).select_related('venue', 'venue__venue_operating_rules').first()
+            first_pv = (
+                PackageVenue.objects.filter(package_id=package_id)
+                .select_related("venue", "venue__venue_operating_rules")
+                .first()
+            )
             return first_pv.venue if first_pv else None
 
     @staticmethod
@@ -103,10 +108,10 @@ class VenueService:
         program_date: date,
         program_start_time: time,
         program_hours: Decimal,
-        custom_ingress_hours: Optional[Decimal] = None,
-        custom_egress_hours: Optional[Decimal] = None,
-        early_checkin_hours: Optional[Decimal] = None,
-        late_checkout_hours: Optional[Decimal] = None,
+        custom_ingress_hours: Decimal | None = None,
+        custom_egress_hours: Decimal | None = None,
+        early_checkin_hours: Decimal | None = None,
+        late_checkout_hours: Decimal | None = None,
     ) -> CalculatedEventTimes:
         """
         Calculate all event times based on venue operating rules.
@@ -124,7 +129,7 @@ class VenueService:
         Returns:
             CalculatedEventTimes with all calculated times and fees
         """
-        rules = venue.venue_operating_rules if hasattr(venue, 'venue_operating_rules') else None
+        rules = venue.venue_operating_rules if hasattr(venue, "venue_operating_rules") else None
 
         program_hours = Decimal(str(program_hours))
 
@@ -206,7 +211,7 @@ class VenueService:
         program_date: date,
         program_start_time: time,
         program_hours: Decimal,
-        guest_count: Optional[int] = None,
+        guest_count: int | None = None,
     ) -> ValidationResult:
         """
         Validate a booking request against venue rules.
@@ -223,21 +228,17 @@ class VenueService:
         """
         errors = []
         warnings = []
-        rules = venue.venue_operating_rules if hasattr(venue, 'venue_operating_rules') else None
+        rules = venue.venue_operating_rules if hasattr(venue, "venue_operating_rules") else None
 
         if not rules:
-            return ValidationResult(
-                is_valid=True,
-                errors=[],
-                warnings=['No operating rules configured for this venue']
-            )
+            return ValidationResult(is_valid=True, errors=[], warnings=["No operating rules configured for this venue"])
 
         program_hours = Decimal(str(program_hours))
 
         # Validate program duration
         duration_validation = rules.validate_program_duration(program_hours)
-        errors.extend(duration_validation['errors'])
-        warnings.extend(duration_validation['warnings'])
+        errors.extend(duration_validation["errors"])
+        warnings.extend(duration_validation["warnings"])
 
         # Validate guest count
         if guest_count:
@@ -275,7 +276,7 @@ class VenueService:
                 program_start_time=program_start_time,
                 program_hours=program_hours,
             )
-            egress_end_time = calculated_times.egress_end.time()
+            calculated_times.egress_end.time()
 
             # Handle next-day cutoff
             cutoff_date = program_date
@@ -307,8 +308,8 @@ class VenueService:
     def get_available_time_slots(
         venue: Venue,
         program_date: date,
-        program_hours: Decimal = Decimal('3'),
-    ) -> List[Dict[str, Any]]:
+        program_hours: Decimal = Decimal("3"),
+    ) -> list[dict[str, Any]]:
         """
         Get available time slots for a venue on a specific date.
 
@@ -320,12 +321,12 @@ class VenueService:
         Returns:
             List of available time slots with validation info
         """
-        rules = venue.venue_operating_rules if hasattr(venue, 'venue_operating_rules') else None
+        rules = venue.venue_operating_rules if hasattr(venue, "venue_operating_rules") else None
 
         if not rules:
             # No rules, return generic slots
             return [
-                {'time': time(hour=h, minute=0), 'is_available': True, 'validation': None}
+                {"time": time(hour=h, minute=0), "is_available": True, "validation": None}
                 for h in range(8, 22)  # 8 AM to 10 PM
             ]
 
@@ -341,13 +342,15 @@ class VenueService:
                 program_start_time=slot_time,
                 program_hours=program_hours,
             )
-            slots.append({
-                'time': slot_time.strftime('%H:%M'),
-                'time_display': slot_time.strftime('%I:%M %p'),
-                'is_available': validation.is_valid,
-                'errors': validation.errors,
-                'warnings': validation.warnings,
-            })
+            slots.append(
+                {
+                    "time": slot_time.strftime("%H:%M"),
+                    "time_display": slot_time.strftime("%I:%M %p"),
+                    "is_available": validation.is_valid,
+                    "errors": validation.errors,
+                    "warnings": validation.warnings,
+                }
+            )
 
         return slots
 
@@ -355,9 +358,9 @@ class VenueService:
     def calculate_total_fees(
         venue: Venue,
         program_hours: Decimal,
-        early_checkin_hours: Optional[Decimal] = None,
-        late_checkout_hours: Optional[Decimal] = None,
-    ) -> Dict[str, Decimal]:
+        early_checkin_hours: Decimal | None = None,
+        late_checkout_hours: Decimal | None = None,
+    ) -> dict[str, Decimal]:
         """
         Calculate all fees for a booking (early check-in, late checkout, etc.)
 
@@ -370,27 +373,23 @@ class VenueService:
         Returns:
             Dict with fee breakdown
         """
-        rules = venue.venue_operating_rules if hasattr(venue, 'venue_operating_rules') else None
+        rules = venue.venue_operating_rules if hasattr(venue, "venue_operating_rules") else None
 
         fees = {
-            'early_checkin_fee': Decimal('0.00'),
-            'late_checkout_fee': Decimal('0.00'),
-            'total_fees': Decimal('0.00'),
+            "early_checkin_fee": Decimal("0.00"),
+            "late_checkout_fee": Decimal("0.00"),
+            "total_fees": Decimal("0.00"),
         }
 
         if not rules:
             return fees
 
         if early_checkin_hours and rules.early_checkin_allowed:
-            fees['early_checkin_fee'] = rules.calculate_early_checkin_fee(
-                Decimal(str(early_checkin_hours))
-            )
+            fees["early_checkin_fee"] = rules.calculate_early_checkin_fee(Decimal(str(early_checkin_hours)))
 
         if late_checkout_hours and rules.late_checkout_allowed:
-            fees['late_checkout_fee'] = rules.calculate_late_checkout_fee(
-                Decimal(str(late_checkout_hours))
-            )
+            fees["late_checkout_fee"] = rules.calculate_late_checkout_fee(Decimal(str(late_checkout_hours)))
 
-        fees['total_fees'] = fees['early_checkin_fee'] + fees['late_checkout_fee']
+        fees["total_fees"] = fees["early_checkin_fee"] + fees["late_checkout_fee"]
 
         return fees

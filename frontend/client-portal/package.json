@@ -15,7 +15,9 @@
     "test:ui": "vitest --ui",
     "test:changed": "vitest related",
     "test:integration": "vitest run --testTimeout=10000 src/**/*.integration.test.*",
-    "audit:security": "npm audit --audit-level=high"
+    "audit:security": "npm audit --audit-level=high",
+    "format": "prettier --write 'src/**/*.{ts,tsx,js,jsx,json,css}'",
+    "format:check": "prettier --check 'src/**/*.{ts,tsx,js,jsx,json,css}'"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

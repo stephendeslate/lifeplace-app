@@ -15,15 +15,18 @@ import type { PaginatedResponse, PaginationParams } from '../types/common.types'
 
 export const clientsApi = {
   // Client CRUD operations with pagination
-  getClients: async (filters?: ClientFilters & PaginationParams): Promise<PaginatedResponse<Client>> => {
+  getClients: async (
+    filters?: ClientFilters & PaginationParams,
+  ): Promise<PaginatedResponse<Client>> => {
     const params = new URLSearchParams();
-    
+
     if (filters?.search) params.append('search', filters.search);
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    if (filters?.has_account !== undefined) params.append('has_account', filters.has_account.toString());
+    if (filters?.has_account !== undefined)
+      params.append('has_account', filters.has_account.toString());
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.page_size) params.append('page_size', filters.page_size.toString());
-    
+
     const response = await api.get<PaginatedResponse<Client>>(`/clients/?${params.toString()}`);
     return response.data;
   },
@@ -50,12 +53,12 @@ export const clientsApi = {
   // Client-specific endpoints
   getActiveClients: async (): Promise<Client[]> => {
     const response = await api.get<Client[]>('/clients/active/');
-    
+
     // Handle paginated response - extract results array
     if (response.data && typeof response.data === 'object' && 'results' in response.data) {
       return response.data.results as Client[];
     }
-    
+
     // Fallback for direct array response
     return response.data || [];
   },
@@ -76,8 +79,14 @@ export const clientsApi = {
     return response.data;
   },
 
-  acceptInvitation: async (invitationId: string, data: AcceptInvitationData): Promise<AcceptInvitationResponse> => {
-    const response = await api.post<AcceptInvitationResponse>(`/clients/invitations/${invitationId}/accept/`, data);
+  acceptInvitation: async (
+    invitationId: string,
+    data: AcceptInvitationData,
+  ): Promise<AcceptInvitationResponse> => {
+    const response = await api.post<AcceptInvitationResponse>(
+      `/clients/invitations/${invitationId}/accept/`,
+      data,
+    );
     return response.data;
   },
 
@@ -85,22 +94,27 @@ export const clientsApi = {
   importClients: async (file: File): Promise<{ success: number; errors: string[] }> => {
     const formData = new FormData();
     formData.append('file', file);
-    
-    const response = await api.post<{ success: number; errors: string[] }>('/clients/import/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
+
+    const response = await api.post<{ success: number; errors: string[] }>(
+      '/clients/import/',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       },
-    });
+    );
     return response.data;
   },
 
   exportClients: async (filters?: ClientFilters): Promise<Blob> => {
     const params = new URLSearchParams();
-    
+
     if (filters?.search) params.append('search', filters.search);
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
-    if (filters?.has_account !== undefined) params.append('has_account', filters.has_account.toString());
-    
+    if (filters?.has_account !== undefined)
+      params.append('has_account', filters.has_account.toString());
+
     const response = await api.get<Blob>(`/clients/export/?${params.toString()}`, {
       responseType: 'blob',
     });

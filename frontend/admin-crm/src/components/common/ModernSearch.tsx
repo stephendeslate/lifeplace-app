@@ -63,9 +63,12 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
 }) => {
   const [filtersExpanded, setFiltersExpanded] = React.useState(defaultExpanded);
 
-  const hasActiveFilters = Object.values(filterValues).some(value =>
-    value !== undefined && value !== '' && value !== null &&
-    (Array.isArray(value) ? value.length > 0 : true)
+  const hasActiveFilters = Object.values(filterValues).some(
+    (value) =>
+      value !== undefined &&
+      value !== '' &&
+      value !== null &&
+      (Array.isArray(value) ? value.length > 0 : true),
   );
 
   const handleFilterChange = (key: string, value: unknown) => {
@@ -116,7 +119,7 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
               renderValue={(selected) => (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                   {(selected as unknown[]).slice(0, 2).map((val) => {
-                    const option = filter.options?.find(opt => opt.value === val);
+                    const option = filter.options?.find((opt) => opt.value === val);
                     return (
                       <Chip key={String(val)} label={option?.label || String(val)} size="small" />
                     );
@@ -190,11 +193,7 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
             ),
             endAdornment: searchValue && (
               <InputAdornment position="end">
-                <IconButton
-                  size="small"
-                  onClick={() => onSearchChange('')}
-                  disabled={disabled}
-                >
+                <IconButton size="small" onClick={() => onSearchChange('')} disabled={disabled}>
                   <ClearIcon fontSize="small" />
                 </IconButton>
               </InputAdornment>
@@ -245,7 +244,9 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
               mb: 2,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}
+            >
               <Typography variant="subtitle2" fontWeight={600}>
                 Filters
               </Typography>
@@ -270,23 +271,25 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
               }}
             >
               {filters.map((filter) => (
-                <Box key={filter.key}>
-                  {renderFilter(filter)}
-                </Box>
+                <Box key={filter.key}>{renderFilter(filter)}</Box>
               ))}
             </Box>
 
             {/* Active Filters Display */}
             {hasActiveFilters && (
               <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${tokens.color.borders.subtle}` }}>
-                <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mb: 1, display: 'block' }}
+                >
                   Active Filters:
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap">
                   {Object.entries(filterValues).map(([key, value]) => {
                     if (!value || (Array.isArray(value) && value.length === 0)) return null;
 
-                    const filter = filters.find(f => f.key === key);
+                    const filter = filters.find((f) => f.key === key);
                     if (!filter) return null;
 
                     const displayValue = Array.isArray(value)
@@ -298,7 +301,9 @@ export const ModernSearch: React.FC<ModernSearchProps> = ({
                         key={key}
                         label={`${filter.label}: ${displayValue}`}
                         size="small"
-                        onDelete={() => handleFilterChange(key, filter.type === 'multiselect' ? [] : '')}
+                        onDelete={() =>
+                          handleFilterChange(key, filter.type === 'multiselect' ? [] : '')
+                        }
                         disabled={disabled}
                         sx={{
                           bgcolor: tokens.color.primary[50],

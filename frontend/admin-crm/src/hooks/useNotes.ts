@@ -3,11 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { notesApi } from '../apis/notes.api';
 import { useToastActions } from '../contexts/ToastContext';
-import type {
-  NoteFilters,
-  CreateNoteData,
-  UpdateNoteData,
-} from '../types/notes.types';
+import type { NoteFilters, CreateNoteData, UpdateNoteData } from '../types/notes.types';
 
 interface ApiError {
   response?: {
@@ -27,7 +23,7 @@ export const useNotes = (filters?: NoteFilters) => {
     data: notesData,
     isLoading: isLoadingNotes,
     error: notesError,
-    refetch: refetchNotes
+    refetch: refetchNotes,
   } = useQuery({
     queryKey: ['notes', filters],
     queryFn: () => notesApi.getNotes(filters),
@@ -58,8 +54,13 @@ export const useNotes = (filters?: NoteFilters) => {
     onSuccess: (newNote) => {
       // Invalidate all relevant queries
       queryClient.invalidateQueries({ queryKey: ['notes'] });
-      queryClient.invalidateQueries({ 
-        queryKey: ['notes', 'for-object', newNote.content_type_name?.toLowerCase(), newNote.object_id] 
+      queryClient.invalidateQueries({
+        queryKey: [
+          'notes',
+          'for-object',
+          newNote.content_type_name?.toLowerCase(),
+          newNote.object_id,
+        ],
       });
       showSuccess('Note Created', 'Note has been added successfully.');
     },
@@ -76,8 +77,13 @@ export const useNotes = (filters?: NoteFilters) => {
       // Invalidate all relevant queries
       queryClient.invalidateQueries({ queryKey: ['notes'] });
       queryClient.invalidateQueries({ queryKey: ['note', updatedNote.id] });
-      queryClient.invalidateQueries({ 
-        queryKey: ['notes', 'for-object', updatedNote.content_type_name?.toLowerCase(), updatedNote.object_id] 
+      queryClient.invalidateQueries({
+        queryKey: [
+          'notes',
+          'for-object',
+          updatedNote.content_type_name?.toLowerCase(),
+          updatedNote.object_id,
+        ],
       });
       showSuccess('Note Updated', 'Note has been updated successfully.');
     },
@@ -105,25 +111,25 @@ export const useNotes = (filters?: NoteFilters) => {
     // Data
     notes: notesData?.results || [],
     notesCount: notesData?.count || 0,
-    
+
     // Loading states
     isLoadingNotes,
     isCreatingNote: createNoteMutation.isPending,
     isUpdatingNote: updateNoteMutation.isPending,
     isDeletingNote: deleteNoteMutation.isPending,
-    
+
     // Error states
     notesError,
     createError: createNoteMutation.error,
     updateError: updateNoteMutation.error,
     deleteError: deleteNoteMutation.error,
-    
+
     // Actions
     createNote: createNoteMutation.mutate,
     updateNote: updateNoteMutation.mutate,
     deleteNote: deleteNoteMutation.mutate,
     refetchNotes,
-    
+
     // Hooks for specific queries
     useNote,
     useNotesForObject,

@@ -22,16 +22,14 @@ const FormError: React.FC<FormErrorProps> = ({
 
   return (
     <Collapse in={!!error}>
-      <Alert 
-        severity={severity} 
-        sx={{ 
+      <Alert
+        severity={severity}
+        sx={{
           borderRadius: 2,
           mb: 2,
         }}
       >
-        <AlertTitle sx={{ margin: 0, fontWeight: 600 }}>
-          {title}
-        </AlertTitle>
+        <AlertTitle sx={{ margin: 0, fontWeight: 600 }}>{title}</AlertTitle>
         {error}
       </Alert>
     </Collapse>

@@ -185,7 +185,7 @@ describe('useAuth', () => {
 
       expect(mockToastActions.showSuccess).toHaveBeenCalledWith(
         'Password Changed',
-        'Your password has been updated successfully.'
+        'Your password has been updated successfully.',
       );
     });
 
@@ -215,7 +215,7 @@ describe('useAuth', () => {
       await waitFor(() => {
         expect(mockToastActions.showError).toHaveBeenCalledWith(
           'Password Change Failed',
-          'Current password is incorrect'
+          'Current password is incorrect',
         );
       });
     });
@@ -296,7 +296,7 @@ describe('useAuth', () => {
 
       expect(mockToastActions.showSuccess).toHaveBeenCalledWith(
         'Profile Updated',
-        'Your profile has been updated successfully.'
+        'Your profile has been updated successfully.',
       );
     });
 
@@ -349,7 +349,7 @@ describe('useAuth', () => {
       await waitFor(() => {
         expect(mockToastActions.showError).toHaveBeenCalledWith(
           'Update Failed',
-          'Validation error'
+          'Validation error',
         );
       });
     });
@@ -401,7 +401,7 @@ describe('useAuth', () => {
 
       expect(mockToastActions.showSuccess).toHaveBeenCalledWith(
         'Avatar Updated',
-        'Your profile picture has been updated.'
+        'Your profile picture has been updated.',
       );
     });
 
@@ -457,10 +457,7 @@ describe('useAuth', () => {
       });
 
       await waitFor(() => {
-        expect(mockToastActions.showError).toHaveBeenCalledWith(
-          'Upload Failed',
-          'File too large'
-        );
+        expect(mockToastActions.showError).toHaveBeenCalledWith('Upload Failed', 'File too large');
       });
     });
   });

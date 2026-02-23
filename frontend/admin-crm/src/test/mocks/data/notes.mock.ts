@@ -1,5 +1,5 @@
-import type { Note } from "../../../types/notes.types";
-import type { PaginatedResponse } from "../../../types/common.types";
+import type { Note } from '../../../types/notes.types';
+import type { PaginatedResponse } from '../../../types/common.types';
 
 export function createMockNote(overrides: Partial<Note> = {}): Note {
   const id = overrides.id || Math.floor(Math.random() * 10000);
@@ -8,13 +8,13 @@ export function createMockNote(overrides: Partial<Note> = {}): Note {
     title: `Test Note ${id}`,
     content: `This is the content of note ${id}`,
     created_by: 1,
-    created_by_name: "Admin User",
+    created_by_name: 'Admin User',
     content_type: 1,
     object_id: 1,
-    content_type_name: "client",
-    content_object_repr: "John Doe",
-    created_at: "2024-06-15T10:00:00Z",
-    updated_at: "2024-06-15T10:00:00Z",
+    content_type_name: 'client',
+    content_object_repr: 'John Doe',
+    created_at: '2024-06-15T10:00:00Z',
+    updated_at: '2024-06-15T10:00:00Z',
     is_client_visible: false,
     ...overrides,
   };

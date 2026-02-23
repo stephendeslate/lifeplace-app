@@ -1,22 +1,22 @@
-import { PublicLayout } from "../components/layout";
-import { PodcastsPage } from "../pages/podcasts";
+import { PublicLayout } from '../components/layout';
+import { PodcastsPage } from '../pages/podcasts';
 
 export function meta() {
   return [
-    { title: "Podcasts | LifePlace Alfonso" },
+    { title: 'Podcasts | LifePlace Alfonso' },
     {
-      name: "description",
+      name: 'description',
       content:
-        "Listen to the LifePlace Alfonso podcast series featuring conversations about events and venue management.",
+        'Listen to the LifePlace Alfonso podcast series featuring conversations about events and venue management.',
     },
-    { property: "og:title", content: "Podcasts | LifePlace Alfonso" },
+    { property: 'og:title', content: 'Podcasts | LifePlace Alfonso' },
     {
-      property: "og:description",
+      property: 'og:description',
       content:
-        "Listen to the LifePlace Alfonso podcast series featuring conversations about events and venue management.",
+        'Listen to the LifePlace Alfonso podcast series featuring conversations about events and venue management.',
     },
-    { property: "og:image", content: "/og-image.jpg" },
-    { property: "og:type", content: "website" },
+    { property: 'og:image', content: '/og-image.jpg' },
+    { property: 'og:type', content: 'website' },
   ];
 }
 

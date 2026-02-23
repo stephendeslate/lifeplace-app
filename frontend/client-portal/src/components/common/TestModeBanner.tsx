@@ -2,10 +2,7 @@
 
 import React, { useState } from 'react';
 import { Box, Typography, IconButton, Tooltip, alpha } from '@mui/material';
-import {
-  Science as TestIcon,
-  Close as CloseIcon,
-} from '@mui/icons-material';
+import { Science as TestIcon, Close as CloseIcon } from '@mui/icons-material';
 
 const STORAGE_KEY = 'lifeplace_test_banner_dismissed';
 

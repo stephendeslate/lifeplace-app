@@ -6,11 +6,13 @@ Note: Seed data is now handled by the `seed_production_data` management command.
 Run `python manage.py seed_production_data` after migrations to seed default data.
 """
 
+import logging
+
+from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth import get_user_model
-from .models import CurrencySettings, CompanySettings
-import logging
+
+from .models import CompanySettings, CurrencySettings
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -24,6 +26,7 @@ def invalidate_caches_on_company_update(sender, instance, **kwargs):
     """
     try:
         from core.domains.communications.cache_service import communications_cache_service
+
         communications_cache_service.invalidate_variable_schemas_cache()
         logger.info("Invalidated variable schemas cache after CompanySettings update")
     except Exception as e:
@@ -39,7 +42,7 @@ def create_user_currency_settings(sender, instance, created, **kwargs):
     if created:
         try:
             # Check if system settings exist, create if not
-            system_settings = CurrencySettings.get_system_settings()
+            CurrencySettings.get_system_settings()
 
             # Create user settings based on system defaults
             # Note: This is optional - users can inherit from system settings without having their own record

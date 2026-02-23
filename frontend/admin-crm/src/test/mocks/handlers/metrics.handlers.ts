@@ -1,16 +1,13 @@
-import { http, HttpResponse, delay } from "msw";
+import { http, HttpResponse, delay } from 'msw';
 import {
   mockPlatformMetrics,
   mockKPISnapshotSummary,
   mockSystemHealthSeries,
   mockDORAMetricsReport,
-} from "../data/metrics.mock";
-import type {
-  DailyKPISnapshot,
-  SystemHealthSnapshot,
-} from "../../../types/metrics.types";
+} from '../data/metrics.mock';
+import type { DailyKPISnapshot, SystemHealthSnapshot } from '../../../types/metrics.types';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
 let kpiStore: DailyKPISnapshot[] = [...mockPlatformMetrics];
 let healthStore: SystemHealthSnapshot[] = [...mockSystemHealthSeries];
@@ -25,8 +22,8 @@ export const metricsHandlers = [
   http.get(`${BASE_URL}/analytics/snapshots/kpis/`, async ({ request }) => {
     await delay(30);
     const url = new URL(request.url);
-    const startDate = url.searchParams.get("start_date");
-    const endDate = url.searchParams.get("end_date");
+    const startDate = url.searchParams.get('start_date');
+    const endDate = url.searchParams.get('end_date');
 
     let filtered = [...kpiStore];
 
@@ -53,8 +50,8 @@ export const metricsHandlers = [
   http.get(`${BASE_URL}/analytics/snapshots/health/`, async ({ request }) => {
     await delay(30);
     const url = new URL(request.url);
-    const startDate = url.searchParams.get("start_date");
-    const endDate = url.searchParams.get("end_date");
+    const startDate = url.searchParams.get('start_date');
+    const endDate = url.searchParams.get('end_date');
 
     let filtered = [...healthStore];
 
@@ -75,8 +72,8 @@ export const metricsHandlers = [
   http.get(`${BASE_URL}/infrastructure/dora-metrics/`, async ({ request }) => {
     await delay(30);
     const url = new URL(request.url);
-    const days = url.searchParams.get("days");
-    const service = url.searchParams.get("service");
+    const days = url.searchParams.get('days');
+    const service = url.searchParams.get('service');
 
     const report = {
       ...mockDORAMetricsReport,
@@ -91,18 +88,18 @@ export const metricsHandlers = [
   http.get(`${BASE_URL}/infrastructure/deployments/`, async ({ request }) => {
     await delay(30);
     const url = new URL(request.url);
-    const limit = Number(url.searchParams.get("limit") || 10);
-    const service = url.searchParams.get("service");
+    const limit = Number(url.searchParams.get('limit') || 10);
+    const service = url.searchParams.get('service');
 
     const deployments = Array.from({ length: Math.min(limit, 20) }, (_, i) => ({
       id: `deploy-${i + 1}`,
-      git_sha: `abc${String(i + 1).padStart(4, "0")}def1234567890abcdef1234567890ab`,
-      git_sha_short: `abc${String(i + 1).padStart(4, "0")}d`,
-      commit_message: `Deploy #${i + 1}: Update ${service || "backend"} service`,
-      service: service || "backend",
-      environment: "production",
-      status: i % 10 === 9 ? ("FAILURE" as const) : ("SUCCESS" as const),
-      triggered_by: "github-actions",
+      git_sha: `abc${String(i + 1).padStart(4, '0')}def1234567890abcdef1234567890ab`,
+      git_sha_short: `abc${String(i + 1).padStart(4, '0')}d`,
+      commit_message: `Deploy #${i + 1}: Update ${service || 'backend'} service`,
+      service: service || 'backend',
+      environment: 'production',
+      status: i % 10 === 9 ? ('FAILURE' as const) : ('SUCCESS' as const),
+      triggered_by: 'github-actions',
       deploy_duration_seconds: 120 + Math.floor(Math.random() * 180),
       lead_time_seconds: 3600 + Math.floor(Math.random() * 7200),
       caused_incident: i % 10 === 9,

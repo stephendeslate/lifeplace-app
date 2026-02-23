@@ -60,12 +60,8 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
   const [quietHoursStart, setQuietHoursStart] = useState<Date | null>(null);
   const [quietHoursEnd, setQuietHoursEnd] = useState<Date | null>(null);
 
-  const {
-    updatePreferences,
-    resetToDefaults,
-    isUpdatingPreferences,
-    isResettingPreferences,
-  } = useNotificationPreferences();
+  const { updatePreferences, resetToDefaults, isUpdatingPreferences, isResettingPreferences } =
+    useNotificationPreferences();
 
   const { notificationTypes } = useNotificationTypes({ is_active: true });
 
@@ -148,8 +144,11 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
     }
   }, [preferences]);
 
-  const handleFieldChange = (field: keyof UpdateNotificationPreferenceData, value: boolean | string | number[]) => {
-    setFormData(prev => ({
+  const handleFieldChange = (
+    field: keyof UpdateNotificationPreferenceData,
+    value: boolean | string | number[],
+  ) => {
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
@@ -159,11 +158,15 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
   const handleQuietHoursChange = (field: 'start' | 'end', value: Date | null) => {
     if (field === 'start') {
       setQuietHoursStart(value);
-      const timeString = value ? `${value.getHours().toString().padStart(2, '0')}:${value.getMinutes().toString().padStart(2, '0')}` : null;
+      const timeString = value
+        ? `${value.getHours().toString().padStart(2, '0')}:${value.getMinutes().toString().padStart(2, '0')}`
+        : null;
       handleFieldChange('quiet_hours_start', timeString || '');
     } else {
       setQuietHoursEnd(value);
-      const timeString = value ? `${value.getHours().toString().padStart(2, '0')}:${value.getMinutes().toString().padStart(2, '0')}` : null;
+      const timeString = value
+        ? `${value.getHours().toString().padStart(2, '0')}:${value.getMinutes().toString().padStart(2, '0')}`
+        : null;
       handleFieldChange('quiet_hours_end', timeString || '');
     }
   };
@@ -175,7 +178,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
     if (disabled) {
       newDisabled = [...currentDisabled, typeId];
     } else {
-      newDisabled = currentDisabled.filter(id => id !== typeId);
+      newDisabled = currentDisabled.filter((id) => id !== typeId);
     }
 
     handleFieldChange('disabled_types', newDisabled);
@@ -208,8 +211,17 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
             <FormControlLabel
               control={
                 <Switch
-                  checked={formData[`${categoryKey}_email` as keyof UpdateNotificationPreferenceData] as boolean ?? false}
-                  onChange={(e) => handleFieldChange(`${categoryKey}_email` as keyof UpdateNotificationPreferenceData, e.target.checked)}
+                  checked={
+                    (formData[
+                      `${categoryKey}_email` as keyof UpdateNotificationPreferenceData
+                    ] as boolean) ?? false
+                  }
+                  onChange={(e) =>
+                    handleFieldChange(
+                      `${categoryKey}_email` as keyof UpdateNotificationPreferenceData,
+                      e.target.checked,
+                    )
+                  }
                   disabled={!formData.email_enabled}
                 />
               }
@@ -224,8 +236,17 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
             <FormControlLabel
               control={
                 <Switch
-                  checked={formData[`${categoryKey}_sms` as keyof UpdateNotificationPreferenceData] as boolean ?? false}
-                  onChange={(e) => handleFieldChange(`${categoryKey}_sms` as keyof UpdateNotificationPreferenceData, e.target.checked)}
+                  checked={
+                    (formData[
+                      `${categoryKey}_sms` as keyof UpdateNotificationPreferenceData
+                    ] as boolean) ?? false
+                  }
+                  onChange={(e) =>
+                    handleFieldChange(
+                      `${categoryKey}_sms` as keyof UpdateNotificationPreferenceData,
+                      e.target.checked,
+                    )
+                  }
                   disabled={!formData.sms_enabled}
                 />
               }
@@ -240,8 +261,17 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
             <FormControlLabel
               control={
                 <Switch
-                  checked={formData[`${categoryKey}_in_app` as keyof UpdateNotificationPreferenceData] as boolean ?? false}
-                  onChange={(e) => handleFieldChange(`${categoryKey}_in_app` as keyof UpdateNotificationPreferenceData, e.target.checked)}
+                  checked={
+                    (formData[
+                      `${categoryKey}_in_app` as keyof UpdateNotificationPreferenceData
+                    ] as boolean) ?? false
+                  }
+                  onChange={(e) =>
+                    handleFieldChange(
+                      `${categoryKey}_in_app` as keyof UpdateNotificationPreferenceData,
+                      e.target.checked,
+                    )
+                  }
                   disabled={!formData.in_app_enabled}
                 />
               }
@@ -256,8 +286,17 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
             <FormControlLabel
               control={
                 <Switch
-                  checked={formData[`${categoryKey}_push` as keyof UpdateNotificationPreferenceData] as boolean ?? false}
-                  onChange={(e) => handleFieldChange(`${categoryKey}_push` as keyof UpdateNotificationPreferenceData, e.target.checked)}
+                  checked={
+                    (formData[
+                      `${categoryKey}_push` as keyof UpdateNotificationPreferenceData
+                    ] as boolean) ?? false
+                  }
+                  onChange={(e) =>
+                    handleFieldChange(
+                      `${categoryKey}_push` as keyof UpdateNotificationPreferenceData,
+                      e.target.checked,
+                    )
+                  }
                   disabled={!formData.push_enabled}
                 />
               }
@@ -298,7 +337,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
               </Typography>
             </Box>
           </Box>
-          
+
           <Stack direction="row" spacing={2}>
             <Button
               variant="outlined"
@@ -308,7 +347,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
             >
               Reset to Defaults
             </Button>
-            
+
             <Button
               type="submit"
               variant="contained"
@@ -333,9 +372,17 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
               <Typography variant="body2" color="text.secondary" paragraph>
                 Control which delivery methods are available for notifications
               </Typography>
-              
+
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} flexWrap="wrap" useFlexGap>
-                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: formData.email_enabled ? 'primary.50' : 'grey.50', flex: 1, minWidth: 180 }}>
+                <Paper
+                  sx={{
+                    p: 2,
+                    textAlign: 'center',
+                    bgcolor: formData.email_enabled ? 'primary.50' : 'grey.50',
+                    flex: 1,
+                    minWidth: 180,
+                  }}
+                >
                   <FormControlLabel
                     control={
                       <Switch
@@ -346,13 +393,23 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                     label={
                       <Box display="flex" alignItems="center" gap={1}>
                         <Email fontSize="small" />
-                        <Typography variant="body2" fontWeight="medium">Email</Typography>
+                        <Typography variant="body2" fontWeight="medium">
+                          Email
+                        </Typography>
                       </Box>
                     }
                   />
                 </Paper>
 
-                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: formData.sms_enabled ? 'warning.50' : 'grey.50', flex: 1, minWidth: 180 }}>
+                <Paper
+                  sx={{
+                    p: 2,
+                    textAlign: 'center',
+                    bgcolor: formData.sms_enabled ? 'warning.50' : 'grey.50',
+                    flex: 1,
+                    minWidth: 180,
+                  }}
+                >
                   <FormControlLabel
                     control={
                       <Switch
@@ -363,13 +420,23 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                     label={
                       <Box display="flex" alignItems="center" gap={1}>
                         <Sms fontSize="small" />
-                        <Typography variant="body2" fontWeight="medium">SMS</Typography>
+                        <Typography variant="body2" fontWeight="medium">
+                          SMS
+                        </Typography>
                       </Box>
                     }
                   />
                 </Paper>
 
-                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: formData.in_app_enabled ? 'success.50' : 'grey.50', flex: 1, minWidth: 180 }}>
+                <Paper
+                  sx={{
+                    p: 2,
+                    textAlign: 'center',
+                    bgcolor: formData.in_app_enabled ? 'success.50' : 'grey.50',
+                    flex: 1,
+                    minWidth: 180,
+                  }}
+                >
                   <FormControlLabel
                     control={
                       <Switch
@@ -380,13 +447,23 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                     label={
                       <Box display="flex" alignItems="center" gap={1}>
                         <Notifications fontSize="small" />
-                        <Typography variant="body2" fontWeight="medium">In-App</Typography>
+                        <Typography variant="body2" fontWeight="medium">
+                          In-App
+                        </Typography>
                       </Box>
                     }
                   />
                 </Paper>
 
-                <Paper sx={{ p: 2, textAlign: 'center', bgcolor: formData.push_enabled ? 'info.50' : 'grey.50', flex: 1, minWidth: 180 }}>
+                <Paper
+                  sx={{
+                    p: 2,
+                    textAlign: 'center',
+                    bgcolor: formData.push_enabled ? 'info.50' : 'grey.50',
+                    flex: 1,
+                    minWidth: 180,
+                  }}
+                >
                   <FormControlLabel
                     control={
                       <Switch
@@ -397,7 +474,9 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                     label={
                       <Box display="flex" alignItems="center" gap={1}>
                         <PhoneIphone fontSize="small" />
-                        <Typography variant="body2" fontWeight="medium">Push</Typography>
+                        <Typography variant="body2" fontWeight="medium">
+                          Push
+                        </Typography>
                       </Box>
                     }
                   />
@@ -415,16 +494,44 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
               <Typography variant="body2" color="text.secondary" paragraph>
                 Configure delivery methods for different types of notifications
               </Typography>
-              
+
               <Stack spacing={2}>
                 {renderCategoryPreferences('SYSTEM', 'System Updates', <Settings color="action" />)}
-                {renderCategoryPreferences('EVENT', 'Event Management', <Schedule color="action" />)}
-                {renderCategoryPreferences('TASK', 'Task Assignments', <Notifications color="action" />)}
-                {renderCategoryPreferences('PAYMENT', 'Payment Processing', <Notifications color="action" />)}
-                {renderCategoryPreferences('CLIENT', 'Client Management', <Notifications color="action" />)}
-                {renderCategoryPreferences('CONTRACT', 'Contract Updates', <Notifications color="action" />)}
-                {renderCategoryPreferences('WORKFLOW', 'Workflow Progress', <Notifications color="action" />)}
-                {renderCategoryPreferences('COMMUNICATION', 'Communication Alerts', <Email color="action" />)}
+                {renderCategoryPreferences(
+                  'EVENT',
+                  'Event Management',
+                  <Schedule color="action" />,
+                )}
+                {renderCategoryPreferences(
+                  'TASK',
+                  'Task Assignments',
+                  <Notifications color="action" />,
+                )}
+                {renderCategoryPreferences(
+                  'PAYMENT',
+                  'Payment Processing',
+                  <Notifications color="action" />,
+                )}
+                {renderCategoryPreferences(
+                  'CLIENT',
+                  'Client Management',
+                  <Notifications color="action" />,
+                )}
+                {renderCategoryPreferences(
+                  'CONTRACT',
+                  'Contract Updates',
+                  <Notifications color="action" />,
+                )}
+                {renderCategoryPreferences(
+                  'WORKFLOW',
+                  'Workflow Progress',
+                  <Notifications color="action" />,
+                )}
+                {renderCategoryPreferences(
+                  'COMMUNICATION',
+                  'Communication Alerts',
+                  <Email color="action" />,
+                )}
               </Stack>
             </CardContent>
           </Card>
@@ -442,9 +549,10 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
 
               <Alert severity="warning" icon={<Warning />} sx={{ mb: 3 }}>
                 <Typography variant="body2">
-                  <strong>Philippines DPA Compliance:</strong> Marketing communications require explicit consent.
-                  These settings are OFF by default. Users can withdraw consent at any time.
-                  Only enable if you have obtained explicit consent for marketing communications.
+                  <strong>Philippines DPA Compliance:</strong> Marketing communications require
+                  explicit consent. These settings are OFF by default. Users can withdraw consent at
+                  any time. Only enable if you have obtained explicit consent for marketing
+                  communications.
                 </Typography>
               </Alert>
 
@@ -522,7 +630,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
               <Typography variant="h6" fontWeight="bold" gutterBottom>
                 Advanced Settings
               </Typography>
-              
+
               <Stack spacing={3}>
                 {/* Digest Frequency */}
                 <Box>
@@ -558,7 +666,7 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                       Quiet Hours
                     </Typography>
                   </Box>
-                  
+
                   <FormControlLabel
                     control={
                       <Switch
@@ -569,27 +677,33 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                     label="Enable Quiet Hours"
                     sx={{ mb: 2 }}
                   />
-                  
+
                   {formData.quiet_hours_enabled && (
                     <Paper sx={{ p: 2, bgcolor: 'grey.50' }}>
-                      <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+                      <Stack
+                        direction={{ xs: 'column', sm: 'row' }}
+                        spacing={2}
+                        alignItems="center"
+                      >
                         <TimePicker
                           label="Start Time"
                           value={quietHoursStart}
                           onChange={(value) => handleQuietHoursChange('start', value)}
                           slotProps={{
-                            textField: { size: 'small' }
+                            textField: { size: 'small' },
                           }}
                         />
-                        
-                        <Typography variant="body2" color="text.secondary">to</Typography>
-                        
+
+                        <Typography variant="body2" color="text.secondary">
+                          to
+                        </Typography>
+
                         <TimePicker
                           label="End Time"
                           value={quietHoursEnd}
                           onChange={(value) => handleQuietHoursChange('end', value)}
                           slotProps={{
-                            textField: { size: 'small' }
+                            textField: { size: 'small' },
                           }}
                         />
                       </Stack>
@@ -609,24 +723,18 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
               <AccordionSummary expandIcon={<ExpandMore />}>
                 <Box display="flex" alignItems="center" gap={1}>
                   <Block fontSize="small" />
-                  <Typography variant="h6">
-                    Disabled Notification Types
-                  </Typography>
+                  <Typography variant="h6">Disabled Notification Types</Typography>
                   {formData.disabled_types && formData.disabled_types.length > 0 && (
-                    <Chip 
-                      label={formData.disabled_types.length} 
-                      size="small" 
-                      color="primary" 
-                    />
+                    <Chip label={formData.disabled_types.length} size="small" color="primary" />
                   )}
                 </Box>
               </AccordionSummary>
-              
+
               <AccordionDetails>
                 <Typography variant="body2" color="text.secondary" paragraph>
                   Disable specific notification types completely
                 </Typography>
-                
+
                 <Stack spacing={1}>
                   {notificationTypes.map((type) => (
                     <Card key={type.id} variant="outlined" sx={{ bgcolor: 'grey.50' }}>
@@ -635,7 +743,9 @@ export const NotificationPreferencesForm: React.FC<NotificationPreferencesFormPr
                           control={
                             <Switch
                               checked={!formData.disabled_types?.includes(type.id)}
-                              onChange={(e) => handleDisabledTypesChange(type.id, !e.target.checked)}
+                              onChange={(e) =>
+                                handleDisabledTypesChange(type.id, !e.target.checked)
+                              }
                             />
                           }
                           label={

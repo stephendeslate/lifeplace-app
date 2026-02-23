@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/workflows/WorkflowExecutionHistory.tsx
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Typography,
   Box,
@@ -13,22 +13,18 @@ import {
   IconButton,
   Tooltip,
   Alert,
-} from "@mui/material";
+} from '@mui/material';
 import {
   History as HistoryIcon,
   CheckCircle as ProcessedIcon,
   Schedule as PendingIcon,
   Refresh as RefreshIcon,
   PlayArrow as TriggerIcon,
-} from "@mui/icons-material";
-import type {
-  WorkflowTrigger,
-  TriggerType,
-  WorkflowStage,
-} from "../../types/workflows.types";
-import { TRIGGER_TYPES } from "../../types/workflows.types";
-import { ModernTable, ModernLoadingStates, ModernEmptyState } from "../common";
-import type { ModernTableColumn } from "../common";
+} from '@mui/icons-material';
+import type { WorkflowTrigger, TriggerType, WorkflowStage } from '../../types/workflows.types';
+import { TRIGGER_TYPES } from '../../types/workflows.types';
+import { ModernTable, ModernLoadingStates, ModernEmptyState } from '../common';
+import type { ModernTableColumn } from '../common';
 
 interface WorkflowExecutionHistoryProps {
   triggers: WorkflowTrigger[];
@@ -40,9 +36,7 @@ interface WorkflowExecutionHistoryProps {
   templateId?: number;
 }
 
-export const WorkflowExecutionHistory: React.FC<
-  WorkflowExecutionHistoryProps
-> = ({
+export const WorkflowExecutionHistory: React.FC<WorkflowExecutionHistoryProps> = ({
   triggers,
   isLoading,
   onRefresh,
@@ -50,36 +44,32 @@ export const WorkflowExecutionHistory: React.FC<
   isTriggering = false,
   stages = [],
 }) => {
-  const [filterType, setFilterType] = useState<TriggerType | "">("");
-  const [filterProcessed, setFilterProcessed] = useState<boolean | "">("");
+  const [filterType, setFilterType] = useState<TriggerType | ''>('');
+  const [filterProcessed, setFilterProcessed] = useState<boolean | ''>('');
 
   const filteredTriggers = triggers.filter((trigger) => {
     if (filterType && trigger.trigger_type !== filterType) return false;
-    if (filterProcessed !== "" && trigger.processed !== filterProcessed)
-      return false;
+    if (filterProcessed !== '' && trigger.processed !== filterProcessed) return false;
     return true;
   });
 
   const getTriggerTypeChip = (triggerType: TriggerType) => {
     const typeConfig = TRIGGER_TYPES.find((t) => t.value === triggerType);
-    const colorMap: Record<
-      string,
-      "success" | "warning" | "info" | "error" | "default"
-    > = {
-      PAYMENT_RECEIVED: "success",
-      PAYMENT_OVERDUE: "error",
-      QUOTE_ACCEPTED: "success",
-      CONTRACT_SIGNED: "success",
-      MANUAL_TRIGGER: "info",
-      EVENT_CREATED: "default",
-      EVENT_COMPLETED: "success",
+    const colorMap: Record<string, 'success' | 'warning' | 'info' | 'error' | 'default'> = {
+      PAYMENT_RECEIVED: 'success',
+      PAYMENT_OVERDUE: 'error',
+      QUOTE_ACCEPTED: 'success',
+      CONTRACT_SIGNED: 'success',
+      MANUAL_TRIGGER: 'info',
+      EVENT_CREATED: 'default',
+      EVENT_COMPLETED: 'success',
     };
 
     return (
       <Chip
         label={typeConfig?.label || triggerType}
         size="small"
-        color={colorMap[triggerType] || "default"}
+        color={colorMap[triggerType] || 'default'}
         variant="outlined"
       />
     );
@@ -88,17 +78,17 @@ export const WorkflowExecutionHistory: React.FC<
   const getStatusChip = (processed: boolean) => (
     <Chip
       icon={processed ? <ProcessedIcon /> : <PendingIcon />}
-      label={processed ? "Processed" : "Pending"}
+      label={processed ? 'Processed' : 'Pending'}
       size="small"
-      color={processed ? "success" : "warning"}
-      variant={processed ? "filled" : "outlined"}
+      color={processed ? 'success' : 'warning'}
+      variant={processed ? 'filled' : 'outlined'}
     />
   );
 
   const columns: ModernTableColumn[] = [
     {
-      key: "event_name",
-      label: "Event",
+      key: 'event_name',
+      label: 'Event',
       sortable: true,
       render: (_, row) => {
         const trigger = row as unknown as WorkflowTrigger;
@@ -115,9 +105,9 @@ export const WorkflowExecutionHistory: React.FC<
       },
     },
     {
-      key: "stage_name",
-      label: "Stage",
-      hideBelow: "md",
+      key: 'stage_name',
+      label: 'Stage',
+      hideBelow: 'md',
       render: (_, row) => {
         const trigger = row as unknown as WorkflowTrigger;
         return trigger.stage_name ? (
@@ -130,47 +120,42 @@ export const WorkflowExecutionHistory: React.FC<
       },
     },
     {
-      key: "trigger_type",
-      label: "Trigger Type",
+      key: 'trigger_type',
+      label: 'Trigger Type',
       render: (_, row) => {
         const trigger = row as unknown as WorkflowTrigger;
         return getTriggerTypeChip(trigger.trigger_type);
       },
     },
     {
-      key: "details",
-      label: "Details",
-      hideBelow: "md",
+      key: 'details',
+      label: 'Details',
+      hideBelow: 'md',
       render: (_, row) => {
         const trigger = row as unknown as WorkflowTrigger;
         return (
-          <Tooltip title={trigger.details || "No details"}>
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              noWrap
-              sx={{ maxWidth: 200 }}
-            >
-              {trigger.details || "-"}
+          <Tooltip title={trigger.details || 'No details'}>
+            <Typography variant="body2" color="text.secondary" noWrap sx={{ maxWidth: 200 }}>
+              {trigger.details || '-'}
             </Typography>
           </Tooltip>
         );
       },
     },
     {
-      key: "processed",
-      label: "Status",
-      align: "center",
+      key: 'processed',
+      label: 'Status',
+      align: 'center',
       render: (_, row) => {
         const trigger = row as unknown as WorkflowTrigger;
         return getStatusChip(trigger.processed);
       },
     },
     {
-      key: "created_at",
-      label: "Triggered At",
+      key: 'created_at',
+      label: 'Triggered At',
       sortable: true,
-      hideBelow: "lg",
+      hideBelow: 'lg',
       render: (_, row) => {
         const trigger = row as unknown as WorkflowTrigger;
         return (
@@ -186,9 +171,9 @@ export const WorkflowExecutionHistory: React.FC<
       },
     },
     {
-      key: "processed_at",
-      label: "Processed At",
-      hideBelow: "lg",
+      key: 'processed_at',
+      label: 'Processed At',
+      hideBelow: 'lg',
       render: (_, row) => {
         const trigger = row as unknown as WorkflowTrigger;
         return trigger.processed_at ? (
@@ -217,13 +202,13 @@ export const WorkflowExecutionHistory: React.FC<
     <Paper sx={{ p: 2 }}>
       <Box
         sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           mb: 2,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <HistoryIcon color="primary" />
           <Typography variant="h6">Execution History</Typography>
         </Box>
@@ -235,13 +220,13 @@ export const WorkflowExecutionHistory: React.FC<
       </Box>
 
       {/* Filters */}
-      <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
         <FormControl size="small" sx={{ minWidth: 180 }}>
           <InputLabel>Trigger Type</InputLabel>
           <Select
             value={filterType}
             label="Trigger Type"
-            onChange={(e) => setFilterType(e.target.value as TriggerType | "")}
+            onChange={(e) => setFilterType(e.target.value as TriggerType | '')}
           >
             <MenuItem value="">All Types</MenuItem>
             {TRIGGER_TYPES.map((type) => (
@@ -255,13 +240,11 @@ export const WorkflowExecutionHistory: React.FC<
         <FormControl size="small" sx={{ minWidth: 140 }}>
           <InputLabel>Status</InputLabel>
           <Select
-            value={
-              filterProcessed === "" ? "" : filterProcessed ? "true" : "false"
-            }
+            value={filterProcessed === '' ? '' : filterProcessed ? 'true' : 'false'}
             label="Status"
             onChange={(e) => {
               const val = e.target.value as string;
-              setFilterProcessed(val === "" ? "" : val === "true");
+              setFilterProcessed(val === '' ? '' : val === 'true');
             }}
           >
             <MenuItem value="">All</MenuItem>
@@ -283,8 +266,7 @@ export const WorkflowExecutionHistory: React.FC<
             </Typography>
           }
         >
-          Manual triggers can be executed from the stage actions in the template
-          view.
+          Manual triggers can be executed from the stage actions in the template view.
         </Alert>
       )}
 
@@ -293,16 +275,14 @@ export const WorkflowExecutionHistory: React.FC<
           icon={HistoryIcon}
           title="No execution history"
           description={
-            filterType || filterProcessed !== ""
-              ? "No triggers match the current filters"
-              : "Workflow triggers will appear here when automations are executed"
+            filterType || filterProcessed !== ''
+              ? 'No triggers match the current filters'
+              : 'Workflow triggers will appear here when automations are executed'
           }
         />
       ) : (
         <ModernTable
-          columns={
-            columns as unknown as ModernTableColumn<Record<string, unknown>>[]
-          }
+          columns={columns as unknown as ModernTableColumn<Record<string, unknown>>[]}
           data={filteredTriggers as unknown as Record<string, unknown>[]}
           sortBy="created_at"
           sortOrder="desc"
@@ -313,12 +293,12 @@ export const WorkflowExecutionHistory: React.FC<
       {/* Summary */}
       <Box
         sx={{
-          display: "flex",
+          display: 'flex',
           gap: 2,
           mt: 2,
           pt: 2,
           borderTop: 1,
-          borderColor: "divider",
+          borderColor: 'divider',
         }}
       >
         <Typography variant="body2" color="text.secondary">

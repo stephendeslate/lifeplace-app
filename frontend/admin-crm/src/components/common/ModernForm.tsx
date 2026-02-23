@@ -28,7 +28,17 @@ import { tokens } from '../../design-system/tokens';
 export interface ModernFormField {
   name: string;
   label: string;
-  type: 'text' | 'email' | 'password' | 'number' | 'select' | 'multiselect' | 'switch' | 'checkbox' | 'radio' | 'textarea';
+  type:
+    | 'text'
+    | 'email'
+    | 'password'
+    | 'number'
+    | 'select'
+    | 'multiselect'
+    | 'switch'
+    | 'checkbox'
+    | 'radio'
+    | 'textarea';
   value?: unknown;
   placeholder?: string;
   helperText?: string;
@@ -96,7 +106,7 @@ export const ModernForm: React.FC<ModernFormProps> = ({
       error: !!field.error,
       helperText: field.error || field.helperText,
       fullWidth: field.fullWidth !== false,
-      size: field.size || 'medium' as const,
+      size: field.size || ('medium' as const),
       sx: field.sx,
     };
 
@@ -113,14 +123,10 @@ export const ModernForm: React.FC<ModernFormProps> = ({
             onChange={(e) => onChange(field.name, e.target.value)}
             InputProps={{
               startAdornment: field.startAdornment ? (
-                <InputAdornment position="start">
-                  {field.startAdornment}
-                </InputAdornment>
+                <InputAdornment position="start">{field.startAdornment}</InputAdornment>
               ) : undefined,
               endAdornment: field.endAdornment ? (
-                <InputAdornment position="end">
-                  {field.endAdornment}
-                </InputAdornment>
+                <InputAdornment position="end">{field.endAdornment}</InputAdornment>
               ) : undefined,
             }}
           />
@@ -154,9 +160,9 @@ export const ModernForm: React.FC<ModernFormProps> = ({
               ))}
             </Select>
             {(field.error || field.helperText) && (
-              <Typography 
-                variant="caption" 
-                color={field.error ? 'error' : 'text.secondary'} 
+              <Typography
+                variant="caption"
+                color={field.error ? 'error' : 'text.secondary'}
                 sx={{ mt: 0.5, ml: 1.5, display: 'block' }}
               >
                 {field.error || field.helperText}
@@ -178,9 +184,13 @@ export const ModernForm: React.FC<ModernFormProps> = ({
               renderValue={(selected) => (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                   {(selected as unknown[]).map((value) => {
-                    const option = field.options?.find(opt => opt.value === value);
+                    const option = field.options?.find((opt) => opt.value === value);
                     return (
-                      <Chip key={String(value)} label={option?.label || String(value)} size="small" />
+                      <Chip
+                        key={String(value)}
+                        label={option?.label || String(value)}
+                        size="small"
+                      />
                     );
                   })}
                 </Box>
@@ -193,9 +203,9 @@ export const ModernForm: React.FC<ModernFormProps> = ({
               ))}
             </Select>
             {(field.error || field.helperText) && (
-              <Typography 
-                variant="caption" 
-                color={field.error ? 'error' : 'text.secondary'} 
+              <Typography
+                variant="caption"
+                color={field.error ? 'error' : 'text.secondary'}
                 sx={{ mt: 0.5, ml: 1.5, display: 'block' }}
               >
                 {field.error || field.helperText}
@@ -219,9 +229,9 @@ export const ModernForm: React.FC<ModernFormProps> = ({
               sx={field.sx}
             />
             {(field.error || field.helperText) && (
-              <Typography 
-                variant="caption" 
-                color={field.error ? 'error' : 'text.secondary'} 
+              <Typography
+                variant="caption"
+                color={field.error ? 'error' : 'text.secondary'}
                 sx={{ display: 'block', ml: 1 }}
               >
                 {field.error || field.helperText}
@@ -245,9 +255,9 @@ export const ModernForm: React.FC<ModernFormProps> = ({
               sx={field.sx}
             />
             {(field.error || field.helperText) && (
-              <Typography 
-                variant="caption" 
-                color={field.error ? 'error' : 'text.secondary'} 
+              <Typography
+                variant="caption"
+                color={field.error ? 'error' : 'text.secondary'}
                 sx={{ display: 'block', ml: 1 }}
               >
                 {field.error || field.helperText}
@@ -276,9 +286,9 @@ export const ModernForm: React.FC<ModernFormProps> = ({
               ))}
             </RadioGroup>
             {(field.error || field.helperText) && (
-              <Typography 
-                variant="caption" 
-                color={field.error ? 'error' : 'text.secondary'} 
+              <Typography
+                variant="caption"
+                color={field.error ? 'error' : 'text.secondary'}
                 sx={{ mt: 0.5 }}
               >
                 {field.error || field.helperText}
@@ -293,12 +303,7 @@ export const ModernForm: React.FC<ModernFormProps> = ({
   };
 
   return (
-    <Box 
-      component="form" 
-      onSubmit={handleSubmit} 
-      className={className}
-      sx={{ width: '100%' }}
-    >
+    <Box component="form" onSubmit={handleSubmit} className={className} sx={{ width: '100%' }}>
       {sections.map((section, sectionIndex) => (
         <Box key={sectionIndex} sx={{ mb: sectionIndex < sections.length - 1 ? 4 : 0 }}>
           {section.title && (
@@ -315,9 +320,9 @@ export const ModernForm: React.FC<ModernFormProps> = ({
           )}
 
           {section.alert && (
-            <Alert 
+            <Alert
               severity={section.alert.severity}
-              sx={{ 
+              sx={{
                 mb: 3,
                 backdropFilter: 'blur(10px)',
                 background: 'rgba(255, 255, 255, 0.95)',
@@ -331,15 +336,11 @@ export const ModernForm: React.FC<ModernFormProps> = ({
 
           <Stack spacing={spacing}>
             {section.fields.map((field, fieldIndex) => (
-              <Box key={field.name || fieldIndex}>
-                {renderField(field)}
-              </Box>
+              <Box key={field.name || fieldIndex}>{renderField(field)}</Box>
             ))}
           </Stack>
 
-          {sectionIndex < sections.length - 1 && (
-            <Divider sx={{ mt: 4 }} />
-          )}
+          {sectionIndex < sections.length - 1 && <Divider sx={{ mt: 4 }} />}
         </Box>
       ))}
 
@@ -366,7 +367,7 @@ export const createFormSection = (
   options?: {
     description?: string;
     alert?: { severity: 'info' | 'warning' | 'error' | 'success'; message: string };
-  }
+  },
 ): ModernFormSection => ({
   title,
   description: options?.description,

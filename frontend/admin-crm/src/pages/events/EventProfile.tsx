@@ -1,8 +1,8 @@
 // Event Profile Page
 // Flat, simple styling consistent with Analytics page pattern
 
-import React, { useEffect, useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
   Button,
@@ -26,7 +26,7 @@ import {
   Tabs,
   Tooltip,
   TextField,
-} from "@mui/material";
+} from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   MoreVert as MoreVertIcon,
@@ -54,32 +54,29 @@ import {
   Timer as TimerIcon,
   EventBusy as NoShowIcon,
   People as PeopleIcon,
-} from "@mui/icons-material";
-import { useLayout } from "../../contexts/LayoutContext";
-import { useEvents } from "../../hooks/useEvents";
-import { eventsApi } from "../../apis/events.api";
-import { useClients } from "../../hooks/useClients";
-import { useCommunications } from "../../hooks/useCommunications";
-import { useQuestionnaires } from "../../hooks/useQuestionnaires";
-import { useCurrencySettings } from "../../hooks/useCurrency";
-import { useWorkflowStages } from "../../hooks/useWorkflows";
-import { formatCurrency } from "../../utils/currency";
-import { ModernPageLayout } from "../../components/common/ModernPageLayout";
-import {
-  ModernPageHeader,
-  type HeaderAction,
-} from "../../components/common/ModernPageHeader";
-import { EventForm } from "../../components/events/EventForm";
-import { EventCommunications } from "../../components/events/EventCommunications";
-import { EventQuestionnaires } from "../../components/events/EventQuestionnaires";
-import { EventQuotes } from "../../components/events/EventQuotes";
-import { EventContracts } from "../../components/events/EventContracts";
-import { EventInvoices } from "../../components/events/EventInvoices";
-import { EventFiles } from "../../components/events/EventFiles";
-import { ClientVIPStatusCard } from "../../components/events/ClientVIPStatusCard";
-import { InquiryDetails } from "../../components/events/InquiryDetails";
-import { UpdateHeadcountDialog } from "../../components/events/UpdateHeadcountDialog";
-import { NotesList } from "../../components/notes";
+} from '@mui/icons-material';
+import { useLayout } from '../../contexts/LayoutContext';
+import { useEvents } from '../../hooks/useEvents';
+import { eventsApi } from '../../apis/events.api';
+import { useClients } from '../../hooks/useClients';
+import { useCommunications } from '../../hooks/useCommunications';
+import { useQuestionnaires } from '../../hooks/useQuestionnaires';
+import { useCurrencySettings } from '../../hooks/useCurrency';
+import { useWorkflowStages } from '../../hooks/useWorkflows';
+import { formatCurrency } from '../../utils/currency';
+import { ModernPageLayout } from '../../components/common/ModernPageLayout';
+import { ModernPageHeader, type HeaderAction } from '../../components/common/ModernPageHeader';
+import { EventForm } from '../../components/events/EventForm';
+import { EventCommunications } from '../../components/events/EventCommunications';
+import { EventQuestionnaires } from '../../components/events/EventQuestionnaires';
+import { EventQuotes } from '../../components/events/EventQuotes';
+import { EventContracts } from '../../components/events/EventContracts';
+import { EventInvoices } from '../../components/events/EventInvoices';
+import { EventFiles } from '../../components/events/EventFiles';
+import { ClientVIPStatusCard } from '../../components/events/ClientVIPStatusCard';
+import { InquiryDetails } from '../../components/events/InquiryDetails';
+import { UpdateHeadcountDialog } from '../../components/events/UpdateHeadcountDialog';
+import { NotesList } from '../../components/notes';
 import {
   ActivityTimeline,
   FinancialSummary,
@@ -87,9 +84,9 @@ import {
   calculateEventFinancials,
   DateTimeFull,
   type ActivityItem,
-} from "../../components/common";
-import { EVENT_STATUSES, type UpdateEventData } from "../../types/events.types";
-import type { WorkflowStage as WorkflowStageType } from "../../types/workflows.types";
+} from '../../components/common';
+import { EVENT_STATUSES, type UpdateEventData } from '../../types/events.types';
+import type { WorkflowStage as WorkflowStageType } from '../../types/workflows.types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -98,11 +95,7 @@ interface TabPanelProps {
 }
 
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
-  return (
-    <div hidden={value !== index}>
-      {value === index && <Box>{children}</Box>}
-    </div>
-  );
+  return <div hidden={value !== index}>{value === index && <Box>{children}</Box>}</div>;
 };
 
 export const EventProfile: React.FC = () => {
@@ -121,18 +114,12 @@ export const EventProfile: React.FC = () => {
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
   const [checkOutDialogOpen, setCheckOutDialogOpen] = useState(false);
   const [noShowDialogOpen, setNoShowDialogOpen] = useState(false);
-  const [checkInNotes, setCheckInNotes] = useState("");
-  const [checkOutNotes, setCheckOutNotes] = useState("");
+  const [checkInNotes, setCheckInNotes] = useState('');
+  const [checkOutNotes, setCheckOutNotes] = useState('');
   const [isProcessingCheckIn, setIsProcessingCheckIn] = useState(false);
 
   // Hooks
-  const {
-    useEvent,
-    updateEvent,
-    isUpdatingEvent,
-    deleteEvent,
-    isDeletingEvent,
-  } = useEvents();
+  const { useEvent, updateEvent, isUpdatingEvent, deleteEvent, isDeletingEvent } = useEvents();
 
   const { useClient } = useClients();
   const { useRecords } = useCommunications();
@@ -143,33 +130,26 @@ export const EventProfile: React.FC = () => {
 
   // Format event price based on user's currency settings
   const formatEventPrice = (price: string | number) => {
-    const currency = currencySettings?.defaultCurrency || "PHP";
+    const currency = currencySettings?.defaultCurrency || 'PHP';
     return formatCurrency(price, currency, {
-      showSymbol: currencySettings?.displayFormat !== "code",
+      showSymbol: currencySettings?.displayFormat !== 'code',
       showCode:
-        currencySettings?.displayFormat === "code" ||
-        currencySettings?.displayFormat === "both",
-      minimumFractionDigits:
-        currencySettings?.decimalPlaces ?? (currency === "PHP" ? 0 : 2),
-      maximumFractionDigits:
-        currencySettings?.decimalPlaces ?? (currency === "PHP" ? 0 : 2),
+        currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
+      maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
     });
   };
 
-  const eventId = parseInt(id || "0");
+  const eventId = parseInt(id || '0');
   const { data: event, isLoading, error, refetch } = useEvent(eventId);
 
   // Extract client ID - handle both serialized forms
   const clientId = useMemo(() => {
     if (!event?.client) return 0;
     // Handle if client is already an ID number
-    if (typeof event.client === "number") return event.client;
+    if (typeof event.client === 'number') return event.client;
     // Handle if client is an object with id
-    if (
-      typeof event.client === "object" &&
-      event.client !== null &&
-      "id" in event.client
-    ) {
+    if (typeof event.client === 'object' && event.client !== null && 'id' in event.client) {
       return (event.client as { id: number }).id || 0;
     }
     return 0;
@@ -179,10 +159,9 @@ export const EventProfile: React.FC = () => {
 
   // Get workflow stages for the event's template
   const templateId =
-    typeof event?.workflow_template === "object" &&
-    event.workflow_template !== null
+    typeof event?.workflow_template === 'object' && event.workflow_template !== null
       ? event.workflow_template.id
-      : typeof event?.workflow_template === "number"
+      : typeof event?.workflow_template === 'number'
         ? event.workflow_template
         : 0;
   const { data: workflowStages = [], isLoading: isLoadingStages } =
@@ -208,7 +187,7 @@ export const EventProfile: React.FC = () => {
 
     // Get current stage info
     const currentStageObj =
-      typeof event.current_stage === "object" && event.current_stage !== null
+      typeof event.current_stage === 'object' && event.current_stage !== null
         ? event.current_stage
         : null;
 
@@ -222,11 +201,10 @@ export const EventProfile: React.FC = () => {
     return workflowStages
       .map((stage: WorkflowStageType) => {
         // Determine stage status based on current stage and event progress
-        let status: "completed" | "active" | "pending" | "blocked" | "skipped" =
-          "pending";
+        let status: 'completed' | 'active' | 'pending' | 'blocked' | 'skipped' = 'pending';
 
         if (currentStageObj && stage.id === currentStageObj.id) {
-          status = "active";
+          status = 'active';
         } else if (currentStageObj) {
           // Compare by stage type first, then by order within same type
           const currentTypeOrder = stageTypeOrder[currentStageObj.stage] || 0;
@@ -234,21 +212,20 @@ export const EventProfile: React.FC = () => {
 
           if (stageTypeOrderVal < currentTypeOrder) {
             // Earlier stage type = completed
-            status = "completed";
+            status = 'completed';
           } else if (stageTypeOrderVal > currentTypeOrder) {
             // Later stage type = pending
-            status = "pending";
+            status = 'pending';
           } else {
             // Same stage type, compare by order
             if (stage.order < currentStageObj.order) {
-              status = "completed";
+              status = 'completed';
             }
           }
         }
 
         // Find associated tasks for this stage
-        const stageTasks =
-          event.tasks?.filter((task) => task.workflow_stage === stage.id) || [];
+        const stageTasks = event.tasks?.filter((task) => task.workflow_stage === stage.id) || [];
 
         return {
           id: stage.id,
@@ -260,11 +237,11 @@ export const EventProfile: React.FC = () => {
             id: task.id,
             name: task.title,
             status:
-              task.status === "COMPLETED"
-                ? ("completed" as const)
-                : task.status === "PENDING"
-                  ? ("pending" as const)
-                  : ("active" as const),
+              task.status === 'COMPLETED'
+                ? ('completed' as const)
+                : task.status === 'PENDING'
+                  ? ('pending' as const)
+                  : ('active' as const),
             completedAt: task.completed_at || undefined,
             assignedTo: task.assigned_to_name
               ? {
@@ -273,14 +250,14 @@ export const EventProfile: React.FC = () => {
                 }
               : undefined,
             priority: task.priority?.toLowerCase() as
-              | "low"
-              | "medium"
-              | "high"
-              | "urgent"
+              | 'low'
+              | 'medium'
+              | 'high'
+              | 'urgent'
               | undefined,
             dueDate: task.due_date || undefined,
           })),
-          completedAt: status === "completed" ? stage.updated_at : undefined,
+          completedAt: status === 'completed' ? stage.updated_at : undefined,
           dueDate: stageTasks.find((t) => t.due_date)?.due_date || undefined,
         };
       })
@@ -299,19 +276,19 @@ export const EventProfile: React.FC = () => {
     communications.forEach((comm) => {
       items.push({
         id: `comm-${comm.id}`,
-        type: "communication",
+        type: 'communication',
         title: comm.subject || comm.template_name,
-        description: comm.body?.substring(0, 100) + "...",
+        description: comm.body?.substring(0, 100) + '...',
         timestamp: comm.sent_at || comm.created_at,
-        status: "completed",
+        status: 'completed',
         relatedEntity: client
           ? {
-              type: "client",
+              type: 'client',
               id: clientId,
-              name: client.first_name + " " + client.last_name,
+              name: client.first_name + ' ' + client.last_name,
             }
           : undefined,
-        user: { name: "System" },
+        user: { name: 'System' },
       });
     });
 
@@ -319,37 +296,34 @@ export const EventProfile: React.FC = () => {
     if (event) {
       items.push({
         id: `event-created-${event.id}`,
-        type: "event",
-        title: "Event Created",
+        type: 'event',
+        title: 'Event Created',
         description: `Event "${event.name}" was created`,
         timestamp: event.created_at,
-        status: "completed",
-        user: { name: "System" },
+        status: 'completed',
+        user: { name: 'System' },
       });
 
       if (event.updated_at !== event.created_at) {
         items.push({
           id: `event-updated-${event.id}`,
-          type: "status_change",
-          title: "Event Updated",
+          type: 'status_change',
+          title: 'Event Updated',
           description: `Event status changed to ${event.status}`,
           timestamp: event.updated_at,
-          status: "completed",
-          user: { name: "System" },
+          status: 'completed',
+          user: { name: 'System' },
         });
       }
     }
 
-    return items.sort(
-      (a, b) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-    );
+    return items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }, [communications, event, client, clientId]);
 
   useEffect(() => {
     if (event) {
       setBreadcrumbs([
-        { label: "Events", path: "/events" },
+        { label: 'Events', path: '/events' },
         { label: event.name || `Event #${event.id}` },
       ]);
     }
@@ -389,7 +363,7 @@ export const EventProfile: React.FC = () => {
     deleteEvent(eventId, {
       onSuccess: () => {
         setDeleteDialogOpen(false);
-        navigate("/events");
+        navigate('/events');
       },
     });
   };
@@ -400,10 +374,10 @@ export const EventProfile: React.FC = () => {
     try {
       await eventsApi.checkIn(eventId, checkInNotes);
       setCheckInDialogOpen(false);
-      setCheckInNotes("");
+      setCheckInNotes('');
       refetch();
     } catch (error) {
-      console.error("Check-in failed:", error);
+      console.error('Check-in failed:', error);
     } finally {
       setIsProcessingCheckIn(false);
     }
@@ -414,10 +388,10 @@ export const EventProfile: React.FC = () => {
     try {
       await eventsApi.checkout(eventId, checkOutNotes, true);
       setCheckOutDialogOpen(false);
-      setCheckOutNotes("");
+      setCheckOutNotes('');
       refetch();
     } catch (error) {
-      console.error("Checkout failed:", error);
+      console.error('Checkout failed:', error);
     } finally {
       setIsProcessingCheckIn(false);
     }
@@ -426,32 +400,32 @@ export const EventProfile: React.FC = () => {
   const handleNoShow = async () => {
     setIsProcessingCheckIn(true);
     try {
-      await eventsApi.markNoShow(eventId, "Marked as no-show by admin");
+      await eventsApi.markNoShow(eventId, 'Marked as no-show by admin');
       setNoShowDialogOpen(false);
       refetch();
     } catch (error) {
-      console.error("No-show marking failed:", error);
+      console.error('No-show marking failed:', error);
     } finally {
       setIsProcessingCheckIn(false);
     }
   };
 
   const formatCheckInTime = (dateStr: string | null) => {
-    if (!dateStr) return "Not set";
+    if (!dateStr) return 'Not set';
     const date = new Date(dateStr);
-    return date.toLocaleString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
+    return date.toLocaleString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
   };
 
   const canPerformCheckIn = () => {
     if (!event) return false;
-    if (event.check_in_status !== "PENDING") return false;
-    if (event.status === "CANCELLED") return false;
+    if (event.check_in_status !== 'PENDING') return false;
+    if (event.status === 'CANCELLED') return false;
     // Allow check-in if event date is today or in the past
     const eventDate = new Date(event.start_date);
     const today = new Date();
@@ -461,42 +435,30 @@ export const EventProfile: React.FC = () => {
   };
 
   const canPerformCheckout = () => {
-    return event?.check_in_status === "CHECKED_IN";
+    return event?.check_in_status === 'CHECKED_IN';
   };
 
   const getStatusColor = (
     status: string,
-  ):
-    | "default"
-    | "primary"
-    | "secondary"
-    | "error"
-    | "info"
-    | "success"
-    | "warning" => {
+  ): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (status) {
-      case "LEAD":
-        return "info";
-      case "CONFIRMED":
-        return "success";
-      case "COMPLETED":
-        return "primary";
-      case "CANCELLED":
-        return "error";
+      case 'LEAD':
+        return 'info';
+      case 'CONFIRMED':
+        return 'success';
+      case 'COMPLETED':
+        return 'primary';
+      case 'CANCELLED':
+        return 'error';
       default:
-        return "secondary";
+        return 'secondary';
     }
   };
 
   if (isLoading) {
     return (
       <ModernPageLayout backgroundPattern="default">
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          minHeight="400px"
-        >
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
           <CircularProgress />
         </Box>
       </ModernPageLayout>
@@ -508,14 +470,14 @@ export const EventProfile: React.FC = () => {
       <ModernPageLayout backgroundPattern="default">
         <Button
           startIcon={<ArrowBackIcon />}
-          onClick={() => navigate("/events")}
+          onClick={() => navigate('/events')}
           variant="outlined"
           sx={{ mb: 3 }}
         >
           Back to Events
         </Button>
         <Alert severity="error">
-          {error ? "Failed to load event information" : "Event not found"}
+          {error ? 'Failed to load event information' : 'Event not found'}
         </Alert>
       </ModernPageLayout>
     );
@@ -525,53 +487,47 @@ export const EventProfile: React.FC = () => {
     <ModernPageLayout backgroundPattern="default">
       {/* Modern Page Header */}
       <ModernPageHeader
-        title={event.name || "Untitled Event"}
-        subtitle={event.event_type_name || "No event type"}
+        title={event.name || 'Untitled Event'}
+        subtitle={event.event_type_name || 'No event type'}
         icon={<EventNoteIcon />}
         status={{
-          label:
-            EVENT_STATUSES.find((s) => s.value === event.status)?.label ||
-            event.status,
+          label: EVENT_STATUSES.find((s) => s.value === event.status)?.label || event.status,
           color: getStatusColor(event.status) as
-            | "primary"
-            | "secondary"
-            | "success"
-            | "warning"
-            | "error"
-            | "info",
-          variant: "outlined",
+            | 'primary'
+            | 'secondary'
+            | 'success'
+            | 'warning'
+            | 'error'
+            | 'info',
+          variant: 'outlined',
         }}
         primaryAction={{
-          label: "Edit",
+          label: 'Edit',
           onClick: handleEditEvent,
           icon: <EditIcon />,
-          variant: "contained",
-          color: "primary",
+          variant: 'contained',
+          color: 'primary',
         }}
         secondaryActions={[
           {
-            label: "Back to Events",
-            onClick: () => navigate("/events"),
+            label: 'Back to Events',
+            onClick: () => navigate('/events'),
             icon: <ArrowBackIcon />,
-            variant: "outlined",
-            tooltip: "Back to Events",
+            variant: 'outlined',
+            tooltip: 'Back to Events',
           } as HeaderAction,
           {
-            label: "More",
+            label: 'More',
             onClick: handleMenuClick,
             icon: <MoreVertIcon />,
-            variant: "icon",
-            tooltip: "More actions",
+            variant: 'icon',
+            tooltip: 'More actions',
           } as HeaderAction,
         ]}
       />
 
       {/* More Actions Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         <MenuItem
           onClick={() => {
             setHeadcountDialogOpen(true);
@@ -583,7 +539,7 @@ export const EventProfile: React.FC = () => {
           </ListItemIcon>
           <ListItemText>Update Headcount</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleDeleteEvent} sx={{ color: "error.main" }}>
+        <MenuItem onClick={handleDeleteEvent} sx={{ color: 'error.main' }}>
           <ListItemIcon>
             <DeleteIcon color="error" />
           </ListItemIcon>
@@ -594,8 +550,8 @@ export const EventProfile: React.FC = () => {
       {/* Event Overview Cards */}
       <Box
         sx={{
-          display: "flex",
-          flexDirection: { xs: "column", lg: "row" },
+          display: 'flex',
+          flexDirection: { xs: 'column', lg: 'row' },
           gap: 3,
           mb: 4,
         }}
@@ -605,9 +561,9 @@ export const EventProfile: React.FC = () => {
           <Box
             sx={{
               borderRadius: 1,
-              bgcolor: "background.paper",
+              bgcolor: 'background.paper',
               p: 3,
-              height: "100%",
+              height: '100%',
             }}
           >
             <Stack spacing={3}>
@@ -619,12 +575,12 @@ export const EventProfile: React.FC = () => {
               </Box>
 
               <Stack spacing={2}>
-                <Box sx={{ p: 2, borderRadius: 1, bgcolor: "action.hover" }}>
+                <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
                   <Typography
                     variant="caption"
                     color="text.secondary"
                     sx={{
-                      textTransform: "uppercase",
+                      textTransform: 'uppercase',
                       letterSpacing: 0.5,
                       fontWeight: 600,
                     }}
@@ -632,42 +588,35 @@ export const EventProfile: React.FC = () => {
                     Client Name
                   </Typography>
                   <Tooltip
-                    title={clientId ? "Click to view client profile" : ""}
+                    title={clientId ? 'Click to view client profile' : ''}
                     placement="top"
                     arrow
                   >
                     <Box
-                      onClick={() =>
-                        clientId && navigate(`/clients/${clientId}`)
-                      }
-                      sx={{ cursor: clientId ? "pointer" : "default", mt: 0.5 }}
+                      onClick={() => clientId && navigate(`/clients/${clientId}`)}
+                      sx={{ cursor: clientId ? 'pointer' : 'default', mt: 0.5 }}
                     >
                       <Stack direction="row" alignItems="center" spacing={0.5}>
                         <Typography
                           variant="body1"
-                          color={clientId ? "primary" : "text.primary"}
+                          color={clientId ? 'primary' : 'text.primary'}
                           fontWeight={600}
                         >
-                          {event.client_name || "Unknown Client"}
+                          {event.client_name || 'Unknown Client'}
                         </Typography>
-                        {clientId && (
-                          <LaunchIcon
-                            sx={{ fontSize: "0.9rem" }}
-                            color="primary"
-                          />
-                        )}
+                        {clientId && <LaunchIcon sx={{ fontSize: '0.9rem' }} color="primary" />}
                       </Stack>
                     </Box>
                   </Tooltip>
                 </Box>
 
                 {client?.email && (
-                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: "action.hover" }}>
+                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
                     <Typography
                       variant="caption"
                       color="text.secondary"
                       sx={{
-                        textTransform: "uppercase",
+                        textTransform: 'uppercase',
                         letterSpacing: 0.5,
                         fontWeight: 600,
                       }}
@@ -684,12 +633,12 @@ export const EventProfile: React.FC = () => {
                 )}
 
                 {client?.profile?.phone && (
-                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: "action.hover" }}>
+                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
                     <Typography
                       variant="caption"
                       color="text.secondary"
                       sx={{
-                        textTransform: "uppercase",
+                        textTransform: 'uppercase',
                         letterSpacing: 0.5,
                         fontWeight: 600,
                       }}
@@ -706,12 +655,12 @@ export const EventProfile: React.FC = () => {
                 )}
 
                 {client?.profile?.company && (
-                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: "action.hover" }}>
+                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
                     <Typography
                       variant="caption"
                       color="text.secondary"
                       sx={{
-                        textTransform: "uppercase",
+                        textTransform: 'uppercase',
                         letterSpacing: 0.5,
                         fontWeight: 600,
                       }}
@@ -734,10 +683,7 @@ export const EventProfile: React.FC = () => {
         {/* Client VIP Status */}
         {clientId && (
           <Box sx={{ flex: 1, maxWidth: { lg: 280 } }}>
-            <ClientVIPStatusCard
-              clientId={clientId}
-              clientName={event.client_name}
-            />
+            <ClientVIPStatusCard clientId={clientId} clientName={event.client_name} />
           </Box>
         )}
 
@@ -746,9 +692,9 @@ export const EventProfile: React.FC = () => {
           <Box
             sx={{
               borderRadius: 1,
-              bgcolor: "background.paper",
+              bgcolor: 'background.paper',
               p: 3,
-              height: "100%",
+              height: '100%',
             }}
           >
             <Stack spacing={3}>
@@ -760,12 +706,12 @@ export const EventProfile: React.FC = () => {
               </Box>
 
               <Stack spacing={2}>
-                <Box sx={{ p: 2, borderRadius: 1, bgcolor: "action.hover" }}>
+                <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
                   <Typography
                     variant="caption"
                     color="text.secondary"
                     sx={{
-                      textTransform: "uppercase",
+                      textTransform: 'uppercase',
                       letterSpacing: 0.5,
                       fontWeight: 600,
                     }}
@@ -785,12 +731,12 @@ export const EventProfile: React.FC = () => {
                 </Box>
 
                 {event.total_price && (
-                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: "action.hover" }}>
+                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
                     <Typography
                       variant="caption"
                       color="text.secondary"
                       sx={{
-                        textTransform: "uppercase",
+                        textTransform: 'uppercase',
                         letterSpacing: 0.5,
                         fontWeight: 600,
                       }}
@@ -799,26 +745,20 @@ export const EventProfile: React.FC = () => {
                     </Typography>
                     <Box display="flex" alignItems="center" gap={2} mt={1}>
                       <CashIcon color="action" sx={{ fontSize: 20 }} />
-                      <Typography
-                        variant="h6"
-                        color="success.main"
-                        fontWeight={700}
-                      >
-                        {formatEventPrice(
-                          event.current_total_amount || event.total_price,
-                        )}
+                      <Typography variant="h6" color="success.main" fontWeight={700}>
+                        {formatEventPrice(event.current_total_amount || event.total_price)}
                       </Typography>
                     </Box>
                   </Box>
                 )}
 
                 {event.lead_source && (
-                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: "action.hover" }}>
+                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
                     <Typography
                       variant="caption"
                       color="text.secondary"
                       sx={{
-                        textTransform: "uppercase",
+                        textTransform: 'uppercase',
                         letterSpacing: 0.5,
                         fontWeight: 600,
                       }}
@@ -835,12 +775,12 @@ export const EventProfile: React.FC = () => {
                 )}
 
                 {event.num_participants && (
-                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: "action.hover" }}>
+                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
                     <Typography
                       variant="caption"
                       color="text.secondary"
                       sx={{
-                        textTransform: "uppercase",
+                        textTransform: 'uppercase',
                         letterSpacing: 0.5,
                         fontWeight: 600,
                       }}
@@ -849,11 +789,7 @@ export const EventProfile: React.FC = () => {
                     </Typography>
                     <Box display="flex" alignItems="center" gap={2} mt={1}>
                       <PeopleIcon color="action" sx={{ fontSize: 20 }} />
-                      <Typography
-                        variant="h6"
-                        color="info.main"
-                        fontWeight={700}
-                      >
+                      <Typography variant="h6" color="info.main" fontWeight={700}>
                         {event.num_participants}
                       </Typography>
                     </Box>
@@ -861,12 +797,12 @@ export const EventProfile: React.FC = () => {
                 )}
 
                 {event.payment_status && (
-                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: "action.hover" }}>
+                  <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
                     <Typography
                       variant="caption"
                       color="text.secondary"
                       sx={{
-                        textTransform: "uppercase",
+                        textTransform: 'uppercase',
                         letterSpacing: 0.5,
                         fontWeight: 600,
                       }}
@@ -875,13 +811,13 @@ export const EventProfile: React.FC = () => {
                     </Typography>
                     <Box mt={1}>
                       <Chip
-                        label={event.payment_status.replace("_", " ")}
+                        label={event.payment_status.replace('_', ' ')}
                         color={
-                          event.payment_status === "PAID"
-                            ? "success"
-                            : event.payment_status === "PARTIALLY_PAID"
-                              ? "warning"
-                              : "default"
+                          event.payment_status === 'PAID'
+                            ? 'success'
+                            : event.payment_status === 'PARTIALLY_PAID'
+                              ? 'warning'
+                              : 'default'
                         }
                         variant="outlined"
                         sx={{ fontWeight: 600 }}
@@ -899,9 +835,9 @@ export const EventProfile: React.FC = () => {
           <Box
             sx={{
               borderRadius: 1,
-              bgcolor: "background.paper",
+              bgcolor: 'background.paper',
               p: 3,
-              height: "100%",
+              height: '100%',
             }}
           >
             <Stack spacing={3}>
@@ -914,18 +850,9 @@ export const EventProfile: React.FC = () => {
 
               <Box sx={{ mt: 2 }}>
                 {isLoadingStages ? (
-                  <Box
-                    display="flex"
-                    justifyContent="center"
-                    alignItems="center"
-                    py={4}
-                  >
+                  <Box display="flex" justifyContent="center" alignItems="center" py={4}>
                     <CircularProgress size={24} />
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ ml: 2 }}
-                    >
+                    <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
                       Loading workflow stages...
                     </Typography>
                   </Box>
@@ -934,10 +861,9 @@ export const EventProfile: React.FC = () => {
                     workflowName={event.workflow_template_name}
                     stages={transformedWorkflowStages}
                     currentStage={
-                      typeof event.current_stage === "object" &&
-                      event.current_stage !== null
+                      typeof event.current_stage === 'object' && event.current_stage !== null
                         ? event.current_stage.id
-                        : typeof event.current_stage === "number"
+                        : typeof event.current_stage === 'number'
                           ? event.current_stage
                           : undefined
                     }
@@ -961,15 +887,11 @@ export const EventProfile: React.FC = () => {
       )}
 
       {/* Check-in/Out Tracking Card */}
-      {event.status !== "CANCELLED" && (
+      {event.status !== 'CANCELLED' && (
         <Box sx={{ mb: 4 }}>
-          <Box sx={{ borderRadius: 1, bgcolor: "background.paper", p: 3 }}>
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
             <Stack spacing={3}>
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="space-between"
-              >
+              <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box display="flex" alignItems="center" gap={2}>
                   <TimerIcon color="primary" />
                   <Typography variant="h6" fontWeight="bold">
@@ -978,22 +900,22 @@ export const EventProfile: React.FC = () => {
                 </Box>
                 <Chip
                   label={
-                    event.check_in_status === "CHECKED_IN"
-                      ? "Checked In"
-                      : event.check_in_status === "CHECKED_OUT"
-                        ? "Checked Out"
-                        : event.check_in_status === "NO_SHOW"
-                          ? "No Show"
-                          : "Pending"
+                    event.check_in_status === 'CHECKED_IN'
+                      ? 'Checked In'
+                      : event.check_in_status === 'CHECKED_OUT'
+                        ? 'Checked Out'
+                        : event.check_in_status === 'NO_SHOW'
+                          ? 'No Show'
+                          : 'Pending'
                   }
                   color={
-                    event.check_in_status === "CHECKED_IN"
-                      ? "success"
-                      : event.check_in_status === "CHECKED_OUT"
-                        ? "info"
-                        : event.check_in_status === "NO_SHOW"
-                          ? "error"
-                          : "default"
+                    event.check_in_status === 'CHECKED_IN'
+                      ? 'success'
+                      : event.check_in_status === 'CHECKED_OUT'
+                        ? 'info'
+                        : event.check_in_status === 'NO_SHOW'
+                          ? 'error'
+                          : 'default'
                   }
                   variant="outlined"
                 />
@@ -1002,8 +924,8 @@ export const EventProfile: React.FC = () => {
               {/* Times Display */}
               <Box
                 sx={{
-                  display: "flex",
-                  flexDirection: { xs: "column", md: "row" },
+                  display: 'flex',
+                  flexDirection: { xs: 'column', md: 'row' },
                   gap: 2,
                 }}
               >
@@ -1013,14 +935,14 @@ export const EventProfile: React.FC = () => {
                     flex: 1,
                     p: 2,
                     borderRadius: 1,
-                    bgcolor: "action.hover",
+                    bgcolor: 'action.hover',
                   }}
                 >
                   <Typography
                     variant="caption"
                     color="text.secondary"
                     sx={{
-                      textTransform: "uppercase",
+                      textTransform: 'uppercase',
                       letterSpacing: 0.5,
                       fontWeight: 600,
                     }}
@@ -1034,24 +956,12 @@ export const EventProfile: React.FC = () => {
                     </Typography>
                   </Box>
                   {event.actual_check_in_time && (
-                    <Box
-                      mt={1.5}
-                      pt={1.5}
-                      sx={{ borderTop: 1, borderColor: "divider" }}
-                    >
-                      <Typography
-                        variant="caption"
-                        color="success.main"
-                        fontWeight={600}
-                      >
+                    <Box mt={1.5} pt={1.5} sx={{ borderTop: 1, borderColor: 'divider' }}>
+                      <Typography variant="caption" color="success.main" fontWeight={600}>
                         Actual: {formatCheckInTime(event.actual_check_in_time)}
                       </Typography>
                       {event.checked_in_by_name && (
-                        <Typography
-                          variant="caption"
-                          display="block"
-                          color="text.secondary"
-                        >
+                        <Typography variant="caption" display="block" color="text.secondary">
                           By: {event.checked_in_by_name}
                         </Typography>
                       )}
@@ -1065,14 +975,14 @@ export const EventProfile: React.FC = () => {
                     flex: 1,
                     p: 2,
                     borderRadius: 1,
-                    bgcolor: "action.hover",
+                    bgcolor: 'action.hover',
                   }}
                 >
                   <Typography
                     variant="caption"
                     color="text.secondary"
                     sx={{
-                      textTransform: "uppercase",
+                      textTransform: 'uppercase',
                       letterSpacing: 0.5,
                       fontWeight: 600,
                     }}
@@ -1086,24 +996,12 @@ export const EventProfile: React.FC = () => {
                     </Typography>
                   </Box>
                   {event.actual_checkout_time && (
-                    <Box
-                      mt={1.5}
-                      pt={1.5}
-                      sx={{ borderTop: 1, borderColor: "divider" }}
-                    >
-                      <Typography
-                        variant="caption"
-                        color="success.main"
-                        fontWeight={600}
-                      >
+                    <Box mt={1.5} pt={1.5} sx={{ borderTop: 1, borderColor: 'divider' }}>
+                      <Typography variant="caption" color="success.main" fontWeight={600}>
                         Actual: {formatCheckInTime(event.actual_checkout_time)}
                       </Typography>
                       {event.checked_out_by_name && (
-                        <Typography
-                          variant="caption"
-                          display="block"
-                          color="text.secondary"
-                        >
+                        <Typography variant="caption" display="block" color="text.secondary">
                           By: {event.checked_out_by_name}
                         </Typography>
                       )}
@@ -1113,24 +1011,22 @@ export const EventProfile: React.FC = () => {
               </Box>
 
               {/* Late Checkout Warning */}
-              {event.late_checkout_fee_applied &&
-                event.late_checkout_fee_amount && (
-                  <Alert severity="warning" icon={<WarningIcon />}>
-                    <Typography variant="body2" fontWeight={600}>
-                      Late Checkout Fee Applied:{" "}
-                      {formatEventPrice(event.late_checkout_fee_amount)}
-                    </Typography>
-                  </Alert>
-                )}
+              {event.late_checkout_fee_applied && event.late_checkout_fee_amount && (
+                <Alert severity="warning" icon={<WarningIcon />}>
+                  <Typography variant="body2" fontWeight={600}>
+                    Late Checkout Fee Applied: {formatEventPrice(event.late_checkout_fee_amount)}
+                  </Typography>
+                </Alert>
+              )}
 
               {/* Notes Display */}
               {(event.check_in_notes || event.checkout_notes) && (
-                <Box sx={{ p: 2, borderRadius: 1, bgcolor: "action.hover" }}>
+                <Box sx={{ p: 2, borderRadius: 1, bgcolor: 'action.hover' }}>
                   <Typography
                     variant="caption"
                     color="text.secondary"
                     sx={{
-                      textTransform: "uppercase",
+                      textTransform: 'uppercase',
                       letterSpacing: 0.5,
                       fontWeight: 600,
                     }}
@@ -1138,11 +1034,7 @@ export const EventProfile: React.FC = () => {
                     Notes
                   </Typography>
                   {event.check_in_notes && (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ mt: 1 }}
-                    >
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                       <strong>Check-in:</strong> {event.check_in_notes}
                     </Typography>
                   )}
@@ -1176,7 +1068,7 @@ export const EventProfile: React.FC = () => {
                     Checkout Guest
                   </Button>
                 )}
-                {event.check_in_status === "PENDING" && (
+                {event.check_in_status === 'PENDING' && (
                   <Button
                     variant="outlined"
                     color="error"
@@ -1194,7 +1086,7 @@ export const EventProfile: React.FC = () => {
 
       {/* Financial Summary */}
       <Stack spacing={4} mb={4}>
-        <Box sx={{ borderRadius: 1, bgcolor: "background.paper", p: 3 }}>
+        <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
           <FinancialSummary
             title="Event Financials"
             metrics={financialMetrics}
@@ -1205,7 +1097,7 @@ export const EventProfile: React.FC = () => {
 
       {/* Tabs */}
       <Card>
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
           <Tabs
             value={tabValue}
             onChange={(_, newValue) => setTabValue(newValue)}
@@ -1224,11 +1116,7 @@ export const EventProfile: React.FC = () => {
               iconPosition="start"
             />
             <Tab label="Quotes" icon={<QuoteIcon />} iconPosition="start" />
-            <Tab
-              label="Contracts"
-              icon={<ContractIcon />}
-              iconPosition="start"
-            />
+            <Tab label="Contracts" icon={<ContractIcon />} iconPosition="start" />
             <Tab label="Invoices" icon={<InvoiceIcon />} iconPosition="start" />
             <Tab
               label={`Questionnaires (${questionnairesCount})`}
@@ -1258,8 +1146,8 @@ export const EventProfile: React.FC = () => {
             <EventCommunications
               event={event}
               clientId={clientId}
-              clientEmail={client?.email || ""}
-              clientName={event.client_name || "Unknown Client"}
+              clientEmail={client?.email || ''}
+              clientName={event.client_name || 'Unknown Client'}
             />
           </TabPanel>
 
@@ -1321,15 +1209,12 @@ export const EventProfile: React.FC = () => {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={deleteDialogOpen}
-        onClose={() => setDeleteDialogOpen(false)}
-      >
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle color="error">Delete Event</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete "{event.name || "this event"}"? This
-            action cannot be undone and will remove all associated data.
+            Are you sure you want to delete "{event.name || 'this event'}"? This action cannot be
+            undone and will remove all associated data.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
@@ -1340,11 +1225,7 @@ export const EventProfile: React.FC = () => {
             color="error"
             disabled={isDeletingEvent}
           >
-            {isDeletingEvent ? (
-              <CircularProgress size={20} color="inherit" />
-            ) : (
-              "Delete"
-            )}
+            {isDeletingEvent ? <CircularProgress size={20} color="inherit" /> : 'Delete'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1358,18 +1239,18 @@ export const EventProfile: React.FC = () => {
       >
         <DialogTitle
           sx={{
-            display: "flex",
-            alignItems: "center",
+            display: 'flex',
+            alignItems: 'center',
             gap: 1,
-            color: "success.main",
+            color: 'success.main',
           }}
         >
           <CheckInIcon /> Check In Guest
         </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 3 }}>
-            Confirm check-in for "{event.name || "this event"}". This will
-            record the current time as the actual check-in time.
+            Confirm check-in for "{event.name || 'this event'}". This will record the current time
+            as the actual check-in time.
           </DialogContentText>
           <TextField
             fullWidth
@@ -1385,7 +1266,7 @@ export const EventProfile: React.FC = () => {
           <Button
             onClick={() => {
               setCheckInDialogOpen(false);
-              setCheckInNotes("");
+              setCheckInNotes('');
             }}
           >
             Cancel
@@ -1399,7 +1280,7 @@ export const EventProfile: React.FC = () => {
             {isProcessingCheckIn ? (
               <CircularProgress size={20} color="inherit" />
             ) : (
-              "Confirm Check-in"
+              'Confirm Check-in'
             )}
           </Button>
         </DialogActions>
@@ -1414,19 +1295,19 @@ export const EventProfile: React.FC = () => {
       >
         <DialogTitle
           sx={{
-            display: "flex",
-            alignItems: "center",
+            display: 'flex',
+            alignItems: 'center',
             gap: 1,
-            color: "primary.main",
+            color: 'primary.main',
           }}
         >
           <CheckOutIcon /> Checkout Guest
         </DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ mb: 3 }}>
-            Confirm checkout for "{event.name || "this event"}". This will
-            record the current time as the actual checkout time. Any applicable
-            late checkout fees will be calculated automatically.
+            Confirm checkout for "{event.name || 'this event'}". This will record the current time
+            as the actual checkout time. Any applicable late checkout fees will be calculated
+            automatically.
           </DialogContentText>
           <TextField
             fullWidth
@@ -1442,7 +1323,7 @@ export const EventProfile: React.FC = () => {
           <Button
             onClick={() => {
               setCheckOutDialogOpen(false);
-              setCheckOutNotes("");
+              setCheckOutNotes('');
             }}
           >
             Cancel
@@ -1456,32 +1337,28 @@ export const EventProfile: React.FC = () => {
             {isProcessingCheckIn ? (
               <CircularProgress size={20} color="inherit" />
             ) : (
-              "Confirm Checkout"
+              'Confirm Checkout'
             )}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* No Show Dialog */}
-      <Dialog
-        open={noShowDialogOpen}
-        onClose={() => setNoShowDialogOpen(false)}
-      >
+      <Dialog open={noShowDialogOpen} onClose={() => setNoShowDialogOpen(false)}>
         <DialogTitle
           sx={{
-            display: "flex",
-            alignItems: "center",
+            display: 'flex',
+            alignItems: 'center',
             gap: 1,
-            color: "error.main",
+            color: 'error.main',
           }}
         >
           <NoShowIcon /> Mark as No Show
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to mark "{event.name || "this event"}" as a
-            no-show? This indicates the guest did not arrive for their scheduled
-            event.
+            Are you sure you want to mark "{event.name || 'this event'}" as a no-show? This
+            indicates the guest did not arrive for their scheduled event.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ p: 2, gap: 1 }}>
@@ -1495,7 +1372,7 @@ export const EventProfile: React.FC = () => {
             {isProcessingCheckIn ? (
               <CircularProgress size={20} color="inherit" />
             ) : (
-              "Confirm No Show"
+              'Confirm No Show'
             )}
           </Button>
         </DialogActions>

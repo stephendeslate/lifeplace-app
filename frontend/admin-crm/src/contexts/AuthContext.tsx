@@ -41,7 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
 
       storage.setTokens(newTokens);
-      
+
       // Get updated user info
       const userData = await getCurrentUser();
       if (userData) {
@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (credentials: LoginCredentials): Promise<void> => {
     try {
       const data = await authApi.login(credentials);
-      
+
       // Check if user is admin
       if (data.user.role !== 'ADMIN') {
         throw new Error('Access denied. Admin privileges required.');
@@ -73,7 +73,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(userWithToken);
     } catch (error: unknown) {
       console.error('Login error:', error);
-      
+
       // Type guard for API error with response structure
       interface ApiError {
         response?: {
@@ -82,21 +82,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         };
         message?: string;
       }
-      
+
       // Extract meaningful error message from API response
       const apiError = error as ApiError;
-      const errorMessage = apiError?.response?.data?.detail || 
-                          apiError?.message || 
-                          'Login failed. Please try again.';
-      
+      const errorMessage =
+        apiError?.response?.data?.detail || apiError?.message || 'Login failed. Please try again.';
+
       // Create a new error with the extracted message
       const enhancedError = new Error(errorMessage);
-      
+
       // Preserve original error properties for debugging
       if (apiError?.response?.status) {
         (enhancedError as Error & { status?: number }).status = apiError.response.status;
       }
-      
+
       throw enhancedError;
     }
   };
@@ -144,7 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         const tokens = storage.getTokens();
         const storedUser = storage.getUser();
-        
+
         if (tokens?.access && storedUser) {
           // Try to get fresh user data
           try {
@@ -182,11 +181,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     if (user) {
       // Refresh token every 25 minutes (tokens expire in 30 minutes)
-      const interval = setInterval(() => {
-        refreshToken().catch((error) => {
-          console.error('Background token refresh failed:', error);
-        });
-      }, 25 * 60 * 1000);
+      const interval = setInterval(
+        () => {
+          refreshToken().catch((error) => {
+            console.error('Background token refresh failed:', error);
+          });
+        },
+        25 * 60 * 1000,
+      );
 
       return () => clearInterval(interval);
     }
@@ -230,11 +232,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updateUser,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = (): AuthContextType => {

@@ -3,10 +3,10 @@ from django.apps import AppConfig
 
 
 class EventsConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'core.domains.events'
-    label = 'events'
-    verbose_name = 'Events'
-    
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "core.domains.events"
+    label = "events"
+    verbose_name = "Events"
+
     def ready(self):
-        import core.domains.events.signals  # noqa
+        import core.domains.events.signals

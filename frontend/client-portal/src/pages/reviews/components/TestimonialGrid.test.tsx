@@ -11,7 +11,13 @@ vi.mock('../../../design-system/components/AnimatedElement', () => ({
 
 // Mock TestimonialCard to focus on grid layout testing
 vi.mock('./TestimonialCard', () => ({
-  TestimonialCard: ({ testimonial, index }: { testimonial: { id: string; name: string }; index: number }) => (
+  TestimonialCard: ({
+    testimonial,
+    index,
+  }: {
+    testimonial: { id: string; name: string };
+    index: number;
+  }) => (
     <div data-testid={`testimonial-card-${testimonial.id}`} data-index={index}>
       {testimonial.name}
     </div>
@@ -118,7 +124,9 @@ describe('TestimonialGrid', () => {
 
     it('has descriptive text for context', () => {
       render(<TestimonialGrid />);
-      expect(screen.getByText(/preferred venue for weddings, retreats, and team building events/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/preferred venue for weddings, retreats, and team building events/i),
+      ).toBeInTheDocument();
     });
   });
 
@@ -181,7 +189,7 @@ describe('TestimonialGrid', () => {
         'Ms. Grace Villanueva',
       ];
 
-      testimonialNames.forEach(name => {
+      testimonialNames.forEach((name) => {
         expect(screen.getByText(name)).toBeInTheDocument();
       });
     });

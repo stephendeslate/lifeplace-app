@@ -3,22 +3,24 @@
 Simplified analytics API views.
 All views use function-based approach with direct service calls.
 """
+
 from datetime import datetime, timedelta
+
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
-from django.utils import timezone
 
 from .services import (
-    DashboardService,
-    SalesAnalyticsService,
-    EventsAnalyticsService,
-    CustomersAnalyticsService,
-    OperationsAnalyticsService,
-    ExportService,
     BookingFlowIntegrationService,
+    CustomersAnalyticsService,
+    DashboardService,
+    EventsAnalyticsService,
+    ExportService,
+    OperationsAnalyticsService,
     QuestionnaireIntegrationService,
+    SalesAnalyticsService,
 )
 
 
@@ -27,12 +29,12 @@ def parse_date_range(request):
     Helper to parse date range from query params.
     Defaults to last 30 days if not specified.
     """
-    end_date = request.query_params.get('end_date')
-    start_date = request.query_params.get('start_date')
+    end_date = request.query_params.get("end_date")
+    start_date = request.query_params.get("start_date")
 
     if end_date:
         try:
-            end_date = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+            end_date = datetime.fromisoformat(end_date.replace("Z", "+00:00"))
             if timezone.is_naive(end_date):
                 end_date = timezone.make_aware(end_date)
         except ValueError:
@@ -42,7 +44,7 @@ def parse_date_range(request):
 
     if start_date:
         try:
-            start_date = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+            start_date = datetime.fromisoformat(start_date.replace("Z", "+00:00"))
             if timezone.is_naive(start_date):
                 start_date = timezone.make_aware(start_date)
         except ValueError:
@@ -57,7 +59,8 @@ def parse_date_range(request):
 # DASHBOARD
 # ============================================================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def dashboard_kpis(request):
     """
@@ -76,7 +79,8 @@ def dashboard_kpis(request):
 # SALES & RESERVATIONS
 # ============================================================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def bookings_summary(request):
     """
@@ -89,18 +93,18 @@ def bookings_summary(request):
         - format: csv|excel (optional, for export)
     """
     start_date, end_date = parse_date_range(request)
-    period = request.query_params.get('period', 'daily')
-    export_format = request.query_params.get('format')
+    period = request.query_params.get("period", "daily")
+    export_format = request.query_params.get("format")
 
     data = SalesAnalyticsService.get_bookings_summary(start_date, end_date, period)
 
-    if export_format in ['csv', 'excel']:
+    if export_format in ["csv", "excel"]:
         return ExportService.export_bookings_summary(data, export_format)
 
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def reservation_pipeline(request):
     """
@@ -115,7 +119,7 @@ def reservation_pipeline(request):
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def revenue_by_type(request):
     """
@@ -127,17 +131,17 @@ def revenue_by_type(request):
         - format: csv|excel (optional, for export)
     """
     start_date, end_date = parse_date_range(request)
-    export_format = request.query_params.get('format')
+    export_format = request.query_params.get("format")
 
     data = SalesAnalyticsService.get_revenue_by_event_type(start_date, end_date)
 
-    if export_format in ['csv', 'excel']:
+    if export_format in ["csv", "excel"]:
         return ExportService.export_revenue_report(data, export_format)
 
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def payment_tracking(request):
     """
@@ -156,7 +160,8 @@ def payment_tracking(request):
 # EVENTS & GUESTS
 # ============================================================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def event_attendance(request):
     """
@@ -171,7 +176,7 @@ def event_attendance(request):
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def package_performance(request):
     """
@@ -183,12 +188,12 @@ def package_performance(request):
         - limit: number (default: 10)
     """
     start_date, end_date = parse_date_range(request)
-    limit = int(request.query_params.get('limit', 10))
+    limit = int(request.query_params.get("limit", 10))
     data = EventsAnalyticsService.get_package_performance(start_date, end_date, limit)
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def feedback_scores(request):
     """
@@ -203,7 +208,7 @@ def feedback_scores(request):
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def event_type_breakdown(request):
     """
@@ -218,14 +223,14 @@ def event_type_breakdown(request):
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def guest_demographics(request):
     """Guest demographics - PLACEHOLDER."""
     return Response(EventsAnalyticsService.get_guest_demographics_placeholder())
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def repeat_clients(request):
     """Repeat client tracking - PLACEHOLDER."""
@@ -236,7 +241,8 @@ def repeat_clients(request):
 # CUSTOMERS & LEADS
 # ============================================================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def lead_sources(request):
     """
@@ -248,17 +254,17 @@ def lead_sources(request):
         - format: csv|excel (optional, for export)
     """
     start_date, end_date = parse_date_range(request)
-    export_format = request.query_params.get('format')
+    export_format = request.query_params.get("format")
 
     data = CustomersAnalyticsService.get_lead_source_report(start_date, end_date)
 
-    if export_format in ['csv', 'excel']:
+    if export_format in ["csv", "excel"]:
         return ExportService.export_lead_sources(data, export_format)
 
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def conversion_rates(request):
     """
@@ -273,7 +279,7 @@ def conversion_rates(request):
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def customer_list(request):
     """
@@ -285,10 +291,10 @@ def customer_list(request):
         - limit: number (optional)
         - format: csv|excel (optional, for export)
     """
-    start_date_param = request.query_params.get('start_date')
-    end_date_param = request.query_params.get('end_date')
-    export_format = request.query_params.get('format')
-    limit = request.query_params.get('limit')
+    start_date_param = request.query_params.get("start_date")
+    end_date_param = request.query_params.get("end_date")
+    export_format = request.query_params.get("format")
+    limit = request.query_params.get("limit")
 
     start_date = None
     end_date = None
@@ -301,13 +307,13 @@ def customer_list(request):
 
     data = CustomersAnalyticsService.get_customer_list(start_date, end_date, limit)
 
-    if export_format in ['csv', 'excel']:
+    if export_format in ["csv", "excel"]:
         return ExportService.export_customers(data, export_format)
 
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def customer_growth(request):
     """
@@ -326,7 +332,8 @@ def customer_growth(request):
 # OPERATIONS
 # ============================================================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def venue_usage(request):
     """
@@ -341,7 +348,7 @@ def venue_usage(request):
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def calendar_utilization(request):
     """
@@ -356,7 +363,7 @@ def calendar_utilization(request):
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def booking_time_analysis(request):
     """
@@ -371,21 +378,21 @@ def booking_time_analysis(request):
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def kitchen_usage(request):
     """Kitchen usage - PLACEHOLDER."""
     return Response(OperationsAnalyticsService.get_kitchen_usage_placeholder())
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def inventory_report(request):
     """Inventory report - PLACEHOLDER."""
     return Response(OperationsAnalyticsService.get_inventory_placeholder())
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def app_engagement(request):
     """App engagement - PLACEHOLDER."""
@@ -396,7 +403,8 @@ def app_engagement(request):
 # BOOKING FLOW ANALYTICS
 # ============================================================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def booking_flow_funnel(request):
     """
@@ -408,15 +416,13 @@ def booking_flow_funnel(request):
         - flow_id: Optional specific flow ID
     """
     start_date, end_date = parse_date_range(request)
-    flow_id = request.query_params.get('flow_id')
+    flow_id = request.query_params.get("flow_id")
 
-    data = BookingFlowIntegrationService.get_funnel_analysis(
-        start_date, end_date, flow_id
-    )
+    data = BookingFlowIntegrationService.get_funnel_analysis(start_date, end_date, flow_id)
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def booking_flow_performance(request):
     """
@@ -431,7 +437,7 @@ def booking_flow_performance(request):
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def booking_flow_abandonment(request):
     """
@@ -443,15 +449,13 @@ def booking_flow_abandonment(request):
         - flow_id: Optional specific flow ID
     """
     start_date, end_date = parse_date_range(request)
-    flow_id = request.query_params.get('flow_id')
+    flow_id = request.query_params.get("flow_id")
 
-    data = BookingFlowIntegrationService.get_abandonment_analysis(
-        start_date, end_date, flow_id
-    )
+    data = BookingFlowIntegrationService.get_abandonment_analysis(start_date, end_date, flow_id)
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def booking_flow_trends(request):
     """
@@ -463,11 +467,9 @@ def booking_flow_trends(request):
         - flow_id: Optional specific flow ID
     """
     start_date, end_date = parse_date_range(request)
-    flow_id = request.query_params.get('flow_id')
+    flow_id = request.query_params.get("flow_id")
 
-    data = BookingFlowIntegrationService.get_daily_booking_flow_trends(
-        start_date, end_date, flow_id
-    )
+    data = BookingFlowIntegrationService.get_daily_booking_flow_trends(start_date, end_date, flow_id)
     return Response(data)
 
 
@@ -475,7 +477,8 @@ def booking_flow_trends(request):
 # QUESTIONNAIRE ANALYTICS
 # ============================================================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def questionnaire_summary(request):
     """
@@ -490,7 +493,7 @@ def questionnaire_summary(request):
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def questionnaire_field_heatmap(request, questionnaire_id):
     """
@@ -501,13 +504,11 @@ def questionnaire_field_heatmap(request, questionnaire_id):
         - end_date: ISO date string
     """
     start_date, end_date = parse_date_range(request)
-    data = QuestionnaireIntegrationService.get_field_completion_heatmap(
-        questionnaire_id, start_date, end_date
-    )
+    data = QuestionnaireIntegrationService.get_field_completion_heatmap(questionnaire_id, start_date, end_date)
     return Response(data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def questionnaire_problem_fields(request):
     """
@@ -519,11 +520,9 @@ def questionnaire_problem_fields(request):
         - threshold: Minimum completion rate (default: 80)
     """
     start_date, end_date = parse_date_range(request)
-    threshold = float(request.query_params.get('threshold', 80))
+    threshold = float(request.query_params.get("threshold", 80))
 
-    data = QuestionnaireIntegrationService.get_low_completion_fields(
-        start_date, end_date, threshold
-    )
+    data = QuestionnaireIntegrationService.get_low_completion_fields(start_date, end_date, threshold)
     return Response(data)
 
 
@@ -531,7 +530,8 @@ def questionnaire_problem_fields(request):
 # METRIC SNAPSHOTS
 # ============================================================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def kpi_snapshots(request):
     """
@@ -545,24 +545,36 @@ def kpi_snapshots(request):
     from .models import DailyKPISnapshot
 
     start_date, end_date = parse_date_range(request)
-    fields_param = request.query_params.get('fields')
+    fields_param = request.query_params.get("fields")
 
     snapshots = DailyKPISnapshot.objects.filter(
-        date__gte=start_date.date() if hasattr(start_date, 'date') else start_date,
-        date__lte=end_date.date() if hasattr(end_date, 'date') else end_date,
-    ).order_by('date')
+        date__gte=start_date.date() if hasattr(start_date, "date") else start_date,
+        date__lte=end_date.date() if hasattr(end_date, "date") else end_date,
+    ).order_by("date")
 
     all_fields = [
-        'date', 'total_bookings', 'confirmed_bookings', 'completed_bookings',
-        'cancelled_bookings', 'event_revenue', 'total_revenue', 'avg_booking_value',
-        'new_clients', 'booking_sessions', 'completed_sessions', 'conversion_rate',
-        'cumulative_revenue', 'cumulative_bookings', 'cumulative_clients',
-        'revenue_change_pct', 'bookings_change_pct',
+        "date",
+        "total_bookings",
+        "confirmed_bookings",
+        "completed_bookings",
+        "cancelled_bookings",
+        "event_revenue",
+        "total_revenue",
+        "avg_booking_value",
+        "new_clients",
+        "booking_sessions",
+        "completed_sessions",
+        "conversion_rate",
+        "cumulative_revenue",
+        "cumulative_bookings",
+        "cumulative_clients",
+        "revenue_change_pct",
+        "bookings_change_pct",
     ]
 
     if fields_param:
-        requested = [f.strip() for f in fields_param.split(',')]
-        selected = ['date'] + [f for f in requested if f in all_fields and f != 'date']
+        requested = [f.strip() for f in fields_param.split(",")]
+        selected = ["date"] + [f for f in requested if f in all_fields and f != "date"]
     else:
         selected = all_fields
 
@@ -571,16 +583,18 @@ def kpi_snapshots(request):
     # Convert Decimal fields to float for JSON serialization
     for row in data:
         for key, val in row.items():
-            if hasattr(val, 'quantize'):  # Decimal
+            if hasattr(val, "quantize"):  # Decimal
                 row[key] = float(val)
 
-    return Response({
-        'count': len(data),
-        'snapshots': data,
-    })
+    return Response(
+        {
+            "count": len(data),
+            "snapshots": data,
+        }
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def kpi_snapshot_summary(request):
     """
@@ -588,18 +602,18 @@ def kpi_snapshot_summary(request):
     """
     from .models import DailyKPISnapshot
 
-    latest = DailyKPISnapshot.objects.order_by('-date').first()
+    latest = DailyKPISnapshot.objects.order_by("-date").first()
     if not latest:
-        return Response({'message': 'No snapshots available'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"message": "No snapshots available"}, status=status.HTTP_404_NOT_FOUND)
 
     # 7-day and 30-day trend (compare latest cumulative vs N days ago)
-    seven_days_ago = DailyKPISnapshot.objects.filter(
-        date__lte=latest.date - timedelta(days=7)
-    ).order_by('-date').first()
+    seven_days_ago = (
+        DailyKPISnapshot.objects.filter(date__lte=latest.date - timedelta(days=7)).order_by("-date").first()
+    )
 
-    thirty_days_ago = DailyKPISnapshot.objects.filter(
-        date__lte=latest.date - timedelta(days=30)
-    ).order_by('-date').first()
+    thirty_days_ago = (
+        DailyKPISnapshot.objects.filter(date__lte=latest.date - timedelta(days=30)).order_by("-date").first()
+    )
 
     def calc_delta(current, previous, field):
         if not previous:
@@ -610,26 +624,28 @@ def kpi_snapshot_summary(request):
             return None
         return round((curr_val - prev_val) / prev_val * 100, 2)
 
-    return Response({
-        'latest_date': latest.date,
-        'cumulative_revenue': float(latest.cumulative_revenue),
-        'cumulative_bookings': latest.cumulative_bookings,
-        'cumulative_clients': latest.cumulative_clients,
-        'latest_conversion_rate': float(latest.conversion_rate),
-        'trends_7d': {
-            'revenue_pct': calc_delta(latest, seven_days_ago, 'cumulative_revenue'),
-            'bookings_pct': calc_delta(latest, seven_days_ago, 'cumulative_bookings'),
-            'clients_pct': calc_delta(latest, seven_days_ago, 'cumulative_clients'),
-        },
-        'trends_30d': {
-            'revenue_pct': calc_delta(latest, thirty_days_ago, 'cumulative_revenue'),
-            'bookings_pct': calc_delta(latest, thirty_days_ago, 'cumulative_bookings'),
-            'clients_pct': calc_delta(latest, thirty_days_ago, 'cumulative_clients'),
-        },
-    })
+    return Response(
+        {
+            "latest_date": latest.date,
+            "cumulative_revenue": float(latest.cumulative_revenue),
+            "cumulative_bookings": latest.cumulative_bookings,
+            "cumulative_clients": latest.cumulative_clients,
+            "latest_conversion_rate": float(latest.conversion_rate),
+            "trends_7d": {
+                "revenue_pct": calc_delta(latest, seven_days_ago, "cumulative_revenue"),
+                "bookings_pct": calc_delta(latest, seven_days_ago, "cumulative_bookings"),
+                "clients_pct": calc_delta(latest, seven_days_ago, "cumulative_clients"),
+            },
+            "trends_30d": {
+                "revenue_pct": calc_delta(latest, thirty_days_ago, "cumulative_revenue"),
+                "bookings_pct": calc_delta(latest, thirty_days_ago, "cumulative_bookings"),
+                "clients_pct": calc_delta(latest, thirty_days_ago, "cumulative_clients"),
+            },
+        }
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAdminUser])
 def system_health_snapshots(request):
     """
@@ -644,28 +660,32 @@ def system_health_snapshots(request):
     start_date, end_date = parse_date_range(request)
 
     snapshots = SystemHealthSnapshot.objects.filter(
-        date__gte=start_date.date() if hasattr(start_date, 'date') else start_date,
-        date__lte=end_date.date() if hasattr(end_date, 'date') else end_date,
-    ).order_by('date')
+        date__gte=start_date.date() if hasattr(start_date, "date") else start_date,
+        date__lte=end_date.date() if hasattr(end_date, "date") else end_date,
+    ).order_by("date")
 
     data = []
     for s in snapshots:
-        data.append({
-            'date': s.date,
-            'error_count': s.error_count,
-            'pending_review_count': s.pending_review_count,
-            'celery_tasks_failed': s.celery_tasks_failed,
-            'celery_success_rate': float(s.celery_success_rate),
-            'cache_hit_ratio': float(s.cache_hit_ratio) if s.cache_hit_ratio else None,
-            'cache_memory_used_bytes': s.cache_memory_used_bytes,
-            'total_queue_depth': s.total_queue_depth,
-            'open_circuit_breakers': s.open_circuit_breakers,
-            'circuit_breaker_states': s.circuit_breaker_states,
-            'broker_healthy': s.broker_healthy,
-            'broker_ping_ms': float(s.broker_ping_ms) if s.broker_ping_ms else None,
-        })
+        data.append(
+            {
+                "date": s.date,
+                "error_count": s.error_count,
+                "pending_review_count": s.pending_review_count,
+                "celery_tasks_failed": s.celery_tasks_failed,
+                "celery_success_rate": float(s.celery_success_rate),
+                "cache_hit_ratio": float(s.cache_hit_ratio) if s.cache_hit_ratio else None,
+                "cache_memory_used_bytes": s.cache_memory_used_bytes,
+                "total_queue_depth": s.total_queue_depth,
+                "open_circuit_breakers": s.open_circuit_breakers,
+                "circuit_breaker_states": s.circuit_breaker_states,
+                "broker_healthy": s.broker_healthy,
+                "broker_ping_ms": float(s.broker_ping_ms) if s.broker_ping_ms else None,
+            }
+        )
 
-    return Response({
-        'count': len(data),
-        'snapshots': data,
-    })
+    return Response(
+        {
+            "count": len(data),
+            "snapshots": data,
+        }
+    )

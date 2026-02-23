@@ -1,13 +1,7 @@
 // frontend/admin-crm/src/components/common/InlineEditableText.tsx
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import {
-  Box,
-  TextField,
-  Typography,
-  CircularProgress,
-  Tooltip,
-} from '@mui/material';
+import { Box, TextField, Typography, CircularProgress, Tooltip } from '@mui/material';
 import type { TypographyProps } from '@mui/material/Typography';
 import { Edit as EditIcon } from '@mui/icons-material';
 
@@ -73,15 +67,18 @@ export const InlineEditableText: React.FC<InlineEditableTextProps> = ({
     }
   }, [isEditing]);
 
-  const validate = useCallback((val: string): string | null => {
-    if (required && !val.trim()) {
-      return 'This field is required';
-    }
-    if (maxLength && val.length > maxLength) {
-      return `Maximum ${maxLength} characters allowed`;
-    }
-    return null;
-  }, [required, maxLength]);
+  const validate = useCallback(
+    (val: string): string | null => {
+      if (required && !val.trim()) {
+        return 'This field is required';
+      }
+      if (maxLength && val.length > maxLength) {
+        return `Maximum ${maxLength} characters allowed`;
+      }
+      return null;
+    },
+    [required, maxLength],
+  );
 
   const handleStartEdit = useCallback(() => {
     if (disabled || isSaving) return;
@@ -126,18 +123,21 @@ export const InlineEditableText: React.FC<InlineEditableTextProps> = ({
     }
   }, [editValue, validate, value, onSave]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      handleCancel();
-    } else if (e.key === 'Enter' && !multiline) {
-      e.preventDefault();
-      handleSave();
-    } else if (e.key === 'Enter' && multiline && e.ctrlKey) {
-      e.preventDefault();
-      handleSave();
-    }
-  }, [handleCancel, handleSave, multiline]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handleCancel();
+      } else if (e.key === 'Enter' && !multiline) {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === 'Enter' && multiline && e.ctrlKey) {
+        e.preventDefault();
+        handleSave();
+      }
+    },
+    [handleCancel, handleSave, multiline],
+  );
 
   const handleBlur = useCallback(() => {
     // Don't save on blur if there's a validation error - let user fix it
@@ -241,9 +241,7 @@ export const InlineEditableText: React.FC<InlineEditableTextProps> = ({
           maxLength,
         }}
         InputProps={{
-          endAdornment: isSaving ? (
-            <CircularProgress size={16} sx={{ ml: 1 }} />
-          ) : undefined,
+          endAdornment: isSaving ? <CircularProgress size={16} sx={{ ml: 1 }} /> : undefined,
           sx: {
             fontSize: variant === 'body2' ? '0.875rem' : undefined,
           },

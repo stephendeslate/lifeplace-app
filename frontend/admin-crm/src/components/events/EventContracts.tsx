@@ -47,7 +47,13 @@ import {
 } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { useContractsForEvent, useContractTemplates, useCreateEventContract, useSendContract, useVoidContract } from '../../hooks/useContracts';
+import {
+  useContractsForEvent,
+  useContractTemplates,
+  useCreateEventContract,
+  useSendContract,
+  useVoidContract,
+} from '../../hooks/useContracts';
 import { contractsApi } from '../../apis/contracts.api';
 import type { Event } from '../../types/events.types';
 import type { EventContract } from '../../types/contracts.types';
@@ -58,7 +64,6 @@ import AdminContractSigningDialog from '../contracts/AdminContractSigningDialog'
 interface EventContractsProps {
   event: Event;
 }
-
 
 const getStatusColor = (status: string, isExpiringSoon?: boolean) => {
   switch (status) {
@@ -82,7 +87,9 @@ const getStatusColor = (status: string, isExpiringSoon?: boolean) => {
 };
 
 // Helper to get expiry warning text
-const getExpiryWarning = (contract: EventContract): { text: string; severity: 'warning' | 'error' } | null => {
+const getExpiryWarning = (
+  contract: EventContract,
+): { text: string; severity: 'warning' | 'error' } | null => {
   if (contract.status === 'SIGNED') return null;
   if (contract.is_expired || contract.status === 'EXPIRED') {
     return { text: 'Expired', severity: 'error' };
@@ -107,7 +114,11 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
   const { settings: currencySettings } = useCurrencySettings();
 
   const { data: contracts = [], isLoading } = useContractsForEvent(event.id);
-  const { data: templates = [], isLoading: isLoadingTemplates, error: templatesError } = useContractTemplates();
+  const {
+    data: templates = [],
+    isLoading: isLoadingTemplates,
+    error: templatesError,
+  } = useContractTemplates();
   const { mutate: createContract, isPending: isCreating } = useCreateEventContract();
   const { mutate: sendContract } = useSendContract();
   const { mutate: voidContract } = useVoidContract();
@@ -152,11 +163,15 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
     if (templateId) {
       try {
         // Use the backend's standardized context generation by passing the event ID
-        const renderedTemplate = await contractsApi.previewTemplate(parseInt(templateId), {}, event.id);
-        
+        const renderedTemplate = await contractsApi.previewTemplate(
+          parseInt(templateId),
+          {},
+          event.id,
+        );
+
         // Get the selected template to access its signature requirements
-        const selectedTemplate = templates.find(t => t.id === parseInt(templateId));
-        
+        const selectedTemplate = templates.find((t) => t.id === parseInt(templateId));
+
         const contractData = {
           event: event.id,
           template: parseInt(templateId),
@@ -165,24 +180,21 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
           // Ensure signature requirements are set if the template requires signatures
           ...(selectedTemplate?.requires_signature && {
             requires_signature: true,
-            signature_requirements: selectedTemplate.signature_requirements || ['CLIENT']
+            signature_requirements: selectedTemplate.signature_requirements || ['CLIENT'],
           }),
           ...(validUntil && { valid_until: validUntil }),
         };
-        
-        createContract(
-          contractData,
-          {
-            onSuccess: () => {
-              setCreateDialogOpen(false);
-              setTemplateId('');
-              setValidUntil('');
-            },
-            onError: (error) => {
-              console.error('Error creating contract:', error);
-            },
-          }
-        );
+
+        createContract(contractData, {
+          onSuccess: () => {
+            setCreateDialogOpen(false);
+            setTemplateId('');
+            setValidUntil('');
+          },
+          onError: (error) => {
+            console.error('Error creating contract:', error);
+          },
+        });
       } catch (error) {
         console.error('Error rendering template:', error);
       }
@@ -203,7 +215,9 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
   };
 
   const handleVoidContract = (contract: EventContract) => {
-    if (window.confirm('Are you sure you want to void this contract? This action cannot be undone.')) {
+    if (
+      window.confirm('Are you sure you want to void this contract? This action cannot be undone.')
+    ) {
       voidContract({ id: contract.id, reason: 'Voided by admin' });
     }
     handleMenuClose();
@@ -212,7 +226,7 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
   const handleDownloadContract = async (contract: EventContract) => {
     try {
       const blob = await contractsApi.downloadContractPdf(contract.id);
-      
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -233,7 +247,8 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
     const currency = contractCurrency || currencySettings?.defaultCurrency || 'PHP';
     return formatCurrency(amount, currency, {
       showSymbol: currencySettings?.displayFormat !== 'code',
-      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      showCode:
+        currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
       minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
       maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
     });
@@ -249,10 +264,10 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
 
   // Render the Create Contract Dialog component
   const renderCreateDialog = () => (
-    <Dialog 
-      open={createDialogOpen} 
-      onClose={() => setCreateDialogOpen(false)} 
-      maxWidth="sm" 
+    <Dialog
+      open={createDialogOpen}
+      onClose={() => setCreateDialogOpen(false)}
+      maxWidth="sm"
       fullWidth
     >
       <DialogTitle>Create New Contract</DialogTitle>
@@ -261,16 +276,16 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
           {isLoadingTemplates ? (
             <Box display="flex" justifyContent="center" p={2}>
               <CircularProgress size={24} />
-              <Typography variant="body2" sx={{ ml: 2 }}>Loading templates...</Typography>
+              <Typography variant="body2" sx={{ ml: 2 }}>
+                Loading templates...
+              </Typography>
             </Box>
           ) : templatesError ? (
-            <Alert severity="error">
-              Error loading contract templates. Please try again.
-            </Alert>
+            <Alert severity="error">Error loading contract templates. Please try again.</Alert>
           ) : templates.length === 0 ? (
             <Alert severity="warning">
-              No contract templates are available for this event type. 
-              Please create contract templates in Settings → Templates → Contract Templates first.
+              No contract templates are available for this event type. Please create contract
+              templates in Settings → Templates → Contract Templates first.
             </Alert>
           ) : (
             <>
@@ -330,11 +345,7 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Create a contract from a template to get started.
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleCreateContract}
-          >
+          <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreateContract}>
             Create Contract
           </Button>
         </Paper>
@@ -348,11 +359,7 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h6">Event Contracts</Typography>
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={handleCreateContract}
-        >
+        <Button variant="contained" startIcon={<AddIcon />} onClick={handleCreateContract}>
           Create Contract
         </Button>
       </Box>
@@ -380,18 +387,29 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
                     #{contract.id}
                   </Typography>
                 </TableCell>
-                <TableCell>
-                  {contract.template_name}
-                </TableCell>
+                <TableCell>{contract.template_name}</TableCell>
                 <TableCell>
                   <Stack direction="row" spacing={0.5} alignItems="center">
                     <Chip
                       label={contract.status_display || contract.status}
-                      color={getStatusColor(contract.status, contract.is_expiring_soon) as 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning'}
+                      color={
+                        getStatusColor(contract.status, contract.is_expiring_soon) as
+                          | 'default'
+                          | 'primary'
+                          | 'secondary'
+                          | 'error'
+                          | 'info'
+                          | 'success'
+                          | 'warning'
+                      }
                       size="small"
                     />
                     {getExpiryWarning(contract) && (
-                      <Tooltip title={contract.sign_disabled_reason || getExpiryWarning(contract)?.text || ''}>
+                      <Tooltip
+                        title={
+                          contract.sign_disabled_reason || getExpiryWarning(contract)?.text || ''
+                        }
+                      >
                         <Chip
                           icon={<AccessTimeIcon sx={{ fontSize: 14 }} />}
                           label={getExpiryWarning(contract)?.text}
@@ -413,9 +431,7 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
                     ? format(new Date(contract.valid_until), 'MMM dd, yyyy')
                     : '-'}
                 </TableCell>
-                <TableCell>
-                  {format(new Date(contract.created_at), 'MMM dd, yyyy')}
-                </TableCell>
+                <TableCell>{format(new Date(contract.created_at), 'MMM dd, yyyy')}</TableCell>
                 <TableCell>
                   {contract.fully_signed_at ? (
                     format(new Date(contract.fully_signed_at), 'MMM dd, yyyy')
@@ -428,17 +444,11 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
                 <TableCell align="right">
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
                     <Tooltip title="View">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleViewContract(contract)}
-                      >
+                      <IconButton size="small" onClick={() => handleViewContract(contract)}>
                         <ViewIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleMenuOpen(e, contract)}
-                    >
+                    <IconButton size="small" onClick={(e) => handleMenuOpen(e, contract)}>
                       <MoreVertIcon fontSize="small" />
                     </IconButton>
                   </Stack>
@@ -450,11 +460,7 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
       </TableContainer>
 
       {/* Actions Menu */}
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         {selectedContract?.status === 'DRAFT' && (
           <MenuItem onClick={() => selectedContract && handleEditContract(selectedContract)}>
             <ListItemIcon>
@@ -479,14 +485,15 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
             <ListItemText>Sign Contract</ListItemText>
           </MenuItem>
         )}
-        {selectedContract && ['DRAFT', 'SENT', 'PARTIALLY_SIGNED'].includes(selectedContract.status) && (
-          <MenuItem onClick={() => selectedContract && handleVoidContract(selectedContract)}>
-            <ListItemIcon>
-              <VoidIcon fontSize="small" />
-            </ListItemIcon>
-            <ListItemText>Void Contract</ListItemText>
-          </MenuItem>
-        )}
+        {selectedContract &&
+          ['DRAFT', 'SENT', 'PARTIALLY_SIGNED'].includes(selectedContract.status) && (
+            <MenuItem onClick={() => selectedContract && handleVoidContract(selectedContract)}>
+              <ListItemIcon>
+                <VoidIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText>Void Contract</ListItemText>
+            </MenuItem>
+          )}
         {selectedContract && (
           <MenuItem onClick={() => selectedContract && handleDownloadContract(selectedContract)}>
             <ListItemIcon>
@@ -539,7 +546,7 @@ export const EventContracts: React.FC<EventContractsProps> = ({ event }) => {
                     contracts
                       .filter((c) => c.contract_value && c.status !== 'VOID')
                       .reduce((sum, c) => sum + parseFloat(c.contract_value || '0'), 0),
-                    contracts.find(c => c.contract_value && c.status !== 'VOID')?.currency
+                    contracts.find((c) => c.contract_value && c.status !== 'VOID')?.currency,
                   )}
                 </Typography>
               </Box>

@@ -17,8 +17,9 @@ Benefits:
 - Scales regardless of cache size
 - Minimizes Upstash request count
 """
+
 import logging
-from typing import Any, Dict, List, Optional
+
 from django.core.cache import caches
 
 logger = logging.getLogger(__name__)
@@ -52,15 +53,15 @@ class VersionedCacheService:
 
     # Subclasses must override these
     domain: str = None  # e.g., 'users', 'products'
-    version_groups: Dict[str, List[str]] = {}  # Group name -> key prefixes in that group
+    version_groups: dict[str, list[str]] = {}  # Group name -> key prefixes in that group
 
     # Version key pattern
     VERSION_KEY_PATTERN = "cache:version:{domain}:{group}"
 
     def __init__(self):
-        self.cache = caches['default']
-        self.sessions = caches['sessions']
-        self.analytics = caches['analytics']
+        self.cache = caches["default"]
+        self.sessions = caches["sessions"]
+        self.analytics = caches["analytics"]
 
         if not self.domain:
             raise ValueError("Subclass must set 'domain' class attribute")
@@ -122,7 +123,7 @@ class VersionedCacheService:
             logger.debug(f"Initialized {self.domain}:{group} version to 2")
             return 2
 
-    def _invalidate_all_groups(self) -> Dict[str, int]:
+    def _invalidate_all_groups(self) -> dict[str, int]:
         """
         Invalidate all version groups for this domain.
 
@@ -130,12 +131,12 @@ class VersionedCacheService:
             Dict mapping group names to their new version numbers
         """
         results = {}
-        for group in self.version_groups.keys():
+        for group in self.version_groups:
             results[group] = self._invalidate_version_group(group)
         logger.info(f"Invalidated all {self.domain} cache groups: {results}")
         return results
 
-    def _delete_specific_key(self, key: str, cache_backend: str = 'default') -> bool:
+    def _delete_specific_key(self, key: str, cache_backend: str = "default") -> bool:
         """
         Delete a specific cache key (not pattern-based).
 
@@ -149,7 +150,7 @@ class VersionedCacheService:
         Returns:
             True if key was deleted, False otherwise
         """
-        cache = getattr(self, cache_backend if cache_backend != 'default' else 'cache')
+        cache = getattr(self, cache_backend if cache_backend != "default" else "cache")
         try:
             cache.delete(key)
             logger.debug(f"Deleted cache key: {key}")
@@ -158,7 +159,7 @@ class VersionedCacheService:
             logger.warning(f"Failed to delete cache key {key}: {e}")
             return False
 
-    def _delete_specific_keys(self, keys: List[str], cache_backend: str = 'default') -> int:
+    def _delete_specific_keys(self, keys: list[str], cache_backend: str = "default") -> int:
         """
         Delete multiple specific cache keys.
 
@@ -172,7 +173,7 @@ class VersionedCacheService:
         if not keys:
             return 0
 
-        cache = getattr(self, cache_backend if cache_backend != 'default' else 'cache')
+        cache = getattr(self, cache_backend if cache_backend != "default" else "cache")
         try:
             cache.delete_many(keys)
             logger.debug(f"Deleted {len(keys)} cache keys")
@@ -181,7 +182,7 @@ class VersionedCacheService:
             logger.warning(f"Failed to delete cache keys: {e}")
             return 0
 
-    def get_version_info(self) -> Dict[str, int]:
+    def get_version_info(self) -> dict[str, int]:
         """
         Get current version numbers for all groups (for debugging/monitoring).
 
@@ -189,6 +190,6 @@ class VersionedCacheService:
             Dict mapping group names to their current version numbers
         """
         info = {}
-        for group in self.version_groups.keys():
+        for group in self.version_groups:
             info[group] = self._get_version(group)
         return info

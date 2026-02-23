@@ -51,13 +51,13 @@ export const getEventStatusSummary = (status: EventStatus) => {
 export const getEventPriorityColor = (status: EventStatus, daysUntilEvent?: number) => {
   if (status === 'CANCELLED') return 'error';
   if (status === 'COMPLETED') return 'default';
-  
+
   if (daysUntilEvent !== undefined) {
     if (daysUntilEvent < 0) return 'error'; // Past due
     if (daysUntilEvent <= 7) return 'warning'; // Within a week
     if (daysUntilEvent <= 30) return 'info'; // Within a month
   }
-  
+
   return 'primary';
 };
 

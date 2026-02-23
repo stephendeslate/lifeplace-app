@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/events/EventTypeFormDialog.tsx
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   TextField,
   FormControlLabel,
@@ -9,25 +9,20 @@ import {
   Typography,
   Stack,
   Divider,
-} from "@mui/material";
-import {
-  ModernDialog,
-  createDialogActions,
-  ImageUploadField,
-  GalleryUploadField,
-} from "../common";
+} from '@mui/material';
+import { ModernDialog, createDialogActions, ImageUploadField, GalleryUploadField } from '../common';
 import {
   type EventTypeFormDialogProps,
   type EventTypeFormData,
   type CreateEventTypeData,
   type UpdateEventTypeData,
-} from "../../types/events.types";
-import { tokens } from "../../design-system";
-import { glassInputStyles } from "../../design-system/utils/glassmorphism";
+} from '../../types/events.types';
+import { tokens } from '../../design-system';
+import { glassInputStyles } from '../../design-system/utils/glassmorphism';
 
 const defaultFormData: EventTypeFormData = {
-  name: "",
-  description: "",
+  name: '',
+  description: '',
   is_active: true,
   featured_image: null,
   gallery_images: [],
@@ -47,8 +42,8 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
     if (open) {
       if (editingEventType) {
         setFormData({
-          name: editingEventType.name || "",
-          description: editingEventType.description || "",
+          name: editingEventType.name || '',
+          description: editingEventType.description || '',
           is_active: editingEventType.is_active ?? true,
           featured_image: editingEventType.featured_image || null,
           gallery_images: editingEventType.gallery_images || [],
@@ -73,14 +68,13 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
       if (errors[field]) {
         setErrors((prev) => ({
           ...prev,
-          [field]: "",
+          [field]: '',
         }));
       }
     };
 
   const handleSwitchChange =
-    (field: keyof EventTypeFormData) =>
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+    (field: keyof EventTypeFormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
       setFormData((prev) => ({
         ...prev,
         [field]: event.target.checked,
@@ -105,7 +99,7 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = "Event type name is required";
+      newErrors.name = 'Event type name is required';
     }
 
     setErrors(newErrors);
@@ -123,9 +117,7 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
 
     // Check if we have any files to upload or if we're editing (to handle image removals)
     const hasNewFeaturedImage = formData.featured_image instanceof File;
-    const hasNewGalleryImages = formData.gallery_images.some(
-      (img) => img instanceof File,
-    );
+    const hasNewGalleryImages = formData.gallery_images.some((img) => img instanceof File);
     const hasFiles = hasNewFeaturedImage || hasNewGalleryImages;
 
     // Always use FormData when editing to ensure image changes (including removals) are processed
@@ -134,18 +126,18 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
     if (shouldUseFormData) {
       // Build FormData for image upload support
       const formDataObj = new FormData();
-      formDataObj.append("name", formData.name.trim());
+      formDataObj.append('name', formData.name.trim());
       if (formData.description.trim()) {
-        formDataObj.append("description", formData.description.trim());
+        formDataObj.append('description', formData.description.trim());
       }
-      formDataObj.append("is_active", String(formData.is_active));
+      formDataObj.append('is_active', String(formData.is_active));
 
       // Featured image
       if (formData.featured_image instanceof File) {
-        formDataObj.append("featured_image", formData.featured_image);
+        formDataObj.append('featured_image', formData.featured_image);
       } else if (formData.featured_image === null && editingEventType) {
         // Clear the image if it was removed
-        formDataObj.append("featured_image", "");
+        formDataObj.append('featured_image', '');
       }
 
       // Gallery images - for new files, append them; for existing URLs, keep them as JSON
@@ -155,15 +147,12 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
         if (item instanceof File) {
           formDataObj.append(`gallery_image_${newFileIndex}`, item);
           newFileIndex++;
-        } else if (typeof item === "string") {
+        } else if (typeof item === 'string') {
           existingGalleryUrls.push(item);
         }
       });
       // Always send existing_gallery_images (even if empty) so backend knows to update the field
-      formDataObj.append(
-        "existing_gallery_images",
-        JSON.stringify(existingGalleryUrls),
-      );
+      formDataObj.append('existing_gallery_images', JSON.stringify(existingGalleryUrls));
 
       onSubmit(submitData, formDataObj);
     } else {
@@ -178,12 +167,12 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
   };
 
   const actions = createDialogActions(handleClose, handleSubmit, {
-    cancelLabel: "Cancel",
+    cancelLabel: 'Cancel',
     confirmLabel: isLoading
-      ? "Saving..."
+      ? 'Saving...'
       : editingEventType
-        ? "Update Event Type"
-        : "Create Event Type",
+        ? 'Update Event Type'
+        : 'Create Event Type',
     isLoading,
     confirmDisabled: isLoading,
   });
@@ -192,7 +181,7 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
     <ModernDialog
       open={open}
       onClose={handleClose}
-      title={editingEventType ? "Edit Event Type" : "Create New Event Type"}
+      title={editingEventType ? 'Edit Event Type' : 'Create New Event Type'}
       actions={actions}
       maxWidth="md"
       fullWidth
@@ -204,7 +193,7 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
               fullWidth
               label="Event Type Name"
               value={formData.name}
-              onChange={handleInputChange("name")}
+              onChange={handleInputChange('name')}
               error={!!errors.name}
               helperText={errors.name}
               required
@@ -216,11 +205,9 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
               fullWidth
               label="Description"
               value={formData.description}
-              onChange={handleInputChange("description")}
+              onChange={handleInputChange('description')}
               error={!!errors.description}
-              helperText={
-                errors.description || "Optional description of this event type"
-              }
+              helperText={errors.description || 'Optional description of this event type'}
               multiline
               rows={4}
               placeholder="Describe this event type and what makes it unique..."
@@ -239,34 +226,27 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
                 control={
                   <Switch
                     checked={formData.is_active}
-                    onChange={handleSwitchChange("is_active")}
+                    onChange={handleSwitchChange('is_active')}
                     sx={{
-                      "& .MuiSwitch-switchBase.Mui-checked": {
+                      '& .MuiSwitch-switchBase.Mui-checked': {
                         color: tokens.color.success[500],
                       },
-                      "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                        {
-                          backgroundColor: tokens.color.success[500],
-                        },
+                      '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
+                        backgroundColor: tokens.color.success[500],
+                      },
                     }}
                   />
                 }
                 label={
                   <Typography variant="subtitle2" fontWeight="600">
-                    {formData.is_active
-                      ? "Active Event Type"
-                      : "Inactive Event Type"}
+                    {formData.is_active ? 'Active Event Type' : 'Inactive Event Type'}
                   </Typography>
                 }
               />
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{ mt: 1, ml: 4 }}
-              >
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, ml: 4 }}>
                 {formData.is_active
-                  ? "This event type is available for creating new events and will appear in booking forms"
-                  : "This event type is hidden from event creation and booking forms"}
+                  ? 'This event type is available for creating new events and will appear in booking forms'
+                  : 'This event type is hidden from event creation and booking forms'}
               </Typography>
             </Box>
 
@@ -278,8 +258,8 @@ export const EventTypeFormDialog: React.FC<EventTypeFormDialogProps> = ({
                 Images
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Upload images for this event type. These will be displayed in
-                booking forms and event listings.
+                Upload images for this event type. These will be displayed in booking forms and
+                event listings.
               </Typography>
 
               <Stack spacing={3}>

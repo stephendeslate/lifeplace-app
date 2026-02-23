@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/clients/ClientCommunications.tsx
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Box,
   Button,
@@ -24,7 +24,7 @@ import {
   Select,
   MenuItem,
   Tooltip,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Send as SendIcon,
   Email as EmailIcon,
@@ -37,31 +37,26 @@ import {
   Schedule as PendingIcon,
   Mail as MailOpenIcon,
   Event as EventIcon,
-} from "@mui/icons-material";
-import { format } from "date-fns";
-import { useNavigate } from "react-router-dom";
-import { useCommunications } from "../../hooks/useCommunications";
-import { sanitizeHTML } from "../../utils/security";
-import { SendMessageDialog } from "../communications/SendMessageDialog";
-import type { CommunicationRecord } from "../../types/communications.types";
-import type { Client } from "../../types/clients.types";
+} from '@mui/icons-material';
+import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
+import { useCommunications } from '../../hooks/useCommunications';
+import { sanitizeHTML } from '../../utils/security';
+import { SendMessageDialog } from '../communications/SendMessageDialog';
+import type { CommunicationRecord } from '../../types/communications.types';
+import type { Client } from '../../types/clients.types';
 
 interface ClientCommunicationsProps {
   client: Client;
 }
 
-export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
-  client,
-}) => {
+export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({ client }) => {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [channelFilter, setChannelFilter] = useState<"ALL" | "EMAIL" | "SMS">(
-    "ALL",
-  );
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [channelFilter, setChannelFilter] = useState<'ALL' | 'EMAIL' | 'SMS'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
-  const [selectedRecord, setSelectedRecord] =
-    useState<CommunicationRecord | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<CommunicationRecord | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
 
   const { useRecords } = useCommunications();
@@ -71,16 +66,11 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
     refetch,
   } = useRecords({
     client_id: client.id,
-    channel: channelFilter === "ALL" ? undefined : channelFilter,
+    channel: channelFilter === 'ALL' ? undefined : channelFilter,
     status:
-      statusFilter === "ALL"
+      statusFilter === 'ALL'
         ? undefined
-        : (statusFilter as
-            | "PENDING"
-            | "SENT"
-            | "DELIVERED"
-            | "FAILED"
-            | "BOUNCED"),
+        : (statusFilter as 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED' | 'BOUNCED'),
   });
 
   // Filter communications by search term
@@ -97,38 +87,36 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "DELIVERED":
+      case 'DELIVERED':
         return <DeliveredIcon fontSize="small" color="success" />;
-      case "FAILED":
-      case "BOUNCED":
+      case 'FAILED':
+      case 'BOUNCED':
         return <FailedIcon fontSize="small" color="error" />;
-      case "SENT":
+      case 'SENT':
         return <MailOpenIcon fontSize="small" color="info" />;
       default:
         return <PendingIcon fontSize="small" color="disabled" />;
     }
   };
 
-  const getStatusColor = (
-    status: string,
-  ): "success" | "error" | "warning" | "default" | "info" => {
+  const getStatusColor = (status: string): 'success' | 'error' | 'warning' | 'default' | 'info' => {
     switch (status) {
-      case "DELIVERED":
-        return "success";
-      case "FAILED":
-      case "BOUNCED":
-        return "error";
-      case "SENT":
-        return "info";
-      case "PENDING":
-        return "warning";
+      case 'DELIVERED':
+        return 'success';
+      case 'FAILED':
+      case 'BOUNCED':
+        return 'error';
+      case 'SENT':
+        return 'info';
+      case 'PENDING':
+        return 'warning';
       default:
-        return "default";
+        return 'default';
     }
   };
 
   const getChannelIcon = (channel: string) => {
-    return channel === "EMAIL" ? (
+    return channel === 'EMAIL' ? (
       <EmailIcon fontSize="small" color="primary" />
     ) : (
       <SmsIcon fontSize="small" color="secondary" />
@@ -146,12 +134,7 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
 
   if (isLoading) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight={400}
-      >
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
         <CircularProgress />
       </Box>
     );
@@ -160,12 +143,7 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
   return (
     <Box>
       {/* Header Actions */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
         <Typography variant="h6">
           Communications History ({filteredCommunications.length})
         </Typography>
@@ -204,9 +182,7 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
             <InputLabel>Channel</InputLabel>
             <Select
               value={channelFilter}
-              onChange={(e) =>
-                setChannelFilter(e.target.value as "ALL" | "EMAIL" | "SMS")
-              }
+              onChange={(e) => setChannelFilter(e.target.value as 'ALL' | 'EMAIL' | 'SMS')}
               label="Channel"
             >
               <MenuItem value="ALL">All</MenuItem>
@@ -234,24 +210,22 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
 
       {/* Communications Table */}
       {filteredCommunications.length === 0 ? (
-        <Paper sx={{ p: 4, textAlign: "center" }}>
-          <EmailIcon sx={{ fontSize: 48, color: "grey.400", mb: 2 }} />
+        <Paper sx={{ p: 4, textAlign: 'center' }}>
+          <EmailIcon sx={{ fontSize: 48, color: 'grey.400', mb: 2 }} />
           <Typography variant="h6" color="text.secondary" gutterBottom>
             No Communications Yet
           </Typography>
           <Typography variant="body2" color="text.secondary" mb={2}>
-            {searchTerm || channelFilter !== "ALL" || statusFilter !== "ALL"
-              ? "No communications match your filters"
-              : "Start by sending your first message to this client"}
+            {searchTerm || channelFilter !== 'ALL' || statusFilter !== 'ALL'
+              ? 'No communications match your filters'
+              : 'Start by sending your first message to this client'}
           </Typography>
-          {(searchTerm ||
-            channelFilter !== "ALL" ||
-            statusFilter !== "ALL") && (
+          {(searchTerm || channelFilter !== 'ALL' || statusFilter !== 'ALL') && (
             <Button
               onClick={() => {
-                setSearchTerm("");
-                setChannelFilter("ALL");
-                setStatusFilter("ALL");
+                setSearchTerm('');
+                setChannelFilter('ALL');
+                setStatusFilter('ALL');
               }}
             >
               Clear Filters
@@ -259,19 +233,15 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
           )}
         </Paper>
       ) : (
-        <TableContainer component={Paper} sx={{ overflowX: "auto" }}>
+        <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
           <Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell>Date/Time</TableCell>
                 <TableCell>Channel</TableCell>
-                <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
-                  Event
-                </TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Event</TableCell>
                 <TableCell>Template</TableCell>
-                <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
-                  Subject
-                </TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Subject</TableCell>
                 <TableCell>Status</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
@@ -281,10 +251,10 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
                 <TableRow key={comm.id} hover>
                   <TableCell>
                     <Typography variant="body2">
-                      {format(new Date(comm.created_at), "MMM d, yyyy")}
+                      {format(new Date(comm.created_at), 'MMM d, yyyy')}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {format(new Date(comm.created_at), "h:mm a")}
+                      {format(new Date(comm.created_at), 'h:mm a')}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -293,7 +263,7 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
                       <Typography variant="body2">{comm.channel}</Typography>
                     </Stack>
                   </TableCell>
-                  <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                     {comm.event_details ? (
                       <Chip
                         icon={<EventIcon />}
@@ -310,13 +280,11 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
                     )}
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">
-                      {comm.template_name}
-                    </Typography>
+                    <Typography variant="body2">{comm.template_name}</Typography>
                   </TableCell>
-                  <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                     <Typography variant="body2" noWrap sx={{ maxWidth: 200 }}>
-                      {comm.subject || "(No subject)"}
+                      {comm.subject || '(No subject)'}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -330,7 +298,7 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
                       />
                       {comm.is_opened && (
                         <Tooltip
-                          title={`Opened at ${format(new Date(comm.opened_at!), "MMM d, h:mm a")}`}
+                          title={`Opened at ${format(new Date(comm.opened_at!), 'MMM d, h:mm a')}`}
                         >
                           <MailOpenIcon fontSize="small" color="action" />
                         </Tooltip>
@@ -338,10 +306,7 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
                     </Stack>
                   </TableCell>
                   <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleViewDetails(comm)}
-                    >
+                    <IconButton size="small" onClick={() => handleViewDetails(comm)}>
                       <ViewIcon />
                     </IconButton>
                   </TableCell>
@@ -434,9 +399,9 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
                   <Paper variant="outlined" sx={{ p: 2, mt: 1 }}>
                     <Typography
                       variant="body2"
-                      sx={{ whiteSpace: "pre-wrap" }}
+                      sx={{ whiteSpace: 'pre-wrap' }}
                       dangerouslySetInnerHTML={{
-                        __html: sanitizeHTML(selectedRecord.body, "email"),
+                        __html: sanitizeHTML(selectedRecord.body, 'email'),
                       }}
                     />
                   </Paper>
@@ -446,10 +411,7 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
                     Sent
                   </Typography>
                   <Typography>
-                    {format(
-                      new Date(selectedRecord.created_at),
-                      "MMMM d, yyyy h:mm a",
-                    )}
+                    {format(new Date(selectedRecord.created_at), 'MMMM d, yyyy h:mm a')}
                   </Typography>
                 </Box>
                 {selectedRecord.delivered_at && (
@@ -458,10 +420,7 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
                       Delivered
                     </Typography>
                     <Typography>
-                      {format(
-                        new Date(selectedRecord.delivered_at),
-                        "MMMM d, yyyy h:mm a",
-                      )}
+                      {format(new Date(selectedRecord.delivered_at), 'MMMM d, yyyy h:mm a')}
                     </Typography>
                   </Box>
                 )}
@@ -471,16 +430,13 @@ export const ClientCommunications: React.FC<ClientCommunicationsProps> = ({
                       Opened
                     </Typography>
                     <Typography>
-                      {format(
-                        new Date(selectedRecord.opened_at),
-                        "MMMM d, yyyy h:mm a",
-                      )}
+                      {format(new Date(selectedRecord.opened_at), 'MMMM d, yyyy h:mm a')}
                     </Typography>
                   </Box>
                 )}
               </Stack>
             </Box>
-            <Box sx={{ p: 2, display: "flex", justifyContent: "flex-end" }}>
+            <Box sx={{ p: 2, display: 'flex', justifyContent: 'flex-end' }}>
               <Button onClick={() => setViewDialogOpen(false)}>Close</Button>
             </Box>
           </>

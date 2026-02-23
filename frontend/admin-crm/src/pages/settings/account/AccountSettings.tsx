@@ -27,7 +27,10 @@ import {
 import { useAuth } from '../../../contexts/AuthContext';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useAccountSettings } from '../../../hooks/useSettings';
-import type { AccountSettingsFormData, PasswordChangeFormData } from '../../../types/settings.types';
+import type {
+  AccountSettingsFormData,
+  PasswordChangeFormData,
+} from '../../../types/settings.types';
 
 // Modern Design System imports
 import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
@@ -36,12 +39,8 @@ import { ModernPageHeader } from '../../../components/common/ModernPageHeader';
 export const AccountSettings: React.FC = () => {
   const { user } = useAuth();
   const { setBreadcrumbs } = useLayout();
-  const {
-    updateProfile,
-    changePassword,
-    isUpdatingProfile,
-    isChangingPassword,
-  } = useAccountSettings();
+  const { updateProfile, changePassword, isUpdatingProfile, isChangingPassword } =
+    useAccountSettings();
 
   // Profile form state
   const [profileData, setProfileData] = useState<AccountSettingsFormData>({
@@ -93,48 +92,47 @@ export const AccountSettings: React.FC = () => {
     }
   }, [user]);
 
-  const handleProfileInputChange = (field: keyof AccountSettingsFormData | string) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = event.target.value;
-    
-    if (field.includes('.')) {
-      const [parent, child] = field.split('.');
-      setProfileData(prev => ({
-        ...prev,
-        [parent]: {
-          ...((prev[parent as keyof AccountSettingsFormData] || {}) as object),
-          [child]: value,
-        },
-      }));
-    } else {
-      setProfileData(prev => ({
+  const handleProfileInputChange =
+    (field: keyof AccountSettingsFormData | string) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+
+      if (field.includes('.')) {
+        const [parent, child] = field.split('.');
+        setProfileData((prev) => ({
+          ...prev,
+          [parent]: {
+            ...((prev[parent as keyof AccountSettingsFormData] || {}) as object),
+            [child]: value,
+          },
+        }));
+      } else {
+        setProfileData((prev) => ({
+          ...prev,
+          [field]: value,
+        }));
+      }
+    };
+
+  const handlePasswordInputChange =
+    (field: keyof PasswordChangeFormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      setPasswordData((prev) => ({
         ...prev,
         [field]: value,
       }));
-    }
-  };
 
-  const handlePasswordInputChange = (field: keyof PasswordChangeFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = event.target.value;
-    setPasswordData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-
-    // Clear error for this field when user starts typing
-    if (passwordErrors[field]) {
-      setPasswordErrors(prev => ({
-        ...prev,
-        [field]: undefined,
-      }));
-    }
-  };
+      // Clear error for this field when user starts typing
+      if (passwordErrors[field]) {
+        setPasswordErrors((prev) => ({
+          ...prev,
+          [field]: undefined,
+        }));
+      }
+    };
 
   const togglePasswordVisibility = (field: 'current' | 'new' | 'confirm') => {
-    setShowPasswords(prev => ({
+    setShowPasswords((prev) => ({
       ...prev,
       [field]: !prev[field],
     }));
@@ -170,13 +168,13 @@ export const AccountSettings: React.FC = () => {
 
   const handlePasswordSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    
+
     if (!validatePasswordForm()) {
       return;
     }
 
     changePassword(passwordData);
-    
+
     // Clear form on successful submission
     setPasswordData({
       current_password: '',
@@ -214,7 +212,16 @@ export const AccountSettings: React.FC = () => {
           </Typography>
 
           {isUpdatingProfile && (
-            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.8)' }}>
+            <Box
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              }}
+            >
               <CircularProgress />
             </Box>
           )}
@@ -305,7 +312,13 @@ export const AccountSettings: React.FC = () => {
                   variant="contained"
                   color="primary"
                   disabled={isUpdatingProfile}
-                  startIcon={isUpdatingProfile ? <CircularProgress size={16} color="inherit" /> : <EditIcon />}
+                  startIcon={
+                    isUpdatingProfile ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <EditIcon />
+                    )
+                  }
                 >
                   {isUpdatingProfile ? 'Updating...' : 'Update Profile'}
                 </Button>
@@ -329,7 +342,16 @@ export const AccountSettings: React.FC = () => {
           </Typography>
 
           {isChangingPassword && (
-            <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.8)' }}>
+            <Box
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'rgba(255, 255, 255, 0.8)',
+              }}
+            >
               <CircularProgress />
             </Box>
           )}
@@ -431,7 +453,13 @@ export const AccountSettings: React.FC = () => {
                   variant="contained"
                   color="secondary"
                   disabled={isChangingPassword}
-                  startIcon={isChangingPassword ? <CircularProgress size={16} color="inherit" /> : <SecurityIcon />}
+                  startIcon={
+                    isChangingPassword ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      <SecurityIcon />
+                    )
+                  }
                 >
                   {isChangingPassword ? 'Updating...' : 'Update Password'}
                 </Button>

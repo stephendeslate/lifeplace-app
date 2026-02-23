@@ -4,79 +4,71 @@
 // Public marketing routes have been migrated to individual route modules
 // in src/routes/ with per-route meta() exports for SEO.
 
-import React, { Suspense } from "react";
-import {
-  Routes,
-  Route,
-  Navigate,
-  useNavigate,
-  useLocation,
-} from "react-router-dom";
-import { Box, CircularProgress, Typography } from "@mui/material";
-import { useAuth } from "./contexts/AuthContext";
-import { useToastActions } from "./contexts/ToastContext";
-import { PublicLayout, ClientLayout } from "./components/layout";
-import { ProtectedRoute } from "./components/auth";
+import React, { Suspense } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { Box, CircularProgress, Typography } from '@mui/material';
+import { useAuth } from './contexts/AuthContext';
+import { useToastActions } from './contexts/ToastContext';
+import { PublicLayout, ClientLayout } from './components/layout';
+import { ProtectedRoute } from './components/auth';
 
 // Critical path imports - keep static for performance
-import { Login, Register, ForgotPassword, ResetPassword } from "./pages/auth";
-import { Dashboard } from "./pages/dashboard";
-import AcceptInvitation from "./pages/auth/AcceptInvitation";
+import { Login, Register, ForgotPassword, ResetPassword } from './pages/auth';
+import { Dashboard } from './pages/dashboard';
+import AcceptInvitation from './pages/auth/AcceptInvitation';
 
 // Protected route lazy imports
-const Profile = React.lazy(() =>
-  import("./pages/profile").then((m) => ({ default: m.Profile })),
-);
+const Profile = React.lazy(() => import('./pages/profile').then((m) => ({ default: m.Profile })));
 const FinancialPortal = React.lazy(() =>
-  import("./pages/payments").then((m) => ({ default: m.FinancialPortal })),
+  import('./pages/payments').then((m) => ({ default: m.FinancialPortal })),
 );
 const EventsList = React.lazy(() =>
-  import("./pages/events").then((m) => ({ default: m.EventsList })),
+  import('./pages/events').then((m) => ({ default: m.EventsList })),
 );
 const EventDetail = React.lazy(() =>
-  import("./pages/events").then((m) => ({ default: m.EventDetail })),
+  import('./pages/events').then((m) => ({ default: m.EventDetail })),
 );
 const DocumentsPage = React.lazy(() =>
-  import("./pages/documents/DocumentsPage").then((m) => ({
+  import('./pages/documents/DocumentsPage').then((m) => ({
     default: m.DocumentsPage,
   })),
 );
 const RecordsPage = React.lazy(() =>
-  import("./pages/records/RecordsPage").then((m) => ({
+  import('./pages/records/RecordsPage').then((m) => ({
     default: m.RecordsPage,
   })),
 );
 const ActionCenterPage = React.lazy(() =>
-  import("./pages/actions/ActionCenterPage").then((m) => ({
+  import('./pages/actions/ActionCenterPage').then((m) => ({
     default: m.ActionCenterPage,
   })),
 );
 const ContractDetail = React.lazy(() =>
-  import("./pages/contracts").then((m) => ({ default: m.ContractDetail })),
+  import('./pages/contracts').then((m) => ({ default: m.ContractDetail })),
 );
 const SupportPage = React.lazy(() =>
-  import("./pages/support").then((m) => ({ default: m.SupportPage })),
+  import('./pages/support').then((m) => ({ default: m.SupportPage })),
 );
 const NotificationsPage = React.lazy(() =>
-  import("./pages/notifications").then((m) => ({
+  import('./pages/notifications').then((m) => ({
     default: m.NotificationsPage,
   })),
 );
 
 // NotFound page (404) lazy import
 const NotFound = React.lazy(() =>
-  import("./pages/NotFound").then((m) => ({ default: m.NotFound })),
+  import('./pages/NotFound').then((m) => ({ default: m.NotFound })),
 );
 
 // Loading component
 const LoadingSpinner: React.FC = () => (
   <Box
     sx={{
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      flexDirection: "column",
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'column',
       gap: 2,
     }}
   >
@@ -88,9 +80,7 @@ const LoadingSpinner: React.FC = () => (
 );
 
 // Layout wrapper for protected routes
-const ClientLayoutWrapper: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+const ClientLayoutWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <ClientLayout>{children}</ClientLayout>;
 };
 
@@ -104,22 +94,18 @@ export const AppRouter: React.FC = () => {
   // Handle successful login/register
   const handleAuthSuccess = () => {
     const from =
-      (location.state as { from?: { pathname: string } })?.from?.pathname ||
-      "/dashboard";
+      (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
     navigate(from, { replace: true });
 
-    if (from !== "/dashboard") {
-      showInfo(
-        "Redirected",
-        "You have been redirected to your requested page.",
-      );
+    if (from !== '/dashboard') {
+      showInfo('Redirected', 'You have been redirected to your requested page.');
     }
   };
 
   // Navigation handlers
-  const handleNavigateToHome = () => navigate("/");
-  const handleNavigateToLogin = () => navigate("/login");
-  const handleNavigateToRegister = () => navigate("/register");
+  const handleNavigateToHome = () => navigate('/');
+  const handleNavigateToLogin = () => navigate('/login');
+  const handleNavigateToRegister = () => navigate('/register');
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -195,13 +181,7 @@ export const AppRouter: React.FC = () => {
         {/* Accept Client Invitation Route - Public but redirects to dashboard after success */}
         <Route
           path="/accept-invitation/:invitationId"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <AcceptInvitation />
-            )
-          }
+          element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <AcceptInvitation />}
         />
 
         {/* Protected Client Routes */}
@@ -282,10 +262,7 @@ export const AppRouter: React.FC = () => {
           }
         />
         {/* Redirect old contracts list route to documents for backward compatibility */}
-        <Route
-          path="/contracts"
-          element={<Navigate to="/documents" replace />}
-        />
+        <Route path="/contracts" element={<Navigate to="/documents" replace />} />
 
         <Route
           path="/records"
@@ -323,10 +300,7 @@ export const AppRouter: React.FC = () => {
         />
         {/* Redirect old messages route to actions for backward compatibility */}
         <Route path="/messages" element={<Navigate to="/actions" replace />} />
-        <Route
-          path="/messages/*"
-          element={<Navigate to="/actions" replace />}
-        />
+        <Route path="/messages/*" element={<Navigate to="/actions" replace />} />
 
         {/* Support Route */}
         <Route

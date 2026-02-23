@@ -14,7 +14,7 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
-  
+
   const sidebarWidth = 280;
 
   const handleSidebarToggle = () => {
@@ -22,11 +22,11 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   };
 
   return (
-    <GradientBackground 
-      gradient="mist" 
+    <GradientBackground
+      gradient="mist"
       animated={false}
       overlay={true}
-      sx={{ 
+      sx={{
         minHeight: '100vh',
         width: '100%',
         position: 'relative',
@@ -52,10 +52,7 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
       />
 
       {/* Header */}
-      <ClientHeader 
-        onMenuClick={handleSidebarToggle}
-        sidebarOpen={sidebarOpen}
-      />
+      <ClientHeader onMenuClick={handleSidebarToggle} sidebarOpen={sidebarOpen} />
 
       {/* Sidebar */}
       <ClientSidebar

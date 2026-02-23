@@ -1,15 +1,16 @@
 # backend/core/domains/notifications/tasks.py
 
 import logging
-from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from datetime import timedelta
+from typing import Any
 
-from celery import shared_task
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
+
+from celery import shared_task
 
 from .exceptions import (
     InvalidNotificationDataException,
@@ -17,12 +18,9 @@ from .exceptions import (
 )
 from .models import (
     Notification,
-    NotificationDigest,
-    NotificationPreference,
-    NotificationType,
 )
 from .security import NotificationRateLimiter
-from .services import NotificationService, NotificationDigestService
+from .services import NotificationDigestService, NotificationService
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -33,14 +31,14 @@ def create_notification_async(
     self,
     recipient_id: int,
     notification_type_code: str,
-    context: Optional[Dict[str, Any]] = None,
-    delivery_methods: Optional[List[str]] = None,
-    event_id: Optional[int] = None,
-    client_id: Optional[int] = None
+    context: dict[str, Any] | None = None,
+    delivery_methods: list[str] | None = None,
+    event_id: int | None = None,
+    client_id: int | None = None,
 ):
     """
     Asynchronously create and deliver a notification
-    
+
     Args:
         recipient_id: ID of the user to receive notification
         notification_type_code: Code of the notification type
@@ -52,40 +50,40 @@ def create_notification_async(
     try:
         # Rate limiting check (uses the canonical NotificationRateLimiter)
         can_create, limit_message = NotificationRateLimiter.check_creation_limit(
-            user_id=recipient_id,
-            notification_type_code=notification_type_code
+            user_id=recipient_id, notification_type_code=notification_type_code
         )
         if not can_create:
             logger.warning(
                 f"Notification creation skipped due to rate limiting: "
                 f"user={recipient_id}, type={notification_type_code}, reason={limit_message}"
             )
-            return {'status': 'rate_limited', 'notification_id': None}
-        
+            return {"status": "rate_limited", "notification_id": None}
+
         # Get recipient
         try:
             recipient = User.objects.get(id=recipient_id, is_active=True)
         except User.DoesNotExist:
             logger.error(f"Recipient user not found: {recipient_id}")
-            return {'status': 'error', 'message': 'Recipient not found'}
-        
+            return {"status": "error", "message": "Recipient not found"}
+
         # Get related objects
         event = None
         client = None
-        
+
         if event_id:
             try:
                 from core.domains.events.models import Event
+
                 event = Event.objects.get(id=event_id)
             except Exception:
                 logger.warning(f"Event not found: {event_id}")
-        
+
         if client_id:
             try:
-                client = User.objects.get(id=client_id, role='CLIENT')
+                client = User.objects.get(id=client_id, role="CLIENT")
             except User.DoesNotExist:
                 logger.warning(f"Client not found: {client_id}")
-        
+
         # Create notification
         notification = NotificationService.create_notification(
             recipient=recipient,
@@ -94,74 +92,63 @@ def create_notification_async(
             delivery_methods=delivery_methods,
             event=event,
             client=client,
-            use_async=False  # Already in async task, prevent recursive async call
+            use_async=False,  # Already in async task, prevent recursive async call
         )
-        
+
         if notification:
-            logger.info(
-                f"✅ Notification created successfully: {notification.id} "
-                f"for {recipient.email}"
-            )
-            
+            logger.info(f"✅ Notification created successfully: {notification.id} for {recipient.email}")
+
             # Update metrics
             update_notification_metrics.delay(
-                notification_type_code=notification_type_code,
-                delivery_methods=notification.delivered_via,
-                success=True
+                notification_type_code=notification_type_code, delivery_methods=notification.delivered_via, success=True
             )
-            
+
             return {
-                'status': 'success',
-                'notification_id': notification.id,
-                'delivered_via': notification.delivered_via
+                "status": "success",
+                "notification_id": notification.id,
+                "delivered_via": notification.delivered_via,
             }
         else:
             logger.info(f"Notification creation skipped (user preferences): {recipient.email}")
-            return {'status': 'skipped', 'notification_id': None}
-            
+            return {"status": "skipped", "notification_id": None}
+
     except NotificationTypeNotFoundException as e:
         logger.error(f"Notification type not found: {notification_type_code}")
-        return {'status': 'error', 'message': str(e)}
-        
+        return {"status": "error", "message": str(e)}
+
     except InvalidNotificationDataException as e:
-        logger.warning(f"Invalid notification data: {str(e)}")
-        return {'status': 'error', 'message': str(e)}
-        
+        logger.warning(f"Invalid notification data: {e!s}")
+        return {"status": "error", "message": str(e)}
+
     except Exception as e:
-        logger.error(
-            f"❌ Notification creation failed: {str(e)} "
-            f"(user={recipient_id}, type={notification_type_code})"
-        )
-        
+        logger.error(f"❌ Notification creation failed: {e!s} (user={recipient_id}, type={notification_type_code})")
+
         # Retry on failure
         if self.request.retries < self.max_retries:
             logger.info(f"Retrying notification creation (attempt {self.request.retries + 1})")
-            raise self.retry(countdown=60 * (2 ** self.request.retries))
-        
+            raise self.retry(countdown=60 * (2**self.request.retries))
+
         # Update failure metrics
         update_notification_metrics.delay(
-            notification_type_code=notification_type_code,
-            delivery_methods=[],
-            success=False,
-            error=str(e)
+            notification_type_code=notification_type_code, delivery_methods=[], success=False, error=str(e)
         )
-        
-        return {'status': 'error', 'message': str(e)}
+
+        return {"status": "error", "message": str(e)}
 
 
 @shared_task(bind=True, max_retries=3)
 def bulk_create_notifications_async(
     self,
-    recipient_ids: List[int],
+    recipient_ids: list[int],
     notification_type_code: str,
-    context: Optional[Dict[str, Any]] = None,
-    delivery_methods: Optional[List[str]] = None
+    context: dict[str, Any] | None = None,
+    delivery_methods: list[str] | None = None,
 ):
     """
     Create notifications for multiple recipients asynchronously
     """
     results = []
-    
+
     for recipient_id in recipient_ids:
         try:
             # Create individual notification task
@@ -169,22 +156,13 @@ def bulk_create_notifications_async(
                 recipient_id=recipient_id,
                 notification_type_code=notification_type_code,
                 context=context,
-                delivery_methods=delivery_methods
+                delivery_methods=delivery_methods,
             )
-            results.append({
-                'recipient_id': recipient_id,
-                'task_id': result.id,
-                'status': 'queued'
-            })
+            results.append({"recipient_id": recipient_id, "task_id": result.id, "status": "queued"})
         except Exception as e:
-            logger.error(f"Failed to queue notification for user {recipient_id}: {str(e)}")
-            results.append({
-                'recipient_id': recipient_id,
-                'task_id': None,
-                'status': 'error',
-                'error': str(e)
-            })
-    
+            logger.error(f"Failed to queue notification for user {recipient_id}: {e!s}")
+            results.append({"recipient_id": recipient_id, "task_id": None, "status": "error", "error": str(e)})
+
     logger.info(f"Queued {len(results)} notification tasks for type {notification_type_code}")
     return results
 
@@ -193,20 +171,20 @@ def bulk_create_notifications_async(
 def cleanup_old_notifications():
     """Clean up old read notifications based on configured retention period"""
     try:
-        cleanup_days = getattr(settings, 'NOTIFICATION_CLEANUP_DAYS', 90)
+        cleanup_days = getattr(settings, "NOTIFICATION_CLEANUP_DAYS", 90)
         count = NotificationService.cleanup_old_notifications(days=cleanup_days)
-        
+
         logger.info(f"🧹 Cleaned up {count} old notifications (older than {cleanup_days} days)")
-        
+
         # Update cleanup metrics
-        cache.set('notification_cleanup_last_run', timezone.now().isoformat(), timeout=86400)
-        cache.set('notification_cleanup_last_count', count, timeout=86400)
-        
-        return {'status': 'success', 'cleaned_count': count}
-        
+        cache.set("notification_cleanup_last_run", timezone.now().isoformat(), timeout=86400)
+        cache.set("notification_cleanup_last_count", count, timeout=86400)
+
+        return {"status": "success", "cleaned_count": count}
+
     except Exception as e:
-        logger.error(f"❌ Notification cleanup failed: {str(e)}")
-        return {'status': 'error', 'message': str(e)}
+        logger.error(f"❌ Notification cleanup failed: {e!s}")
+        return {"status": "error", "message": str(e)}
 
 
 @shared_task
@@ -214,45 +192,39 @@ def auto_expire_notifications():
     """Mark notifications as expired based on their expiry settings"""
     try:
         count = NotificationService.auto_expire_notifications()
-        
+
         logger.info(f"⏰ Marked {count} notifications as expired")
-        
+
         # Update expiry metrics
-        cache.set('notification_expiry_last_run', timezone.now().isoformat(), timeout=86400)
-        cache.set('notification_expiry_last_count', count, timeout=86400)
-        
-        return {'status': 'success', 'expired_count': count}
-        
+        cache.set("notification_expiry_last_run", timezone.now().isoformat(), timeout=86400)
+        cache.set("notification_expiry_last_count", count, timeout=86400)
+
+        return {"status": "success", "expired_count": count}
+
     except Exception as e:
-        logger.error(f"❌ Notification expiry task failed: {str(e)}")
-        return {'status': 'error', 'message': str(e)}
+        logger.error(f"❌ Notification expiry task failed: {e!s}")
+        return {"status": "error", "message": str(e)}
 
 
 @shared_task
 def auto_read_old_notifications():
     """Automatically mark very old notifications as read"""
     try:
-        auto_read_days = getattr(settings, 'NOTIFICATION_AUTO_READ_DAYS', 30)
+        auto_read_days = getattr(settings, "NOTIFICATION_AUTO_READ_DAYS", 30)
         cutoff_date = timezone.now() - timedelta(days=auto_read_days)
-        
+
         with transaction.atomic():
-            count = Notification.objects.filter(
-                created_at__lt=cutoff_date,
-                is_read=False,
-                is_expired=False
-            ).update(
-                is_read=True,
-                read_at=timezone.now(),
-                updated_at=timezone.now()
+            count = Notification.objects.filter(created_at__lt=cutoff_date, is_read=False, is_expired=False).update(
+                is_read=True, read_at=timezone.now(), updated_at=timezone.now()
             )
-        
+
         logger.info(f"📖 Auto-marked {count} old notifications as read")
-        
-        return {'status': 'success', 'auto_read_count': count}
-        
+
+        return {"status": "success", "auto_read_count": count}
+
     except Exception as e:
-        logger.error(f"❌ Auto-read notifications task failed: {str(e)}")
-        return {'status': 'error', 'message': str(e)}
+        logger.error(f"❌ Auto-read notifications task failed: {e!s}")
+        return {"status": "error", "message": str(e)}
 
 
 @shared_task
@@ -260,49 +232,42 @@ def send_notification_digest(user_id: int, frequency: str):
     """Send notification digest to a user"""
     try:
         user = User.objects.get(id=user_id)
-        
+
         # Calculate period based on frequency
         now = timezone.now()
-        if frequency == 'HOURLY':
+        if frequency == "HOURLY":
             period_start = now - timedelta(hours=1)
-        elif frequency == 'DAILY':
+        elif frequency == "DAILY":
             period_start = now - timedelta(days=1)
-        elif frequency == 'WEEKLY':
+        elif frequency == "WEEKLY":
             period_start = now - timedelta(weeks=1)
         else:
             logger.error(f"Invalid digest frequency: {frequency}")
-            return {'status': 'error', 'message': 'Invalid frequency'}
-        
+            return {"status": "error", "message": "Invalid frequency"}
+
         # Create digest
         digest = NotificationDigestService.create_digest(
-            user=user,
-            frequency=frequency,
-            period_start=period_start,
-            period_end=now
+            user=user, frequency=frequency, period_start=period_start, period_end=now
         )
-        
+
         if digest:
             # Send digest
-            result = NotificationDigestService.send_digest(digest.id)
-            
+            NotificationDigestService.send_digest(digest.id)
+
             logger.info(f"📬 Sent {frequency} digest to {user.email} ({digest.notification_count} notifications)")
-            
-            return {
-                'status': 'success',
-                'digest_id': digest.id,
-                'notification_count': digest.notification_count
-            }
+
+            return {"status": "success", "digest_id": digest.id, "notification_count": digest.notification_count}
         else:
             logger.info(f"No notifications for digest: {user.email} ({frequency})")
-            return {'status': 'no_notifications'}
-            
+            return {"status": "no_notifications"}
+
     except User.DoesNotExist:
         logger.error(f"User not found for digest: {user_id}")
-        return {'status': 'error', 'message': 'User not found'}
-        
+        return {"status": "error", "message": "User not found"}
+
     except Exception as e:
-        logger.error(f"❌ Digest sending failed for user {user_id}: {str(e)}")
-        return {'status': 'error', 'message': str(e)}
+        logger.error(f"❌ Digest sending failed for user {user_id}: {e!s}")
+        return {"status": "error", "message": str(e)}
 
 
 @shared_task
@@ -311,83 +276,77 @@ def collect_delivery_metrics():
     try:
         # Get metrics for the last hour
         one_hour_ago = timezone.now() - timedelta(hours=1)
-        
-        recent_notifications = Notification.objects.filter(
-            created_at__gte=one_hour_ago
-        )
-        
+
+        recent_notifications = Notification.objects.filter(created_at__gte=one_hour_ago)
+
         metrics = {
-            'total_created': recent_notifications.count(),
-            'total_delivered': recent_notifications.exclude(delivered_via=[]).count(),
-            'delivery_methods': {},
-            'by_category': {},
-            'errors': 0,
-            'timestamp': timezone.now().isoformat()
+            "total_created": recent_notifications.count(),
+            "total_delivered": recent_notifications.exclude(delivered_via=[]).count(),
+            "delivery_methods": {},
+            "by_category": {},
+            "errors": 0,
+            "timestamp": timezone.now().isoformat(),
         }
-        
+
         # Count by delivery methods
-        for method in ['in_app', 'email', 'sms', 'push']:
-            metrics['delivery_methods'][method] = recent_notifications.filter(
-                delivered_via__contains=[method]
-            ).count()
-        
+        for method in ["in_app", "email", "sms", "push"]:
+            metrics["delivery_methods"][method] = recent_notifications.filter(delivered_via__contains=[method]).count()
+
         # Count by category
-        categories = recent_notifications.values_list(
-            'notification_type__category', flat=True
-        ).distinct()
-        
+        categories = recent_notifications.values_list("notification_type__category", flat=True).distinct()
+
         for category in categories:
             if category:
-                metrics['by_category'][category] = recent_notifications.filter(
+                metrics["by_category"][category] = recent_notifications.filter(
                     notification_type__category=category
                 ).count()
-        
+
         # Store metrics in cache
-        cache.set('notification_delivery_metrics', metrics, timeout=3600)
-        
+        cache.set("notification_delivery_metrics", metrics, timeout=3600)
+
         logger.debug(f"📊 Collected delivery metrics: {metrics['total_created']} notifications")
-        
+
         return metrics
-        
+
     except Exception as e:
-        logger.error(f"❌ Metrics collection failed: {str(e)}")
-        return {'status': 'error', 'message': str(e)}
+        logger.error(f"❌ Metrics collection failed: {e!s}")
+        return {"status": "error", "message": str(e)}
 
 
 @shared_task
 def update_notification_metrics(
-    notification_type_code: str,
-    delivery_methods: List[str],
-    success: bool,
-    error: Optional[str] = None
+    notification_type_code: str, delivery_methods: list[str], success: bool, error: str | None = None
 ):
     """Update notification metrics in cache"""
     try:
         cache_key = f"notification_metrics:{notification_type_code}"
-        metrics = cache.get(cache_key, {
-            'total_sent': 0,
-            'total_successful': 0,
-            'total_failed': 0,
-            'delivery_methods': {},
-            'last_updated': timezone.now().isoformat()
-        })
-        
-        metrics['total_sent'] += 1
-        
+        metrics = cache.get(
+            cache_key,
+            {
+                "total_sent": 0,
+                "total_successful": 0,
+                "total_failed": 0,
+                "delivery_methods": {},
+                "last_updated": timezone.now().isoformat(),
+            },
+        )
+
+        metrics["total_sent"] += 1
+
         if success:
-            metrics['total_successful'] += 1
+            metrics["total_successful"] += 1
             for method in delivery_methods:
-                metrics['delivery_methods'][method] = metrics['delivery_methods'].get(method, 0) + 1
+                metrics["delivery_methods"][method] = metrics["delivery_methods"].get(method, 0) + 1
         else:
-            metrics['total_failed'] += 1
-            
-        metrics['last_updated'] = timezone.now().isoformat()
-        
+            metrics["total_failed"] += 1
+
+        metrics["last_updated"] = timezone.now().isoformat()
+
         # Store metrics for 24 hours
         cache.set(cache_key, metrics, timeout=86400)
-        
+
     except Exception as e:
-        logger.error(f"Failed to update metrics: {str(e)}")
+        logger.error(f"Failed to update metrics: {e!s}")
 
 
 @shared_task
@@ -396,18 +355,19 @@ def health_check():
     try:
         logger.info("💚 Notification system health check passed")
         return {
-            'status': 'healthy',
-            'timestamp': timezone.now().isoformat(),
-            'message': 'Notification system is operational'
+            "status": "healthy",
+            "timestamp": timezone.now().isoformat(),
+            "message": "Notification system is operational",
         }
     except Exception as e:
-        logger.error(f"❌ Health check failed: {str(e)}")
-        return {'status': 'unhealthy', 'message': str(e)}
+        logger.error(f"❌ Health check failed: {e!s}")
+        return {"status": "unhealthy", "message": str(e)}
 
 
 # =============================================================================
 # Push Notification Tasks
 # =============================================================================
+
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=30)
 def send_push_notification_task(
@@ -415,11 +375,11 @@ def send_push_notification_task(
     user_id: int,
     title: str,
     body: str,
-    data: Optional[Dict[str, Any]] = None,
-    badge: Optional[int] = None,
-    priority: str = 'default',
-    channel_id: str = 'default',
-    category_id: Optional[str] = None
+    data: dict[str, Any] | None = None,
+    badge: int | None = None,
+    priority: str = "default",
+    channel_id: str = "default",
+    category_id: str | None = None,
 ):
     """
     Async task to send push notification to a user's devices
@@ -449,27 +409,18 @@ def send_push_notification_task(
         )
 
         logger.info(
-            f"📱 Push sent to user {user_id}: "
-            f"{result['successful']}/{result['total_devices']} devices succeeded"
+            f"📱 Push sent to user {user_id}: {result['successful']}/{result['total_devices']} devices succeeded"
         )
 
-        return {
-            'status': 'success',
-            'user_id': user_id,
-            **result
-        }
+        return {"status": "success", "user_id": user_id, **result}
 
     except Exception as e:
-        logger.error(f"❌ Push notification task failed: {str(e)}")
+        logger.error(f"❌ Push notification task failed: {e!s}")
 
         if self.request.retries < self.max_retries:
-            raise self.retry(countdown=30 * (2 ** self.request.retries))
+            raise self.retry(countdown=30 * (2**self.request.retries))
 
-        return {
-            'status': 'error',
-            'user_id': user_id,
-            'message': str(e)
-        }
+        return {"status": "error", "user_id": user_id, "message": str(e)}
 
 
 @shared_task
@@ -485,18 +436,18 @@ def check_push_receipts():
 
         # Get all cached ticket IDs
         ticket_ids = []
-        ticket_keys = cache.keys('push_ticket:*')
+        ticket_keys = cache.keys("push_ticket:*")
 
         if not ticket_keys:
             logger.debug("No push tickets to check")
-            return {'status': 'success', 'checked': 0}
+            return {"status": "success", "checked": 0}
 
         for key in ticket_keys:
-            ticket_id = key.replace('push_ticket:', '')
+            ticket_id = key.replace("push_ticket:", "")
             ticket_ids.append(ticket_id)
 
         if not ticket_ids:
-            return {'status': 'success', 'checked': 0}
+            return {"status": "success", "checked": 0}
 
         # Check receipts in batches of 100
         batch_size = 100
@@ -505,36 +456,28 @@ def check_push_receipts():
         total_failed = 0
 
         for i in range(0, len(ticket_ids), batch_size):
-            batch = ticket_ids[i:i + batch_size]
+            batch = ticket_ids[i : i + batch_size]
 
             try:
                 results = PushNotificationService.check_receipts(batch)
 
-                for ticket_id, result in results.items():
+                for _ticket_id, result in results.items():
                     total_checked += 1
-                    if result.get('status') == 'delivered':
+                    if result.get("status") == "delivered":
                         total_delivered += 1
-                    elif result.get('status') == 'failed':
+                    elif result.get("status") == "failed":
                         total_failed += 1
 
             except Exception as e:
-                logger.error(f"Error checking receipt batch: {str(e)}")
+                logger.error(f"Error checking receipt batch: {e!s}")
 
-        logger.info(
-            f"📋 Checked {total_checked} push receipts: "
-            f"{total_delivered} delivered, {total_failed} failed"
-        )
+        logger.info(f"📋 Checked {total_checked} push receipts: {total_delivered} delivered, {total_failed} failed")
 
-        return {
-            'status': 'success',
-            'checked': total_checked,
-            'delivered': total_delivered,
-            'failed': total_failed
-        }
+        return {"status": "success", "checked": total_checked, "delivered": total_delivered, "failed": total_failed}
 
     except Exception as e:
-        logger.error(f"❌ Check push receipts task failed: {str(e)}")
-        return {'status': 'error', 'message': str(e)}
+        logger.error(f"❌ Check push receipts task failed: {e!s}")
+        return {"status": "error", "message": str(e)}
 
 
 @shared_task
@@ -558,27 +501,19 @@ def cleanup_inactive_push_tokens(days: int = 90):
         logger.info(f"🧹 Cleaned up {deleted_count} inactive push tokens (> {days} days)")
 
         # Update cleanup metrics
-        cache.set('push_token_cleanup_last_run', timezone.now().isoformat(), timeout=86400)
-        cache.set('push_token_cleanup_last_count', deleted_count, timeout=86400)
+        cache.set("push_token_cleanup_last_run", timezone.now().isoformat(), timeout=86400)
+        cache.set("push_token_cleanup_last_count", deleted_count, timeout=86400)
 
-        return {
-            'status': 'success',
-            'deleted_count': deleted_count,
-            'days_threshold': days
-        }
+        return {"status": "success", "deleted_count": deleted_count, "days_threshold": days}
 
     except Exception as e:
-        logger.error(f"❌ Push token cleanup task failed: {str(e)}")
-        return {'status': 'error', 'message': str(e)}
+        logger.error(f"❌ Push token cleanup task failed: {e!s}")
+        return {"status": "error", "message": str(e)}
 
 
 @shared_task
 def send_bulk_push_notifications(
-    user_ids: List[int],
-    title: str,
-    body: str,
-    data: Optional[Dict[str, Any]] = None,
-    **kwargs
+    user_ids: list[int], title: str, body: str, data: dict[str, Any] | None = None, **kwargs
 ):
     """
     Send push notifications to multiple users
@@ -589,26 +524,11 @@ def send_bulk_push_notifications(
 
     for user_id in user_ids:
         try:
-            task = send_push_notification_task.delay(
-                user_id=user_id,
-                title=title,
-                body=body,
-                data=data,
-                **kwargs
-            )
-            results.append({
-                'user_id': user_id,
-                'task_id': task.id,
-                'status': 'queued'
-            })
+            task = send_push_notification_task.delay(user_id=user_id, title=title, body=body, data=data, **kwargs)
+            results.append({"user_id": user_id, "task_id": task.id, "status": "queued"})
         except Exception as e:
-            logger.error(f"Failed to queue push for user {user_id}: {str(e)}")
-            results.append({
-                'user_id': user_id,
-                'task_id': None,
-                'status': 'error',
-                'error': str(e)
-            })
+            logger.error(f"Failed to queue push for user {user_id}: {e!s}")
+            results.append({"user_id": user_id, "task_id": None, "status": "error", "error": str(e)})
 
     logger.info(f"📱 Queued {len(results)} push notification tasks")
     return results

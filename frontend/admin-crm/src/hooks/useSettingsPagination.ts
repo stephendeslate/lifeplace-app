@@ -1,19 +1,17 @@
 // frontend/admin-crm/src/hooks/useSettingsPagination.ts
 
-import { useState, useCallback } from "react";
+import { useState, useCallback } from 'react';
 
 export interface UseSettingsPaginationOptions {
   defaultPageSize?: number;
 }
 
-export const useSettingsPagination = (
-  options?: UseSettingsPaginationOptions,
-) => {
+export const useSettingsPagination = (options?: UseSettingsPaginationOptions) => {
   const [currentPage, setCurrentPage] = useState(0); // 0-indexed for MUI
   const [pageSize, setPageSize] = useState(options?.defaultPageSize || 25);
-  const [search, setSearchRaw] = useState("");
+  const [search, setSearchRaw] = useState('');
   const [filters, setFiltersRaw] = useState<Record<string, unknown>>({});
-  const [ordering, setOrderingRaw] = useState("");
+  const [ordering, setOrderingRaw] = useState('');
 
   const setSearch = useCallback((value: string) => {
     setSearchRaw(value);

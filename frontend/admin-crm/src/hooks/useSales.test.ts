@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/hooks/useSales.test.ts
 
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import {
   useQuoteTemplates,
   useQuoteTemplate,
@@ -24,15 +24,15 @@ import {
   useQuoteReminders,
   useCreateQuoteReminder,
   useSignQuote,
-} from "./useSales";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+} from './useSales';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
-describe("useQuoteTemplates", () => {
-  it("fetches quote templates successfully", async () => {
+describe('useQuoteTemplates', () => {
+  it('fetches quote templates successfully', async () => {
     const { result } = renderHook(() => useQuoteTemplates(), {
       wrapper: createTestWrapper(),
     });
@@ -47,10 +47,10 @@ describe("useQuoteTemplates", () => {
     expect(result.current.data).toBeDefined();
   });
 
-  it("handles API error gracefully", async () => {
+  it('handles API error gracefully', async () => {
     server.use(
       http.get(`${BASE_URL}/sales/templates/`, () => {
-        return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+        return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
       }),
     );
 
@@ -69,8 +69,8 @@ describe("useQuoteTemplates", () => {
   });
 });
 
-describe("useQuoteTemplate", () => {
-  it("fetches a single template by ID", async () => {
+describe('useQuoteTemplate', () => {
+  it('fetches a single template by ID', async () => {
     const { result } = renderHook(() => useQuoteTemplate(1), {
       wrapper: createTestWrapper(),
     });
@@ -86,18 +86,18 @@ describe("useQuoteTemplate", () => {
     expect(result.current.data?.id).toBe(1);
   });
 
-  it("does not fetch when ID is 0", async () => {
+  it('does not fetch when ID is 0', async () => {
     const { result } = renderHook(() => useQuoteTemplate(0), {
       wrapper: createTestWrapper(),
     });
 
-    expect(result.current.fetchStatus).toBe("idle");
+    expect(result.current.fetchStatus).toBe('idle');
     expect(result.current.data).toBeUndefined();
   });
 });
 
-describe("useActiveQuoteTemplates", () => {
-  it("fetches active templates", async () => {
+describe('useActiveQuoteTemplates', () => {
+  it('fetches active templates', async () => {
     const { result } = renderHook(() => useActiveQuoteTemplates(), {
       wrapper: createTestWrapper(),
     });
@@ -114,19 +114,19 @@ describe("useActiveQuoteTemplates", () => {
   });
 });
 
-describe("useCreateQuoteTemplate", () => {
-  it("creates a quote template successfully", async () => {
+describe('useCreateQuoteTemplate', () => {
+  it('creates a quote template successfully', async () => {
     const { result } = renderHook(() => useCreateQuoteTemplate(), {
       wrapper: createTestWrapper(),
     });
 
     act(() => {
       result.current.mutate({
-        name: "New Template",
-        description: "Template description",
+        name: 'New Template',
+        description: 'Template description',
         event_type: 1,
         is_active: true,
-        default_terms: "Standard terms",
+        default_terms: 'Standard terms',
         default_validity_days: 30,
       });
     });
@@ -140,8 +140,8 @@ describe("useCreateQuoteTemplate", () => {
   });
 });
 
-describe("useUpdateQuoteTemplate", () => {
-  it("updates a quote template", async () => {
+describe('useUpdateQuoteTemplate', () => {
+  it('updates a quote template', async () => {
     const { result } = renderHook(() => useUpdateQuoteTemplate(), {
       wrapper: createTestWrapper(),
     });
@@ -149,7 +149,7 @@ describe("useUpdateQuoteTemplate", () => {
     act(() => {
       result.current.mutate({
         id: 1,
-        data: { name: "Updated Template" },
+        data: { name: 'Updated Template' },
       });
     });
 
@@ -162,8 +162,8 @@ describe("useUpdateQuoteTemplate", () => {
   });
 });
 
-describe("useDeleteQuoteTemplate", () => {
-  it("deletes a quote template", async () => {
+describe('useDeleteQuoteTemplate', () => {
+  it('deletes a quote template', async () => {
     const { result } = renderHook(() => useDeleteQuoteTemplate(), {
       wrapper: createTestWrapper(),
     });
@@ -181,8 +181,8 @@ describe("useDeleteQuoteTemplate", () => {
   });
 });
 
-describe("useQuoteTemplateProducts", () => {
-  it("fetches template products", async () => {
+describe('useQuoteTemplateProducts', () => {
+  it('fetches template products', async () => {
     const { result } = renderHook(() => useQuoteTemplateProducts(), {
       wrapper: createTestWrapper(),
     });
@@ -198,8 +198,8 @@ describe("useQuoteTemplateProducts", () => {
   });
 });
 
-describe("useEventQuotes", () => {
-  it("fetches event quotes successfully", async () => {
+describe('useEventQuotes', () => {
+  it('fetches event quotes successfully', async () => {
     const { result } = renderHook(() => useEventQuotes(), {
       wrapper: createTestWrapper(),
     });
@@ -214,10 +214,10 @@ describe("useEventQuotes", () => {
     expect(result.current.data).toBeDefined();
   });
 
-  it("handles event quotes API error", async () => {
+  it('handles event quotes API error', async () => {
     server.use(
       http.get(`${BASE_URL}/sales/quotes/`, () => {
-        return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+        return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
       }),
     );
 
@@ -236,8 +236,8 @@ describe("useEventQuotes", () => {
   });
 });
 
-describe("useEventQuote", () => {
-  it("fetches a single event quote by ID", async () => {
+describe('useEventQuote', () => {
+  it('fetches a single event quote by ID', async () => {
     const { result } = renderHook(() => useEventQuote(1), {
       wrapper: createTestWrapper(),
     });
@@ -253,8 +253,8 @@ describe("useEventQuote", () => {
   });
 });
 
-describe("useCreateEventQuote", () => {
-  it("creates an event quote", async () => {
+describe('useCreateEventQuote', () => {
+  it('creates an event quote', async () => {
     const { result } = renderHook(() => useCreateEventQuote(), {
       wrapper: createTestWrapper(),
     });
@@ -275,8 +275,8 @@ describe("useCreateEventQuote", () => {
   });
 });
 
-describe("Quote actions", () => {
-  it("sends a quote", async () => {
+describe('Quote actions', () => {
+  it('sends a quote', async () => {
     const { result } = renderHook(() => useSendQuote(), {
       wrapper: createTestWrapper(),
     });
@@ -293,13 +293,13 @@ describe("Quote actions", () => {
     );
   });
 
-  it("accepts a quote", async () => {
+  it('accepts a quote', async () => {
     const { result } = renderHook(() => useAcceptQuote(), {
       wrapper: createTestWrapper(),
     });
 
     act(() => {
-      result.current.mutate({ id: 1, notes: "Accepted" });
+      result.current.mutate({ id: 1, notes: 'Accepted' });
     });
 
     await waitFor(
@@ -310,13 +310,13 @@ describe("Quote actions", () => {
     );
   });
 
-  it("rejects a quote", async () => {
+  it('rejects a quote', async () => {
     const { result } = renderHook(() => useRejectQuote(), {
       wrapper: createTestWrapper(),
     });
 
     act(() => {
-      result.current.mutate({ id: 1, notes: "Too expensive" });
+      result.current.mutate({ id: 1, notes: 'Too expensive' });
     });
 
     await waitFor(
@@ -327,7 +327,7 @@ describe("Quote actions", () => {
     );
   });
 
-  it("duplicates a quote", async () => {
+  it('duplicates a quote', async () => {
     const { result } = renderHook(() => useDuplicateQuote(), {
       wrapper: createTestWrapper(),
     });
@@ -344,7 +344,7 @@ describe("Quote actions", () => {
     );
   });
 
-  it("signs a quote", async () => {
+  it('signs a quote', async () => {
     const { result } = renderHook(() => useSignQuote(), {
       wrapper: createTestWrapper(),
     });
@@ -352,7 +352,7 @@ describe("Quote actions", () => {
     act(() => {
       result.current.mutate({
         id: 1,
-        data: { signature_data: "base64signaturedata" },
+        data: { signature_data: 'base64signaturedata' },
       });
     });
 
@@ -365,8 +365,8 @@ describe("Quote actions", () => {
   });
 });
 
-describe("useQuoteLineItems", () => {
-  it("fetches line items", async () => {
+describe('useQuoteLineItems', () => {
+  it('fetches line items', async () => {
     const { result } = renderHook(() => useQuoteLineItems(), {
       wrapper: createTestWrapper(),
     });
@@ -382,8 +382,8 @@ describe("useQuoteLineItems", () => {
   });
 });
 
-describe("useCreateQuoteLineItem", () => {
-  it("creates a line item", async () => {
+describe('useCreateQuoteLineItem', () => {
+  it('creates a line item', async () => {
     const { result } = renderHook(() => useCreateQuoteLineItem(), {
       wrapper: createTestWrapper(),
     });
@@ -391,9 +391,9 @@ describe("useCreateQuoteLineItem", () => {
     act(() => {
       result.current.mutate({
         quote: 1,
-        description: "Photography Package",
+        description: 'Photography Package',
         quantity: 1,
-        unit_price: "25000.00",
+        unit_price: '25000.00',
       });
     });
 
@@ -406,8 +406,8 @@ describe("useCreateQuoteLineItem", () => {
   });
 });
 
-describe("useDeleteQuoteLineItem", () => {
-  it("deletes a line item", async () => {
+describe('useDeleteQuoteLineItem', () => {
+  it('deletes a line item', async () => {
     const { result } = renderHook(() => useDeleteQuoteLineItem(), {
       wrapper: createTestWrapper(),
     });
@@ -425,8 +425,8 @@ describe("useDeleteQuoteLineItem", () => {
   });
 });
 
-describe("useQuoteActivities", () => {
-  it("fetches quote activities", async () => {
+describe('useQuoteActivities', () => {
+  it('fetches quote activities', async () => {
     const { result } = renderHook(() => useQuoteActivities(1), {
       wrapper: createTestWrapper(),
     });
@@ -443,8 +443,8 @@ describe("useQuoteActivities", () => {
   });
 });
 
-describe("useQuoteReminders", () => {
-  it("fetches quote reminders", async () => {
+describe('useQuoteReminders', () => {
+  it('fetches quote reminders', async () => {
     const { result } = renderHook(() => useQuoteReminders(1), {
       wrapper: createTestWrapper(),
     });
@@ -460,8 +460,8 @@ describe("useQuoteReminders", () => {
   });
 });
 
-describe("useCreateQuoteReminder", () => {
-  it("creates a quote reminder", async () => {
+describe('useCreateQuoteReminder', () => {
+  it('creates a quote reminder', async () => {
     const { result } = renderHook(() => useCreateQuoteReminder(), {
       wrapper: createTestWrapper(),
     });
@@ -470,8 +470,8 @@ describe("useCreateQuoteReminder", () => {
       result.current.mutate({
         quoteId: 1,
         data: {
-          scheduled_date: "2024-12-15",
-          message: "Follow up on quote",
+          scheduled_date: '2024-12-15',
+          message: 'Follow up on quote',
         },
       });
     });

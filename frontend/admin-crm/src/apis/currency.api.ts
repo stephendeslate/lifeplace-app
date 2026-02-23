@@ -2,10 +2,7 @@
 // Following the pattern from payments.api.ts
 
 import api from '../utils/api';
-import type {
-  CurrencySettings,
-  CurrencySettingsFormData,
-} from '../types/currency.types';
+import type { CurrencySettings, CurrencySettingsFormData } from '../types/currency.types';
 
 export interface CurrencySettingsResponse {
   id: number;
@@ -75,11 +72,11 @@ export const currencyApi = {
       data: CurrencySettingsResponse;
       message: string;
     }>('/settings/currency/');
-    
+
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to fetch currency settings');
     }
-    
+
     return transformCurrencySettings(response.data.data);
   },
 
@@ -93,7 +90,7 @@ export const currencyApi = {
       message: string;
       errors?: Record<string, string[]>;
     }>('/settings/currency/', transformFormData(settings));
-    
+
     if (!response.data.success) {
       if (response.data.errors) {
         const errorMessage = Object.values(response.data.errors).flat().join(', ');
@@ -101,7 +98,7 @@ export const currencyApi = {
       }
       throw new Error(response.data.message || 'Failed to update currency settings');
     }
-    
+
     return transformCurrencySettings(response.data.data);
   },
 
@@ -114,11 +111,11 @@ export const currencyApi = {
       data: CurrencySettingsResponse;
       message: string;
     }>('/settings/currency/');
-    
+
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to reset currency settings');
     }
-    
+
     return transformCurrencySettings(response.data.data);
   },
 
@@ -131,25 +128,27 @@ export const currencyApi = {
       data: CurrencySettingsResponse;
       message: string;
     }>('/settings/currency/system/');
-    
+
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to fetch system currency settings');
     }
-    
+
     return transformCurrencySettings(response.data.data);
   },
 
   /**
    * Update system-wide currency settings (admin only)
    */
-  updateSystemCurrencySettings: async (settings: CurrencySettingsFormData): Promise<CurrencySettings> => {
+  updateSystemCurrencySettings: async (
+    settings: CurrencySettingsFormData,
+  ): Promise<CurrencySettings> => {
     const response = await api.put<{
       success: boolean;
       data: CurrencySettingsResponse;
       message: string;
       errors?: Record<string, string[]>;
     }>('/settings/currency/system/', transformFormData(settings));
-    
+
     if (!response.data.success) {
       if (response.data.errors) {
         const errorMessage = Object.values(response.data.errors).flat().join(', ');
@@ -157,7 +156,7 @@ export const currencyApi = {
       }
       throw new Error(response.data.message || 'Failed to update system currency settings');
     }
-    
+
     return transformCurrencySettings(response.data.data);
   },
 
@@ -170,11 +169,11 @@ export const currencyApi = {
       data: SupportedCurrency[];
       message: string;
     }>('/settings/currency/supported/');
-    
+
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to fetch supported currencies');
     }
-    
+
     return response.data.data;
   },
 
@@ -187,11 +186,11 @@ export const currencyApi = {
       data: CurrencyFormatSettings;
       message: string;
     }>('/settings/currency/format/');
-    
+
     if (!response.data.success) {
       throw new Error(response.data.message || 'Failed to fetch currency format settings');
     }
-    
+
     return response.data.data;
   },
 };

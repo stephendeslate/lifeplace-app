@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/notifications/NotificationPreferencesDialog.tsx
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -25,7 +25,7 @@ import {
   Chip,
   IconButton,
   Stack,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Close as CloseIcon,
   ExpandMore as ExpandMoreIcon,
@@ -46,22 +46,19 @@ import {
   Warning as WarningIcon,
   Tune as TuneIcon,
   Unsubscribe as UnsubscribeIcon,
-} from "@mui/icons-material";
-import { TimePicker } from "@mui/x-date-pickers/TimePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
-import { useQuery } from "@tanstack/react-query";
-import { useNotificationPreferences } from "../../hooks/useNotificationPreferences";
-import { notificationsApi } from "../../apis/notifications.api";
+} from '@mui/icons-material';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { useQuery } from '@tanstack/react-query';
+import { useNotificationPreferences } from '../../hooks/useNotificationPreferences';
+import { notificationsApi } from '../../apis/notifications.api';
 import type {
   UpdateNotificationPreferenceData,
   DigestFrequency,
   NotificationType,
-} from "../../types/notifications.types";
-import {
-  NOTIFICATION_CATEGORIES,
-  DIGEST_FREQUENCIES,
-} from "../../types/notifications.types";
+} from '../../types/notifications.types';
+import { NOTIFICATION_CATEGORIES, DIGEST_FREQUENCIES } from '../../types/notifications.types';
 
 interface NotificationPreferencesDialogProps {
   open: boolean;
@@ -71,32 +68,33 @@ interface NotificationPreferencesDialogProps {
 // Category icon mapping
 const getCategoryIcon = (categoryValue: string) => {
   switch (categoryValue) {
-    case "EVENT":
+    case 'EVENT':
       return <EventIcon fontSize="small" />;
-    case "PAYMENT":
+    case 'PAYMENT':
       return <PaymentIcon fontSize="small" />;
-    case "COMMUNICATION":
+    case 'COMMUNICATION':
       return <MessageIcon fontSize="small" />;
-    case "SYSTEM":
+    case 'SYSTEM':
       return <SettingsIcon fontSize="small" />;
-    case "TASK":
+    case 'TASK':
       return <TaskIcon fontSize="small" />;
-    case "CLIENT":
+    case 'CLIENT':
       return <PersonIcon fontSize="small" />;
-    case "CONTRACT":
+    case 'CONTRACT':
       return <ContractIcon fontSize="small" />;
-    case "WORKFLOW":
+    case 'WORKFLOW':
       return <WorkflowIcon fontSize="small" />;
-    case "MARKETING":
+    case 'MARKETING':
       return <CampaignIcon fontSize="small" />;
     default:
       return <InAppIcon fontSize="small" />;
   }
 };
 
-export const NotificationPreferencesDialog: React.FC<
-  NotificationPreferencesDialogProps
-> = ({ open, onClose }) => {
+export const NotificationPreferencesDialog: React.FC<NotificationPreferencesDialogProps> = ({
+  open,
+  onClose,
+}) => {
   const { useMyPreferences, useUpdatePreferences, useResetPreferences } =
     useNotificationPreferences();
 
@@ -106,16 +104,14 @@ export const NotificationPreferencesDialog: React.FC<
 
   // Fetch available notification types for per-type disabling
   const { data: notificationTypes = [] } = useQuery({
-    queryKey: ["notification-types-active"],
+    queryKey: ['notification-types-active'],
     queryFn: notificationsApi.getNotificationTypes,
     staleTime: 10 * 60 * 1000,
     enabled: open,
   });
 
   // Local form state
-  const [formData, setFormData] = useState<
-    Partial<UpdateNotificationPreferenceData>
-  >({});
+  const [formData, setFormData] = useState<Partial<UpdateNotificationPreferenceData>>({});
   const [disabledTypes, setDisabledTypes] = useState<number[]>([]);
   const [quietHoursStart, setQuietHoursStart] = useState<Date | null>(null);
   const [quietHoursEnd, setQuietHoursEnd] = useState<Date | null>(null);
@@ -184,13 +180,13 @@ export const NotificationPreferencesDialog: React.FC<
 
       // Parse quiet hours times
       if (preferences.quiet_hours_start) {
-        const [hours, minutes] = preferences.quiet_hours_start.split(":");
+        const [hours, minutes] = preferences.quiet_hours_start.split(':');
         const date = new Date();
         date.setHours(parseInt(hours), parseInt(minutes), 0);
         setQuietHoursStart(date);
       }
       if (preferences.quiet_hours_end) {
-        const [hours, minutes] = preferences.quiet_hours_end.split(":");
+        const [hours, minutes] = preferences.quiet_hours_end.split(':');
         const date = new Date();
         date.setHours(parseInt(hours), parseInt(minutes), 0);
         setQuietHoursEnd(date);
@@ -249,7 +245,7 @@ export const NotificationPreferencesDialog: React.FC<
   const typesByCategory = useMemo(() => {
     const grouped: Record<string, NotificationType[]> = {};
     notificationTypes.forEach((type) => {
-      const cat = type.category || "OTHER";
+      const cat = type.category || 'OTHER';
       if (!grouped[cat]) grouped[cat] = [];
       grouped[cat].push(type);
     });
@@ -271,10 +267,10 @@ export const NotificationPreferencesDialog: React.FC<
     // Add quiet hours times if enabled
     if (formData.quiet_hours_enabled) {
       if (quietHoursStart) {
-        dataToSave.quiet_hours_start = `${quietHoursStart.getHours().toString().padStart(2, "0")}:${quietHoursStart.getMinutes().toString().padStart(2, "0")}`;
+        dataToSave.quiet_hours_start = `${quietHoursStart.getHours().toString().padStart(2, '0')}:${quietHoursStart.getMinutes().toString().padStart(2, '0')}`;
       }
       if (quietHoursEnd) {
-        dataToSave.quiet_hours_end = `${quietHoursEnd.getHours().toString().padStart(2, "0")}:${quietHoursEnd.getMinutes().toString().padStart(2, "0")}`;
+        dataToSave.quiet_hours_end = `${quietHoursEnd.getHours().toString().padStart(2, '0')}:${quietHoursEnd.getMinutes().toString().padStart(2, '0')}`;
       }
     }
 
@@ -299,31 +295,27 @@ export const NotificationPreferencesDialog: React.FC<
     label: string,
     isMarketing: boolean = false,
   ) => {
-    const emailKey =
-      `${categoryKey}_email` as keyof UpdateNotificationPreferenceData;
-    const smsKey =
-      `${categoryKey}_sms` as keyof UpdateNotificationPreferenceData;
-    const inAppKey =
-      `${categoryKey}_in_app` as keyof UpdateNotificationPreferenceData;
-    const pushKey =
-      `${categoryKey}_push` as keyof UpdateNotificationPreferenceData;
+    const emailKey = `${categoryKey}_email` as keyof UpdateNotificationPreferenceData;
+    const smsKey = `${categoryKey}_sms` as keyof UpdateNotificationPreferenceData;
+    const inAppKey = `${categoryKey}_in_app` as keyof UpdateNotificationPreferenceData;
+    const pushKey = `${categoryKey}_push` as keyof UpdateNotificationPreferenceData;
 
     return (
       <Box
         sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           py: 1.5,
           ...(isMarketing && {
-            bgcolor: "warning.50",
+            bgcolor: 'warning.50',
             mx: -2,
             px: 2,
             borderRadius: 1,
           }),
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           {getCategoryIcon(categoryKey.toUpperCase())}
           <Typography variant="body2">{label}</Typography>
           {isMarketing && (
@@ -336,7 +328,7 @@ export const NotificationPreferencesDialog: React.FC<
             />
           )}
         </Box>
-        <Box sx={{ display: "flex", gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1 }}>
           <FormControlLabel
             control={
               <Switch
@@ -347,10 +339,7 @@ export const NotificationPreferencesDialog: React.FC<
               />
             }
             label={
-              <EmailIcon
-                fontSize="small"
-                color={formData[emailKey] ? "primary" : "disabled"}
-              />
+              <EmailIcon fontSize="small" color={formData[emailKey] ? 'primary' : 'disabled'} />
             }
             labelPlacement="top"
             sx={{ mx: 0 }}
@@ -364,12 +353,7 @@ export const NotificationPreferencesDialog: React.FC<
                 disabled={!formData.sms_enabled}
               />
             }
-            label={
-              <SmsIcon
-                fontSize="small"
-                color={formData[smsKey] ? "primary" : "disabled"}
-              />
-            }
+            label={<SmsIcon fontSize="small" color={formData[smsKey] ? 'primary' : 'disabled'} />}
             labelPlacement="top"
             sx={{ mx: 0 }}
           />
@@ -383,10 +367,7 @@ export const NotificationPreferencesDialog: React.FC<
               />
             }
             label={
-              <InAppIcon
-                fontSize="small"
-                color={formData[inAppKey] ? "primary" : "disabled"}
-              />
+              <InAppIcon fontSize="small" color={formData[inAppKey] ? 'primary' : 'disabled'} />
             }
             labelPlacement="top"
             sx={{ mx: 0 }}
@@ -400,12 +381,7 @@ export const NotificationPreferencesDialog: React.FC<
                 disabled={!formData.push_enabled}
               />
             }
-            label={
-              <PushIcon
-                fontSize="small"
-                color={formData[pushKey] ? "primary" : "disabled"}
-              />
-            }
+            label={<PushIcon fontSize="small" color={formData[pushKey] ? 'primary' : 'disabled'} />}
             labelPlacement="top"
             sx={{ mx: 0 }}
           />
@@ -423,15 +399,15 @@ export const NotificationPreferencesDialog: React.FC<
       PaperProps={{
         sx: {
           borderRadius: 3,
-          maxHeight: "90vh",
+          maxHeight: '90vh',
         },
       }}
     >
       <DialogTitle
         sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           pb: 1,
         }}
       >
@@ -447,9 +423,9 @@ export const NotificationPreferencesDialog: React.FC<
         {isLoading ? (
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
               py: 8,
             }}
           >
@@ -463,47 +439,43 @@ export const NotificationPreferencesDialog: React.FC<
           <Stack spacing={3}>
             {/* Global Delivery Methods */}
             <Box>
-              <Typography
-                variant="subtitle2"
-                color="text.secondary"
-                gutterBottom
-              >
+              <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 Delivery Methods
               </Typography>
               <Box
                 sx={{
-                  display: "flex",
+                  display: 'flex',
                   gap: 2,
-                  flexWrap: "wrap",
+                  flexWrap: 'wrap',
                 }}
               >
                 <Chip
                   icon={<EmailIcon />}
                   label="Email"
-                  color={formData.email_enabled ? "primary" : "default"}
-                  onClick={() => handleToggle("email_enabled")}
-                  variant={formData.email_enabled ? "filled" : "outlined"}
+                  color={formData.email_enabled ? 'primary' : 'default'}
+                  onClick={() => handleToggle('email_enabled')}
+                  variant={formData.email_enabled ? 'filled' : 'outlined'}
                 />
                 <Chip
                   icon={<SmsIcon />}
                   label="SMS"
-                  color={formData.sms_enabled ? "primary" : "default"}
-                  onClick={() => handleToggle("sms_enabled")}
-                  variant={formData.sms_enabled ? "filled" : "outlined"}
+                  color={formData.sms_enabled ? 'primary' : 'default'}
+                  onClick={() => handleToggle('sms_enabled')}
+                  variant={formData.sms_enabled ? 'filled' : 'outlined'}
                 />
                 <Chip
                   icon={<InAppIcon />}
                   label="In-App"
-                  color={formData.in_app_enabled ? "primary" : "default"}
-                  onClick={() => handleToggle("in_app_enabled")}
-                  variant={formData.in_app_enabled ? "filled" : "outlined"}
+                  color={formData.in_app_enabled ? 'primary' : 'default'}
+                  onClick={() => handleToggle('in_app_enabled')}
+                  variant={formData.in_app_enabled ? 'filled' : 'outlined'}
                 />
                 <Chip
                   icon={<PushIcon />}
                   label="Push"
-                  color={formData.push_enabled ? "info" : "default"}
-                  onClick={() => handleToggle("push_enabled")}
-                  variant={formData.push_enabled ? "filled" : "outlined"}
+                  color={formData.push_enabled ? 'info' : 'default'}
+                  onClick={() => handleToggle('push_enabled')}
+                  variant={formData.push_enabled ? 'filled' : 'outlined'}
                 />
               </Box>
             </Box>
@@ -513,15 +485,13 @@ export const NotificationPreferencesDialog: React.FC<
             {/* Category Preferences */}
             <Accordion defaultExpanded>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="subtitle2">
-                  Category Preferences
-                </Typography>
+                <Typography variant="subtitle2">Category Preferences</Typography>
               </AccordionSummary>
               <AccordionDetails>
                 <Box
                   sx={{
-                    display: "flex",
-                    justifyContent: "flex-end",
+                    display: 'flex',
+                    justifyContent: 'flex-end',
                     mb: 1,
                     gap: 1,
                   }}
@@ -529,73 +499,60 @@ export const NotificationPreferencesDialog: React.FC<
                   <Typography
                     variant="caption"
                     color="text.secondary"
-                    sx={{ width: 40, textAlign: "center" }}
+                    sx={{ width: 40, textAlign: 'center' }}
                   >
                     Email
                   </Typography>
                   <Typography
                     variant="caption"
                     color="text.secondary"
-                    sx={{ width: 40, textAlign: "center" }}
+                    sx={{ width: 40, textAlign: 'center' }}
                   >
                     SMS
                   </Typography>
                   <Typography
                     variant="caption"
                     color="text.secondary"
-                    sx={{ width: 40, textAlign: "center" }}
+                    sx={{ width: 40, textAlign: 'center' }}
                   >
                     In-App
                   </Typography>
                   <Typography
                     variant="caption"
                     color="text.secondary"
-                    sx={{ width: 40, textAlign: "center" }}
+                    sx={{ width: 40, textAlign: 'center' }}
                   >
                     Push
                   </Typography>
                 </Box>
                 <Divider sx={{ mb: 1 }} />
-                {NOTIFICATION_CATEGORIES.filter(
-                  (c) => c.value !== "MARKETING",
-                ).map((category) => (
+                {NOTIFICATION_CATEGORIES.filter((c) => c.value !== 'MARKETING').map((category) => (
                   <React.Fragment key={category.value}>
-                    {renderCategoryToggle(
-                      category.value.toLowerCase(),
-                      category.label,
-                    )}
+                    {renderCategoryToggle(category.value.toLowerCase(), category.label)}
                     <Divider />
                   </React.Fragment>
                 ))}
 
                 {/* Marketing Category with Compliance Notice */}
-                <Alert
-                  severity="warning"
-                  icon={<WarningIcon />}
-                  sx={{ mt: 2, mb: 1 }}
-                >
+                <Alert severity="warning" icon={<WarningIcon />} sx={{ mt: 2, mb: 1 }}>
                   <Typography variant="caption">
-                    <strong>Marketing Communications:</strong> These require
-                    your explicit consent. You can withdraw consent at any time.
+                    <strong>Marketing Communications:</strong> These require your explicit consent.
+                    You can withdraw consent at any time.
                   </Typography>
                 </Alert>
-                {renderCategoryToggle(
-                  "marketing",
-                  "Marketing & Promotions",
-                  true,
-                )}
+                {renderCategoryToggle('marketing', 'Marketing & Promotions', true)}
                 <Box
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     mt: 1.5,
                     pt: 1.5,
-                    borderTop: "1px dashed",
-                    borderColor: "divider",
+                    borderTop: '1px dashed',
+                    borderColor: 'divider',
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <UnsubscribeIcon fontSize="small" color="action" />
                     <Typography variant="caption" color="text.secondary">
                       Opt out of all marketing at once
@@ -609,9 +566,7 @@ export const NotificationPreferencesDialog: React.FC<
                     disabled={isAllMarketingDisabled}
                     startIcon={<UnsubscribeIcon />}
                   >
-                    {isAllMarketingDisabled
-                      ? "All Marketing Disabled"
-                      : "Unsubscribe All"}
+                    {isAllMarketingDisabled ? 'All Marketing Disabled' : 'Unsubscribe All'}
                   </Button>
                 </Box>
               </AccordionDetails>
@@ -620,7 +575,7 @@ export const NotificationPreferencesDialog: React.FC<
             {/* Digest Frequency */}
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <ScheduleIcon fontSize="small" />
                   <Typography variant="subtitle2">Digest Settings</Typography>
                 </Box>
@@ -629,11 +584,9 @@ export const NotificationPreferencesDialog: React.FC<
                 <FormControl fullWidth size="small">
                   <InputLabel>Digest Frequency</InputLabel>
                   <Select
-                    value={formData.digest_frequency || "IMMEDIATE"}
+                    value={formData.digest_frequency || 'IMMEDIATE'}
                     label="Digest Frequency"
-                    onChange={(e) =>
-                      handleDigestChange(e.target.value as DigestFrequency)
-                    }
+                    onChange={(e) => handleDigestChange(e.target.value as DigestFrequency)}
                   >
                     {DIGEST_FREQUENCIES.map((freq) => (
                       <MenuItem key={freq.value} value={freq.value}>
@@ -653,7 +606,7 @@ export const NotificationPreferencesDialog: React.FC<
             {/* Quiet Hours */}
             <Accordion>
               <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                   <ScheduleIcon fontSize="small" />
                   <Typography variant="subtitle2">Quiet Hours</Typography>
                   {formData.quiet_hours_enabled && (
@@ -666,7 +619,7 @@ export const NotificationPreferencesDialog: React.FC<
                   control={
                     <Switch
                       checked={Boolean(formData.quiet_hours_enabled)}
-                      onChange={() => handleToggle("quiet_hours_enabled")}
+                      onChange={() => handleToggle('quiet_hours_enabled')}
                     />
                   }
                   label="Enable quiet hours"
@@ -675,7 +628,7 @@ export const NotificationPreferencesDialog: React.FC<
                   <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <Box
                       sx={{
-                        display: "flex",
+                        display: 'flex',
                         gap: 2,
                         mt: 2,
                       }}
@@ -685,7 +638,7 @@ export const NotificationPreferencesDialog: React.FC<
                         value={quietHoursStart}
                         onChange={handleQuietHoursStartChange}
                         slotProps={{
-                          textField: { size: "small", fullWidth: true },
+                          textField: { size: 'small', fullWidth: true },
                         }}
                       />
                       <TimePicker
@@ -693,7 +646,7 @@ export const NotificationPreferencesDialog: React.FC<
                         value={quietHoursEnd}
                         onChange={handleQuietHoursEndChange}
                         slotProps={{
-                          textField: { size: "small", fullWidth: true },
+                          textField: { size: 'small', fullWidth: true },
                         }}
                       />
                     </Box>
@@ -702,10 +655,10 @@ export const NotificationPreferencesDialog: React.FC<
                 <Typography
                   variant="caption"
                   color="text.secondary"
-                  sx={{ mt: 2, display: "block" }}
+                  sx={{ mt: 2, display: 'block' }}
                 >
-                  During quiet hours, non-urgent notifications will be held
-                  until the quiet period ends.
+                  During quiet hours, non-urgent notifications will be held until the quiet period
+                  ends.
                 </Typography>
               </AccordionDetails>
             </Accordion>
@@ -714,11 +667,9 @@ export const NotificationPreferencesDialog: React.FC<
             {notificationTypes.length > 0 && (
               <Accordion>
                 <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <TuneIcon fontSize="small" />
-                    <Typography variant="subtitle2">
-                      Fine-Tune Notifications
-                    </Typography>
+                    <Typography variant="subtitle2">Fine-Tune Notifications</Typography>
                     {disabledTypes.length > 0 && (
                       <Chip
                         label={`${disabledTypes.length} disabled`}
@@ -732,18 +683,17 @@ export const NotificationPreferencesDialog: React.FC<
                   <Typography
                     variant="caption"
                     color="text.secondary"
-                    sx={{ mb: 2, display: "block" }}
+                    sx={{ mb: 2, display: 'block' }}
                   >
-                    Disable specific notification types while keeping the rest
-                    of the category enabled. Unchecked types will not generate
-                    notifications.
+                    Disable specific notification types while keeping the rest of the category
+                    enabled. Unchecked types will not generate notifications.
                   </Typography>
                   {Object.entries(typesByCategory).map(([category, types]) => (
                     <Box key={category} sx={{ mb: 2 }}>
                       <Box
                         sx={{
-                          display: "flex",
-                          alignItems: "center",
+                          display: 'flex',
+                          alignItems: 'center',
                           gap: 1,
                           mb: 0.5,
                         }}
@@ -755,9 +705,8 @@ export const NotificationPreferencesDialog: React.FC<
                           color="text.secondary"
                           textTransform="uppercase"
                         >
-                          {NOTIFICATION_CATEGORIES.find(
-                            (c) => c.value === category,
-                          )?.label || category}
+                          {NOTIFICATION_CATEGORIES.find((c) => c.value === category)?.label ||
+                            category}
                         </Typography>
                       </Box>
                       {types.map((type) => (
@@ -772,22 +721,17 @@ export const NotificationPreferencesDialog: React.FC<
                           }
                           label={
                             <Box>
-                              <Typography variant="body2">
-                                {type.name}
-                              </Typography>
+                              <Typography variant="body2">{type.name}</Typography>
                               {type.description && (
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
+                                <Typography variant="caption" color="text.secondary">
                                   {type.description}
                                 </Typography>
                               )}
                             </Box>
                           }
                           sx={{
-                            display: "flex",
-                            alignItems: "flex-start",
+                            display: 'flex',
+                            alignItems: 'flex-start',
                             ml: 1,
                             mb: 0.5,
                           }}
@@ -809,11 +753,7 @@ export const NotificationPreferencesDialog: React.FC<
           disabled={resetMutation.isPending || isLoading}
           color="inherit"
         >
-          {resetMutation.isPending ? (
-            <CircularProgress size={20} />
-          ) : (
-            "Reset to Defaults"
-          )}
+          {resetMutation.isPending ? <CircularProgress size={20} /> : 'Reset to Defaults'}
         </Button>
         <Box sx={{ flex: 1 }} />
         <Button onClick={onClose}>Cancel</Button>
@@ -825,7 +765,7 @@ export const NotificationPreferencesDialog: React.FC<
           {updateMutation.isPending ? (
             <CircularProgress size={20} color="inherit" />
           ) : (
-            "Save Changes"
+            'Save Changes'
           )}
         </Button>
       </DialogActions>

@@ -3,7 +3,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ThemeProvider, createTheme } from '@mui/material';
 import { BookingSummaryCard } from '../shared/BookingSummaryCard';
-import type { PackageLineItem, AddonLineItem, PricingBreakdown, EventSummary } from '../../../types/booking';
+import type {
+  PackageLineItem,
+  AddonLineItem,
+  PricingBreakdown,
+  EventSummary,
+} from '../../../types/booking';
 
 const theme = createTheme();
 
@@ -74,7 +79,7 @@ describe('BookingSummaryCard', () => {
             pricing={mockPricing}
             displayMode="confirmation"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Booking Summary')).toBeInTheDocument();
@@ -89,7 +94,7 @@ describe('BookingSummaryCard', () => {
             pricing={mockPricing}
             displayMode="review"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Review Your Booking')).toBeInTheDocument();
@@ -106,7 +111,7 @@ describe('BookingSummaryCard', () => {
             addons={mockAddons}
             pricing={mockPricing}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Event Details')).toBeInTheDocument();
@@ -124,7 +129,7 @@ describe('BookingSummaryCard', () => {
             addons={mockAddons}
             pricing={mockPricing}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('2:00 PM (Informational)')).toBeInTheDocument();
@@ -133,12 +138,8 @@ describe('BookingSummaryCard', () => {
     it('does not render event section when not provided', () => {
       render(
         <TestWrapper>
-          <BookingSummaryCard
-            packages={mockPackages}
-            addons={mockAddons}
-            pricing={mockPricing}
-          />
-        </TestWrapper>
+          <BookingSummaryCard packages={mockPackages} addons={mockAddons} pricing={mockPricing} />
+        </TestWrapper>,
       );
 
       expect(screen.queryByText('Event Details')).not.toBeInTheDocument();
@@ -153,7 +154,7 @@ describe('BookingSummaryCard', () => {
             addons={mockAddons}
             pricing={mockPricing}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('June 15, 2025')).toBeInTheDocument();
@@ -165,12 +166,8 @@ describe('BookingSummaryCard', () => {
     it('renders packages table with correct headers', () => {
       render(
         <TestWrapper>
-          <BookingSummaryCard
-            packages={mockPackages}
-            addons={[]}
-            pricing={mockPricing}
-          />
-        </TestWrapper>
+          <BookingSummaryCard packages={mockPackages} addons={[]} pricing={mockPricing} />
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Selected Packages')).toBeInTheDocument();
@@ -183,12 +180,8 @@ describe('BookingSummaryCard', () => {
     it('renders package details', () => {
       render(
         <TestWrapper>
-          <BookingSummaryCard
-            packages={mockPackages}
-            addons={[]}
-            pricing={mockPricing}
-          />
-        </TestWrapper>
+          <BookingSummaryCard packages={mockPackages} addons={[]} pricing={mockPricing} />
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Premium Package')).toBeInTheDocument();
@@ -203,7 +196,7 @@ describe('BookingSummaryCard', () => {
             pricing={mockPricing}
             showPackageBreakdown={false}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.queryByText('Selected Packages')).not.toBeInTheDocument();
@@ -236,7 +229,7 @@ describe('BookingSummaryCard', () => {
             addons={[]}
             pricing={mockPricing}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Premium Package')).toBeInTheDocument();
@@ -259,12 +252,8 @@ describe('BookingSummaryCard', () => {
 
       render(
         <TestWrapper>
-          <BookingSummaryCard
-            packages={packagesWithExcess}
-            addons={[]}
-            pricing={mockPricing}
-          />
-        </TestWrapper>
+          <BookingSummaryCard packages={packagesWithExcess} addons={[]} pricing={mockPricing} />
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Premium Package')).toBeInTheDocument();
@@ -275,12 +264,8 @@ describe('BookingSummaryCard', () => {
     it('renders add-ons table', () => {
       render(
         <TestWrapper>
-          <BookingSummaryCard
-            packages={[]}
-            addons={mockAddons}
-            pricing={mockPricing}
-          />
-        </TestWrapper>
+          <BookingSummaryCard packages={[]} addons={mockAddons} pricing={mockPricing} />
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Selected Add-ons')).toBeInTheDocument();
@@ -296,7 +281,7 @@ describe('BookingSummaryCard', () => {
             pricing={mockPricing}
             showAddonBreakdown={false}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.queryByText('Selected Add-ons')).not.toBeInTheDocument();
@@ -304,18 +289,26 @@ describe('BookingSummaryCard', () => {
 
     it('renders multiple add-ons', () => {
       const multipleAddons: AddonLineItem[] = [
-        { product_id: 10, name: 'Photo Booth', quantity: 1, unit_price: '5000', line_total: '5000' },
-        { product_id: 11, name: 'DJ Services', quantity: 1, unit_price: '8000', line_total: '8000' },
+        {
+          product_id: 10,
+          name: 'Photo Booth',
+          quantity: 1,
+          unit_price: '5000',
+          line_total: '5000',
+        },
+        {
+          product_id: 11,
+          name: 'DJ Services',
+          quantity: 1,
+          unit_price: '8000',
+          line_total: '8000',
+        },
       ];
 
       render(
         <TestWrapper>
-          <BookingSummaryCard
-            packages={[]}
-            addons={multipleAddons}
-            pricing={mockPricing}
-          />
-        </TestWrapper>
+          <BookingSummaryCard packages={[]} addons={multipleAddons} pricing={mockPricing} />
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Photo Booth')).toBeInTheDocument();
@@ -327,12 +320,8 @@ describe('BookingSummaryCard', () => {
     it('shows empty message when no packages or add-ons', () => {
       render(
         <TestWrapper>
-          <BookingSummaryCard
-            packages={[]}
-            addons={[]}
-            pricing={mockPricing}
-          />
-        </TestWrapper>
+          <BookingSummaryCard packages={[]} addons={[]} pricing={mockPricing} />
+        </TestWrapper>,
       );
 
       expect(screen.getByText('No packages or add-ons selected')).toBeInTheDocument();
@@ -343,12 +332,8 @@ describe('BookingSummaryCard', () => {
     it('renders pricing breakdown', () => {
       render(
         <TestWrapper>
-          <BookingSummaryCard
-            packages={mockPackages}
-            addons={mockAddons}
-            pricing={mockPricing}
-          />
-        </TestWrapper>
+          <BookingSummaryCard packages={mockPackages} addons={mockAddons} pricing={mockPricing} />
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Subtotal:')).toBeInTheDocument();
@@ -358,12 +343,8 @@ describe('BookingSummaryCard', () => {
     it('renders tax when present', () => {
       render(
         <TestWrapper>
-          <BookingSummaryCard
-            packages={mockPackages}
-            addons={mockAddons}
-            pricing={mockPricing}
-          />
-        </TestWrapper>
+          <BookingSummaryCard packages={mockPackages} addons={mockAddons} pricing={mockPricing} />
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Tax:')).toBeInTheDocument();
@@ -373,12 +354,8 @@ describe('BookingSummaryCard', () => {
     it('renders total amount', () => {
       render(
         <TestWrapper>
-          <BookingSummaryCard
-            packages={mockPackages}
-            addons={mockAddons}
-            pricing={mockPricing}
-          />
-        </TestWrapper>
+          <BookingSummaryCard packages={mockPackages} addons={mockAddons} pricing={mockPricing} />
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Total:')).toBeInTheDocument();
@@ -400,7 +377,7 @@ describe('BookingSummaryCard', () => {
             addons={mockAddons}
             pricing={pricingWithDiscount}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText(/Discount/)).toBeInTheDocument();
@@ -422,7 +399,7 @@ describe('BookingSummaryCard', () => {
             addons={mockAddons}
             pricing={pricingWithDiscount}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText(/SAVE10/)).toBeInTheDocument();
@@ -437,7 +414,7 @@ describe('BookingSummaryCard', () => {
             pricing={mockPricing}
             showPricingBreakdown={false}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.queryByText('Subtotal:')).not.toBeInTheDocument();
@@ -446,12 +423,8 @@ describe('BookingSummaryCard', () => {
     it('hides pricing when no items', () => {
       render(
         <TestWrapper>
-          <BookingSummaryCard
-            packages={[]}
-            addons={[]}
-            pricing={mockPricing}
-          />
-        </TestWrapper>
+          <BookingSummaryCard packages={[]} addons={[]} pricing={mockPricing} />
+        </TestWrapper>,
       );
 
       expect(screen.queryByText('Subtotal:')).not.toBeInTheDocument();
@@ -466,12 +439,8 @@ describe('BookingSummaryCard', () => {
 
       render(
         <TestWrapper>
-          <BookingSummaryCard
-            packages={mockPackages}
-            addons={mockAddons}
-            pricing={pricingNoTax}
-          />
-        </TestWrapper>
+          <BookingSummaryCard packages={mockPackages} addons={mockAddons} pricing={pricingNoTax} />
+        </TestWrapper>,
       );
 
       expect(screen.queryByText('Tax:')).not.toBeInTheDocument();
@@ -482,12 +451,8 @@ describe('BookingSummaryCard', () => {
     it('uses confirmation as default display mode', () => {
       render(
         <TestWrapper>
-          <BookingSummaryCard
-            packages={mockPackages}
-            addons={mockAddons}
-            pricing={mockPricing}
-          />
-        </TestWrapper>
+          <BookingSummaryCard packages={mockPackages} addons={mockAddons} pricing={mockPricing} />
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Booking Summary')).toBeInTheDocument();
@@ -496,12 +461,8 @@ describe('BookingSummaryCard', () => {
     it('shows all breakdowns by default', () => {
       render(
         <TestWrapper>
-          <BookingSummaryCard
-            packages={mockPackages}
-            addons={mockAddons}
-            pricing={mockPricing}
-          />
-        </TestWrapper>
+          <BookingSummaryCard packages={mockPackages} addons={mockAddons} pricing={mockPricing} />
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Selected Packages')).toBeInTheDocument();

@@ -2,19 +2,26 @@
 
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Tuple
-from django.db import transaction
-from django.utils import timezone
+from typing import Any
+
 from django.core.cache import cache
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
 
 class GatewayHealthCheck:
     """Result of gateway health check"""
-    def __init__(self, gateway_code: str, is_healthy: bool,
-                 response_time_ms: float = None, error_message: str = None,
-                 last_success: datetime = None, consecutive_failures: int = 0):
+
+    def __init__(
+        self,
+        gateway_code: str,
+        is_healthy: bool,
+        response_time_ms: float = None,
+        error_message: str = None,
+        last_success: datetime = None,
+        consecutive_failures: int = 0,
+    ):
         self.gateway_code = gateway_code
         self.is_healthy = is_healthy
         self.response_time_ms = response_time_ms
@@ -23,24 +30,28 @@ class GatewayHealthCheck:
         self.consecutive_failures = consecutive_failures
         self.checked_at = timezone.now()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
-            'gateway_code': self.gateway_code,
-            'is_healthy': self.is_healthy,
-            'response_time_ms': self.response_time_ms,
-            'error_message': self.error_message,
-            'last_success': self.last_success.isoformat() if self.last_success else None,
-            'consecutive_failures': self.consecutive_failures,
-            'checked_at': self.checked_at.isoformat()
+            "gateway_code": self.gateway_code,
+            "is_healthy": self.is_healthy,
+            "response_time_ms": self.response_time_ms,
+            "error_message": self.error_message,
+            "last_success": self.last_success.isoformat() if self.last_success else None,
+            "consecutive_failures": self.consecutive_failures,
+            "checked_at": self.checked_at.isoformat(),
         }
 
 
 class GatewayFailoverRule:
     """Rules for gateway failover behavior"""
-    def __init__(self, max_consecutive_failures: int = 3,
-                 health_check_interval_seconds: int = 300,
-                 recovery_check_interval_seconds: int = 600,
-                 max_response_time_ms: float = 5000.0):
+
+    def __init__(
+        self,
+        max_consecutive_failures: int = 3,
+        health_check_interval_seconds: int = 300,
+        recovery_check_interval_seconds: int = 600,
+        max_response_time_ms: float = 5000.0,
+    ):
         self.max_consecutive_failures = max_consecutive_failures
         self.health_check_interval_seconds = health_check_interval_seconds
         self.recovery_check_interval_seconds = recovery_check_interval_seconds
@@ -59,12 +70,11 @@ class GatewayMonitoringService:
     - Recovery monitoring
     """
 
-    CACHE_PREFIX = 'gateway_health'
-    FAILOVER_CACHE_PREFIX = 'gateway_failover'
+    CACHE_PREFIX = "gateway_health"
+    FAILOVER_CACHE_PREFIX = "gateway_failover"
 
     @classmethod
-    def check_gateway_health(cls, gateway_code: str,
-                           force_check: bool = False) -> GatewayHealthCheck:
+    def check_gateway_health(cls, gateway_code: str, force_check: bool = False) -> GatewayHealthCheck:
         """
         Check health of a specific payment gateway.
 
@@ -91,7 +101,7 @@ class GatewayMonitoringService:
             cache.set(
                 cache_key,
                 health_check.to_dict(),
-                timeout=300  # 5 minutes
+                timeout=300,  # 5 minutes
             )
 
             # Update failure tracking
@@ -104,14 +114,10 @@ class GatewayMonitoringService:
 
         except Exception as e:
             logger.error(f"Error checking gateway health for {gateway_code}: {e}")
-            return GatewayHealthCheck(
-                gateway_code=gateway_code,
-                is_healthy=False,
-                error_message=str(e)
-            )
+            return GatewayHealthCheck(gateway_code=gateway_code, is_healthy=False, error_message=str(e))
 
     @classmethod
-    def check_all_gateways_health(cls) -> Dict[str, GatewayHealthCheck]:
+    def check_all_gateways_health(cls) -> dict[str, GatewayHealthCheck]:
         """
         Check health of all available gateways.
 
@@ -134,7 +140,7 @@ class GatewayMonitoringService:
             return {}
 
     @classmethod
-    def get_healthy_gateways(cls, exclude_failed: bool = True) -> List[str]:
+    def get_healthy_gateways(cls, exclude_failed: bool = True) -> list[str]:
         """
         Get list of currently healthy gateways.
 
@@ -161,7 +167,7 @@ class GatewayMonitoringService:
             return []
 
     @classmethod
-    def get_primary_gateway(cls, exclude_failed: bool = True) -> Optional[str]:
+    def get_primary_gateway(cls, exclude_failed: bool = True) -> str | None:
         """
         Get the primary (best available) payment gateway.
 
@@ -210,7 +216,7 @@ class GatewayMonitoringService:
                 gateway_code=gateway_code,
                 is_healthy=False,
                 error_message=error_message,
-                consecutive_failures=cls._get_consecutive_failures(gateway_code) + 1
+                consecutive_failures=cls._get_consecutive_failures(gateway_code) + 1,
             )
             cls._update_failure_tracking(health_check)
 
@@ -266,8 +272,7 @@ class GatewayMonitoringService:
             return False
 
     @classmethod
-    def get_gateway_metrics(cls, gateway_code: str = None,
-                           hours: int = 24) -> Dict[str, Any]:
+    def get_gateway_metrics(cls, gateway_code: str = None, hours: int = 24) -> dict[str, Any]:
         """
         Get performance metrics for gateways.
 
@@ -286,62 +291,48 @@ class GatewayMonitoringService:
             metrics = {}
 
             # Get transaction metrics
-            transaction_queryset = PaymentTransaction.objects.filter(
-                created_at__gte=cutoff_time
-            )
+            transaction_queryset = PaymentTransaction.objects.filter(created_at__gte=cutoff_time)
 
             if gateway_code:
-                transaction_queryset = transaction_queryset.filter(
-                    gateway__code=gateway_code
-                )
+                transaction_queryset = transaction_queryset.filter(gateway__code=gateway_code)
 
             # Calculate success rates
             total_transactions = transaction_queryset.count()
-            successful_transactions = transaction_queryset.filter(
-                status='COMPLETED'
-            ).count()
+            successful_transactions = transaction_queryset.filter(status="COMPLETED").count()
 
             success_rate = (successful_transactions / total_transactions * 100) if total_transactions > 0 else 0
 
             # Get webhook metrics
-            webhook_queryset = PaymentWebhookLog.objects.filter(
-                received_at__gte=cutoff_time
-            )
+            webhook_queryset = PaymentWebhookLog.objects.filter(received_at__gte=cutoff_time)
 
             if gateway_code:
-                webhook_queryset = webhook_queryset.filter(
-                    gateway_code=gateway_code
-                )
+                webhook_queryset = webhook_queryset.filter(gateway_code=gateway_code)
 
             webhook_stats = {
-                'total_webhooks': webhook_queryset.count(),
-                'successful_webhooks': webhook_queryset.filter(
-                    processed_successfully=True
-                ).count(),
-                'failed_webhooks': webhook_queryset.filter(
-                    processed_successfully=False
-                ).count()
+                "total_webhooks": webhook_queryset.count(),
+                "successful_webhooks": webhook_queryset.filter(processed_successfully=True).count(),
+                "failed_webhooks": webhook_queryset.filter(processed_successfully=False).count(),
             }
 
             metrics = {
-                'time_window_hours': hours,
-                'transaction_metrics': {
-                    'total_transactions': total_transactions,
-                    'successful_transactions': successful_transactions,
-                    'success_rate_percent': success_rate
+                "time_window_hours": hours,
+                "transaction_metrics": {
+                    "total_transactions": total_transactions,
+                    "successful_transactions": successful_transactions,
+                    "success_rate_percent": success_rate,
                 },
-                'webhook_metrics': webhook_stats,
-                'health_status': cls.check_gateway_health(gateway_code).to_dict() if gateway_code else None
+                "webhook_metrics": webhook_stats,
+                "health_status": cls.check_gateway_health(gateway_code).to_dict() if gateway_code else None,
             }
 
             return metrics
 
         except Exception as e:
             logger.error(f"Error getting gateway metrics: {e}")
-            return {'error': str(e)}
+            return {"error": str(e)}
 
     @classmethod
-    def get_monitoring_dashboard_data(cls) -> Dict[str, Any]:
+    def get_monitoring_dashboard_data(cls) -> dict[str, Any]:
         """
         Get comprehensive monitoring data for dashboard.
 
@@ -354,7 +345,7 @@ class GatewayMonitoringService:
 
             # Get current failover status
             failover_status = {}
-            for gateway_code in health_results.keys():
+            for gateway_code in health_results:
                 failover_status[gateway_code] = cls._is_gateway_in_failover(gateway_code)
 
             # Get primary gateway
@@ -362,29 +353,29 @@ class GatewayMonitoringService:
 
             # Get recent metrics
             recent_metrics = {}
-            for gateway_code in health_results.keys():
+            for gateway_code in health_results:
                 recent_metrics[gateway_code] = cls.get_gateway_metrics(gateway_code, hours=1)
 
             return {
-                'timestamp': timezone.now().isoformat(),
-                'health_status': {code: check.to_dict() for code, check in health_results.items()},
-                'failover_status': failover_status,
-                'primary_gateway': primary_gateway,
-                'recent_metrics': recent_metrics,
-                'alerts': cls._get_active_alerts()
+                "timestamp": timezone.now().isoformat(),
+                "health_status": {code: check.to_dict() for code, check in health_results.items()},
+                "failover_status": failover_status,
+                "primary_gateway": primary_gateway,
+                "recent_metrics": recent_metrics,
+                "alerts": cls._get_active_alerts(),
             }
 
         except Exception as e:
             logger.error(f"Error getting monitoring dashboard data: {e}")
-            return {'error': str(e)}
+            return {"error": str(e)}
 
     @classmethod
     def _perform_health_check(cls, gateway_code: str) -> GatewayHealthCheck:
         """Perform actual health check on gateway"""
         try:
-            from .payment_gateway_factory import PaymentGatewayFactory
-            from decimal import Decimal
             import time
+
+            from .payment_gateway_factory import PaymentGatewayFactory
 
             # Get gateway instance
             gateway = PaymentGatewayFactory.create_gateway(gateway_code)
@@ -406,7 +397,7 @@ class GatewayMonitoringService:
                 is_healthy=is_healthy,
                 response_time_ms=response_time_ms,
                 consecutive_failures=consecutive_failures,
-                last_success=last_success
+                last_success=last_success,
             )
 
         except Exception as e:
@@ -414,14 +405,13 @@ class GatewayMonitoringService:
                 gateway_code=gateway_code,
                 is_healthy=False,
                 error_message=str(e),
-                consecutive_failures=cls._get_consecutive_failures(gateway_code) + 1
+                consecutive_failures=cls._get_consecutive_failures(gateway_code) + 1,
             )
 
     @classmethod
     def _update_failure_tracking(cls, health_check: GatewayHealthCheck):
         """Update failure tracking for gateway"""
         gateway_code = health_check.gateway_code
-        tracking_key = f"gateway_failures_{gateway_code}"
 
         if health_check.is_healthy:
             # Reset failure count and update last success
@@ -441,12 +431,11 @@ class GatewayMonitoringService:
             if health_check.consecutive_failures >= failover_rules.max_consecutive_failures:
                 if not cls._is_gateway_in_failover(health_check.gateway_code):
                     cls.handle_gateway_failure(
-                        health_check.gateway_code,
-                        f"Consecutive failures: {health_check.consecutive_failures}"
+                        health_check.gateway_code, f"Consecutive failures: {health_check.consecutive_failures}"
                     )
 
     @classmethod
-    def _score_gateways(cls, gateway_codes: List[str]) -> Dict[str, float]:
+    def _score_gateways(cls, gateway_codes: list[str]) -> dict[str, float]:
         """Score gateways based on performance metrics"""
         scores = {}
 
@@ -459,7 +448,7 @@ class GatewayMonitoringService:
                 base_score = 100.0
 
                 # Success rate factor
-                success_rate = metrics.get('transaction_metrics', {}).get('success_rate_percent', 0)
+                success_rate = metrics.get("transaction_metrics", {}).get("success_rate_percent", 0)
                 success_factor = success_rate / 100.0
 
                 # Response time factor (lower is better)
@@ -483,19 +472,15 @@ class GatewayMonitoringService:
         """Mark gateway as failed"""
         cache.set(
             f"{cls.FAILOVER_CACHE_PREFIX}_{gateway_code}",
-            {
-                'failed_at': timezone.now().isoformat(),
-                'error_message': error_message,
-                'in_failover': True
-            },
-            timeout=3600  # 1 hour
+            {"failed_at": timezone.now().isoformat(), "error_message": error_message, "in_failover": True},
+            timeout=3600,  # 1 hour
         )
 
     @classmethod
     def _is_gateway_in_failover(cls, gateway_code: str) -> bool:
         """Check if gateway is currently in failover state"""
         failover_data = cache.get(f"{cls.FAILOVER_CACHE_PREFIX}_{gateway_code}")
-        return failover_data and failover_data.get('in_failover', False)
+        return failover_data and failover_data.get("in_failover", False)
 
     @classmethod
     def _clear_gateway_failover(cls, gateway_code: str):
@@ -508,7 +493,7 @@ class GatewayMonitoringService:
         return cache.get(f"gateway_consecutive_failures_{gateway_code}", 0)
 
     @classmethod
-    def _get_last_success(cls, gateway_code: str) -> Optional[datetime]:
+    def _get_last_success(cls, gateway_code: str) -> datetime | None:
         """Get last successful health check time"""
         return cache.get(f"gateway_last_success_{gateway_code}")
 
@@ -524,11 +509,11 @@ class GatewayMonitoringService:
         logger.critical(
             f"Gateway failover: {failed_gateway} -> {backup_gateway}",
             extra={
-                'failed_gateway': failed_gateway,
-                'backup_gateway': backup_gateway,
-                'reason': reason,
-                'event_type': 'gateway_failover'
-            }
+                "failed_gateway": failed_gateway,
+                "backup_gateway": backup_gateway,
+                "reason": reason,
+                "event_type": "gateway_failover",
+            },
         )
 
     @classmethod
@@ -548,9 +533,7 @@ class GatewayMonitoringService:
     def _notify_admin_critical(cls, gateway_code: str, message: str):
         """Notify administrators of critical gateway issue"""
         try:
-            logger.critical(
-                f"CRITICAL ALERT: Payment gateway {gateway_code} - {message}"
-            )
+            logger.critical(f"CRITICAL ALERT: Payment gateway {gateway_code} - {message}")
 
         except Exception as e:
             logger.error(f"Failed to send critical notification: {e}")
@@ -559,15 +542,13 @@ class GatewayMonitoringService:
     def _notify_admin_recovery(cls, gateway_code: str):
         """Notify administrators of gateway recovery"""
         try:
-            logger.info(
-                f"RECOVERY: Payment gateway {gateway_code} has recovered and is back online"
-            )
+            logger.info(f"RECOVERY: Payment gateway {gateway_code} has recovered and is back online")
 
         except Exception as e:
             logger.error(f"Failed to send recovery notification: {e}")
 
     @classmethod
-    def _get_active_alerts(cls) -> List[Dict[str, Any]]:
+    def _get_active_alerts(cls) -> list[dict[str, Any]]:
         """Get list of active alerts"""
         alerts = []
 
@@ -580,25 +561,29 @@ class GatewayMonitoringService:
             for gateway_code in available_gateways:
                 if cls._is_gateway_in_failover(gateway_code):
                     failover_data = cache.get(f"{cls.FAILOVER_CACHE_PREFIX}_{gateway_code}")
-                    alerts.append({
-                        'type': 'gateway_failover',
-                        'severity': 'high',
-                        'gateway_code': gateway_code,
-                        'message': f"Gateway {gateway_code} is in failover state",
-                        'error_message': failover_data.get('error_message'),
-                        'failed_at': failover_data.get('failed_at')
-                    })
+                    alerts.append(
+                        {
+                            "type": "gateway_failover",
+                            "severity": "high",
+                            "gateway_code": gateway_code,
+                            "message": f"Gateway {gateway_code} is in failover state",
+                            "error_message": failover_data.get("error_message"),
+                            "failed_at": failover_data.get("failed_at"),
+                        }
+                    )
 
                 # Check for high failure rates
                 consecutive_failures = cls._get_consecutive_failures(gateway_code)
                 if consecutive_failures >= 2:  # Warning threshold
-                    alerts.append({
-                        'type': 'high_failure_rate',
-                        'severity': 'medium',
-                        'gateway_code': gateway_code,
-                        'message': f"Gateway {gateway_code} has {consecutive_failures} consecutive failures",
-                        'consecutive_failures': consecutive_failures
-                    })
+                    alerts.append(
+                        {
+                            "type": "high_failure_rate",
+                            "severity": "medium",
+                            "gateway_code": gateway_code,
+                            "message": f"Gateway {gateway_code} has {consecutive_failures} consecutive failures",
+                            "consecutive_failures": consecutive_failures,
+                        }
+                    )
 
         except Exception as e:
             logger.error(f"Error getting active alerts: {e}")

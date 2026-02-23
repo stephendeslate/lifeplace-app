@@ -12,6 +12,7 @@ Migrations now run explicitly via deployment start command:
 This approach is cleaner, more explicit, and avoids Django's warnings
 about database access in AppConfig.ready().
 """
+
 import logging
 
 logger = logging.getLogger(__name__)

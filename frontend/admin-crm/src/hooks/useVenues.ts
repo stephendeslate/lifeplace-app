@@ -20,7 +20,7 @@ export const useVenues = (filters?: VenueFilters) => {
     data: venues = [],
     isLoading: isLoadingVenues,
     error: venuesError,
-    refetch: refetchVenues
+    refetch: refetchVenues,
   } = useQuery({
     queryKey: ['venues', filters],
     queryFn: () => venuesApi.getVenues(filters),
@@ -60,25 +60,38 @@ export const useVenues = (filters?: VenueFilters) => {
       showSuccess('Venue Created', `${newVenue.name} has been created successfully.`);
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to create venue'
-        : 'Failed to create venue';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to create venue'
+          : 'Failed to create venue';
       showError('Create Failed', message);
     },
   });
 
   const updateVenueMutation = useMutation({
-    mutationFn: ({ id, data, formData }: { id: number; data: UpdateVenueData; formData?: FormData }) =>
-      venuesApi.updateVenue(id, data, formData),
+    mutationFn: ({
+      id,
+      data,
+      formData,
+    }: {
+      id: number;
+      data: UpdateVenueData;
+      formData?: FormData;
+    }) => venuesApi.updateVenue(id, data, formData),
     onSuccess: (updatedVenue) => {
       queryClient.invalidateQueries({ queryKey: ['venues'] });
       queryClient.invalidateQueries({ queryKey: ['venue', updatedVenue.id] });
       showSuccess('Venue Updated', `${updatedVenue.name} has been updated successfully.`);
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update venue'
-        : 'Failed to update venue';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to update venue'
+          : 'Failed to update venue';
       showError('Update Failed', message);
     },
   });
@@ -90,9 +103,12 @@ export const useVenues = (filters?: VenueFilters) => {
       showSuccess('Venue Deleted', 'Venue has been deleted successfully.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to delete venue'
-        : 'Failed to delete venue';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to delete venue'
+          : 'Failed to delete venue';
       showError('Delete Failed', message);
     },
   });
@@ -141,17 +157,19 @@ export const useVenueOperatingRules = (venueId: number) => {
   });
 
   const updateRulesMutation = useMutation({
-    mutationFn: (data: CreateOperatingRulesData) =>
-      venuesApi.updateOperatingRules(venueId, data),
+    mutationFn: (data: CreateOperatingRulesData) => venuesApi.updateOperatingRules(venueId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['venue-operating-rules', venueId] });
       queryClient.invalidateQueries({ queryKey: ['venue', venueId] });
       showSuccess('Rules Updated', 'Operating rules have been updated successfully.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update operating rules'
-        : 'Failed to update operating rules';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to update operating rules'
+          : 'Failed to update operating rules';
       showError('Update Failed', message);
     },
   });
@@ -204,9 +222,12 @@ export const usePackageVenues = (filters?: PackageVenueFilters) => {
       showSuccess('Venue Assigned', 'Venue has been assigned to the package.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to assign venue'
-        : 'Failed to assign venue';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to assign venue'
+          : 'Failed to assign venue';
       showError('Assignment Failed', message);
     },
   });
@@ -220,9 +241,12 @@ export const usePackageVenues = (filters?: PackageVenueFilters) => {
       showSuccess('Assignment Updated', 'Package venue assignment has been updated.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to update assignment'
-        : 'Failed to update assignment';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to update assignment'
+          : 'Failed to update assignment';
       showError('Update Failed', message);
     },
   });
@@ -235,9 +259,12 @@ export const usePackageVenues = (filters?: PackageVenueFilters) => {
       showSuccess('Venue Removed', 'Venue has been removed from the package.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to remove venue'
-        : 'Failed to remove venue';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to remove venue'
+          : 'Failed to remove venue';
       showError('Removal Failed', message);
     },
   });
@@ -250,9 +277,12 @@ export const usePackageVenues = (filters?: PackageVenueFilters) => {
       showSuccess('Venues Assigned', 'Venues have been assigned to the package.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to assign venues'
-        : 'Failed to assign venues';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to assign venues'
+          : 'Failed to assign venues';
       showError('Assignment Failed', message);
     },
   });
@@ -306,9 +336,12 @@ export const useVenueBlockedDates = (venueId?: number) => {
       showSuccess('Date Blocked', 'The date has been blocked successfully.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to block date'
-        : 'Failed to block date';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to block date'
+          : 'Failed to block date';
       showError('Block Failed', message);
     },
   });
@@ -320,9 +353,12 @@ export const useVenueBlockedDates = (venueId?: number) => {
       showSuccess('Date Unblocked', 'The date has been unblocked successfully.');
     },
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to unblock date'
-        : 'Failed to unblock date';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to unblock date'
+          : 'Failed to unblock date';
       showError('Unblock Failed', message);
     },
   });
@@ -346,9 +382,12 @@ export const useVenueTimeCalculation = () => {
     mutationFn: ({ venueId, data }: { venueId: number; data: CalculateTimesRequest }) =>
       venuesApi.calculateTimes(venueId, data),
     onError: (error: unknown) => {
-      const message = (error && typeof error === 'object' && 'response' in error)
-        ? String((error as { response?: { data?: { detail?: string } } }).response?.data?.detail) || 'Failed to calculate times'
-        : 'Failed to calculate times';
+      const message =
+        error && typeof error === 'object' && 'response' in error
+          ? String(
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to calculate times'
+          : 'Failed to calculate times';
       showError('Calculation Failed', message);
     },
   });

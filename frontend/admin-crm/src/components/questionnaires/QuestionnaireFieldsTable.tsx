@@ -29,7 +29,10 @@ import {
   CheckBoxOutlineBlank as OptionalIcon,
   List as OptionsIcon,
 } from '@mui/icons-material';
-import type { QuestionnaireFieldTableProps, QuestionnaireField } from '../../types/questionnaires.types';
+import type {
+  QuestionnaireFieldTableProps,
+  QuestionnaireField,
+} from '../../types/questionnaires.types';
 import { ModernEmptyState } from '../common/ModernEmptyState';
 import ModernLoadingStates from '../common/ModernLoadingStates';
 
@@ -105,13 +108,7 @@ export const QuestionnaireFieldsTable: React.FC<QuestionnaireFieldTableProps> = 
   };
 
   if (isLoading) {
-    return (
-      <ModernLoadingStates.ModernTableSkeleton 
-        rows={3} 
-        columns={6} 
-        hasHeader 
-      />
-    );
+    return <ModernLoadingStates.ModernTableSkeleton rows={3} columns={6} hasHeader />;
   }
 
   if (fields.length === 0) {
@@ -122,8 +119,8 @@ export const QuestionnaireFieldsTable: React.FC<QuestionnaireFieldTableProps> = 
         description="Add fields to this questionnaire to start collecting client information"
         size="small"
         tip={{
-          text: "Fields define what information you collect from clients",
-          type: "info"
+          text: 'Fields define what information you collect from clients',
+          type: 'info',
         }}
       />
     );
@@ -157,9 +154,7 @@ export const QuestionnaireFieldsTable: React.FC<QuestionnaireFieldTableProps> = 
             >
               <TableCell width="30px"></TableCell>
               <TableCell>
-                <TableSortLabel>
-                  Field Name
-                </TableSortLabel>
+                <TableSortLabel>Field Name</TableSortLabel>
               </TableCell>
               <TableCell>Type</TableCell>
               <TableCell align="center">Required</TableCell>
@@ -194,19 +189,10 @@ export const QuestionnaireFieldsTable: React.FC<QuestionnaireFieldTableProps> = 
                     {field.name}
                   </Typography>
                 </TableCell>
-                <TableCell>
-                  {getTypeChip(field.type, field.type_display)}
-                </TableCell>
+                <TableCell>{getTypeChip(field.type, field.type_display)}</TableCell>
+                <TableCell align="center">{getRequiredIcon(field.required)}</TableCell>
                 <TableCell align="center">
-                  {getRequiredIcon(field.required)}
-                </TableCell>
-                <TableCell align="center">
-                  <Chip
-                    label={field.order}
-                    size="small"
-                    variant="outlined"
-                    color="default"
-                  />
+                  <Chip label={field.order} size="small" variant="outlined" color="default" />
                 </TableCell>
                 <TableCell>
                   {field.options && field.options.length > 0 ? (
@@ -266,9 +252,7 @@ export const QuestionnaireFieldsTable: React.FC<QuestionnaireFieldTableProps> = 
           <ListItemIcon>
             <EditIcon fontSize="small" color="primary" />
           </ListItemIcon>
-          <ListItemText>
-            Edit Field
-          </ListItemText>
+          <ListItemText>Edit Field</ListItemText>
         </MenuItem>
 
         <MenuItem
@@ -283,9 +267,7 @@ export const QuestionnaireFieldsTable: React.FC<QuestionnaireFieldTableProps> = 
           <ListItemIcon>
             <DeleteIcon fontSize="small" color="error" />
           </ListItemIcon>
-          <ListItemText>
-            Delete Field
-          </ListItemText>
+          <ListItemText>Delete Field</ListItemText>
         </MenuItem>
       </Menu>
     </>

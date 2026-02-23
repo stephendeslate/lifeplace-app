@@ -1,18 +1,11 @@
 // frontend/client-portal/src/types/booking/state.types.ts
 
-import type { EventType, BookingFlow } from "./core.types";
-import type { BookingSession } from "./bookingData.types";
-import type {
-  SelectedAddon,
-  SelectedPackage,
-  StepData,
-} from "./stepData.types";
-import type { PaymentGateway } from "./payment.types";
-import type {
-  BookingCompletionResult,
-  StepValidationResult,
-} from "./api.types";
-import type { BookingData } from "./bookingData.types";
+import type { EventType, BookingFlow } from './core.types';
+import type { BookingSession } from './bookingData.types';
+import type { SelectedAddon, SelectedPackage, StepData } from './stepData.types';
+import type { PaymentGateway } from './payment.types';
+import type { BookingCompletionResult, StepValidationResult } from './api.types';
+import type { BookingData } from './bookingData.types';
 
 // UI State types
 export interface BookingProgress {
@@ -69,7 +62,7 @@ export interface BookingState {
     quantity: number;
     unit_price: string;
     total_price: string;
-    type: "PACKAGE" | "ADDON" | "TAX" | "DISCOUNT" | "FEE";
+    type: 'PACKAGE' | 'ADDON' | 'TAX' | 'DISCOUNT' | 'FEE';
   }[];
 
   // Session recovery
@@ -99,14 +92,8 @@ export interface BookingActions {
 
   // Session management
   startSession: (flowId: number) => Promise<void>;
-  updateStepData: (
-    stepType: string,
-    data: Record<string, unknown>,
-  ) => Promise<void>;
-  validateStep: (
-    stepId: number,
-    data: Record<string, unknown>,
-  ) => Promise<StepValidationResult>;
+  updateStepData: (stepType: string, data: Record<string, unknown>) => Promise<void>;
+  validateStep: (stepId: number, data: Record<string, unknown>) => Promise<StepValidationResult>;
 
   // Navigation
   goToStep: (stepIndex: number) => void;
@@ -119,9 +106,7 @@ export interface BookingActions {
   exitQuickQuoteMode: () => void;
 
   // Completion
-  completeBooking: (
-    completionType?: "payment" | "quote",
-  ) => Promise<BookingCompletionResult>;
+  completeBooking: (completionType?: 'payment' | 'quote') => Promise<BookingCompletionResult>;
 
   // Payment
   fetchPaymentGateways: () => Promise<void>;

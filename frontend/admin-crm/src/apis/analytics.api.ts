@@ -61,7 +61,9 @@ export const analyticsApi = {
   // =========================================================================
 
   getDashboardKPIs: async (dateRange: DateRange): Promise<DashboardKPIs> => {
-    const response = await api.get<DashboardKPIs>(`/analytics/dashboard/?${buildParams(dateRange)}`);
+    const response = await api.get<DashboardKPIs>(
+      `/analytics/dashboard/?${buildParams(dateRange)}`,
+    );
     return response.data;
   },
 
@@ -71,10 +73,10 @@ export const analyticsApi = {
 
   getBookingsSummary: async (
     dateRange: DateRange,
-    period: PeriodType = 'daily'
+    period: PeriodType = 'daily',
   ): Promise<BookingSummary[]> => {
     const response = await api.get<BookingSummary[]>(
-      `/analytics/sales/bookings/?${buildParams(dateRange, { period })}`
+      `/analytics/sales/bookings/?${buildParams(dateRange, { period })}`,
     );
     return response.data;
   },
@@ -82,40 +84,46 @@ export const analyticsApi = {
   exportBookingsSummary: async (
     dateRange: DateRange,
     period: PeriodType = 'daily',
-    format: ExportFormat = 'csv'
+    format: ExportFormat = 'csv',
   ): Promise<void> => {
     const response = await api.get<Blob>(
       `/analytics/sales/bookings/?${buildParams(dateRange, { period, format })}`,
-      { responseType: 'blob' }
+      { responseType: 'blob' },
     );
     const filename = `bookings_${dateRange.startDate}_${dateRange.endDate}.${format === 'excel' ? 'xlsx' : 'csv'}`;
     downloadFile(response.data, filename);
   },
 
   getReservationPipeline: async (dateRange: DateRange): Promise<ReservationPipeline[]> => {
-    const response = await api.get<ReservationPipeline[]>(`/analytics/sales/pipeline/?${buildParams(dateRange)}`);
+    const response = await api.get<ReservationPipeline[]>(
+      `/analytics/sales/pipeline/?${buildParams(dateRange)}`,
+    );
     return response.data;
   },
 
   getRevenueByType: async (dateRange: DateRange): Promise<RevenueByType[]> => {
-    const response = await api.get<RevenueByType[]>(`/analytics/sales/revenue/?${buildParams(dateRange)}`);
+    const response = await api.get<RevenueByType[]>(
+      `/analytics/sales/revenue/?${buildParams(dateRange)}`,
+    );
     return response.data;
   },
 
   exportRevenueReport: async (
     dateRange: DateRange,
-    format: ExportFormat = 'csv'
+    format: ExportFormat = 'csv',
   ): Promise<void> => {
     const response = await api.get<Blob>(
       `/analytics/sales/revenue/?${buildParams(dateRange, { format })}`,
-      { responseType: 'blob' }
+      { responseType: 'blob' },
     );
     const filename = `revenue_${dateRange.startDate}_${dateRange.endDate}.${format === 'excel' ? 'xlsx' : 'csv'}`;
     downloadFile(response.data, filename);
   },
 
   getPaymentTracking: async (dateRange: DateRange): Promise<PaymentTracking> => {
-    const response = await api.get<PaymentTracking>(`/analytics/sales/payments/?${buildParams(dateRange)}`);
+    const response = await api.get<PaymentTracking>(
+      `/analytics/sales/payments/?${buildParams(dateRange)}`,
+    );
     return response.data;
   },
 
@@ -124,27 +132,33 @@ export const analyticsApi = {
   // =========================================================================
 
   getEventAttendance: async (dateRange: DateRange): Promise<EventAttendance[]> => {
-    const response = await api.get<EventAttendance[]>(`/analytics/events/attendance/?${buildParams(dateRange)}`);
+    const response = await api.get<EventAttendance[]>(
+      `/analytics/events/attendance/?${buildParams(dateRange)}`,
+    );
     return response.data;
   },
 
   getPackagePerformance: async (
     dateRange: DateRange,
-    limit: number = 10
+    limit: number = 10,
   ): Promise<PackagePerformance[]> => {
     const response = await api.get<PackagePerformance[]>(
-      `/analytics/events/packages/?${buildParams(dateRange, { limit: String(limit) })}`
+      `/analytics/events/packages/?${buildParams(dateRange, { limit: String(limit) })}`,
     );
     return response.data;
   },
 
   getFeedbackScores: async (dateRange: DateRange): Promise<FeedbackScores> => {
-    const response = await api.get<FeedbackScores>(`/analytics/events/feedback/?${buildParams(dateRange)}`);
+    const response = await api.get<FeedbackScores>(
+      `/analytics/events/feedback/?${buildParams(dateRange)}`,
+    );
     return response.data;
   },
 
   getEventTypeBreakdown: async (dateRange: DateRange): Promise<EventTypeBreakdown[]> => {
-    const response = await api.get<EventTypeBreakdown[]>(`/analytics/events/types/?${buildParams(dateRange)}`);
+    const response = await api.get<EventTypeBreakdown[]>(
+      `/analytics/events/types/?${buildParams(dateRange)}`,
+    );
     return response.data;
   },
 
@@ -163,31 +177,29 @@ export const analyticsApi = {
   // =========================================================================
 
   getLeadSources: async (dateRange: DateRange): Promise<LeadSource[]> => {
-    const response = await api.get<LeadSource[]>(`/analytics/customers/leads/?${buildParams(dateRange)}`);
+    const response = await api.get<LeadSource[]>(
+      `/analytics/customers/leads/?${buildParams(dateRange)}`,
+    );
     return response.data;
   },
 
-  exportLeadSources: async (
-    dateRange: DateRange,
-    format: ExportFormat = 'csv'
-  ): Promise<void> => {
+  exportLeadSources: async (dateRange: DateRange, format: ExportFormat = 'csv'): Promise<void> => {
     const response = await api.get<Blob>(
       `/analytics/customers/leads/?${buildParams(dateRange, { format })}`,
-      { responseType: 'blob' }
+      { responseType: 'blob' },
     );
     const filename = `lead_sources_${dateRange.startDate}_${dateRange.endDate}.${format === 'excel' ? 'xlsx' : 'csv'}`;
     downloadFile(response.data, filename);
   },
 
   getConversionRates: async (dateRange: DateRange): Promise<ConversionRates> => {
-    const response = await api.get<ConversionRates>(`/analytics/customers/conversion/?${buildParams(dateRange)}`);
+    const response = await api.get<ConversionRates>(
+      `/analytics/customers/conversion/?${buildParams(dateRange)}`,
+    );
     return response.data;
   },
 
-  getCustomerList: async (
-    dateRange?: DateRange,
-    limit?: number
-  ): Promise<CustomerRecord[]> => {
+  getCustomerList: async (dateRange?: DateRange, limit?: number): Promise<CustomerRecord[]> => {
     const params = new URLSearchParams();
     if (dateRange) {
       params.append('start_date', dateRange.startDate);
@@ -196,13 +208,15 @@ export const analyticsApi = {
     if (limit) {
       params.append('limit', String(limit));
     }
-    const response = await api.get<CustomerRecord[]>(`/analytics/customers/list/?${params.toString()}`);
+    const response = await api.get<CustomerRecord[]>(
+      `/analytics/customers/list/?${params.toString()}`,
+    );
     return response.data;
   },
 
   exportCustomers: async (
     dateRange: DateRange | undefined,
-    format: ExportFormat = 'csv'
+    format: ExportFormat = 'csv',
   ): Promise<void> => {
     const params = new URLSearchParams();
     if (dateRange) {
@@ -219,7 +233,9 @@ export const analyticsApi = {
   },
 
   getCustomerGrowth: async (dateRange: DateRange): Promise<CustomerGrowth[]> => {
-    const response = await api.get<CustomerGrowth[]>(`/analytics/customers/growth/?${buildParams(dateRange)}`);
+    const response = await api.get<CustomerGrowth[]>(
+      `/analytics/customers/growth/?${buildParams(dateRange)}`,
+    );
     return response.data;
   },
 
@@ -228,17 +244,23 @@ export const analyticsApi = {
   // =========================================================================
 
   getVenueUsage: async (dateRange: DateRange): Promise<VenueUsage[]> => {
-    const response = await api.get<VenueUsage[]>(`/analytics/operations/venues/?${buildParams(dateRange)}`);
+    const response = await api.get<VenueUsage[]>(
+      `/analytics/operations/venues/?${buildParams(dateRange)}`,
+    );
     return response.data;
   },
 
   getCalendarUtilization: async (dateRange: DateRange): Promise<CalendarUtilization> => {
-    const response = await api.get<CalendarUtilization>(`/analytics/operations/calendar/?${buildParams(dateRange)}`);
+    const response = await api.get<CalendarUtilization>(
+      `/analytics/operations/calendar/?${buildParams(dateRange)}`,
+    );
     return response.data;
   },
 
   getBookingTimeAnalysis: async (dateRange: DateRange): Promise<BookingTimeAnalysis[]> => {
-    const response = await api.get<BookingTimeAnalysis[]>(`/analytics/operations/booking-times/?${buildParams(dateRange)}`);
+    const response = await api.get<BookingTimeAnalysis[]>(
+      `/analytics/operations/booking-times/?${buildParams(dateRange)}`,
+    );
     return response.data;
   },
 
@@ -267,45 +289,43 @@ export const analyticsApi = {
 
   getBookingFlowFunnel: async (
     dateRange: DateRange,
-    flowId?: string
+    flowId?: string,
   ): Promise<BookingFlowFunnelStep[]> => {
     const params: Record<string, string> = {};
     if (flowId) params.flow_id = flowId;
     const response = await api.get<BookingFlowFunnelStep[]>(
-      `/analytics/booking-flow/funnel/?${buildParams(dateRange, params)}`
+      `/analytics/booking-flow/funnel/?${buildParams(dateRange, params)}`,
     );
     return response.data;
   },
 
-  getBookingFlowPerformance: async (
-    dateRange: DateRange
-  ): Promise<BookingFlowPerformance[]> => {
+  getBookingFlowPerformance: async (dateRange: DateRange): Promise<BookingFlowPerformance[]> => {
     const response = await api.get<BookingFlowPerformance[]>(
-      `/analytics/booking-flow/performance/?${buildParams(dateRange)}`
+      `/analytics/booking-flow/performance/?${buildParams(dateRange)}`,
     );
     return response.data;
   },
 
   getBookingFlowAbandonment: async (
     dateRange: DateRange,
-    flowId?: string
+    flowId?: string,
   ): Promise<BookingFlowAbandonment> => {
     const params: Record<string, string> = {};
     if (flowId) params.flow_id = flowId;
     const response = await api.get<BookingFlowAbandonment>(
-      `/analytics/booking-flow/abandonment/?${buildParams(dateRange, params)}`
+      `/analytics/booking-flow/abandonment/?${buildParams(dateRange, params)}`,
     );
     return response.data;
   },
 
   getBookingFlowTrends: async (
     dateRange: DateRange,
-    flowId?: string
+    flowId?: string,
   ): Promise<BookingFlowTrend[]> => {
     const params: Record<string, string> = {};
     if (flowId) params.flow_id = flowId;
     const response = await api.get<BookingFlowTrend[]>(
-      `/analytics/booking-flow/trends/?${buildParams(dateRange, params)}`
+      `/analytics/booking-flow/trends/?${buildParams(dateRange, params)}`,
     );
     return response.data;
   },
@@ -314,31 +334,29 @@ export const analyticsApi = {
   // Questionnaire Analytics
   // =========================================================================
 
-  getQuestionnaireSummary: async (
-    dateRange: DateRange
-  ): Promise<QuestionnaireSummary> => {
+  getQuestionnaireSummary: async (dateRange: DateRange): Promise<QuestionnaireSummary> => {
     const response = await api.get<QuestionnaireSummary>(
-      `/analytics/questionnaires/summary/?${buildParams(dateRange)}`
+      `/analytics/questionnaires/summary/?${buildParams(dateRange)}`,
     );
     return response.data;
   },
 
   getQuestionnaireFieldHeatmap: async (
     questionnaireId: number,
-    dateRange: DateRange
+    dateRange: DateRange,
   ): Promise<QuestionnaireFieldHeatmap[]> => {
     const response = await api.get<QuestionnaireFieldHeatmap[]>(
-      `/analytics/questionnaires/${questionnaireId}/heatmap/?${buildParams(dateRange)}`
+      `/analytics/questionnaires/${questionnaireId}/heatmap/?${buildParams(dateRange)}`,
     );
     return response.data;
   },
 
   getQuestionnaireProblemFields: async (
     dateRange: DateRange,
-    threshold: number = 80
+    threshold: number = 80,
   ): Promise<QuestionnaireProblemField[]> => {
     const response = await api.get<QuestionnaireProblemField[]>(
-      `/analytics/questionnaires/problem-fields/?${buildParams(dateRange, { threshold: String(threshold) })}`
+      `/analytics/questionnaires/problem-fields/?${buildParams(dateRange, { threshold: String(threshold) })}`,
     );
     return response.data;
   },

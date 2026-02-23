@@ -1,8 +1,6 @@
-import type { EmailLayout } from "../../../types/layouts.types";
+import type { EmailLayout } from '../../../types/layouts.types';
 
-export function createMockEmailLayout(
-  overrides: Partial<EmailLayout> = {},
-): EmailLayout {
+export function createMockEmailLayout(overrides: Partial<EmailLayout> = {}): EmailLayout {
   const id = overrides.id || Math.floor(Math.random() * 10000);
   return {
     id,
@@ -15,15 +13,15 @@ export function createMockEmailLayout(
     wrapper_template:
       '<html><body><div class="wrapper">{{header}}{{content}}{{footer}}</div></body></html>',
     base_styles:
-      "body { font-family: Arial, sans-serif; color: #333; } .wrapper { max-width: 600px; margin: 0 auto; }",
-    primary_color: "#1976d2",
-    secondary_color: "#dc004e",
-    logo_url: "https://lifeplace.dev/logo.png",
+      'body { font-family: Arial, sans-serif; color: #333; } .wrapper { max-width: 600px; margin: 0 auto; }',
+    primary_color: '#1976d2',
+    secondary_color: '#dc004e',
+    logo_url: 'https://lifeplace.dev/logo.png',
     is_default: false,
     is_active: true,
     template_count: 5,
-    created_at: "2024-06-15T10:00:00Z",
-    updated_at: "2024-06-15T10:00:00Z",
+    created_at: '2024-06-15T10:00:00Z',
+    updated_at: '2024-06-15T10:00:00Z',
     ...overrides,
   };
 }
@@ -31,33 +29,33 @@ export function createMockEmailLayout(
 export function createMockEmailLayouts(count: number): EmailLayout[] {
   const layoutConfigs = [
     {
-      name: "Default Layout",
+      name: 'Default Layout',
       is_default: true,
-      primary_color: "#1976d2",
+      primary_color: '#1976d2',
       template_count: 12,
     },
     {
-      name: "Minimal Layout",
+      name: 'Minimal Layout',
       is_default: false,
-      primary_color: "#333333",
+      primary_color: '#333333',
       template_count: 5,
     },
     {
-      name: "Corporate Layout",
+      name: 'Corporate Layout',
       is_default: false,
-      primary_color: "#0D47A1",
+      primary_color: '#0D47A1',
       template_count: 8,
     },
     {
-      name: "Festive Layout",
+      name: 'Festive Layout',
       is_default: false,
-      primary_color: "#E91E63",
+      primary_color: '#E91E63',
       template_count: 3,
     },
     {
-      name: "Newsletter Layout",
+      name: 'Newsletter Layout',
       is_default: false,
-      primary_color: "#4CAF50",
+      primary_color: '#4CAF50',
       template_count: 2,
     },
   ];

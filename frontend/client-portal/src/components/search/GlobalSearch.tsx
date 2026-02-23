@@ -144,15 +144,16 @@ export const GlobalSearch: React.FC = () => {
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const query = event.target.value;
     setSearchQuery(query);
-    
+
     if (query.trim()) {
       setIsSearching(true);
       // Simulate API search delay
       setTimeout(() => {
-        const filteredResults = mockResults.filter(result =>
-          result.title.toLowerCase().includes(query.toLowerCase()) ||
-          result.description.toLowerCase().includes(query.toLowerCase()) ||
-          result.subtitle?.toLowerCase().includes(query.toLowerCase())
+        const filteredResults = mockResults.filter(
+          (result) =>
+            result.title.toLowerCase().includes(query.toLowerCase()) ||
+            result.description.toLowerCase().includes(query.toLowerCase()) ||
+            result.subtitle?.toLowerCase().includes(query.toLowerCase()),
         );
         setSearchResults(filteredResults);
         setIsSearching(false);
@@ -165,11 +166,11 @@ export const GlobalSearch: React.FC = () => {
 
   const handleResultClick = (result: SearchResult) => {
     // Add to recent searches
-    setRecentSearches(prev => {
-      const newSearches = [result.title, ...prev.filter(s => s !== result.title)].slice(0, 5);
+    setRecentSearches((prev) => {
+      const newSearches = [result.title, ...prev.filter((s) => s !== result.title)].slice(0, 5);
       return newSearches;
     });
-    
+
     navigate(result.url);
     handleClose();
   };
@@ -181,41 +182,70 @@ export const GlobalSearch: React.FC = () => {
 
   const getResultIcon = (type: string) => {
     switch (type) {
-      case 'event': return <EventIcon fontSize="small" />;
-      case 'payment': return <PaymentIcon fontSize="small" />;
-      case 'invoice': return <ReceiptIcon fontSize="small" />;
-      case 'contact': return <PersonIcon fontSize="small" />;
-      case 'page': return <TrendingUpIcon fontSize="small" />;
-      default: return <SearchIcon fontSize="small" />;
+      case 'event':
+        return <EventIcon fontSize="small" />;
+      case 'payment':
+        return <PaymentIcon fontSize="small" />;
+      case 'invoice':
+        return <ReceiptIcon fontSize="small" />;
+      case 'contact':
+        return <PersonIcon fontSize="small" />;
+      case 'page':
+        return <TrendingUpIcon fontSize="small" />;
+      default:
+        return <SearchIcon fontSize="small" />;
     }
   };
 
   const getResultColor = (type: string) => {
     switch (type) {
-      case 'event': return theme.palette.primary.main;
-      case 'payment': return theme.palette.success.main;
-      case 'invoice': return theme.palette.info.main;
-      case 'message': return theme.palette.warning.main;
-      case 'contact': return theme.palette.secondary.main;
-      case 'page': return theme.palette.grey[600];
-      default: return theme.palette.primary.main;
+      case 'event':
+        return theme.palette.primary.main;
+      case 'payment':
+        return theme.palette.success.main;
+      case 'invoice':
+        return theme.palette.info.main;
+      case 'message':
+        return theme.palette.warning.main;
+      case 'contact':
+        return theme.palette.secondary.main;
+      case 'page':
+        return theme.palette.grey[600];
+      default:
+        return theme.palette.primary.main;
     }
   };
 
   const categories: SearchCategory[] = [
-    { type: 'all', label: 'All', icon: <SearchIcon fontSize="small" />, count: searchResults.length },
-    { type: 'event', label: 'Events', icon: <EventIcon fontSize="small" />, count: searchResults.filter(r => r.type === 'event').length },
-    { type: 'payment', label: 'Payments', icon: <PaymentIcon fontSize="small" />, count: searchResults.filter(r => r.type === 'payment' || r.type === 'invoice').length },
+    {
+      type: 'all',
+      label: 'All',
+      icon: <SearchIcon fontSize="small" />,
+      count: searchResults.length,
+    },
+    {
+      type: 'event',
+      label: 'Events',
+      icon: <EventIcon fontSize="small" />,
+      count: searchResults.filter((r) => r.type === 'event').length,
+    },
+    {
+      type: 'payment',
+      label: 'Payments',
+      icon: <PaymentIcon fontSize="small" />,
+      count: searchResults.filter((r) => r.type === 'payment' || r.type === 'invoice').length,
+    },
   ];
 
-  const filteredResults = selectedCategory && selectedCategory !== 'all' 
-    ? searchResults.filter(result => {
-        if (selectedCategory === 'payment') {
-          return result.type === 'payment' || result.type === 'invoice';
-        }
-        return result.type === selectedCategory;
-      })
-    : searchResults;
+  const filteredResults =
+    selectedCategory && selectedCategory !== 'all'
+      ? searchResults.filter((result) => {
+          if (selectedCategory === 'payment') {
+            return result.type === 'payment' || result.type === 'invoice';
+          }
+          return result.type === selectedCategory;
+        })
+      : searchResults;
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -359,13 +389,16 @@ export const GlobalSearch: React.FC = () => {
                       clickable
                       variant={selectedCategory === category.type ? 'filled' : 'outlined'}
                       color={selectedCategory === category.type ? 'primary' : 'default'}
-                      onClick={() => setSelectedCategory(
-                        selectedCategory === category.type ? null : category.type
-                      )}
+                      onClick={() =>
+                        setSelectedCategory(
+                          selectedCategory === category.type ? null : category.type,
+                        )
+                      }
                       sx={{
-                        backgroundColor: selectedCategory === category.type 
-                          ? alpha(theme.palette.primary.main, 0.1)
-                          : alpha('#fff', 0.1),
+                        backgroundColor:
+                          selectedCategory === category.type
+                            ? alpha(theme.palette.primary.main, 0.1)
+                            : alpha('#fff', 0.1),
                         backdropFilter: 'blur(5px)',
                         '&:hover': {
                           backgroundColor: alpha('#fff', 0.2),
@@ -400,13 +433,9 @@ export const GlobalSearch: React.FC = () => {
                 <Stack divider={<Divider sx={{ borderColor: alpha('#fff', 0.1) }} />}>
                   {filteredResults.map((result, index) => {
                     const resultColor = getResultColor(result.type);
-                    
+
                     return (
-                      <AnimatedElement
-                        key={result.id}
-                        animation="slideRight"
-                        delay={index * 50}
-                      >
+                      <AnimatedElement key={result.id} animation="slideRight" delay={index * 50}>
                         <Box
                           sx={{
                             p: 3,
@@ -431,7 +460,12 @@ export const GlobalSearch: React.FC = () => {
                             </Avatar>
 
                             <Box flex={1} minWidth={0}>
-                              <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                              <Box
+                                display="flex"
+                                justifyContent="space-between"
+                                alignItems="flex-start"
+                                mb={1}
+                              >
                                 <Box flex={1}>
                                   <Typography variant="body2" sx={{ fontWeight: 600 }}>
                                     {result.title}
@@ -444,9 +478,9 @@ export const GlobalSearch: React.FC = () => {
                                 </Box>
                                 <ArrowRightIcon fontSize="small" color="action" />
                               </Box>
-                              
-                              <Typography 
-                                variant="body2" 
+
+                              <Typography
+                                variant="body2"
                                 color="text.secondary"
                                 sx={{ mb: 1, lineHeight: 1.4 }}
                               >
@@ -471,10 +505,13 @@ export const GlobalSearch: React.FC = () => {
                                       label={result.metadata.status}
                                       size="small"
                                       color={
-                                        result.metadata.status === 'paid' ? 'success' :
-                                        result.metadata.status === 'pending' ? 'warning' :
-                                        result.metadata.status === 'confirmed' ? 'info' :
-                                        'default'
+                                        result.metadata.status === 'paid'
+                                          ? 'success'
+                                          : result.metadata.status === 'pending'
+                                            ? 'warning'
+                                            : result.metadata.status === 'confirmed'
+                                              ? 'info'
+                                              : 'default'
                                       }
                                       sx={{
                                         backgroundColor: alpha('#fff', 0.1),
@@ -508,11 +545,7 @@ export const GlobalSearch: React.FC = () => {
                     </Box>
                     <Stack spacing={1}>
                       {recentSearches.map((search, index) => (
-                        <AnimatedElement
-                          key={search}
-                          animation="slideRight"
-                          delay={index * 100}
-                        >
+                        <AnimatedElement key={search} animation="slideRight" delay={index * 100}>
                           <Button
                             variant="text"
                             startIcon={<SearchIcon fontSize="small" />}
@@ -537,7 +570,11 @@ export const GlobalSearch: React.FC = () => {
 
                   {/* Quick Actions */}
                   <Box>
-                    <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 600, mb: 2 }}>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ fontWeight: 600, mb: 2 }}
+                    >
                       Quick Actions
                     </Typography>
                     <Stack spacing={1}>

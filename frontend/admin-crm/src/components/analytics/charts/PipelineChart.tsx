@@ -50,16 +50,30 @@ export const PipelineChart: React.FC<PipelineChartProps> = ({
       </Typography>
       <Box sx={{ width: '100%', height }}>
         <ResponsiveContainer>
-          <BarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={tokens.color.charts.grid} horizontal={false} />
+          <BarChart
+            data={data}
+            layout="vertical"
+            margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
+          >
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke={tokens.color.charts.grid}
+              horizontal={false}
+            />
             <XAxis type="number" tick={{ fontSize: 12 }} />
             <YAxis dataKey="label" type="category" tick={{ fontSize: 12 }} />
             <Tooltip
-              formatter={(value: number, name: string) => [value, name === 'count' ? 'Count' : name]}
+              formatter={(value: number, name: string) => [
+                value,
+                name === 'count' ? 'Count' : name,
+              ]}
             />
             <Bar dataKey="count" name="Bookings" radius={[0, 4, 4, 0]}>
               {data.map((entry) => (
-                <Cell key={entry.status} fill={statusColors[entry.status] || tokens.color.neutral[400]} />
+                <Cell
+                  key={entry.status}
+                  fill={statusColors[entry.status] || tokens.color.neutral[400]}
+                />
               ))}
             </Bar>
           </BarChart>

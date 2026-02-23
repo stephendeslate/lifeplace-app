@@ -6,20 +6,18 @@ available as fixtures throughout the messaging test suite.
 """
 
 import pytest
-from pytest_factoryboy import register
-from channels.testing import WebsocketCommunicator
 from channels.layers import get_channel_layer
+from pytest_factoryboy import register
 from rest_framework_simplejwt.tokens import RefreshToken
 
 # =============================================================================
 # IMPORT FACTORIES
 # =============================================================================
-
 from core.factories.messaging import (
-    MessageThreadFactory,
+    MessageAttachmentFactory,
     MessageFactory,
     MessageReadStatusFactory,
-    MessageAttachmentFactory,
+    MessageThreadFactory,
 )
 
 # =============================================================================
@@ -41,6 +39,7 @@ register(MessageAttachmentFactory)
 # CONVENIENCE FIXTURES
 # =============================================================================
 
+
 @pytest.fixture
 def thread_with_messages(message_thread_factory, message_factory, user_factory):
     """Create a thread with multiple messages."""
@@ -48,9 +47,9 @@ def thread_with_messages(message_thread_factory, message_factory, user_factory):
     admin = user_factory(admin=True)
 
     # Create some messages
-    message_factory(thread=thread, sender=thread.client, content='Client message 1')
-    message_factory(thread=thread, sender=admin, content='Admin reply 1')
-    message_factory(thread=thread, sender=thread.client, content='Client message 2')
+    message_factory(thread=thread, sender=thread.client, content="Client message 1")
+    message_factory(thread=thread, sender=admin, content="Admin reply 1")
+    message_factory(thread=thread, sender=thread.client, content="Client message 2")
 
     return thread
 
@@ -62,16 +61,11 @@ def thread_with_internal_notes(message_thread_factory, message_factory, user_fac
     admin = user_factory(admin=True)
 
     # Regular messages
-    message_factory(thread=thread, sender=thread.client, content='Client message')
-    message_factory(thread=thread, sender=admin, content='Admin reply')
+    message_factory(thread=thread, sender=thread.client, content="Client message")
+    message_factory(thread=thread, sender=admin, content="Admin reply")
 
     # Internal note (admin only)
-    message_factory(
-        thread=thread,
-        sender=admin,
-        content='Internal note - client cannot see',
-        is_internal_note=True
-    )
+    message_factory(thread=thread, sender=admin, content="Internal note - client cannot see", is_internal_note=True)
 
     return thread
 
@@ -79,13 +73,13 @@ def thread_with_internal_notes(message_thread_factory, message_factory, user_fac
 @pytest.fixture
 def urgent_thread(message_thread_factory):
     """Create an urgent thread."""
-    return message_thread_factory(priority='urgent', status='active')
+    return message_thread_factory(priority="urgent", status="active")
 
 
 @pytest.fixture
 def resolved_thread(message_thread_factory):
     """Create a resolved thread."""
-    return message_thread_factory(status='resolved')
+    return message_thread_factory(status="resolved")
 
 
 @pytest.fixture
@@ -99,12 +93,15 @@ def assigned_thread(message_thread_factory, user_factory):
 # WEBSOCKET TEST FIXTURES
 # =============================================================================
 
+
 @pytest.fixture
 def get_jwt_token():
     """Factory for generating JWT tokens for users."""
+
     def _get_token(user):
         refresh = RefreshToken.for_user(user)
         return str(refresh.access_token)
+
     return _get_token
 
 

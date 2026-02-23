@@ -191,7 +191,7 @@ export class ErrorHandler {
     const statusCode = this.getStatusCode(error);
     const validationErrors = this.extractValidationErrors(error);
 
-    let severity: typeof ErrorSeverity[keyof typeof ErrorSeverity];
+    let severity: (typeof ErrorSeverity)[keyof typeof ErrorSeverity];
     let retryable: boolean;
 
     if (this.isServerError(error)) {
@@ -233,9 +233,7 @@ export class ErrorHandler {
       return `${error.field}: ${error.messages.join(', ')}`;
     }
 
-    return errors
-      .map(error => `${error.field}: ${error.messages.join(', ')}`)
-      .join('\n');
+    return errors.map((error) => `${error.field}: ${error.messages.join(', ')}`).join('\n');
   }
 
   // Private helper methods

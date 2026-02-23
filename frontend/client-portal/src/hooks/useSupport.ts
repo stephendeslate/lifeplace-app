@@ -3,11 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToastActions } from '../contexts/ToastContext';
 import { supportApi } from '../apis/support.api';
-import type {
-  SupportFilters,
-  SupportInquiryCreate,
-  SupportReply,
-} from '../types/support.types';
+import type { SupportFilters, SupportInquiryCreate, SupportReply } from '../types/support.types';
 
 export const useSupport = () => {
   const queryClient = useQueryClient();

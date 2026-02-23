@@ -1,14 +1,7 @@
 // frontend/admin-crm/src/components/sales/QuoteActivityTimeline.tsx
 
 import React from 'react';
-import {
-  Box,
-  Typography,
-  Chip,
-  CircularProgress,
-  Stack,
-  Avatar,
-} from '@mui/material';
+import { Box, Typography, Chip, CircularProgress, Stack, Avatar } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -23,11 +16,14 @@ import { useQuoteActivities } from '../../hooks/useSales';
 import type { QuoteActivity, QuoteAction } from '../../types/sales.types';
 import { format } from 'date-fns';
 
-const ACTION_CONFIG: Record<QuoteAction, {
-  color: 'primary' | 'success' | 'error' | 'warning' | 'info' | 'default';
-  icon: React.ReactNode;
-  label: string;
-}> = {
+const ACTION_CONFIG: Record<
+  QuoteAction,
+  {
+    color: 'primary' | 'success' | 'error' | 'warning' | 'info' | 'default';
+    icon: React.ReactNode;
+    label: string;
+  }
+> = {
   CREATED: { color: 'primary', icon: <AddIcon fontSize="small" />, label: 'Created' },
   UPDATED: { color: 'info', icon: <EditIcon fontSize="small" />, label: 'Updated' },
   SENT: { color: 'primary', icon: <SendIcon fontSize="small" />, label: 'Sent' },
@@ -35,7 +31,11 @@ const ACTION_CONFIG: Record<QuoteAction, {
   ACCEPTED: { color: 'success', icon: <CheckIcon fontSize="small" />, label: 'Accepted' },
   REJECTED: { color: 'error', icon: <CloseIcon fontSize="small" />, label: 'Rejected' },
   EXPIRED: { color: 'warning', icon: <ScheduleIcon fontSize="small" />, label: 'Expired' },
-  REMINDER_SENT: { color: 'info', icon: <NotificationIcon fontSize="small" />, label: 'Reminder Sent' },
+  REMINDER_SENT: {
+    color: 'info',
+    icon: <NotificationIcon fontSize="small" />,
+    label: 'Reminder Sent',
+  },
 };
 
 interface QuoteActivityTimelineProps {
@@ -75,7 +75,7 @@ export const QuoteActivityTimeline: React.FC<QuoteActivityTimelineProps> = ({ qu
         const config = ACTION_CONFIG[activity.action] || {
           color: 'default' as const,
           icon: <EditIcon fontSize="small" />,
-          label: activity.action
+          label: activity.action,
         };
         const isLast = index === activities.length - 1;
 
@@ -112,12 +112,7 @@ export const QuoteActivityTimeline: React.FC<QuoteActivityTimelineProps> = ({ qu
             {/* Content */}
             <Box sx={{ flex: 1, pb: 3 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                <Chip
-                  label={config.label}
-                  size="small"
-                  color={config.color}
-                  variant="outlined"
-                />
+                <Chip label={config.label} size="small" color={config.color} variant="outlined" />
                 <Typography variant="caption" color="text.secondary">
                   {format(new Date(activity.created_at), 'MMM d, yyyy h:mm a')}
                 </Typography>
@@ -130,7 +125,11 @@ export const QuoteActivityTimeline: React.FC<QuoteActivityTimelineProps> = ({ qu
               )}
 
               {activity.action_by_name && (
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ display: 'block', mt: 0.5 }}
+                >
                   by {activity.action_by_name}
                 </Typography>
               )}

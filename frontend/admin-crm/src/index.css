@@ -208,16 +208,16 @@ button:focus-visible {
   }
 
   a[href]::after {
-    content: " (" attr(href) ")";
+    content: ' (' attr(href) ')';
     font-size: 9pt;
     color: #666666;
   }
 
   /* Don't show URLs for internal links */
-  a[href^="#"]::after,
-  a[href^="javascript:"]::after,
+  a[href^='#']::after,
+  a[href^='javascript:']::after,
   a.no-print-url::after {
-    content: "";
+    content: '';
   }
 
   /* Images */
@@ -235,8 +235,8 @@ button:focus-visible {
   button,
   .MuiButton-root,
   .MuiIconButton-root,
-  input[type="button"],
-  input[type="submit"] {
+  input[type='button'],
+  input[type='submit'] {
     display: none !important;
   }
 

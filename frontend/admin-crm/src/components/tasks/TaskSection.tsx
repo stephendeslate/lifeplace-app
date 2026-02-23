@@ -26,20 +26,31 @@ interface TaskSectionProps {
   onRetryCommunication?: (id: string) => void;
 }
 
-const domainConfig: Record<TaskDomain, { label: string; icon: React.ElementType; color: 'info' | 'warning' | 'success' | 'secondary' | 'error'; emptyTitle: string; emptyDescription: string }> = {
+const domainConfig: Record<
+  TaskDomain,
+  {
+    label: string;
+    icon: React.ElementType;
+    color: 'info' | 'warning' | 'success' | 'secondary' | 'error';
+    emptyTitle: string;
+    emptyDescription: string;
+  }
+> = {
   quotes: {
     label: 'Quotes',
     icon: RequestQuote,
     color: 'info',
     emptyTitle: 'No Pending Quotes',
-    emptyDescription: 'All quotes have been sent and processed. New quotes requiring attention will appear here.',
+    emptyDescription:
+      'All quotes have been sent and processed. New quotes requiring attention will appear here.',
   },
   contracts: {
     label: 'Contracts',
     icon: Description,
     color: 'warning',
     emptyTitle: 'No Pending Contracts',
-    emptyDescription: 'All contracts have been signed. Contracts awaiting signatures will appear here.',
+    emptyDescription:
+      'All contracts have been signed. Contracts awaiting signatures will appear here.',
   },
   payments: {
     label: 'Payments',
@@ -53,7 +64,8 @@ const domainConfig: Record<TaskDomain, { label: string; icon: React.ElementType;
     icon: Email,
     color: 'secondary',
     emptyTitle: 'No Pending Communications',
-    emptyDescription: 'All messages have been delivered. Failed or pending messages will appear here.',
+    emptyDescription:
+      'All messages have been delivered. Failed or pending messages will appear here.',
   },
   support: {
     label: 'Support',
@@ -77,7 +89,7 @@ export const TaskSection: React.FC<TaskSectionProps> = ({
   const config = domainConfig[domain];
   const Icon = config.icon;
 
-  const urgentCount = tasks.filter(t => t.priority === 'high').length;
+  const urgentCount = tasks.filter((t) => t.priority === 'high').length;
 
   return (
     <Box
@@ -113,11 +125,7 @@ export const TaskSection: React.FC<TaskSectionProps> = ({
           >
             <Icon sx={{ fontSize: 20 }} color={config.color} />
           </Box>
-          <Typography
-            variant="h6"
-            fontWeight={600}
-            color="text.primary"
-          >
+          <Typography variant="h6" fontWeight={600} color="text.primary">
             {config.label}
           </Typography>
           <Chip

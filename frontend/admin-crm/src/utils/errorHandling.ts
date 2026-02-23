@@ -6,7 +6,10 @@
  * @param defaultMessage - Default message to use if no specific message is found
  * @returns A user-friendly error message string
  */
-export const extractErrorMessage = (error: unknown, defaultMessage = 'An error occurred'): string => {
+export const extractErrorMessage = (
+  error: unknown,
+  defaultMessage = 'An error occurred',
+): string => {
   // Handle Axios errors with response data
   if (error && typeof error === 'object' && 'response' in error) {
     const axiosError = error as {
@@ -17,8 +20,8 @@ export const extractErrorMessage = (error: unknown, defaultMessage = 'An error o
           error?: string;
           // Handle validation errors (object with field names as keys)
           [key: string]: unknown;
-        }
-      }
+        };
+      };
     };
 
     const errorData = axiosError.response?.data;

@@ -40,7 +40,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     const errorId = this.state.errorId || `error_${Date.now()}`;
-    
+
     // Log error details
     console.error('ErrorBoundary caught an error:', {
       error: error.message,
@@ -119,16 +119,15 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               }}
             >
               <ErrorOutline color="error" sx={{ fontSize: 64, mb: 2 }} />
-              
+
               <Typography variant="h4" gutterBottom color="error">
                 Something went wrong
               </Typography>
-              
+
               <Typography variant="body1" color="text.secondary" paragraph>
-                {level === 'critical' 
+                {level === 'critical'
                   ? 'A critical error has occurred. Please reload the page or contact support if the problem persists.'
-                  : 'An unexpected error occurred while loading this page. We apologize for the inconvenience.'
-                }
+                  : 'An unexpected error occurred while loading this page. We apologize for the inconvenience.'}
               </Typography>
 
               {process.env.NODE_ENV === 'development' && error && (
@@ -144,25 +143,22 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
               <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 3 }}>
                 {canRetry && (
-                  <Button
-                    variant="outlined"
-                    startIcon={<Refresh />}
-                    onClick={this.handleRetry}
-                  >
+                  <Button variant="outlined" startIcon={<Refresh />} onClick={this.handleRetry}>
                     Try Again ({this.maxRetries - this.retryCount} left)
                   </Button>
                 )}
-                
-                <Button
-                  variant="contained"
-                  onClick={this.handleReload}
-                >
+
+                <Button variant="contained" onClick={this.handleReload}>
                   Reload Page
                 </Button>
               </Stack>
 
               {errorId && (
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ mt: 2, display: 'block' }}
+                >
                   Error ID: {errorId}
                 </Typography>
               )}
@@ -173,14 +169,14 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       // Component-level errors get inline treatment
       return (
-        <Alert 
-          severity="error" 
-          sx={{ 
+        <Alert
+          severity="error"
+          sx={{
             m: 2,
             ...(this.props.isolate && {
               position: 'relative',
               zIndex: 1,
-            })
+            }),
           }}
           action={
             canRetry && (
@@ -194,9 +190,10 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             Component Error
           </Typography>
           <Typography variant="body2">
-            This component failed to load. {canRetry ? 'Click retry to attempt loading again.' : 'Please refresh the page.'}
+            This component failed to load.{' '}
+            {canRetry ? 'Click retry to attempt loading again.' : 'Please refresh the page.'}
           </Typography>
-          
+
           {process.env.NODE_ENV === 'development' && error && (
             <Typography variant="caption" sx={{ mt: 1, display: 'block', fontFamily: 'monospace' }}>
               {error.message}
@@ -213,7 +210,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 // Higher-order component for easy wrapping
 export function withErrorBoundary<P extends object>(
   Component: React.ComponentType<P>,
-  errorBoundaryProps?: Omit<ErrorBoundaryProps, 'children'>
+  errorBoundaryProps?: Omit<ErrorBoundaryProps, 'children'>,
 ) {
   const WrappedComponent = (props: P) => (
     <ErrorBoundary {...errorBoundaryProps}>
@@ -268,7 +265,8 @@ export const WebSocketErrorBoundary: React.FC<{ children: ReactNode }> = ({ chil
     fallback={
       <Alert severity="warning" sx={{ m: 1 }}>
         <Typography variant="body2">
-          Real-time features are temporarily unavailable. Messages will still be delivered, but you may need to refresh to see updates.
+          Real-time features are temporarily unavailable. Messages will still be delivered, but you
+          may need to refresh to see updates.
         </Typography>
       </Alert>
     }

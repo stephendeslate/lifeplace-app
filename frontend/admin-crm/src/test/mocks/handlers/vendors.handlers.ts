@@ -1,14 +1,10 @@
 // frontend/admin-crm/src/test/mocks/handlers/vendors.handlers.ts
 
-import { http, HttpResponse, delay } from "msw";
-import { mockVendors, createMockVendor } from "../data/vendors.mock";
-import type {
-  Vendor,
-  PackageVendor,
-  VendorServiceCategory,
-} from "../../../types/vendors.types";
+import { http, HttpResponse, delay } from 'msw';
+import { mockVendors, createMockVendor } from '../data/vendors.mock';
+import type { Vendor, PackageVendor, VendorServiceCategory } from '../../../types/vendors.types';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
 // Mutable stores for testing mutations
 let vendorsStore = [...mockVendors];
@@ -16,15 +12,15 @@ const packageVendorsStore: PackageVendor[] = [
   {
     id: 1,
     package: 1,
-    package_name: "Wedding Photography Package",
+    package_name: 'Wedding Photography Package',
     vendor: 1,
-    vendor_name: "Snap Studio Photography",
-    vendor_code: "SNAP-PHOTO",
-    vendor_service_category: "PHOTOGRAPHY",
-    notes: "",
+    vendor_name: 'Snap Studio Photography',
+    vendor_code: 'SNAP-PHOTO',
+    vendor_service_category: 'PHOTOGRAPHY',
+    notes: '',
     sort_order: 1,
-    created_at: "2024-06-15T10:00:00Z",
-    updated_at: "2024-06-15T10:00:00Z",
+    created_at: '2024-06-15T10:00:00Z',
+    updated_at: '2024-06-15T10:00:00Z',
   },
 ];
 
@@ -40,10 +36,10 @@ export const vendorsHandlers = [
     await delay(30);
 
     const url = new URL(request.url);
-    const search = url.searchParams.get("search");
-    const isActive = url.searchParams.get("is_active");
-    const isBookable = url.searchParams.get("is_bookable");
-    const serviceCategory = url.searchParams.get("service_category");
+    const search = url.searchParams.get('search');
+    const isActive = url.searchParams.get('is_active');
+    const isBookable = url.searchParams.get('is_bookable');
+    const serviceCategory = url.searchParams.get('service_category');
 
     let filtered = [...vendorsStore];
 
@@ -57,11 +53,11 @@ export const vendorsHandlers = [
       );
     }
     if (isActive !== null && isActive !== undefined) {
-      const isActiveBool = isActive === "true";
+      const isActiveBool = isActive === 'true';
       filtered = filtered.filter((v) => v.is_active === isActiveBool);
     }
     if (isBookable !== null && isBookable !== undefined) {
-      const isBookableBool = isBookable === "true";
+      const isBookableBool = isBookable === 'true';
       filtered = filtered.filter((v) => v.is_bookable === isBookableBool);
     }
     if (serviceCategory) {
@@ -88,16 +84,16 @@ export const vendorsHandlers = [
   http.get(`${BASE_URL}/vendors/vendors/categories/`, async () => {
     await delay(30);
     return HttpResponse.json([
-      { value: "PHOTOGRAPHY", label: "Photography" },
-      { value: "VIDEOGRAPHY", label: "Videography" },
-      { value: "CATERING", label: "Catering" },
-      { value: "DJ", label: "DJ / Music" },
-      { value: "FLORIST", label: "Florist" },
-      { value: "DECORATOR", label: "Decorator" },
-      { value: "MC", label: "Emcee / Host" },
-      { value: "PHOTO_BOOTH", label: "Photo Booth" },
-      { value: "ENTERTAINMENT", label: "Entertainment" },
-      { value: "OTHER", label: "Other" },
+      { value: 'PHOTOGRAPHY', label: 'Photography' },
+      { value: 'VIDEOGRAPHY', label: 'Videography' },
+      { value: 'CATERING', label: 'Catering' },
+      { value: 'DJ', label: 'DJ / Music' },
+      { value: 'FLORIST', label: 'Florist' },
+      { value: 'DECORATOR', label: 'Decorator' },
+      { value: 'MC', label: 'Emcee / Host' },
+      { value: 'PHOTO_BOOTH', label: 'Photo Booth' },
+      { value: 'ENTERTAINMENT', label: 'Entertainment' },
+      { value: 'OTHER', label: 'Other' },
     ]);
   }),
 
@@ -109,13 +105,13 @@ export const vendorsHandlers = [
     const vendor = vendorsStore.find((v) => v.id === id);
 
     if (!vendor) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     // Return as VendorDetail
     return HttpResponse.json({
       ...vendor,
-      notes: "",
+      notes: '',
       tags: [],
     });
   }),
@@ -129,42 +125,35 @@ export const vendorsHandlers = [
       id: vendorsStore.length + 1,
       name: body.name as string,
       code: body.code as string,
-      description: (body.description as string) || "",
-      service_category:
-        (body.service_category as VendorServiceCategory) || "OTHER",
-      contact_name: (body.contact_name as string) || "",
-      contact_email: (body.contact_email as string) || "",
-      contact_phone: (body.contact_phone as string) || "",
-      company_name: (body.company_name as string) || "",
+      description: (body.description as string) || '',
+      service_category: (body.service_category as VendorServiceCategory) || 'OTHER',
+      contact_name: (body.contact_name as string) || '',
+      contact_email: (body.contact_email as string) || '',
+      contact_phone: (body.contact_phone as string) || '',
+      company_name: (body.company_name as string) || '',
       is_active: (body.is_active as boolean) ?? true,
       is_bookable: (body.is_bookable as boolean) ?? true,
     });
 
     vendorsStore.push(newVendor);
-    return HttpResponse.json(
-      { ...newVendor, notes: "", tags: [] },
-      { status: 201 },
-    );
+    return HttpResponse.json({ ...newVendor, notes: '', tags: [] }, { status: 201 });
   }),
 
   // PATCH /api/vendors/vendors/:id/
-  http.patch(
-    `${BASE_URL}/vendors/vendors/:id/`,
-    async ({ params, request }) => {
-      await delay(50);
+  http.patch(`${BASE_URL}/vendors/vendors/:id/`, async ({ params, request }) => {
+    await delay(50);
 
-      const id = parseInt(params.id as string);
-      const idx = vendorsStore.findIndex((v) => v.id === id);
+    const id = parseInt(params.id as string);
+    const idx = vendorsStore.findIndex((v) => v.id === id);
 
-      if (idx === -1) {
-        return HttpResponse.json({ detail: "Not found" }, { status: 404 });
-      }
+    if (idx === -1) {
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+    }
 
-      const updates = (await request.json()) as Record<string, unknown>;
-      vendorsStore[idx] = { ...vendorsStore[idx], ...updates } as Vendor;
-      return HttpResponse.json({ ...vendorsStore[idx], notes: "", tags: [] });
-    },
-  ),
+    const updates = (await request.json()) as Record<string, unknown>;
+    vendorsStore[idx] = { ...vendorsStore[idx], ...updates } as Vendor;
+    return HttpResponse.json({ ...vendorsStore[idx], notes: '', tags: [] });
+  }),
 
   // DELETE /api/vendors/vendors/:id/
   http.delete(`${BASE_URL}/vendors/vendors/:id/`, async ({ params }) => {
@@ -174,7 +163,7 @@ export const vendorsHandlers = [
     const idx = vendorsStore.findIndex((v) => v.id === id);
 
     if (idx === -1) {
-      return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
     }
 
     vendorsStore.splice(idx, 1);
@@ -184,69 +173,63 @@ export const vendorsHandlers = [
   // === Operating Rules ===
 
   // GET /api/vendors/vendors/:id/operating_rules/
-  http.get(
-    `${BASE_URL}/vendors/vendors/:id/operating_rules/`,
-    async ({ params }) => {
-      await delay(30);
+  http.get(`${BASE_URL}/vendors/vendors/:id/operating_rules/`, async ({ params }) => {
+    await delay(30);
 
-      const id = parseInt(params.id as string);
-      const vendor = vendorsStore.find((v) => v.id === id);
+    const id = parseInt(params.id as string);
+    const vendor = vendorsStore.find((v) => v.id === id);
 
-      if (!vendor) {
-        return HttpResponse.json({ detail: "Not found" }, { status: 404 });
-      }
+    if (!vendor) {
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+    }
 
-      return HttpResponse.json({
-        vendor: id,
-        vendor_name: vendor.name,
-        max_events_per_day: 2,
-        min_booking_hours: 4,
-        max_booking_hours: 12,
-        min_advance_booking_days: 14,
-        max_advance_booking_days: 365,
-        blocked_dates: [],
-        available_days: [0, 1, 2, 3, 4, 5, 6],
-        break_between_events_hours: 2,
-        setup_time_hours: 1,
-        teardown_time_hours: 1,
-        created_at: "2024-06-15T10:00:00Z",
-        updated_at: "2024-06-15T10:00:00Z",
-      });
-    },
-  ),
+    return HttpResponse.json({
+      vendor: id,
+      vendor_name: vendor.name,
+      max_events_per_day: 2,
+      min_booking_hours: 4,
+      max_booking_hours: 12,
+      min_advance_booking_days: 14,
+      max_advance_booking_days: 365,
+      blocked_dates: [],
+      available_days: [0, 1, 2, 3, 4, 5, 6],
+      break_between_events_hours: 2,
+      setup_time_hours: 1,
+      teardown_time_hours: 1,
+      created_at: '2024-06-15T10:00:00Z',
+      updated_at: '2024-06-15T10:00:00Z',
+    });
+  }),
 
   // PATCH /api/vendors/vendors/:id/operating_rules/
-  http.patch(
-    `${BASE_URL}/vendors/vendors/:id/operating_rules/`,
-    async ({ params, request }) => {
-      await delay(50);
+  http.patch(`${BASE_URL}/vendors/vendors/:id/operating_rules/`, async ({ params, request }) => {
+    await delay(50);
 
-      const id = parseInt(params.id as string);
-      const vendor = vendorsStore.find((v) => v.id === id);
+    const id = parseInt(params.id as string);
+    const vendor = vendorsStore.find((v) => v.id === id);
 
-      if (!vendor) {
-        return HttpResponse.json({ detail: "Not found" }, { status: 404 });
-      }
+    if (!vendor) {
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+    }
 
-      const body = (await request.json()) as Record<string, unknown>;
-      return HttpResponse.json({
-        vendor: id,
-        vendor_name: vendor.name,
-        max_events_per_day: 2,
-        min_booking_hours: 4,
-        max_booking_hours: 12,
-        min_advance_booking_days: 14,
-        max_advance_booking_days: 365,
-        blocked_dates: [],
-        available_days: [0, 1, 2, 3, 4, 5, 6],
-        break_between_events_hours: 2,
-        setup_time_hours: 1,
-        teardown_time_hours: 1,
-        ...body,
-        updated_at: new Date().toISOString(),
-      });
-    },
-  ),
+    const body = (await request.json()) as Record<string, unknown>;
+    return HttpResponse.json({
+      vendor: id,
+      vendor_name: vendor.name,
+      max_events_per_day: 2,
+      min_booking_hours: 4,
+      max_booking_hours: 12,
+      min_advance_booking_days: 14,
+      max_advance_booking_days: 365,
+      blocked_dates: [],
+      available_days: [0, 1, 2, 3, 4, 5, 6],
+      break_between_events_hours: 2,
+      setup_time_hours: 1,
+      teardown_time_hours: 1,
+      ...body,
+      updated_at: new Date().toISOString(),
+    });
+  }),
 
   // GET /api/vendors/vendors/:id/packages/
   http.get(`${BASE_URL}/vendors/vendors/:id/packages/`, async ({ params }) => {
@@ -264,8 +247,8 @@ export const vendorsHandlers = [
     await delay(30);
 
     const url = new URL(request.url);
-    const packageId = url.searchParams.get("package_id");
-    const vendorId = url.searchParams.get("vendor_id");
+    const packageId = url.searchParams.get('package_id');
+    const vendorId = url.searchParams.get('vendor_id');
 
     let filtered = [...packageVendorsStore];
 
@@ -280,31 +263,28 @@ export const vendorsHandlers = [
   }),
 
   // GET /api/vendors/package-vendors/by_package/
-  http.get(
-    `${BASE_URL}/vendors/package-vendors/by_package/`,
-    async ({ request }) => {
-      await delay(30);
+  http.get(`${BASE_URL}/vendors/package-vendors/by_package/`, async ({ request }) => {
+    await delay(30);
 
-      const url = new URL(request.url);
-      const packageId = url.searchParams.get("package_id");
+    const url = new URL(request.url);
+    const packageId = url.searchParams.get('package_id');
 
-      const filtered = packageId
-        ? packageVendorsStore.filter((pv) => pv.package === parseInt(packageId))
-        : packageVendorsStore;
+    const filtered = packageId
+      ? packageVendorsStore.filter((pv) => pv.package === parseInt(packageId))
+      : packageVendorsStore;
 
-      return HttpResponse.json(
-        filtered.map((pv) => ({
-          id: pv.id,
-          vendor: pv.vendor,
-          vendor_name: pv.vendor_name,
-          vendor_code: pv.vendor_code,
-          vendor_service_category: pv.vendor_service_category,
-          notes: pv.notes,
-          sort_order: pv.sort_order,
-        })),
-      );
-    },
-  ),
+    return HttpResponse.json(
+      filtered.map((pv) => ({
+        id: pv.id,
+        vendor: pv.vendor,
+        vendor_name: pv.vendor_name,
+        vendor_code: pv.vendor_code,
+        vendor_service_category: pv.vendor_service_category,
+        notes: pv.notes,
+        sort_order: pv.sort_order,
+      })),
+    );
+  }),
 
   // POST /api/vendors/package-vendors/
   http.post(`${BASE_URL}/vendors/package-vendors/`, async ({ request }) => {
@@ -314,12 +294,12 @@ export const vendorsHandlers = [
     const newPV: PackageVendor = {
       id: packageVendorsStore.length + 1,
       package: body.package as number,
-      package_name: "Package",
+      package_name: 'Package',
       vendor: body.vendor as number,
-      vendor_name: "Vendor",
-      vendor_code: "VENDOR-CODE",
-      vendor_service_category: "OTHER",
-      notes: (body.notes as string) || "",
+      vendor_name: 'Vendor',
+      vendor_code: 'VENDOR-CODE',
+      vendor_service_category: 'OTHER',
+      notes: (body.notes as string) || '',
       sort_order: (body.sort_order as number) || 1,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -330,71 +310,62 @@ export const vendorsHandlers = [
   }),
 
   // PATCH /api/vendors/package-vendors/:id/
-  http.patch(
-    `${BASE_URL}/vendors/package-vendors/:id/`,
-    async ({ params, request }) => {
-      await delay(50);
+  http.patch(`${BASE_URL}/vendors/package-vendors/:id/`, async ({ params, request }) => {
+    await delay(50);
 
-      const id = parseInt(params.id as string);
-      const idx = packageVendorsStore.findIndex((pv) => pv.id === id);
+    const id = parseInt(params.id as string);
+    const idx = packageVendorsStore.findIndex((pv) => pv.id === id);
 
-      if (idx === -1) {
-        return HttpResponse.json({ detail: "Not found" }, { status: 404 });
-      }
+    if (idx === -1) {
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+    }
 
-      const updates = (await request.json()) as Record<string, unknown>;
-      packageVendorsStore[idx] = {
-        ...packageVendorsStore[idx],
-        ...updates,
-      } as PackageVendor;
-      return HttpResponse.json(packageVendorsStore[idx]);
-    },
-  ),
+    const updates = (await request.json()) as Record<string, unknown>;
+    packageVendorsStore[idx] = {
+      ...packageVendorsStore[idx],
+      ...updates,
+    } as PackageVendor;
+    return HttpResponse.json(packageVendorsStore[idx]);
+  }),
 
   // DELETE /api/vendors/package-vendors/:id/
-  http.delete(
-    `${BASE_URL}/vendors/package-vendors/:id/`,
-    async ({ params }) => {
-      await delay(50);
+  http.delete(`${BASE_URL}/vendors/package-vendors/:id/`, async ({ params }) => {
+    await delay(50);
 
-      const id = parseInt(params.id as string);
-      const idx = packageVendorsStore.findIndex((pv) => pv.id === id);
+    const id = parseInt(params.id as string);
+    const idx = packageVendorsStore.findIndex((pv) => pv.id === id);
 
-      if (idx === -1) {
-        return HttpResponse.json({ detail: "Not found" }, { status: 404 });
-      }
+    if (idx === -1) {
+      return HttpResponse.json({ detail: 'Not found' }, { status: 404 });
+    }
 
-      packageVendorsStore.splice(idx, 1);
-      return new HttpResponse(null, { status: 204 });
-    },
-  ),
+    packageVendorsStore.splice(idx, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
 
   // POST /api/vendors/package-vendors/bulk_assign/
-  http.post(
-    `${BASE_URL}/vendors/package-vendors/bulk_assign/`,
-    async ({ request }) => {
-      await delay(50);
+  http.post(`${BASE_URL}/vendors/package-vendors/bulk_assign/`, async ({ request }) => {
+    await delay(50);
 
-      const body = (await request.json()) as {
-        package_id: number;
-        vendor_ids: number[];
-      };
-      const newPVs: PackageVendor[] = body.vendor_ids.map((vendorId, i) => ({
-        id: packageVendorsStore.length + i + 1,
-        package: body.package_id,
-        package_name: "Package",
-        vendor: vendorId,
-        vendor_name: `Vendor ${vendorId}`,
-        vendor_code: `VENDOR-${vendorId}`,
-        vendor_service_category: "OTHER" as const,
-        notes: "",
-        sort_order: i + 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }));
+    const body = (await request.json()) as {
+      package_id: number;
+      vendor_ids: number[];
+    };
+    const newPVs: PackageVendor[] = body.vendor_ids.map((vendorId, i) => ({
+      id: packageVendorsStore.length + i + 1,
+      package: body.package_id,
+      package_name: 'Package',
+      vendor: vendorId,
+      vendor_name: `Vendor ${vendorId}`,
+      vendor_code: `VENDOR-${vendorId}`,
+      vendor_service_category: 'OTHER' as const,
+      notes: '',
+      sort_order: i + 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }));
 
-      packageVendorsStore.push(...newPVs);
-      return HttpResponse.json(newPVs, { status: 201 });
-    },
-  ),
+    packageVendorsStore.push(...newPVs);
+    return HttpResponse.json(newPVs, { status: 201 });
+  }),
 ];

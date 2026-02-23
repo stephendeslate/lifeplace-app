@@ -1,216 +1,200 @@
 // frontend/admin-crm/src/App.tsx
 
-import React, { Suspense } from "react";
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { AppProviders } from "./providers/AppProviders";
-import { Box, CircularProgress, Typography } from "@mui/material";
-import { useAuth } from "./contexts/AuthContext";
-import { ErrorBoundary } from "./components/common/ErrorBoundary";
-import { AppLayout } from "./components/layout";
-import { WalkthroughProvider } from "./contexts/WalkthroughContext";
+import React, { Suspense } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AppProviders } from './providers/AppProviders';
+import { Box, CircularProgress, Typography } from '@mui/material';
+import { useAuth } from './contexts/AuthContext';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { AppLayout } from './components/layout';
+import { WalkthroughProvider } from './contexts/WalkthroughContext';
 
 // Critical path - keep static imports
-import {
-  Login,
-  AcceptInvitation,
-  ForgotPassword,
-  ResetPassword,
-} from "./pages/auth";
-import { Dashboard } from "./pages/dashboard";
-import { NotFound } from "./pages/NotFound";
+import { Login, AcceptInvitation, ForgotPassword, ResetPassword } from './pages/auth';
+import { Dashboard } from './pages/dashboard';
+import { NotFound } from './pages/NotFound';
 
 // Route-level code splitting with React.lazy
 const ClientsOverview = React.lazy(() =>
-  import("./pages/clients").then((m) => ({ default: m.ClientsOverview })),
+  import('./pages/clients').then((m) => ({ default: m.ClientsOverview })),
 );
 const ClientProfile = React.lazy(() =>
-  import("./pages/clients").then((m) => ({ default: m.ClientProfile })),
+  import('./pages/clients').then((m) => ({ default: m.ClientProfile })),
 );
 const NewClient = React.lazy(() =>
-  import("./pages/clients").then((m) => ({ default: m.NewClient })),
+  import('./pages/clients').then((m) => ({ default: m.NewClient })),
 );
 const EventsOverview = React.lazy(() =>
-  import("./pages/events").then((m) => ({ default: m.EventsOverview })),
+  import('./pages/events').then((m) => ({ default: m.EventsOverview })),
 );
 const EventProfile = React.lazy(() =>
-  import("./pages/events").then((m) => ({ default: m.EventProfile })),
+  import('./pages/events').then((m) => ({ default: m.EventProfile })),
 );
 const EventsCalendar = React.lazy(() =>
-  import("./pages/events").then((m) => ({ default: m.EventsCalendar })),
+  import('./pages/events').then((m) => ({ default: m.EventsCalendar })),
 );
-const NewEvent = React.lazy(() =>
-  import("./pages/events").then((m) => ({ default: m.NewEvent })),
-);
+const NewEvent = React.lazy(() => import('./pages/events').then((m) => ({ default: m.NewEvent })));
 const ContractEdit = React.lazy(() =>
-  import("./pages/contracts").then((m) => ({ default: m.ContractEdit })),
+  import('./pages/contracts').then((m) => ({ default: m.ContractEdit })),
 );
 const ContractView = React.lazy(() =>
-  import("./pages/contracts").then((m) => ({ default: m.ContractView })),
+  import('./pages/contracts').then((m) => ({ default: m.ContractView })),
 );
 const ContractSign = React.lazy(() =>
-  import("./pages/contracts").then((m) => ({ default: m.ContractSign })),
+  import('./pages/contracts').then((m) => ({ default: m.ContractSign })),
 );
-const TasksPage = React.lazy(() =>
-  import("./pages/tasks").then((m) => ({ default: m.TasksPage })),
-);
+const TasksPage = React.lazy(() => import('./pages/tasks').then((m) => ({ default: m.TasksPage })));
 const CommunicationRecords = React.lazy(() =>
-  import("./pages/records").then((m) => ({ default: m.CommunicationRecords })),
+  import('./pages/records').then((m) => ({ default: m.CommunicationRecords })),
 );
 const NotificationsPage = React.lazy(() =>
-  import("./pages/notifications").then((m) => ({
+  import('./pages/notifications').then((m) => ({
     default: m.NotificationsPage,
   })),
 );
 const AnalyticsDashboard = React.lazy(() =>
-  import("./pages/analytics").then((m) => ({ default: m.AnalyticsDashboard })),
+  import('./pages/analytics').then((m) => ({ default: m.AnalyticsDashboard })),
 );
 const MetricsDashboard = React.lazy(() =>
-  import("./pages/metrics").then((m) => ({ default: m.MetricsDashboard })),
+  import('./pages/metrics').then((m) => ({ default: m.MetricsDashboard })),
 );
 const PaymentsOverview = React.lazy(() =>
-  import("./pages/payments").then((m) => ({ default: m.PaymentsOverview })),
+  import('./pages/payments').then((m) => ({ default: m.PaymentsOverview })),
 );
 const PaymentProfile = React.lazy(() =>
-  import("./pages/payments").then((m) => ({ default: m.PaymentProfile })),
+  import('./pages/payments').then((m) => ({ default: m.PaymentProfile })),
 );
 const NewPayment = React.lazy(() =>
-  import("./pages/payments").then((m) => ({ default: m.NewPayment })),
+  import('./pages/payments').then((m) => ({ default: m.NewPayment })),
 );
 const SupportPage = React.lazy(() =>
-  import("./pages/support").then((m) => ({ default: m.SupportPage })),
+  import('./pages/support').then((m) => ({ default: m.SupportPage })),
 );
 const SupportDetailPage = React.lazy(() =>
-  import("./pages/support").then((m) => ({ default: m.SupportDetailPage })),
+  import('./pages/support').then((m) => ({ default: m.SupportDetailPage })),
 );
 const EnhancedSettingsLayout = React.lazy(() =>
-  import("./pages/settings/EnhancedSettingsLayout").then((m) => ({
+  import('./pages/settings/EnhancedSettingsLayout').then((m) => ({
     default: m.EnhancedSettingsLayout,
   })),
 );
 const EnhancedSettings = React.lazy(() =>
-  import("./pages/settings/EnhancedSettings").then((m) => ({
+  import('./pages/settings/EnhancedSettings').then((m) => ({
     default: m.EnhancedSettings,
   })),
 );
 const AccountSettings = React.lazy(() =>
-  import("./pages/settings/account").then((m) => ({
+  import('./pages/settings/account').then((m) => ({
     default: m.AccountSettings,
   })),
 );
 const AdminUsers = React.lazy(() =>
-  import("./pages/settings/account").then((m) => ({ default: m.AdminUsers })),
+  import('./pages/settings/account').then((m) => ({ default: m.AdminUsers })),
 );
 const CompanySettings = React.lazy(() =>
-  import("./pages/settings/account").then((m) => ({
+  import('./pages/settings/account').then((m) => ({
     default: m.CompanySettings,
   })),
 );
 const GuidedTours = React.lazy(() =>
-  import("./pages/settings/account").then((m) => ({ default: m.GuidedTours })),
+  import('./pages/settings/account').then((m) => ({ default: m.GuidedTours })),
 );
 const PushDevices = React.lazy(() =>
-  import("./pages/settings/account").then((m) => ({ default: m.PushDevices })),
+  import('./pages/settings/account').then((m) => ({ default: m.PushDevices })),
 );
 const Notifications = React.lazy(() =>
-  import("./pages/settings/account/Notifications").then((m) => ({
+  import('./pages/settings/account/Notifications').then((m) => ({
     default: m.Notifications,
   })),
 );
 const BookingFlows = React.lazy(() =>
-  import("./pages/settings/booking").then((m) => ({ default: m.BookingFlows })),
+  import('./pages/settings/booking').then((m) => ({ default: m.BookingFlows })),
 );
 const BookingFlowDetails = React.lazy(() =>
-  import("./pages/settings/booking").then((m) => ({
+  import('./pages/settings/booking').then((m) => ({
     default: m.BookingFlowDetails,
   })),
 );
 const EventTypes = React.lazy(() =>
-  import("./pages/settings/booking").then((m) => ({ default: m.EventTypes })),
+  import('./pages/settings/booking').then((m) => ({ default: m.EventTypes })),
 );
 const BookingFlowPreviewPage = React.lazy(() =>
-  import("./pages/settings/booking").then((m) => ({
+  import('./pages/settings/booking').then((m) => ({
     default: m.BookingFlowPreviewPage,
   })),
 );
 const ContractTemplates = React.lazy(() =>
-  import("./pages/settings/templates").then((m) => ({
+  import('./pages/settings/templates').then((m) => ({
     default: m.ContractTemplates,
   })),
 );
 const QuestionnaireTemplates = React.lazy(() =>
-  import("./pages/settings/templates").then((m) => ({
+  import('./pages/settings/templates').then((m) => ({
     default: m.QuestionnaireTemplates,
   })),
 );
 const WorkflowTemplates = React.lazy(() =>
-  import("./pages/settings/templates").then((m) => ({
+  import('./pages/settings/templates').then((m) => ({
     default: m.WorkflowTemplates,
   })),
 );
 const WorkflowTemplateDetails = React.lazy(() =>
-  import("./pages/settings/templates").then((m) => ({
+  import('./pages/settings/templates').then((m) => ({
     default: m.WorkflowTemplateDetails,
   })),
 );
 const WorkflowWebhooks = React.lazy(() =>
-  import("./pages/settings/templates").then((m) => ({
+  import('./pages/settings/templates').then((m) => ({
     default: m.WorkflowWebhooks,
   })),
 );
 const CommunicationTemplates = React.lazy(() =>
-  import("./pages/settings/templates/CommunicationTemplates").then((m) => ({
+  import('./pages/settings/templates/CommunicationTemplates').then((m) => ({
     default: m.CommunicationTemplates,
   })),
 );
 const EmailLayouts = React.lazy(() =>
-  import("./pages/settings/templates/EmailLayouts").then((m) => ({
+  import('./pages/settings/templates/EmailLayouts').then((m) => ({
     default: m.EmailLayouts,
   })),
 );
 const NotificationTypes = React.lazy(() =>
-  import("./pages/settings/templates/NotificationTypes").then((m) => ({
+  import('./pages/settings/templates/NotificationTypes').then((m) => ({
     default: m.NotificationTypes,
   })),
 );
 const ProductsPackages = React.lazy(() =>
-  import("./pages/settings/commerce").then((m) => ({
+  import('./pages/settings/commerce').then((m) => ({
     default: m.ProductsPackages,
   })),
 );
 const Payments = React.lazy(() =>
-  import("./pages/settings/commerce").then((m) => ({ default: m.Payments })),
+  import('./pages/settings/commerce').then((m) => ({ default: m.Payments })),
 );
 const Sales = React.lazy(() =>
-  import("./pages/settings/commerce").then((m) => ({ default: m.Sales })),
+  import('./pages/settings/commerce').then((m) => ({ default: m.Sales })),
 );
 const CurrencyTaxes = React.lazy(() =>
-  import("./pages/settings/commerce/CurrencyTaxes").then((m) => ({
+  import('./pages/settings/commerce/CurrencyTaxes').then((m) => ({
     default: m.CurrencyTaxes,
   })),
 );
 const VIPProgram = React.lazy(() =>
-  import("./pages/settings/vip/VIPProgram").then((m) => ({
+  import('./pages/settings/vip/VIPProgram').then((m) => ({
     default: m.VIPProgram,
   })),
 );
 const Gallery = React.lazy(() =>
-  import("./pages/settings/content").then((m) => ({ default: m.Gallery })),
+  import('./pages/settings/content').then((m) => ({ default: m.Gallery })),
 );
 const LegalDocumentsPage = React.lazy(() =>
-  import("./pages/settings/legal").then((m) => ({
+  import('./pages/settings/legal').then((m) => ({
     default: m.LegalDocumentsPage,
   })),
 );
 
 // Protected Route Component
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
@@ -231,11 +215,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
     );
   }
 
-  return isAuthenticated ? (
-    <AppLayout>{children}</AppLayout>
-  ) : (
-    <Navigate to="/login" replace />
-  );
+  return isAuthenticated ? <AppLayout>{children}</AppLayout> : <Navigate to="/login" replace />;
 };
 
 // Public Route Component (redirects to dashboard if authenticated)
@@ -260,17 +240,11 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     );
   }
 
-  return isAuthenticated ? (
-    <Navigate to="/dashboard" replace />
-  ) : (
-    <>{children}</>
-  );
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
 };
 
 // Settings Route Component - Uses Enhanced Settings Layout
-const SettingsRoute: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+const SettingsRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
@@ -302,12 +276,7 @@ const SettingsRoute: React.FC<{ children: React.ReactNode }> = ({
 
 // Suspense fallback for lazy-loaded routes
 const PageLoader = () => (
-  <Box
-    display="flex"
-    alignItems="center"
-    justifyContent="center"
-    minHeight="50vh"
-  >
+  <Box display="flex" alignItems="center" justifyContent="center" minHeight="50vh">
     <CircularProgress />
   </Box>
 );
@@ -339,10 +308,7 @@ const AppRouter: React.FC = () => {
         <Route path="/reset-password/:tokenId" element={<ResetPassword />} />
 
         {/* Accept Invitation Route - Always accessible, no auth required */}
-        <Route
-          path="/accept-invitation/:invitationId"
-          element={<AcceptInvitation />}
-        />
+        <Route path="/accept-invitation/:invitationId" element={<AcceptInvitation />} />
 
         {/* Protected Routes */}
         <Route
@@ -364,10 +330,7 @@ const AppRouter: React.FC = () => {
           }
         />
         {/* Legacy routes redirect to main analytics */}
-        <Route
-          path="/analytics/*"
-          element={<Navigate to="/analytics" replace />}
-        />
+        <Route path="/analytics/*" element={<Navigate to="/analytics" replace />} />
 
         {/* Metrics Dashboard - Platform Impact, System Health, DORA */}
         <Route

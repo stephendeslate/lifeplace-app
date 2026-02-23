@@ -23,7 +23,10 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useQuestionnaires } from '../../hooks/useQuestionnaires';
-import { useCreateEventQuestionnaire, useSendEventQuestionnaire } from '../../hooks/useEventQuestionnaires';
+import {
+  useCreateEventQuestionnaire,
+  useSendEventQuestionnaire,
+} from '../../hooks/useEventQuestionnaires';
 import type { Questionnaire } from '../../types/questionnaires.types';
 
 interface AssignQuestionnaireDialogProps {
@@ -50,10 +53,11 @@ export const AssignQuestionnaireDialog: React.FC<AssignQuestionnaireDialogProps>
 
   // Fetch active questionnaires
   const { useActiveQuestionnaires } = useQuestionnaires();
-  const { data: allQuestionnaires = [], isLoading: isLoadingQuestionnaires } = useActiveQuestionnaires();
+  const { data: allQuestionnaires = [], isLoading: isLoadingQuestionnaires } =
+    useActiveQuestionnaires();
 
   // Filter out already assigned questionnaires and optionally filter by event type
-  const availableQuestionnaires = allQuestionnaires.filter(q => {
+  const availableQuestionnaires = allQuestionnaires.filter((q) => {
     // Don't show already assigned questionnaires
     if (existingAssignments.includes(q.id)) return false;
     // Show questionnaires for this event type or universal ones (no event type)
@@ -97,7 +101,7 @@ export const AssignQuestionnaireDialog: React.FC<AssignQuestionnaireDialogProps>
             onSuccess?.();
           }
         },
-      }
+      },
     );
   };
 
@@ -111,7 +115,7 @@ export const AssignQuestionnaireDialog: React.FC<AssignQuestionnaireDialogProps>
 
   const getSelectedQuestionnaireDetails = (): Questionnaire | undefined => {
     if (!selectedQuestionnaire) return undefined;
-    return allQuestionnaires.find(q => q.id === selectedQuestionnaire);
+    return allQuestionnaires.find((q) => q.id === selectedQuestionnaire);
   };
 
   const selectedDetails = getSelectedQuestionnaireDetails();
@@ -128,8 +132,8 @@ export const AssignQuestionnaireDialog: React.FC<AssignQuestionnaireDialogProps>
               {isLoadingQuestionnaires
                 ? 'Loading questionnaires...'
                 : existingAssignments.length > 0
-                ? 'All available questionnaires have already been assigned to this event.'
-                : 'No active questionnaires available to assign.'}
+                  ? 'All available questionnaires have already been assigned to this event.'
+                  : 'No active questionnaires available to assign.'}
             </Alert>
           ) : (
             <>
@@ -161,7 +165,8 @@ export const AssignQuestionnaireDialog: React.FC<AssignQuestionnaireDialogProps>
               {selectedDetails && (
                 <Alert severity="info" sx={{ py: 0.5 }}>
                   <Typography variant="body2">
-                    <strong>{selectedDetails.name}</strong> has {selectedDetails.fields_count} fields.
+                    <strong>{selectedDetails.name}</strong> has {selectedDetails.fields_count}{' '}
+                    fields.
                     {selectedDetails.event_type_name && (
                       <> Designed for {selectedDetails.event_type_name} events.</>
                     )}
@@ -204,7 +209,8 @@ export const AssignQuestionnaireDialog: React.FC<AssignQuestionnaireDialogProps>
                   Send to client immediately after assignment
                 </label>
                 <Typography variant="caption" color="text.secondary" sx={{ ml: 3 }}>
-                  If unchecked, the questionnaire will be assigned but not sent. You can send it manually later.
+                  If unchecked, the questionnaire will be assigned but not sent. You can send it
+                  manually later.
                 </Typography>
               </FormControl>
             </>
@@ -225,8 +231,10 @@ export const AssignQuestionnaireDialog: React.FC<AssignQuestionnaireDialogProps>
               <CircularProgress size={20} sx={{ mr: 1 }} />
               {sendImmediately ? 'Assigning & Sending...' : 'Assigning...'}
             </>
+          ) : sendImmediately ? (
+            'Assign & Send'
           ) : (
-            sendImmediately ? 'Assign & Send' : 'Assign'
+            'Assign'
           )}
         </Button>
       </DialogActions>

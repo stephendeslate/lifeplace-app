@@ -18,7 +18,13 @@ import {
   InputAdornment,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import type { Payment, CreatePaymentData, UpdatePaymentData, PaymentFormData, PaymentStatus } from '../../types/payments.types';
+import type {
+  Payment,
+  CreatePaymentData,
+  UpdatePaymentData,
+  PaymentFormData,
+  PaymentStatus,
+} from '../../types/payments.types';
 import { PAYMENT_STATUSES } from '../../types/payments.types';
 import { useEvents } from '../../hooks/useEvents';
 import { usePaymentMethods } from '../../hooks/usePayments';
@@ -100,14 +106,14 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
   };
 
   const handleChange = (field: keyof PaymentFormData, value: string | boolean) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
 
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
         [field]: '',
       }));
@@ -137,7 +143,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
     onSubmit(submitData);
   };
 
-  const selectedEvent = events.find(e => e.id.toString() === formData.event);
+  const selectedEvent = events.find((e) => e.id.toString() === formData.event);
 
   return (
     <Box component="form" onSubmit={handleSubmit}>
@@ -146,7 +152,9 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
         <FormControl fullWidth error={!!errors.event}>
           <Autocomplete
             options={events}
-            getOptionLabel={(option) => `${option.name || 'Untitled Event'} - ${option.client_name}`}
+            getOptionLabel={(option) =>
+              `${option.name || 'Untitled Event'} - ${option.client_name}`
+            }
             value={selectedEvent || null}
             onChange={(_, newValue) => {
               handleChange('event', newValue?.id.toString() || '');
@@ -185,7 +193,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
               <MenuItem value="USD">USD</MenuItem>
             </Select>
           </FormControl>
-          
+
           <TextField
             fullWidth
             label="Amount *"
@@ -195,8 +203,12 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
             error={!!errors.amount}
             helperText={errors.amount}
             InputProps={{
-              startAdornment: <InputAdornment position="start">{formData.currency === 'PHP' ? '₱' : '$'}</InputAdornment>,
-              inputProps: { min: 0, step: '0.01' }
+              startAdornment: (
+                <InputAdornment position="start">
+                  {formData.currency === 'PHP' ? '₱' : '$'}
+                </InputAdornment>
+              ),
+              inputProps: { min: 0, step: '0.01' },
             }}
           />
 
@@ -246,7 +258,9 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
               {paymentMethods.map((method) => (
                 <MenuItem key={method.id} value={method.id.toString()}>
                   <Box>
-                    <Typography variant="body2">{method.nickname || method.type_display}</Typography>
+                    <Typography variant="body2">
+                      {method.nickname || method.type_display}
+                    </Typography>
                     {method.last_four && (
                       <Typography variant="caption" color="text.secondary">
                         **** {method.last_four}

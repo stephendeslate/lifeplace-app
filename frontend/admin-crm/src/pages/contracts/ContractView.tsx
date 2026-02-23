@@ -36,19 +36,27 @@ export const ContractView: React.FC = () => {
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
 
-  const { data: contract, isLoading, error } = useEventContract(contractId ? parseInt(contractId) : 0);
+  const {
+    data: contract,
+    isLoading,
+    error,
+  } = useEventContract(contractId ? parseInt(contractId) : 0);
   const { mutate: sendContract } = useSendContract();
 
   // Set breadcrumbs via layout context
   useEffect(() => {
     if (contract) {
-      const eventName = contract.event_details?.name ||
+      const eventName =
+        contract.event_details?.name ||
         (typeof contract.event === 'object' ? contract.event.name : null) ||
         `Event #${typeof contract.event === 'number' ? contract.event : contract.event?.id || 'Unknown'}`;
 
       setBreadcrumbs([
         { label: 'Events', path: '/events' },
-        { label: eventName, path: contract.event_details?.id ? `/events/${contract.event_details.id}` : '/events' },
+        {
+          label: eventName,
+          path: contract.event_details?.id ? `/events/${contract.event_details.id}` : '/events',
+        },
         { label: `Contract #${contract.id}` },
       ]);
     }
@@ -114,25 +122,28 @@ export const ContractView: React.FC = () => {
   if (error || !contract) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="error">
-          Failed to load contract. Please try again.
-        </Alert>
+        <Alert severity="error">Failed to load contract. Please try again.</Alert>
       </Box>
     );
   }
 
   // Get event name for display
-  const eventName = contract.event_details?.name ||
+  const eventName =
+    contract.event_details?.name ||
     (typeof contract.event === 'object' ? contract.event.name : null) ||
     `Event #${typeof contract.event === 'number' ? contract.event : contract.event?.id || 'Unknown'}`;
 
   // Get status color for chip
   const getStatusColor = (): 'secondary' | 'info' | 'success' | 'warning' => {
     switch (contract.status) {
-      case 'DRAFT': return 'secondary';
-      case 'SENT': return 'info';
-      case 'SIGNED': return 'success';
-      default: return 'warning';
+      case 'DRAFT':
+        return 'secondary';
+      case 'SENT':
+        return 'info';
+      case 'SIGNED':
+        return 'success';
+      default:
+        return 'warning';
     }
   };
 
@@ -175,11 +186,7 @@ export const ContractView: React.FC = () => {
             </Box>
           </Box>
           <Stack direction="row" spacing={2} flexWrap="wrap">
-            <Button
-              variant="outlined"
-              startIcon={<ArrowBackIcon />}
-              onClick={handleBackToEvent}
-            >
+            <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleBackToEvent}>
               Back to Event
             </Button>
             <Button
@@ -192,18 +199,10 @@ export const ContractView: React.FC = () => {
             </Button>
             {contract.status === 'DRAFT' && (
               <>
-                <Button
-                  variant="outlined"
-                  startIcon={<EditIcon />}
-                  onClick={handleEdit}
-                >
+                <Button variant="outlined" startIcon={<EditIcon />} onClick={handleEdit}>
                   Edit
                 </Button>
-                <Button
-                  variant="contained"
-                  startIcon={<SendIcon />}
-                  onClick={handleSend}
-                >
+                <Button variant="contained" startIcon={<SendIcon />} onClick={handleSend}>
                   Send to Client
                 </Button>
               </>
@@ -248,8 +247,8 @@ export const ContractView: React.FC = () => {
                 </Typography>
                 <Typography variant="body1" fontWeight={500}>
                   {contract.event_details?.client_name ||
-                   (typeof contract.event === 'object' ? contract.event.client_name : null) ||
-                   'Not specified'}
+                    (typeof contract.event === 'object' ? contract.event.client_name : null) ||
+                    'Not specified'}
                 </Typography>
               </Box>
               <Box>
@@ -337,26 +336,30 @@ export const ContractView: React.FC = () => {
                     <SignedIcon color="success" />
                     <Box>
                       <Typography variant="body2" fontWeight={600}>
-                        {signature.role === 'CLIENT' ? 'Client Signature' :
-                         signature.role === 'COMPANY_REP' ? 'LifePlace Representative' :
-                         signature.role === 'WITNESS' ? 'Witness Signature' :
-                         signature.role_display || signature.role.replace('_', ' ')}
+                        {signature.role === 'CLIENT'
+                          ? 'Client Signature'
+                          : signature.role === 'COMPANY_REP'
+                            ? 'LifePlace Representative'
+                            : signature.role === 'WITNESS'
+                              ? 'Witness Signature'
+                              : signature.role_display || signature.role.replace('_', ' ')}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Signed by {signature.signer_name} on {format(new Date(signature.signed_at), 'MMM dd, yyyy \'at\' h:mm a')}
+                        Signed by {signature.signer_name} on{' '}
+                        {format(new Date(signature.signed_at), "MMM dd, yyyy 'at' h:mm a")}
                       </Typography>
                       {signature.signer_title && (
-                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{ display: 'block' }}
+                        >
                           Title: {signature.signer_title}
                         </Typography>
                       )}
                     </Box>
                   </Box>
-                  <Chip
-                    label="Signed"
-                    size="small"
-                    color="success"
-                  />
+                  <Chip label="Signed" size="small" color="success" />
                 </Box>
               ))}
             </Stack>
@@ -415,7 +418,7 @@ export const ContractView: React.FC = () => {
           >
             <div
               dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(contract.content || 'No content available')
+                __html: DOMPurify.sanitize(contract.content || 'No content available'),
               }}
               style={{
                 lineHeight: 1.6,

@@ -30,7 +30,11 @@ import {
   GetApp as DownloadIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { useContractsForClient, useSendContract, useDownloadContractPdf } from '../../hooks/useContracts';
+import {
+  useContractsForClient,
+  useSendContract,
+  useDownloadContractPdf,
+} from '../../hooks/useContracts';
 import type { EventContract } from '../../types/contracts.types';
 import type { Client } from '../../types/clients.types';
 import { formatCurrency } from '../../utils/currency';
@@ -91,13 +95,16 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
     const currency = contractCurrency || currencySettings?.defaultCurrency || 'PHP';
     return formatCurrency(amount, currency, {
       showSymbol: currencySettings?.displayFormat !== 'code',
-      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      showCode:
+        currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
       minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
       maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
     });
   };
 
-  const getStatusColor = (status: string): "default" | "primary" | "success" | "warning" | "error" => {
+  const getStatusColor = (
+    status: string,
+  ): 'default' | 'primary' | 'success' | 'warning' | 'error' => {
     switch (status) {
       case 'DRAFT':
         return 'default';
@@ -132,11 +139,7 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Create a contract to formalize agreements with this client.
         </Typography>
-        <Button
-          variant="outlined"
-          startIcon={<AddIcon />}
-          onClick={handleCreateContract}
-        >
+        <Button variant="outlined" startIcon={<AddIcon />} onClick={handleCreateContract}>
           View Events to Create Contract
         </Button>
       </Paper>
@@ -185,7 +188,9 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2">
-                    {contract.valid_until ? new Date(contract.valid_until).toLocaleDateString() : '-'}
+                    {contract.valid_until
+                      ? new Date(contract.valid_until).toLocaleDateString()
+                      : '-'}
                   </Typography>
                 </TableCell>
                 <TableCell>
@@ -197,8 +202,8 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2">
-                    {contract.signature_progress 
-                      ? `${contract.signature_progress.signed_count} / ${contract.signature_progress.total_required}` 
+                    {contract.signature_progress
+                      ? `${contract.signature_progress.signed_count} / ${contract.signature_progress.total_required}`
                       : `${contract.signatures?.length || 0} / -`}
                   </Typography>
                 </TableCell>
@@ -208,10 +213,7 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleMenuOpen(e, contract)}
-                  >
+                  <IconButton size="small" onClick={(e) => handleMenuOpen(e, contract)}>
                     <MoreVertIcon fontSize="small" />
                   </IconButton>
                 </TableCell>
@@ -221,11 +223,7 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
         </Table>
       </TableContainer>
 
-      <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-      >
+      <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         <MenuItem onClick={() => selectedContract && handleViewContract(selectedContract)}>
           <ListItemIcon>
             <ViewIcon fontSize="small" />
@@ -248,9 +246,7 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
             <ListItemIcon>
               <SendIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText>
-              {isSendingContract ? 'Sending...' : 'Send for Signature'}
-            </ListItemText>
+            <ListItemText>{isSendingContract ? 'Sending...' : 'Send for Signature'}</ListItemText>
           </MenuItem>
         )}
         <MenuItem
@@ -260,9 +256,7 @@ export const ClientContracts: React.FC<ClientContractsProps> = ({ client }) => {
           <ListItemIcon>
             <DownloadIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>
-            {isDownloadingPdf ? 'Downloading...' : 'Download PDF'}
-          </ListItemText>
+          <ListItemText>{isDownloadingPdf ? 'Downloading...' : 'Download PDF'}</ListItemText>
         </MenuItem>
       </Menu>
     </Box>

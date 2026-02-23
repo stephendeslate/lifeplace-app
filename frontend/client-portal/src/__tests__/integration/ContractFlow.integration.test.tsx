@@ -34,24 +34,27 @@ vi.mock('../../contexts/AuthContext', () => ({
 }));
 
 // Mock canvas for signature pad
-vi.stubGlobal('HTMLCanvasElement', class MockCanvas {
-  getContext() {
-    return {
-      scale: vi.fn(),
-      clearRect: vi.fn(),
-      beginPath: vi.fn(),
-      moveTo: vi.fn(),
-      lineTo: vi.fn(),
-      stroke: vi.fn(),
-      fillRect: vi.fn(),
-      drawImage: vi.fn(),
-      toDataURL: vi.fn(() => 'data:image/png;base64,signature'),
-    };
-  }
-  toDataURL() {
-    return 'data:image/png;base64,signature';
-  }
-});
+vi.stubGlobal(
+  'HTMLCanvasElement',
+  class MockCanvas {
+    getContext() {
+      return {
+        scale: vi.fn(),
+        clearRect: vi.fn(),
+        beginPath: vi.fn(),
+        moveTo: vi.fn(),
+        lineTo: vi.fn(),
+        stroke: vi.fn(),
+        fillRect: vi.fn(),
+        drawImage: vi.fn(),
+        toDataURL: vi.fn(() => 'data:image/png;base64,signature'),
+      };
+    }
+    toDataURL() {
+      return 'data:image/png;base64,signature';
+    }
+  },
+);
 
 import { contractsApi } from '../../apis/contracts.api';
 
@@ -153,7 +156,9 @@ const theme = createTheme();
 // Simplified test component for contract flow
 const ContractFlowTest: React.FC = () => {
   const [contracts, setContracts] = React.useState<typeof mockContracts>([]);
-  const [selectedContract, setSelectedContract] = React.useState<typeof mockContractDetail | null>(null);
+  const [selectedContract, setSelectedContract] = React.useState<typeof mockContractDetail | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [showSignatureDialog, setShowSignatureDialog] = React.useState(false);
@@ -526,7 +531,9 @@ describe('Contract Flow Integration Tests', () => {
       await user.click(screen.getByTestId('contract-1').querySelector('button')!);
 
       await waitFor(() => {
-        expect(screen.getByTestId('terms-and-conditions')).toHaveTextContent('Booking Confirmation');
+        expect(screen.getByTestId('terms-and-conditions')).toHaveTextContent(
+          'Booking Confirmation',
+        );
         expect(screen.getByTestId('terms-and-conditions')).toHaveTextContent('Cancellation Policy');
       });
     });
@@ -648,7 +655,9 @@ describe('Contract Flow Integration Tests', () => {
       await user.click(screen.getByText('Confirm Signature'));
 
       await waitFor(() => {
-        expect(contractsApi.signContract).toHaveBeenCalledWith('1', { signature: 'signature-data' });
+        expect(contractsApi.signContract).toHaveBeenCalledWith('1', {
+          signature: 'signature-data',
+        });
         expect(screen.getByText('Contract Signed Successfully!')).toBeInTheDocument();
       });
     });

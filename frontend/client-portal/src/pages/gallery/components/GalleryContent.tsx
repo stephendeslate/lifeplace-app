@@ -1,23 +1,13 @@
 // pages/gallery/components/GalleryContent.tsx
 
-import React, { useState, useMemo, useCallback } from "react";
-import { Box, Typography } from "@mui/material";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  tokens,
-  Section,
-  Container,
-  AnimatedElement,
-  Button,
-} from "../../../design-system";
-import {
-  GalleryGrid,
-  GalleryFilterBar,
-  ImageLightbox,
-} from "../../../components/gallery";
-import { useGalleryVenues, useGalleryPhotos } from "../../../hooks/useGallery";
-import type { GalleryImage } from "../../../types/gallery.types";
-import type { GalleryContentProps } from "../types/gallery.types";
+import React, { useState, useMemo, useCallback } from 'react';
+import { Box, Typography } from '@mui/material';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { tokens, Section, Container, AnimatedElement, Button } from '../../../design-system';
+import { GalleryGrid, GalleryFilterBar, ImageLightbox } from '../../../components/gallery';
+import { useGalleryVenues, useGalleryPhotos } from '../../../hooks/useGallery';
+import type { GalleryImage } from '../../../types/gallery.types';
+import type { GalleryContentProps } from '../types/gallery.types';
 
 /** Number of images to show per page / load-more increment */
 const IMAGES_PER_PAGE = 12;
@@ -27,21 +17,21 @@ const IMAGES_PER_PAGE = 12;
  * The `backendValues` array allows one filter to match multiple backend categories.
  */
 const GALLERY_CATEGORIES = [
-  { id: "all", label: "All", backendValues: [] as string[] },
-  { id: "venues", label: "Venues", backendValues: ["GENERAL"] },
-  { id: "weddings", label: "Weddings", backendValues: ["WEDDING"] },
+  { id: 'all', label: 'All', backendValues: [] as string[] },
+  { id: 'venues', label: 'Venues', backendValues: ['GENERAL'] },
+  { id: 'weddings', label: 'Weddings', backendValues: ['WEDDING'] },
   {
-    id: "team-building",
-    label: "Team Building",
-    backendValues: ["TEAM_BUILDING"],
+    id: 'team-building',
+    label: 'Team Building',
+    backendValues: ['TEAM_BUILDING'],
   },
   {
-    id: "camps-retreats",
-    label: "Camps & Retreats",
-    backendValues: ["CAMPS_AND_RETREATS"],
+    id: 'camps-retreats',
+    label: 'Camps & Retreats',
+    backendValues: ['CAMPS_AND_RETREATS'],
   },
-  { id: "workshops", label: "Workshops", backendValues: ["WORKSHOP"] },
-  { id: "atmosphere", label: "Atmosphere", backendValues: ["ATMOSPHERE"] },
+  { id: 'workshops', label: 'Workshops', backendValues: ['WORKSHOP'] },
+  { id: 'atmosphere', label: 'Atmosphere', backendValues: ['ATMOSPHERE'] },
 ];
 
 /** Map a URL-friendly category slug to its category definition */
@@ -65,7 +55,7 @@ export const GalleryContent: React.FC<GalleryContentProps> = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Read category from URL query param, default to "all"
-  const activeCategoryId = searchParams.get("category") ?? "all";
+  const activeCategoryId = searchParams.get('category') ?? 'all';
   const activeCategory = findCategoryById(activeCategoryId);
 
   // Lightbox state
@@ -76,11 +66,7 @@ export const GalleryContent: React.FC<GalleryContentProps> = () => {
   const [visibleCount, setVisibleCount] = useState(IMAGES_PER_PAGE);
 
   // Fetch data from both sources
-  const {
-    data: venues,
-    isLoading: venuesLoading,
-    isError: venuesError,
-  } = useGalleryVenues();
+  const { data: venues, isLoading: venuesLoading, isError: venuesError } = useGalleryVenues();
   const {
     data: galleryPhotos,
     isLoading: photosLoading,
@@ -103,7 +89,7 @@ export const GalleryContent: React.FC<GalleryContentProps> = () => {
           images.push({
             src: venue.featured_image,
             alt: `${venue.name} - venue`,
-            category: "GENERAL",
+            category: 'GENERAL',
             venueId: venue.id,
             venueName: venue.name,
           });
@@ -116,7 +102,7 @@ export const GalleryContent: React.FC<GalleryContentProps> = () => {
       for (const photo of galleryPhotos) {
         images.push({
           src: photo.image,
-          alt: photo.title || photo.description || "Gallery photo",
+          alt: photo.title || photo.description || 'Gallery photo',
           category: photo.category,
           venueId: photo.venue_id ?? undefined,
           venueName: photo.venue_name ?? undefined,
@@ -130,15 +116,11 @@ export const GalleryContent: React.FC<GalleryContentProps> = () => {
 
   /** Images filtered by active category */
   const filteredImages = useMemo<GalleryImage[]>(() => {
-    if (
-      activeCategory.id === "all" ||
-      activeCategory.backendValues.length === 0
-    ) {
+    if (activeCategory.id === 'all' || activeCategory.backendValues.length === 0) {
       return allImages;
     }
     return allImages.filter(
-      (img) =>
-        img.category && activeCategory.backendValues.includes(img.category),
+      (img) => img.category && activeCategory.backendValues.includes(img.category),
     );
   }, [allImages, activeCategory]);
 
@@ -157,19 +139,17 @@ export const GalleryContent: React.FC<GalleryContentProps> = () => {
         id: cat.id,
         label: cat.label,
         count:
-          cat.id === "all"
+          cat.id === 'all'
             ? allImages.length
-            : allImages.filter(
-                (img) =>
-                  img.category && cat.backendValues.includes(img.category),
-              ).length,
+            : allImages.filter((img) => img.category && cat.backendValues.includes(img.category))
+                .length,
       })),
     [allImages],
   );
 
   const handleCategoryChange = useCallback(
     (categoryId: string) => {
-      if (categoryId === "all") {
+      if (categoryId === 'all') {
         setSearchParams({}, { preventScrollReset: true });
       } else {
         setSearchParams({ category: categoryId }, { preventScrollReset: true });
@@ -189,7 +169,7 @@ export const GalleryContent: React.FC<GalleryContentProps> = () => {
   }, []);
 
   const handleNavigateToBooking = useCallback(() => {
-    navigate("/booking");
+    navigate('/booking');
   }, [navigate]);
 
   return (
@@ -207,15 +187,13 @@ export const GalleryContent: React.FC<GalleryContentProps> = () => {
         </AnimatedElement>
 
         {/* Loading State */}
-        {isLoading && (
-          <GalleryGrid images={[]} columns={{ xs: 2, sm: 3, md: 4 }} loading />
-        )}
+        {isLoading && <GalleryGrid images={[]} columns={{ xs: 2, sm: 3, md: 4 }} loading />}
 
         {/* Error State */}
         {isError && !isLoading && (
           <Box
             sx={{
-              textAlign: "center",
+              textAlign: 'center',
               py: { xs: 6, md: 10 },
             }}
           >
@@ -234,7 +212,7 @@ export const GalleryContent: React.FC<GalleryContentProps> = () => {
         {!isLoading && !isError && filteredImages.length === 0 && (
           <Box
             sx={{
-              textAlign: "center",
+              textAlign: 'center',
               py: { xs: 6, md: 10 },
             }}
           >
@@ -271,16 +249,12 @@ export const GalleryContent: React.FC<GalleryContentProps> = () => {
             {hasMore && (
               <Box
                 sx={{
-                  display: "flex",
-                  justifyContent: "center",
+                  display: 'flex',
+                  justifyContent: 'center',
                   mt: { xs: 4, md: 6 },
                 }}
               >
-                <Button
-                  variant="outlined"
-                  size="large"
-                  onClick={handleLoadMore}
-                >
+                <Button variant="outlined" size="large" onClick={handleLoadMore}>
                   Load More Photos
                 </Button>
               </Box>
@@ -289,7 +263,7 @@ export const GalleryContent: React.FC<GalleryContentProps> = () => {
             {/* Results count */}
             <Box
               sx={{
-                textAlign: "center",
+                textAlign: 'center',
                 mt: 2,
               }}
             >
@@ -318,7 +292,7 @@ export const GalleryContent: React.FC<GalleryContentProps> = () => {
           showFullscreen
           showCaptions
           ctaButton={{
-            label: "Book This Venue",
+            label: 'Book This Venue',
             onClick: handleNavigateToBooking,
           }}
         />

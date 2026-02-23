@@ -13,11 +13,7 @@ import {
   Skeleton,
 } from '@mui/material';
 
-import {
-  Save as SaveIcon,
-  Refresh as RefreshIcon,
-  Home as VenueIcon,
-} from '@mui/icons-material';
+import { Save as SaveIcon, Refresh as RefreshIcon, Home as VenueIcon } from '@mui/icons-material';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import { useFormHandlers } from '../../../hooks/useFormHandlers';
 import { ConfigSection } from '../../common';
@@ -70,11 +66,7 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
   const [hasChanges, setHasChanges] = useState(false);
 
   // Use centralized form handlers
-  const { handleInputChange, handleSwitchChange } = useFormHandlers(
-    setFormData,
-    errors,
-    setErrors
-  );
+  const { handleInputChange, handleSwitchChange } = useFormHandlers(setFormData, errors, setErrors);
 
   const {
     useStepConfiguration,
@@ -106,7 +98,8 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
         description: venueConfig.description || 'Choose which spaces to include in your booking.',
         show_package_recommendations: venueConfig.show_package_recommendations ?? true,
         show_view_packages_option: venueConfig.show_view_packages_option ?? true,
-        view_packages_button_text: venueConfig.view_packages_button_text || 'Not sure? View our packages instead',
+        view_packages_button_text:
+          venueConfig.view_packages_button_text || 'Not sure? View our packages instead',
       });
       setHasChanges(false);
     } else if (!isLoadingConfig && !config) {
@@ -128,25 +121,26 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
         formData.bundle_discount_percent !== (venueConfig.bundle_discount_percent || '10.00') ||
         formData.title !== (venueConfig.title || 'Select Your Spaces') ||
         formData.description !== (venueConfig.description || '') ||
-        formData.show_package_recommendations !== (venueConfig.show_package_recommendations ?? true) ||
+        formData.show_package_recommendations !==
+          (venueConfig.show_package_recommendations ?? true) ||
         formData.show_view_packages_option !== (venueConfig.show_view_packages_option ?? true) ||
-        formData.view_packages_button_text !== (venueConfig.view_packages_button_text || 'Not sure? View our packages instead');
+        formData.view_packages_button_text !==
+          (venueConfig.view_packages_button_text || 'Not sure? View our packages instead');
 
       setHasChanges(hasFormChanges);
     }
   }, [formData, config]);
 
-  const handleNumberChange = (field: 'min_venues' | 'max_venues') => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = parseInt(event.target.value, 10);
-    if (!isNaN(value) && value >= 0) {
-      setFormData(prev => ({
-        ...prev,
-        [field]: value,
-      }));
-    }
-  };
+  const handleNumberChange =
+    (field: 'min_venues' | 'max_venues') => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = parseInt(event.target.value, 10);
+      if (!isNaN(value) && value >= 0) {
+        setFormData((prev) => ({
+          ...prev,
+          [field]: value,
+        }));
+      }
+    };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -196,7 +190,7 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
           setHasChanges(false);
           onConfigurationChange?.();
         },
-      }
+      },
     );
   };
 
@@ -214,7 +208,8 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
         description: venueConfig.description || 'Choose which spaces to include in your booking.',
         show_package_recommendations: venueConfig.show_package_recommendations ?? true,
         show_view_packages_option: venueConfig.show_view_packages_option ?? true,
-        view_packages_button_text: venueConfig.view_packages_button_text || 'Not sure? View our packages instead',
+        view_packages_button_text:
+          venueConfig.view_packages_button_text || 'Not sure? View our packages instead',
       });
     } else {
       setFormData(defaultFormData);
@@ -255,7 +250,8 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
             </Button>
           }
         >
-          Failed to load step configuration: {configError instanceof Error ? configError.message : 'Unknown error'}
+          Failed to load step configuration:{' '}
+          {configError instanceof Error ? configError.message : 'Unknown error'}
         </Alert>
       </Box>
     );
@@ -266,9 +262,7 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
       <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
         <Box display="flex" alignItems="center" gap={1}>
           <VenueIcon color="primary" />
-          <Typography variant="h6">
-            Venue Selection Step Configuration
-          </Typography>
+          <Typography variant="h6">Venue Selection Step Configuration</Typography>
         </Box>
         <Button
           size="small"
@@ -281,12 +275,16 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
       </Box>
 
       <Alert severity="info" sx={{ mb: 3 }}>
-        Configure how clients select spaces/venues for custom package curation. Selected venues will be bundled into a custom package with optional multi-space discounts.
+        Configure how clients select spaces/venues for custom package curation. Selected venues will
+        be bundled into a custom package with optional multi-space discounts.
       </Alert>
 
       {updateConfigurationError ? (
         <Alert severity="error" sx={{ mb: 3 }}>
-          Failed to update configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : 'Unknown error'}
+          Failed to update configuration:{' '}
+          {updateConfigurationError instanceof Error
+            ? updateConfigurationError.message
+            : 'Unknown error'}
         </Alert>
       ) : null}
 
@@ -458,7 +456,10 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
             value={formData.bundle_discount_percent}
             onChange={handleInputChange('bundle_discount_percent')}
             error={!!errors.bundle_discount_percent}
-            helperText={errors.bundle_discount_percent || 'Discount applied when selecting 2+ spaces (e.g., 10.00 for 10%)'}
+            helperText={
+              errors.bundle_discount_percent ||
+              'Discount applied when selecting 2+ spaces (e.g., 10.00 for 10%)'
+            }
             disabled={isUpdatingConfiguration}
             sx={{ width: 200 }}
             InputProps={{
@@ -469,7 +470,9 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
 
         {/* Available Venues Note */}
         <Alert severity="info">
-          To configure which venues are available for selection, use the Django admin panel to edit the VenueSelectionStepConfiguration and set the available_venues field. If left empty, all rentable venues will be shown.
+          To configure which venues are available for selection, use the Django admin panel to edit
+          the VenueSelectionStepConfiguration and set the available_venues field. If left empty, all
+          rentable venues will be shown.
         </Alert>
 
         {/* Actions */}
@@ -494,7 +497,9 @@ export const VenueSelectionStepConfig: React.FC<VenueSelectionStepConfigProps> =
 
         {/* Debug Info */}
         {process.env.NODE_ENV === 'development' && config && (
-          <Box sx={{ borderRadius: tokens.spacing.radius.md, bgcolor: tokens.color.neutral[50], p: 3 }}>
+          <Box
+            sx={{ borderRadius: tokens.spacing.radius.md, bgcolor: tokens.color.neutral[50], p: 3 }}
+          >
             <Typography variant="caption" gutterBottom>
               Debug: Current Configuration
             </Typography>

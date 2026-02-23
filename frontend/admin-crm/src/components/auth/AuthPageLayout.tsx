@@ -13,10 +13,7 @@ interface AuthPageLayoutProps {
   maxWidth?: number;
 }
 
-export const AuthPageLayout: React.FC<AuthPageLayoutProps> = ({
-  children,
-  maxWidth = 400,
-}) => {
+export const AuthPageLayout: React.FC<AuthPageLayoutProps> = ({ children, maxWidth = 400 }) => {
   const { effectiveMode } = useTheme();
   const isDarkMode = effectiveMode === 'dark';
 

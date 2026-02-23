@@ -1,24 +1,25 @@
 // frontend/client-portal/src/utils/api.ts
 
-import axios from "axios";
-import { storage } from "./storage";
-import { updateServerClockOffset } from "./serverClock";
+import axios from 'axios';
+import { storage } from './storage';
+import { updateServerClockOffset } from './serverClock';
+import { env } from '@/env';
 
 // Get base URL based on environment
 const getBaseUrl = () => {
-  if (import.meta.env.PROD) {
-    return import.meta.env.VITE_API_URL + "/api";
+  if (env.PROD) {
+    return env.VITE_API_URL + '/api';
   }
 
   // In development, use the environment variable or default to localhost
-  return import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+  return env.VITE_API_URL || 'http://localhost:8000/api';
 };
 
 // Create axios instance
 const api = axios.create({
   baseURL: getBaseUrl(),
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
   withCredentials: true,
 });
@@ -43,14 +44,13 @@ const isPublicEndpoint = (url: string): boolean => {
     return false;
   }
 
-  return publicPaths.some(path => url.includes(path));
+  return publicPaths.some((path) => url.includes(path));
 };
 
 // Check if we're currently on a booking page
 const isBookingPage = (): boolean => {
   return window.location.pathname.startsWith('/booking');
 };
-
 
 // Add request interceptor to add authorization header
 api.interceptors.request.use(
@@ -62,7 +62,7 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Token refresh mutex to prevent concurrent refresh requests
@@ -92,13 +92,17 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Check if this is a public endpoint - if so, don't try to refresh or redirect
       if (isPublicEndpoint(originalRequest.url)) {
-        if (import.meta.env.DEV) console.warn('Public endpoint returned 401, this might indicate a backend configuration issue');
+        if (import.meta.env.DEV)
+          console.warn(
+            'Public endpoint returned 401, this might indicate a backend configuration issue',
+          );
         return Promise.reject(error);
       }
 
       // If we're on a booking page, don't redirect to login immediately
       if (isBookingPage()) {
-        if (import.meta.env.DEV) console.warn('401 error on booking page, continuing without authentication');
+        if (import.meta.env.DEV)
+          console.warn('401 error on booking page, continuing without authentication');
         return Promise.reject(error);
       }
 
@@ -150,7 +154,7 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

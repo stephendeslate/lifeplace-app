@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/hooks/useEventQuestionnaires.test.ts
 
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import {
   useEventQuestionnairesForEvent,
   useEventQuestionnaire,
@@ -11,16 +11,16 @@ import {
   useDeleteEventQuestionnaire,
   useSendEventQuestionnaire,
   useSendQuestionnaireReminder,
-} from "./useEventQuestionnaires";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+} from './useEventQuestionnaires';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
-describe("useEventQuestionnaires", () => {
-  describe("useEventQuestionnaires (list all)", () => {
-    it("fetches all event questionnaires successfully", async () => {
+describe('useEventQuestionnaires', () => {
+  describe('useEventQuestionnaires (list all)', () => {
+    it('fetches all event questionnaires successfully', async () => {
       const { result } = renderHook(() => useEventQuestionnaires(), {
         wrapper: createTestWrapper(),
       });
@@ -36,10 +36,10 @@ describe("useEventQuestionnaires", () => {
       expect(Array.isArray(result.current.data)).toBe(true);
     });
 
-    it("handles API error gracefully", async () => {
+    it('handles API error gracefully', async () => {
       server.use(
         http.get(`${BASE_URL}/questionnaires/event-questionnaires/`, () => {
-          return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+          return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
         }),
       );
 
@@ -56,8 +56,8 @@ describe("useEventQuestionnaires", () => {
     });
   });
 
-  describe("useEventQuestionnairesForEvent", () => {
-    it("fetches questionnaires for specific event", async () => {
+  describe('useEventQuestionnairesForEvent', () => {
+    it('fetches questionnaires for specific event', async () => {
       const { result } = renderHook(() => useEventQuestionnairesForEvent(1), {
         wrapper: createTestWrapper(),
       });
@@ -73,18 +73,18 @@ describe("useEventQuestionnaires", () => {
       expect(Array.isArray(result.current.data)).toBe(true);
     });
 
-    it("does not fetch when eventId is falsy", async () => {
+    it('does not fetch when eventId is falsy', async () => {
       const { result } = renderHook(() => useEventQuestionnairesForEvent(0), {
         wrapper: createTestWrapper(),
       });
 
-      expect(result.current.fetchStatus).toBe("idle");
+      expect(result.current.fetchStatus).toBe('idle');
       expect(result.current.data).toBeUndefined();
     });
   });
 
-  describe("useEventQuestionnaire (single)", () => {
-    it("fetches single event questionnaire by ID", async () => {
+  describe('useEventQuestionnaire (single)', () => {
+    it('fetches single event questionnaire by ID', async () => {
       const { result } = renderHook(() => useEventQuestionnaire(1), {
         wrapper: createTestWrapper(),
       });
@@ -101,8 +101,8 @@ describe("useEventQuestionnaires", () => {
     });
   });
 
-  describe("useCreateEventQuestionnaire", () => {
-    it("creates event questionnaire successfully", async () => {
+  describe('useCreateEventQuestionnaire', () => {
+    it('creates event questionnaire successfully', async () => {
       const { result } = renderHook(() => useCreateEventQuestionnaire(), {
         wrapper: createTestWrapper(),
       });
@@ -123,8 +123,8 @@ describe("useEventQuestionnaires", () => {
     });
   });
 
-  describe("useSendEventQuestionnaire", () => {
-    it("sends questionnaire to client successfully", async () => {
+  describe('useSendEventQuestionnaire', () => {
+    it('sends questionnaire to client successfully', async () => {
       const { result } = renderHook(() => useSendEventQuestionnaire(), {
         wrapper: createTestWrapper(),
       });
@@ -135,12 +135,12 @@ describe("useEventQuestionnaires", () => {
 
       expect(result.current.isSuccess).toBe(true);
       expect(result.current.data).toBeDefined();
-      expect(result.current.data?.status).toBe("SENT");
+      expect(result.current.data?.status).toBe('SENT');
     });
   });
 
-  describe("useSendQuestionnaireReminder", () => {
-    it("sends reminder for questionnaire", async () => {
+  describe('useSendQuestionnaireReminder', () => {
+    it('sends reminder for questionnaire', async () => {
       const { result } = renderHook(() => useSendQuestionnaireReminder(), {
         wrapper: createTestWrapper(),
       });
@@ -153,8 +153,8 @@ describe("useEventQuestionnaires", () => {
     });
   });
 
-  describe("useUpdateEventQuestionnaire", () => {
-    it("updates event questionnaire successfully", async () => {
+  describe('useUpdateEventQuestionnaire', () => {
+    it('updates event questionnaire successfully', async () => {
       const { result } = renderHook(() => useUpdateEventQuestionnaire(), {
         wrapper: createTestWrapper(),
       });
@@ -162,7 +162,7 @@ describe("useEventQuestionnaires", () => {
       await act(async () => {
         await result.current.mutateAsync({
           id: 1,
-          data: { status: "COMPLETED" },
+          data: { status: 'COMPLETED' },
         });
       });
 
@@ -170,8 +170,8 @@ describe("useEventQuestionnaires", () => {
     });
   });
 
-  describe("useDeleteEventQuestionnaire", () => {
-    it("deletes event questionnaire successfully", async () => {
+  describe('useDeleteEventQuestionnaire', () => {
+    it('deletes event questionnaire successfully', async () => {
       const { result } = renderHook(() => useDeleteEventQuestionnaire(), {
         wrapper: createTestWrapper(),
       });

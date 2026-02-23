@@ -4,11 +4,7 @@
 // React Query mutation hooks for messaging operations with optimistic updates,
 // error handling, and automatic cache invalidation.
 
-import {
-  useMutation,
-  useQueryClient,
-  type UseMutationOptions,
-} from '@tanstack/react-query';
+import { useMutation, useQueryClient, type UseMutationOptions } from '@tanstack/react-query';
 
 import { messagingApiClient } from '../apis/messagingApi';
 import { messagingQueryKeys } from './useMessagingQueries';
@@ -37,49 +33,42 @@ import type {
  * Create a new message thread
  */
 export function useCreateThread(
-  options?: UseMutationOptions<MessageThreadDetail, Error, CreateThreadRequest>
+  options?: UseMutationOptions<MessageThreadDetail, Error, CreateThreadRequest>,
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateThreadRequest) =>
-      messagingApiClient.threads.createThread(data),
+    mutationFn: (data: CreateThreadRequest) => messagingApiClient.threads.createThread(data),
     onSuccess: (newThread) => {
       // Add new thread to all relevant thread lists
-      queryClient.setQueriesData(
-        { queryKey: messagingQueryKeys.threads() },
-        (oldData: any) => {
-          if (!oldData) return oldData;
+      queryClient.setQueriesData({ queryKey: messagingQueryKeys.threads() }, (oldData: any) => {
+        if (!oldData) return oldData;
 
-          if (oldData.pages) {
-            // Infinite query - add to first page
-            const newPages = [...oldData.pages];
-            if (newPages[0]?.results) {
-              newPages[0] = {
-                ...newPages[0],
-                results: [newThread, ...newPages[0].results],
-                count: newPages[0].count + 1,
-              };
-            }
-            return { ...oldData, pages: newPages };
-          } else if (oldData.results) {
-            // Regular paginated query - add to results
-            return {
-              ...oldData,
-              results: [newThread, ...oldData.results],
-              count: oldData.count + 1,
+        if (oldData.pages) {
+          // Infinite query - add to first page
+          const newPages = [...oldData.pages];
+          if (newPages[0]?.results) {
+            newPages[0] = {
+              ...newPages[0],
+              results: [newThread, ...newPages[0].results],
+              count: newPages[0].count + 1,
             };
           }
-
-          return oldData;
+          return { ...oldData, pages: newPages };
+        } else if (oldData.results) {
+          // Regular paginated query - add to results
+          return {
+            ...oldData,
+            results: [newThread, ...oldData.results],
+            count: oldData.count + 1,
+          };
         }
-      );
+
+        return oldData;
+      });
 
       // Set individual thread cache
-      queryClient.setQueryData(
-        messagingQueryKeys.thread(newThread.id),
-        newThread
-      );
+      queryClient.setQueryData(messagingQueryKeys.thread(newThread.id), newThread);
 
       // Invalidate admin queries
       queryClient.invalidateQueries({
@@ -98,51 +87,44 @@ export function useUpdateThread(
     MessageThreadDetail,
     Error,
     { threadId: string; data: UpdateThreadRequest }
-  >
+  >,
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ threadId, data }) =>
-      messagingApiClient.threads.updateThread(threadId, data),
+    mutationFn: ({ threadId, data }) => messagingApiClient.threads.updateThread(threadId, data),
     onSuccess: (updatedThread, { threadId }) => {
       // Update individual thread cache
-      queryClient.setQueryData(
-        messagingQueryKeys.thread(threadId),
-        updatedThread
-      );
+      queryClient.setQueryData(messagingQueryKeys.thread(threadId), updatedThread);
 
       // Update thread in all lists
-      queryClient.setQueriesData(
-        { queryKey: messagingQueryKeys.threads() },
-        (oldData: any) => {
-          if (!oldData) return oldData;
+      queryClient.setQueriesData({ queryKey: messagingQueryKeys.threads() }, (oldData: any) => {
+        if (!oldData) return oldData;
 
-          const updateThreadInResults = (results: any[]) =>
-            results.map(thread =>
-              thread.id === threadId ? { ...thread, ...updatedThread } : thread
-            );
+        const updateThreadInResults = (results: any[]) =>
+          results.map((thread) =>
+            thread.id === threadId ? { ...thread, ...updatedThread } : thread,
+          );
 
-          if (oldData.pages) {
-            // Infinite query
-            return {
-              ...oldData,
-              pages: oldData.pages.map((page: any) => ({
-                ...page,
-                results: updateThreadInResults(page.results || []),
-              })),
-            };
-          } else if (oldData.results) {
-            // Regular paginated query
-            return {
-              ...oldData,
-              results: updateThreadInResults(oldData.results),
-            };
-          }
-
-          return oldData;
+        if (oldData.pages) {
+          // Infinite query
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              results: updateThreadInResults(page.results || []),
+            })),
+          };
+        } else if (oldData.results) {
+          // Regular paginated query
+          return {
+            ...oldData,
+            results: updateThreadInResults(oldData.results),
+          };
         }
-      );
+
+        return oldData;
+      });
 
       // Invalidate admin queries
       queryClient.invalidateQueries({
@@ -156,46 +138,40 @@ export function useUpdateThread(
 /**
  * Delete a message thread
  */
-export function useDeleteThread(
-  options?: UseMutationOptions<void, Error, string>
-) {
+export function useDeleteThread(options?: UseMutationOptions<void, Error, string>) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (threadId: string) =>
-      messagingApiClient.threads.deleteThread(threadId),
+    mutationFn: (threadId: string) => messagingApiClient.threads.deleteThread(threadId),
     onSuccess: (_, threadId) => {
       // Remove thread from all lists
-      queryClient.setQueriesData(
-        { queryKey: messagingQueryKeys.threads() },
-        (oldData: any) => {
-          if (!oldData) return oldData;
+      queryClient.setQueriesData({ queryKey: messagingQueryKeys.threads() }, (oldData: any) => {
+        if (!oldData) return oldData;
 
-          const filterResults = (results: any[]) =>
-            results.filter(thread => thread.id !== threadId);
+        const filterResults = (results: any[]) =>
+          results.filter((thread) => thread.id !== threadId);
 
-          if (oldData.pages) {
-            // Infinite query
-            return {
-              ...oldData,
-              pages: oldData.pages.map((page: any) => ({
-                ...page,
-                results: filterResults(page.results || []),
-                count: Math.max(0, page.count - 1),
-              })),
-            };
-          } else if (oldData.results) {
-            // Regular paginated query
-            return {
-              ...oldData,
-              results: filterResults(oldData.results),
-              count: Math.max(0, oldData.count - 1),
-            };
-          }
-
-          return oldData;
+        if (oldData.pages) {
+          // Infinite query
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              results: filterResults(page.results || []),
+              count: Math.max(0, page.count - 1),
+            })),
+          };
+        } else if (oldData.results) {
+          // Regular paginated query
+          return {
+            ...oldData,
+            results: filterResults(oldData.results),
+            count: Math.max(0, oldData.count - 1),
+          };
         }
-      );
+
+        return oldData;
+      });
 
       // Remove individual thread cache
       queryClient.removeQueries({
@@ -224,48 +200,41 @@ export function useAssignThread(
     MessageThreadDetail,
     Error,
     { threadId: string; data: AssignThreadRequest }
-  >
+  >,
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ threadId, data }) =>
-      messagingApiClient.threads.assignThread(threadId, data),
+    mutationFn: ({ threadId, data }) => messagingApiClient.threads.assignThread(threadId, data),
     onSuccess: (updatedThread, { threadId }) => {
       // Update thread caches (same logic as update thread)
-      queryClient.setQueryData(
-        messagingQueryKeys.thread(threadId),
-        updatedThread
-      );
+      queryClient.setQueryData(messagingQueryKeys.thread(threadId), updatedThread);
 
-      queryClient.setQueriesData(
-        { queryKey: messagingQueryKeys.threads() },
-        (oldData: any) => {
-          if (!oldData) return oldData;
+      queryClient.setQueriesData({ queryKey: messagingQueryKeys.threads() }, (oldData: any) => {
+        if (!oldData) return oldData;
 
-          const updateThreadInResults = (results: any[]) =>
-            results.map(thread =>
-              thread.id === threadId ? { ...thread, ...updatedThread } : thread
-            );
+        const updateThreadInResults = (results: any[]) =>
+          results.map((thread) =>
+            thread.id === threadId ? { ...thread, ...updatedThread } : thread,
+          );
 
-          if (oldData.pages) {
-            return {
-              ...oldData,
-              pages: oldData.pages.map((page: any) => ({
-                ...page,
-                results: updateThreadInResults(page.results || []),
-              })),
-            };
-          } else if (oldData.results) {
-            return {
-              ...oldData,
-              results: updateThreadInResults(oldData.results),
-            };
-          }
-
-          return oldData;
+        if (oldData.pages) {
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              results: updateThreadInResults(page.results || []),
+            })),
+          };
+        } else if (oldData.results) {
+          return {
+            ...oldData,
+            results: updateThreadInResults(oldData.results),
+          };
         }
-      );
+
+        return oldData;
+      });
 
       // Invalidate admin queries
       queryClient.invalidateQueries({
@@ -280,52 +249,45 @@ export function useAssignThread(
  * Mark all messages in a thread as read
  */
 export function useMarkThreadAsRead(
-  options?: UseMutationOptions<MarkAsReadResponse, Error, string>
+  options?: UseMutationOptions<MarkAsReadResponse, Error, string>,
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (threadId: string) =>
-      messagingApiClient.threads.markThreadAsRead(threadId),
+    mutationFn: (threadId: string) => messagingApiClient.threads.markThreadAsRead(threadId),
     onSuccess: (_, threadId) => {
       // Update thread to show 0 unread count
-      queryClient.setQueriesData(
-        { queryKey: messagingQueryKeys.threads() },
-        (oldData: any) => {
-          if (!oldData) return oldData;
+      queryClient.setQueriesData({ queryKey: messagingQueryKeys.threads() }, (oldData: any) => {
+        if (!oldData) return oldData;
 
-          const updateThreadInResults = (results: any[]) =>
-            results.map(thread =>
-              thread.id === threadId ? { ...thread, unread_count: 0 } : thread
-            );
+        const updateThreadInResults = (results: any[]) =>
+          results.map((thread) =>
+            thread.id === threadId ? { ...thread, unread_count: 0 } : thread,
+          );
 
-          if (oldData.pages) {
-            return {
-              ...oldData,
-              pages: oldData.pages.map((page: any) => ({
-                ...page,
-                results: updateThreadInResults(page.results || []),
-              })),
-            };
-          } else if (oldData.results) {
-            return {
-              ...oldData,
-              results: updateThreadInResults(oldData.results),
-            };
-          }
-
-          return oldData;
+        if (oldData.pages) {
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              results: updateThreadInResults(page.results || []),
+            })),
+          };
+        } else if (oldData.results) {
+          return {
+            ...oldData,
+            results: updateThreadInResults(oldData.results),
+          };
         }
-      );
+
+        return oldData;
+      });
 
       // Update individual thread cache
-      queryClient.setQueryData(
-        messagingQueryKeys.thread(threadId),
-        (oldThread: any) => {
-          if (!oldThread) return oldThread;
-          return { ...oldThread, unread_count: 0 };
-        }
-      );
+      queryClient.setQueryData(messagingQueryKeys.thread(threadId), (oldThread: any) => {
+        if (!oldThread) return oldThread;
+        return { ...oldThread, unread_count: 0 };
+      });
     },
     ...options,
   });
@@ -339,13 +301,12 @@ export function useMarkThreadAsRead(
  * Send a new message
  */
 export function useSendMessage(
-  options?: UseMutationOptions<Message, Error, CreateMessageRequest, { previousMessages: unknown }>
+  options?: UseMutationOptions<Message, Error, CreateMessageRequest, { previousMessages: unknown }>,
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: CreateMessageRequest) =>
-      messagingApiClient.messages.sendMessage(data),
+    mutationFn: (data: CreateMessageRequest) => messagingApiClient.messages.sendMessage(data),
     onMutate: async (newMessage): Promise<{ previousMessages: unknown }> => {
       // Create optimistic message
       const optimisticMessage: OptimisticMessage = {
@@ -377,7 +338,7 @@ export function useSendMessage(
 
       // Snapshot the previous value
       const previousMessages = queryClient.getQueryData(
-        messagingQueryKeys.messagesInfinite(newMessage.thread)
+        messagingQueryKeys.messagesInfinite(newMessage.thread),
       );
 
       // Optimistically update to the new value
@@ -391,14 +352,11 @@ export function useSendMessage(
           if (newPages.length > 0) {
             // Add to the most recent page (last page)
             const lastPageIndex = newPages.length - 1;
-            newPages[lastPageIndex] = [
-              ...newPages[lastPageIndex],
-              optimisticMessage,
-            ];
+            newPages[lastPageIndex] = [...newPages[lastPageIndex], optimisticMessage];
           }
 
           return { ...typedOldData, pages: newPages };
-        }
+        },
       );
 
       return { previousMessages };
@@ -408,7 +366,7 @@ export function useSendMessage(
       if (context?.previousMessages) {
         queryClient.setQueryData(
           messagingQueryKeys.messagesInfinite(newMessage.thread),
-          context.previousMessages
+          context.previousMessages,
         );
       }
     },
@@ -419,53 +377,51 @@ export function useSendMessage(
         (oldData: any) => {
           if (!oldData) return oldData;
 
-          const newPages = oldData.pages.map((page: Message[]) =>
-            page
-              .filter(msg => !(msg as OptimisticMessage).isOptimistic) // Remove optimistic message
-              .concat(realMessage) // Add real message
+          const newPages = oldData.pages.map(
+            (page: Message[]) =>
+              page
+                .filter((msg) => !(msg as OptimisticMessage).isOptimistic) // Remove optimistic message
+                .concat(realMessage), // Add real message
           );
 
           return { ...oldData, pages: newPages };
-        }
+        },
       );
 
       // Update thread's last message info
-      queryClient.setQueriesData(
-        { queryKey: messagingQueryKeys.threads() },
-        (oldData: any) => {
-          if (!oldData) return oldData;
+      queryClient.setQueriesData({ queryKey: messagingQueryKeys.threads() }, (oldData: any) => {
+        if (!oldData) return oldData;
 
-          const updateThreadInResults = (results: any[]) =>
-            results.map(thread =>
-              thread.id === newMessage.thread
-                ? {
-                    ...thread,
-                    last_message_at: realMessage.created_at,
-                    last_message_content: realMessage.content,
-                    last_message_sender_name: realMessage.sender.display_name,
-                    last_message_preview: realMessage.content.substring(0, 100),
-                  }
-                : thread
-            );
+        const updateThreadInResults = (results: any[]) =>
+          results.map((thread) =>
+            thread.id === newMessage.thread
+              ? {
+                  ...thread,
+                  last_message_at: realMessage.created_at,
+                  last_message_content: realMessage.content,
+                  last_message_sender_name: realMessage.sender.display_name,
+                  last_message_preview: realMessage.content.substring(0, 100),
+                }
+              : thread,
+          );
 
-          if (oldData.pages) {
-            return {
-              ...oldData,
-              pages: oldData.pages.map((page: any) => ({
-                ...page,
-                results: updateThreadInResults(page.results || []),
-              })),
-            };
-          } else if (oldData.results) {
-            return {
-              ...oldData,
-              results: updateThreadInResults(oldData.results),
-            };
-          }
-
-          return oldData;
+        if (oldData.pages) {
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: any) => ({
+              ...page,
+              results: updateThreadInResults(page.results || []),
+            })),
+          };
+        } else if (oldData.results) {
+          return {
+            ...oldData,
+            results: updateThreadInResults(oldData.results),
+          };
         }
-      );
+
+        return oldData;
+      });
 
       // Invalidate admin stats
       queryClient.invalidateQueries({
@@ -480,11 +436,7 @@ export function useSendMessage(
  * Update a message
  */
 export function useUpdateMessage(
-  options?: UseMutationOptions<
-    Message,
-    Error,
-    { messageId: string; content: string }
-  >
+  options?: UseMutationOptions<Message, Error, { messageId: string; content: string }>,
 ) {
   const queryClient = useQueryClient();
 
@@ -493,39 +445,29 @@ export function useUpdateMessage(
       messagingApiClient.messages.updateMessage(messageId, content),
     onSuccess: (updatedMessage) => {
       // Update message in all relevant caches
-      queryClient.setQueriesData(
-        { queryKey: messagingQueryKeys.messages() },
-        (oldData: any) => {
-          if (!oldData) return oldData;
+      queryClient.setQueriesData({ queryKey: messagingQueryKeys.messages() }, (oldData: any) => {
+        if (!oldData) return oldData;
 
-          const updateMessageInResults = (results: Message[]) =>
-            results.map(message =>
-              message.id === updatedMessage.id ? updatedMessage : message
-            );
+        const updateMessageInResults = (results: Message[]) =>
+          results.map((message) => (message.id === updatedMessage.id ? updatedMessage : message));
 
-          if (oldData.pages) {
-            return {
-              ...oldData,
-              pages: oldData.pages.map((page: Message[]) =>
-                updateMessageInResults(page)
-              ),
-            };
-          } else if (oldData.results) {
-            return {
-              ...oldData,
-              results: updateMessageInResults(oldData.results),
-            };
-          }
-
-          return oldData;
+        if (oldData.pages) {
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: Message[]) => updateMessageInResults(page)),
+          };
+        } else if (oldData.results) {
+          return {
+            ...oldData,
+            results: updateMessageInResults(oldData.results),
+          };
         }
-      );
+
+        return oldData;
+      });
 
       // Update individual message cache
-      queryClient.setQueryData(
-        messagingQueryKeys.message(updatedMessage.id),
-        updatedMessage
-      );
+      queryClient.setQueryData(messagingQueryKeys.message(updatedMessage.id), updatedMessage);
     },
     ...options,
   });
@@ -534,39 +476,33 @@ export function useUpdateMessage(
 /**
  * Delete a message
  */
-export function useDeleteMessage(
-  options?: UseMutationOptions<void, Error, string>
-) {
+export function useDeleteMessage(options?: UseMutationOptions<void, Error, string>) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (messageId: string) =>
-      messagingApiClient.messages.deleteMessage(messageId),
+    mutationFn: (messageId: string) => messagingApiClient.messages.deleteMessage(messageId),
     onSuccess: (_, messageId) => {
       // Remove message from all caches
-      queryClient.setQueriesData(
-        { queryKey: messagingQueryKeys.messages() },
-        (oldData: any) => {
-          if (!oldData) return oldData;
+      queryClient.setQueriesData({ queryKey: messagingQueryKeys.messages() }, (oldData: any) => {
+        if (!oldData) return oldData;
 
-          const filterResults = (results: Message[]) =>
-            results.filter(message => message.id !== messageId);
+        const filterResults = (results: Message[]) =>
+          results.filter((message) => message.id !== messageId);
 
-          if (oldData.pages) {
-            return {
-              ...oldData,
-              pages: oldData.pages.map((page: Message[]) => filterResults(page)),
-            };
-          } else if (oldData.results) {
-            return {
-              ...oldData,
-              results: filterResults(oldData.results),
-            };
-          }
-
-          return oldData;
+        if (oldData.pages) {
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: Message[]) => filterResults(page)),
+          };
+        } else if (oldData.results) {
+          return {
+            ...oldData,
+            results: filterResults(oldData.results),
+          };
         }
-      );
+
+        return oldData;
+      });
 
       // Remove individual message cache
       queryClient.removeQueries({
@@ -581,25 +517,71 @@ export function useDeleteMessage(
  * Mark a specific message as read
  */
 export function useMarkMessageAsRead(
-  options?: UseMutationOptions<MarkAsReadResponse, Error, string>
+  options?: UseMutationOptions<MarkAsReadResponse, Error, string>,
 ) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (messageId: string) =>
-      messagingApiClient.messages.markMessageAsRead(messageId),
+    mutationFn: (messageId: string) => messagingApiClient.messages.markMessageAsRead(messageId),
     onSuccess: (_, messageId) => {
       // Update message read status in caches
-      queryClient.setQueriesData(
-        { queryKey: messagingQueryKeys.messages() },
-        (oldData: any) => {
+      queryClient.setQueriesData({ queryKey: messagingQueryKeys.messages() }, (oldData: any) => {
+        if (!oldData) return oldData;
+
+        const updateMessageInResults = (results: Message[]) =>
+          results.map((message) => {
+            if (message.id === messageId) {
+              // Add current user to read_by array if not already there
+              const currentUserId = 'current-user'; // Get from auth context
+              if (!message.read_by.includes(currentUserId)) {
+                return {
+                  ...message,
+                  read_by: [...message.read_by, currentUserId],
+                };
+              }
+            }
+            return message;
+          });
+
+        if (oldData.pages) {
+          return {
+            ...oldData,
+            pages: oldData.pages.map((page: Message[]) => updateMessageInResults(page)),
+          };
+        } else if (oldData.results) {
+          return {
+            ...oldData,
+            results: updateMessageInResults(oldData.results),
+          };
+        }
+
+        return oldData;
+      });
+    },
+    ...options,
+  });
+}
+
+/**
+ * Bulk mark messages as read
+ */
+export function useBulkMarkAsRead(
+  options?: UseMutationOptions<BulkMarkAsReadResponse, Error, BulkMarkAsReadRequest>,
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: BulkMarkAsReadRequest) => messagingApiClient.messages.bulkMarkAsRead(data),
+    onSuccess: (_, { message_ids }) => {
+      // Update all affected messages
+      message_ids.forEach((messageId) => {
+        queryClient.setQueriesData({ queryKey: messagingQueryKeys.messages() }, (oldData: any) => {
           if (!oldData) return oldData;
 
           const updateMessageInResults = (results: Message[]) =>
-            results.map(message => {
+            results.map((message) => {
               if (message.id === messageId) {
-                // Add current user to read_by array if not already there
-                const currentUserId = 'current-user'; // Get from auth context
+                const currentUserId = 'current-user';
                 if (!message.read_by.includes(currentUserId)) {
                   return {
                     ...message,
@@ -613,9 +595,7 @@ export function useMarkMessageAsRead(
           if (oldData.pages) {
             return {
               ...oldData,
-              pages: oldData.pages.map((page: Message[]) =>
-                updateMessageInResults(page)
-              ),
+              pages: oldData.pages.map((page: Message[]) => updateMessageInResults(page)),
             };
           } else if (oldData.results) {
             return {
@@ -625,63 +605,7 @@ export function useMarkMessageAsRead(
           }
 
           return oldData;
-        }
-      );
-    },
-    ...options,
-  });
-}
-
-/**
- * Bulk mark messages as read
- */
-export function useBulkMarkAsRead(
-  options?: UseMutationOptions<BulkMarkAsReadResponse, Error, BulkMarkAsReadRequest>
-) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: BulkMarkAsReadRequest) =>
-      messagingApiClient.messages.bulkMarkAsRead(data),
-    onSuccess: (_, { message_ids }) => {
-      // Update all affected messages
-      message_ids.forEach(messageId => {
-        queryClient.setQueriesData(
-          { queryKey: messagingQueryKeys.messages() },
-          (oldData: any) => {
-            if (!oldData) return oldData;
-
-            const updateMessageInResults = (results: Message[]) =>
-              results.map(message => {
-                if (message.id === messageId) {
-                  const currentUserId = 'current-user';
-                  if (!message.read_by.includes(currentUserId)) {
-                    return {
-                      ...message,
-                      read_by: [...message.read_by, currentUserId],
-                    };
-                  }
-                }
-                return message;
-              });
-
-            if (oldData.pages) {
-              return {
-                ...oldData,
-                pages: oldData.pages.map((page: Message[]) =>
-                  updateMessageInResults(page)
-                ),
-              };
-            } else if (oldData.results) {
-              return {
-                ...oldData,
-                results: updateMessageInResults(oldData.results),
-              };
-            }
-
-            return oldData;
-          }
-        );
+        });
       });
     },
     ...options,
@@ -696,7 +620,7 @@ export function useBulkMarkAsRead(
  * Bulk assign threads to an admin
  */
 export function useBulkAssignThreads(
-  options?: UseMutationOptions<BulkAssignResponse, Error, BulkAssignThreadsRequest>
+  options?: UseMutationOptions<BulkAssignResponse, Error, BulkAssignThreadsRequest>,
 ) {
   const queryClient = useQueryClient();
 
@@ -720,7 +644,7 @@ export function useBulkAssignThreads(
  * Bulk update thread status
  */
 export function useBulkUpdateThreadStatus(
-  options?: UseMutationOptions<BulkStatusUpdateResponse, Error, BulkUpdateThreadStatusRequest>
+  options?: UseMutationOptions<BulkStatusUpdateResponse, Error, BulkUpdateThreadStatusRequest>,
 ) {
   const queryClient = useQueryClient();
 

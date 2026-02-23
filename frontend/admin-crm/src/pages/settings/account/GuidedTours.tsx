@@ -52,7 +52,7 @@ export const GuidedTours: React.FC = () => {
   }, [setBreadcrumbs]);
 
   const getTourStatus = (tourId: string) => {
-    const progress = preferences.completedTours.find(t => t.tourId === tourId);
+    const progress = preferences.completedTours.find((t) => t.tourId === tourId);
     if (progress?.completed) return 'completed';
     if (progress?.skipped) return 'skipped';
     if (isTourDismissed(tourId as never)) return 'dismissed';
@@ -87,15 +87,13 @@ export const GuidedTours: React.FC = () => {
             control={
               <Switch
                 checked={preferences.autoShowTours}
-                onChange={e => setAutoShowTours(e.target.checked)}
+                onChange={(e) => setAutoShowTours(e.target.checked)}
                 color="primary"
               />
             }
             label={
               <Box>
-                <Typography variant="body1">
-                  Automatically show tours for new features
-                </Typography>
+                <Typography variant="body1">Automatically show tours for new features</Typography>
                 <Typography variant="body2" color="text.secondary">
                   When enabled, relevant tours will automatically start when you visit new features
                 </Typography>

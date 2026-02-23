@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
-import { renderWithProviders } from "../../test/utils/render";
-import { NotificationsPage } from "./NotificationsPage";
+import { describe, it, expect } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import { renderWithProviders } from '../../test/utils/render';
+import { NotificationsPage } from './NotificationsPage';
 
-describe("NotificationsPage", () => {
-  it("renders without crashing", async () => {
+describe('NotificationsPage', () => {
+  it('renders without crashing', async () => {
     renderWithProviders(<NotificationsPage />);
     await waitFor(
       () => {
@@ -14,7 +14,7 @@ describe("NotificationsPage", () => {
     );
   });
 
-  it("renders Notifications heading", async () => {
+  it('renders Notifications heading', async () => {
     renderWithProviders(<NotificationsPage />);
     await waitFor(
       () => {
@@ -26,7 +26,7 @@ describe("NotificationsPage", () => {
     );
   });
 
-  it("renders tab navigation", async () => {
+  it('renders tab navigation', async () => {
     renderWithProviders(<NotificationsPage />);
     await waitFor(
       () => {
@@ -37,13 +37,11 @@ describe("NotificationsPage", () => {
     );
   });
 
-  it("renders Mark All Read button", async () => {
+  it('renders Mark All Read button', async () => {
     renderWithProviders(<NotificationsPage />);
     await waitFor(
       () => {
-        expect(
-          screen.getByRole("button", { name: /mark all read/i }),
-        ).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /mark all read/i })).toBeInTheDocument();
       },
       { timeout: 5000 },
     );

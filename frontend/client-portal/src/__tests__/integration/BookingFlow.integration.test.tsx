@@ -227,7 +227,12 @@ const BookingFlowTest: React.FC = () => {
 
   const handleSelectPackage = async (packageId: number) => {
     setSelectedPackage(packageId);
-    await BookingCoreApi.updateSessionData('session-123', 'step-4', { package_id: packageId }, false);
+    await BookingCoreApi.updateSessionData(
+      'session-123',
+      'step-4',
+      { package_id: packageId },
+      false,
+    );
     const addonData = await ProductsApi.getAddons();
     setAddons(addonData);
     setCurrentStep(4);
@@ -235,12 +240,17 @@ const BookingFlowTest: React.FC = () => {
 
   const handleSelectAddon = (addonId: number) => {
     setSelectedAddons((prev) =>
-      prev.includes(addonId) ? prev.filter((id) => id !== addonId) : [...prev, addonId]
+      prev.includes(addonId) ? prev.filter((id) => id !== addonId) : [...prev, addonId],
     );
   };
 
   const handleContinueFromAddons = async () => {
-    await BookingCoreApi.updateSessionData('session-123', 'step-5', { addon_ids: selectedAddons }, false);
+    await BookingCoreApi.updateSessionData(
+      'session-123',
+      'step-5',
+      { addon_ids: selectedAddons },
+      false,
+    );
     setCurrentStep(5);
   };
 
@@ -587,7 +597,7 @@ describe('Complete Booking Flow Integration Tests', () => {
           'session-123',
           'step-2',
           { venue_id: 1 },
-          false
+          false,
         );
         expect(screen.getByText('Select Date & Time')).toBeInTheDocument();
       });
@@ -885,7 +895,7 @@ describe('Complete Booking Flow Integration Tests', () => {
           'session-123',
           'step-2',
           { venue_id: 1 },
-          false
+          false,
         );
       });
     });

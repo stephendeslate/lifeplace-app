@@ -129,7 +129,15 @@ export const EventCheckIn: React.FC<EventCheckInProps> = ({ eventId, event }) =>
         </Box>
 
         {/* Status Description */}
-        <Alert severity={statusConfig.color === 'error' ? 'error' : statusConfig.color === 'success' ? 'success' : 'info'}>
+        <Alert
+          severity={
+            statusConfig.color === 'error'
+              ? 'error'
+              : statusConfig.color === 'success'
+                ? 'success'
+                : 'info'
+          }
+        >
           {statusConfig.description}
         </Alert>
 
@@ -181,7 +189,11 @@ export const EventCheckIn: React.FC<EventCheckInProps> = ({ eventId, event }) =>
             >
               {isCheckingIn || checkInMutation.isPending ? 'Checking In...' : 'Check In Now'}
             </Button>
-            <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mt: 1, display: 'block', textAlign: 'center' }}
+            >
               Check-in is available on your event day only
             </Typography>
           </Box>
@@ -191,7 +203,9 @@ export const EventCheckIn: React.FC<EventCheckInProps> = ({ eventId, event }) =>
         {event.check_in_status === 'PENDING' && !event.can_self_check_in && (
           <Alert severity="info">
             Check-in will be available on your event day. Please return on{' '}
-            <strong>{formatDateTime(event.scheduled_check_in_time || event.start_date)?.split(',')[0]}</strong>{' '}
+            <strong>
+              {formatDateTime(event.scheduled_check_in_time || event.start_date)?.split(',')[0]}
+            </strong>{' '}
             to check in.
           </Alert>
         )}

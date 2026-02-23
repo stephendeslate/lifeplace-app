@@ -26,7 +26,7 @@ export const workflowsApi = {
    */
   getEventProgress: async (eventId: number): Promise<WorkflowProgress> => {
     const response = await api.get<WorkflowProgress>(
-      `/workflows/client/workflows/events/${eventId}/progress/`
+      `/workflows/client/workflows/events/${eventId}/progress/`,
     );
     return response.data;
   },

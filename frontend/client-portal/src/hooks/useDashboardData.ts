@@ -93,9 +93,9 @@ const calculateQuoteUrgencyScore = (quote: EventQuote): number => {
 
   // Urgency scale: 10 = immediate action needed, 0 = not urgent
   if (daysUntilExpiry <= 0) return 10; // Expired
-  if (daysUntilExpiry <= 1) return 9;  // Expires today/tomorrow
-  if (daysUntilExpiry <= 3) return 7;  // Expires within 3 days
-  if (daysUntilExpiry <= 7) return 5;  // Expires within a week
+  if (daysUntilExpiry <= 1) return 9; // Expires today/tomorrow
+  if (daysUntilExpiry <= 3) return 7; // Expires within 3 days
+  if (daysUntilExpiry <= 7) return 5; // Expires within a week
   if (daysUntilExpiry <= 14) return 3; // Expires within 2 weeks
   if (daysUntilExpiry <= 30) return 1; // Expires within a month
   return 0; // Not urgent
@@ -126,7 +126,9 @@ interface SignatureProgressVariantB {
 type SignatureProgressData = SignatureProgressVariantA | SignatureProgressVariantB;
 
 // Helper to normalize signature progress from different backend formats
-const normalizeSignatureProgress = (progress: SignatureProgressData | undefined): {
+const normalizeSignatureProgress = (
+  progress: SignatureProgressData | undefined,
+): {
   total_required: number;
   signed_count: number;
   percentage: number;
@@ -140,7 +142,7 @@ const normalizeSignatureProgress = (progress: SignatureProgressData | undefined)
     return {
       total_required: progress.total_required,
       signed_count: progress.signed_count,
-      percentage: progress.percentage
+      percentage: progress.percentage,
     };
   }
 
@@ -149,7 +151,7 @@ const normalizeSignatureProgress = (progress: SignatureProgressData | undefined)
     return {
       total_required: progress.total,
       signed_count: progress.completed,
-      percentage: progress.percentage
+      percentage: progress.percentage,
     };
   }
 
@@ -167,11 +169,11 @@ const calculateDaysPastDue = (dueDateString: string): number => {
 // Helper function to calculate financial urgency level
 const calculateFinancialUrgencyLevel = (
   overduePayments: Payment[],
-  outstandingInvoices: Invoice[]
+  outstandingInvoices: Invoice[],
 ): 'low' | 'medium' | 'high' | 'critical' => {
   const overdueCount = overduePayments.length;
-  const overdueInvoiceCount = outstandingInvoices.filter(inv =>
-    calculateDaysPastDue(inv.due_date) > 0
+  const overdueInvoiceCount = outstandingInvoices.filter(
+    (inv) => calculateDaysPastDue(inv.due_date) > 0,
   ).length;
 
   const totalOverdueItems = overdueCount + overdueInvoiceCount;
@@ -200,18 +202,20 @@ export const useDashboardData = (): DashboardData => {
   const communicationsQuery = useRecords(); // Get recent communications
 
   // Calculate loading state
-  const loading = eventsQuery.isLoading ||
-                 upcomingEventsQuery.isLoading ||
-                 pendingQuotesQuery.isLoading ||
-                 financialOverview.isLoading ||
-                 communicationsQuery.isLoading;
+  const loading =
+    eventsQuery.isLoading ||
+    upcomingEventsQuery.isLoading ||
+    pendingQuotesQuery.isLoading ||
+    financialOverview.isLoading ||
+    communicationsQuery.isLoading;
 
   // Calculate error state
-  const error = eventsQuery.error ||
-               upcomingEventsQuery.error ||
-               pendingQuotesQuery.error ||
-               financialOverview.error ||
-               communicationsQuery.error;
+  const error =
+    eventsQuery.error ||
+    upcomingEventsQuery.error ||
+    pendingQuotesQuery.error ||
+    financialOverview.error ||
+    communicationsQuery.error;
 
   // Memoized dashboard data calculation
   const dashboardData = useMemo((): DashboardData => {
@@ -222,7 +226,9 @@ export const useDashboardData = (): DashboardData => {
     const upcomingEvents = Array.isArray(upcomingEventsQuery.data) ? upcomingEventsQuery.data : [];
 
     // Get quotes data
-    const pendingQuotes = Array.isArray(pendingQuotesQuery.data?.results) ? pendingQuotesQuery.data.results : [];
+    const pendingQuotes = Array.isArray(pendingQuotesQuery.data?.results)
+      ? pendingQuotesQuery.data.results
+      : [];
 
     // Get financial data
     const payments = financialOverview.payments || [];
@@ -235,24 +241,23 @@ export const useDashboardData = (): DashboardData => {
 
     // Process quotes needing response (highest priority)
     const quotesNeedingResponse = pendingQuotes
-      .filter(quote => quote.status === 'SENT')
-      .map(quote => ({
+      .filter((quote) => quote.status === 'SENT')
+      .map((quote) => ({
         ...quote,
         urgencyScore: calculateQuoteUrgencyScore(quote),
-        daysUntilExpiry: calculateDaysUntilExpiry(quote.valid_until ?? null)
+        daysUntilExpiry: calculateDaysUntilExpiry(quote.valid_until ?? null),
       }))
       .sort((a, b) => b.urgencyScore - a.urgencyScore)
       .slice(0, 5); // Limit to top 5 most urgent
 
     // Process overdue payments
     const overduePayments = payments
-      .filter(payment =>
-        payment.status === 'PENDING' &&
-        calculateDaysPastDue(payment.due_date) > 0
+      .filter(
+        (payment) => payment.status === 'PENDING' && calculateDaysPastDue(payment.due_date) > 0,
       )
-      .map(payment => ({
+      .map((payment) => ({
         ...payment,
-        daysPastDue: calculateDaysPastDue(payment.due_date)
+        daysPastDue: calculateDaysPastDue(payment.due_date),
       }))
       .sort((a, b) => b.daysPastDue - a.daysPastDue);
 
@@ -263,15 +268,16 @@ export const useDashboardData = (): DashboardData => {
       const eventDetail = event as Event & { upcoming_tasks?: EventTask[] }; // Type assertion for accessing upcoming_tasks
       if (eventDetail.upcoming_tasks && Array.isArray(eventDetail.upcoming_tasks)) {
         const clientTasks = eventDetail.upcoming_tasks
-          .filter((task: EventTask) =>
-            task.requires_client_input &&
-            task.status === 'PENDING' &&
-            (task.priority === 'HIGH' || task.priority === 'URGENT')
+          .filter(
+            (task: EventTask) =>
+              task.requires_client_input &&
+              task.status === 'PENDING' &&
+              (task.priority === 'HIGH' || task.priority === 'URGENT'),
           )
           .map((task: EventTask) => ({
             ...task,
             eventName: event.name,
-            eventId: event.id
+            eventId: event.id,
           }));
         urgentTasks.push(...clientTasks);
       }
@@ -279,7 +285,7 @@ export const useDashboardData = (): DashboardData => {
 
     // Sort urgent tasks by priority and due date
     urgentTasks.sort((a, b) => {
-      const priorityOrder = { 'URGENT': 4, 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 };
+      const priorityOrder = { URGENT: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
       const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
       if (priorityDiff !== 0) return priorityDiff;
 
@@ -316,7 +322,11 @@ export const useDashboardData = (): DashboardData => {
           signature_progress?: SignatureProgressData;
         }>;
       };
-      if (eventDetail.contracts && eventDetail.pending_signature_required && Array.isArray(eventDetail.contracts)) {
+      if (
+        eventDetail.contracts &&
+        eventDetail.pending_signature_required &&
+        Array.isArray(eventDetail.contracts)
+      ) {
         eventDetail.contracts.forEach((contract) => {
           if (contract.can_client_sign && contract.status === 'SENT') {
             contractsNeedingSignature.push({
@@ -325,8 +335,10 @@ export const useDashboardData = (): DashboardData => {
               eventName: event.name,
               templateName: contract.template_name,
               expiresAt: contract.expires_at || null,
-              daysUntilExpiry: contract.expires_at ? calculateDaysUntilExpiry(contract.expires_at) : null,
-              signatureProgress: normalizeSignatureProgress(contract.signature_progress)
+              daysUntilExpiry: contract.expires_at
+                ? calculateDaysUntilExpiry(contract.expires_at)
+                : null,
+              signatureProgress: normalizeSignatureProgress(contract.signature_progress),
             });
           }
         });
@@ -344,28 +356,35 @@ export const useDashboardData = (): DashboardData => {
     // ============ EVENT STATUS ============
 
     // Find next upcoming event
-    const nextUpcomingEvent = upcomingEvents
-      .filter((event: Event) => new Date(event.start_date) > now)
-      .sort((a: Event, b: Event) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime())[0] || null;
+    const nextUpcomingEvent =
+      upcomingEvents
+        .filter((event: Event) => new Date(event.start_date) > now)
+        .sort(
+          (a: Event, b: Event) =>
+            new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),
+        )[0] || null;
 
     // Calculate current event progress
     let currentEventProgress = null;
-    const currentEvent = allEvents.find((event: Event) =>
-      event.status === 'IN_PROGRESS' ||
-      (new Date(event.start_date) <= now && new Date(event.end_date) >= now)
+    const currentEvent = allEvents.find(
+      (event: Event) =>
+        event.status === 'IN_PROGRESS' ||
+        (new Date(event.start_date) <= now && new Date(event.end_date) >= now),
     );
 
     if (currentEvent) {
       const currentEventDetail = currentEvent as Event & { upcoming_tasks?: EventTask[] };
       if (currentEventDetail.upcoming_tasks && Array.isArray(currentEventDetail.upcoming_tasks)) {
         const totalTasks = currentEventDetail.upcoming_tasks.length;
-        const completedTasks = currentEventDetail.upcoming_tasks.filter((task: EventTask) => task.status === 'COMPLETED').length;
+        const completedTasks = currentEventDetail.upcoming_tasks.filter(
+          (task: EventTask) => task.status === 'COMPLETED',
+        ).length;
 
         currentEventProgress = {
           event: currentEvent,
           completedTasks,
           totalTasks,
-          progressPercentage: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+          progressPercentage: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
         };
       }
     }
@@ -382,7 +401,15 @@ export const useDashboardData = (): DashboardData => {
 
     allEvents.forEach((event: Event) => {
       // Check if event has recent_updates (from EventDetail interface)
-      const eventDetail = event as Event & { recent_updates?: Array<{ id: number; title: string; description: string; created_at: string; type: string }> }; // Type assertion for accessing recent_updates
+      const eventDetail = event as Event & {
+        recent_updates?: Array<{
+          id: number;
+          title: string;
+          description: string;
+          created_at: string;
+          type: string;
+        }>;
+      }; // Type assertion for accessing recent_updates
       if (eventDetail.recent_updates && Array.isArray(eventDetail.recent_updates)) {
         eventDetail.recent_updates.forEach((update) => {
           recentUpdates.push({
@@ -391,14 +418,16 @@ export const useDashboardData = (): DashboardData => {
             eventName: event.name,
             action_type: update.type,
             description: update.description,
-            created_at: update.created_at
+            created_at: update.created_at,
           });
         });
       }
     });
 
     // Sort by most recent and limit to 5
-    recentUpdates.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    recentUpdates.sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
     const limitedRecentUpdates = recentUpdates.slice(0, 5);
 
     // ============ FINANCIAL SUMMARY ============
@@ -406,7 +435,7 @@ export const useDashboardData = (): DashboardData => {
     // Process outstanding invoices - only include invoices with actual remaining balance
     // Use is_fully_paid boolean (calculated on backend) as the source of truth
     const outstandingInvoices = invoices
-      .filter(invoice => {
+      .filter((invoice) => {
         // Exclude fully paid invoices (is_fully_paid is calculated from related payments)
         if (invoice.is_fully_paid) {
           return false;
@@ -415,9 +444,9 @@ export const useDashboardData = (): DashboardData => {
         const remainingAmount = parseFloat(invoice.remaining_amount || '0');
         return remainingAmount > 0.01; // Use small epsilon to handle floating point
       })
-      .map(invoice => ({
+      .map((invoice) => ({
         ...invoice,
-        daysPastDue: calculateDaysPastDue(invoice.due_date)
+        daysPastDue: calculateDaysPastDue(invoice.due_date),
       }))
       .sort((a, b) => b.daysPastDue - a.daysPastDue);
 
@@ -431,8 +460,12 @@ export const useDashboardData = (): DashboardData => {
 
     // Recent payments (already processed in financialOverview)
     const recentPayments = payments
-      .filter(payment => payment.status === 'COMPLETED')
-      .sort((a, b) => new Date(b.paid_on || b.created_at).getTime() - new Date(a.paid_on || a.created_at).getTime())
+      .filter((payment) => payment.status === 'COMPLETED')
+      .sort(
+        (a, b) =>
+          new Date(b.paid_on || b.created_at).getTime() -
+          new Date(a.paid_on || a.created_at).getTime(),
+      )
       .slice(0, 5);
 
     // Calculate financial urgency level
@@ -441,18 +474,18 @@ export const useDashboardData = (): DashboardData => {
     // ============ COMMUNICATIONS ============
 
     // Count unread messages
-    const unreadCount = communications.filter(comm => !comm.is_opened).length;
+    const unreadCount = communications.filter((comm) => !comm.is_opened).length;
 
     // Recent messages (limit to 5)
     const recentMessages = communications
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5)
-      .map(comm => ({
+      .map((comm) => ({
         id: comm.id,
         channel: comm.channel,
         subject: comm.subject || '',
         created_at: comm.created_at,
-        is_opened: comm.is_opened
+        is_opened: comm.is_opened,
       }));
 
     // Important notifications (derived from various sources)
@@ -465,32 +498,32 @@ export const useDashboardData = (): DashboardData => {
     }> = [];
 
     // Add quote expiry notifications
-    quotesNeedingResponse.forEach(quote => {
+    quotesNeedingResponse.forEach((quote) => {
       if (quote.daysUntilExpiry <= 3) {
         importantNotifications.push({
           id: `quote-${quote.id}`,
           type: 'quote_expiry',
           message: `Quote for ${quote.event_details.name || 'your event'} expires in ${quote.daysUntilExpiry} day${quote.daysUntilExpiry !== 1 ? 's' : ''}`,
           created_at: quote.valid_until ?? now.toISOString(),
-          severity: quote.daysUntilExpiry <= 1 ? 'error' : 'warning'
+          severity: quote.daysUntilExpiry <= 1 ? 'error' : 'warning',
         });
       }
     });
 
     // Add overdue payment notifications
-    overduePayments.forEach(payment => {
+    overduePayments.forEach((payment) => {
       importantNotifications.push({
         id: `payment-${payment.id}`,
         type: 'payment_overdue',
         message: `Payment ${payment.payment_number} is ${payment.daysPastDue} day${payment.daysPastDue !== 1 ? 's' : ''} overdue`,
         created_at: payment.due_date,
-        severity: 'error'
+        severity: 'error',
       });
     });
 
     // Sort notifications by severity and date
     importantNotifications.sort((a, b) => {
-      const severityOrder = { 'error': 3, 'warning': 2, 'info': 1 };
+      const severityOrder = { error: 3, warning: 2, info: 1 };
       const severityDiff = severityOrder[b.severity] - severityOrder[a.severity];
       if (severityDiff !== 0) return severityDiff;
 
@@ -502,34 +535,34 @@ export const useDashboardData = (): DashboardData => {
         quotesNeedingResponse,
         overduePayments,
         urgentTasks: urgentTasks.slice(0, 5), // Limit to top 5
-        contractsNeedingSignature: contractsNeedingSignature.slice(0, 5) // Limit to top 5
+        contractsNeedingSignature: contractsNeedingSignature.slice(0, 5), // Limit to top 5
       },
       eventStatus: {
         nextUpcomingEvent,
         currentEventProgress,
-        recentUpdates: limitedRecentUpdates
+        recentUpdates: limitedRecentUpdates,
       },
       financialSummary: {
         outstandingInvoices,
         recentPayments,
         totalOutstanding,
-        urgencyLevel
+        urgencyLevel,
       },
       communications: {
         unreadCount,
         recentMessages,
-        importantNotifications: importantNotifications.slice(0, 10) // Limit to top 10
+        importantNotifications: importantNotifications.slice(0, 10), // Limit to top 10
       },
       loading: false,
       error: null,
-      lastUpdated: now
+      lastUpdated: now,
     };
   }, [
     eventsQuery.data,
     upcomingEventsQuery.data,
     pendingQuotesQuery.data,
     financialOverview,
-    communicationsQuery.data
+    communicationsQuery.data,
   ]);
 
   return {

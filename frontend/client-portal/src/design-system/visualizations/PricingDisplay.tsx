@@ -6,36 +6,21 @@
 // - InvoiceViewer.tsx
 
 import React from 'react';
-import { 
-  Box, 
-  Typography, 
-  Chip, 
-  Divider,
-  Tooltip,
-  IconButton,
-  Collapse
-} from '@mui/material';
+import { Box, Typography, Chip, Divider, Tooltip, IconButton, Collapse } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import {
-  ExpandMore,
-  ExpandLess,
-  LocalOffer,
-  Schedule,
-  AttachMoney
-} from '@mui/icons-material';
+import { ExpandMore, ExpandLess, LocalOffer, Schedule, AttachMoney } from '@mui/icons-material';
 import { tokens } from '../tokens';
 import { GlassCard } from '../components/GlassCard';
 import { AnimatedElement } from '../components/AnimatedElement';
 
 // Import actual types from backend
-import type { 
-  ProductOption, 
-  Discount, 
+import type {
+  ProductOption,
+  Discount,
   PricingCalculation,
   SelectedPackage,
-  SelectedAddon
+  SelectedAddon,
 } from '../../types/booking/stepData.types';
-
 
 // Updated to use actual backend data structures
 interface PricingDisplayProps {
@@ -55,7 +40,7 @@ const StyledPriceContainer = styled(Box)(() => ({
   borderRadius: tokens.spacing.radius.card,
   background: `linear-gradient(135deg, ${tokens.color.base.forest[50]} 0%, ${tokens.color.base.gold[50]} 100%)`,
   overflow: 'hidden',
-  
+
   '&::before': {
     content: '""',
     position: 'absolute',
@@ -74,7 +59,7 @@ const StyledBreakdownItem = styled(Box)(() => ({
   alignItems: 'center',
   padding: `${tokens.spacing.space[1]} 0`,
   transition: tokens.animation.transition.all,
-  
+
   '&:hover': {
     transform: 'translateX(4px)',
   },
@@ -85,7 +70,7 @@ const StyledSavingsBadge = styled(Chip)(() => ({
   color: 'white',
   fontWeight: 600,
   animation: 'pulse 2s infinite',
-  
+
   '@keyframes pulse': {
     '0%': { transform: 'scale(1)' },
     '50%': { transform: 'scale(1.05)' },
@@ -104,18 +89,18 @@ export const PricingDisplay: React.FC<PricingDisplayProps> = ({
   compact = false,
 }) => {
   const [showDetails, setShowDetails] = React.useState(!compact);
-  
+
   const formatPrice = (price: string | number) => {
     const numPrice = typeof price === 'string' ? parseFloat(price) : price;
     return `${currency}${numPrice.toLocaleString()}`;
   };
-  
+
   const hasDiscount = appliedDiscount && pricingCalculation.discount_details;
   const subtotal = parseFloat(pricingCalculation.subtotal);
   const total = parseFloat(pricingCalculation.total);
   const discount = parseFloat(pricingCalculation.discount);
   const tax = parseFloat(pricingCalculation.tax);
-  
+
   return (
     <GlassCard variant="light" intensity="medium" hover={false}>
       <StyledPriceContainer>
@@ -142,14 +127,14 @@ export const PricingDisplay: React.FC<PricingDisplayProps> = ({
               >
                 {formatPrice(total)}
               </Typography>
-              
+
               {tax > 0 && (
                 <Typography variant="caption" color="text.secondary">
                   (includes {formatPrice(tax)} tax)
                 </Typography>
               )}
             </Box>
-            
+
             {hasDiscount && (
               <StyledSavingsBadge
                 icon={<LocalOffer />}
@@ -157,7 +142,7 @@ export const PricingDisplay: React.FC<PricingDisplayProps> = ({
               />
             )}
           </Box>
-          
+
           {/* Toggle Details */}
           {compact && (
             <Box display="flex" justifyContent="center">
@@ -170,7 +155,7 @@ export const PricingDisplay: React.FC<PricingDisplayProps> = ({
               </IconButton>
             </Box>
           )}
-          
+
           {/* Price Breakdown */}
           <Collapse in={showDetails && showBreakdown}>
             {(selectedPackages.length > 0 || selectedAddons.length > 0) && (
@@ -202,7 +187,7 @@ export const PricingDisplay: React.FC<PricingDisplayProps> = ({
                       </StyledBreakdownItem>
                     </AnimatedElement>
                   ))}
-                  
+
                   {/* Addons */}
                   {selectedAddons.map((addon, index) => (
                     <AnimatedElement
@@ -223,30 +208,25 @@ export const PricingDisplay: React.FC<PricingDisplayProps> = ({
                       </StyledBreakdownItem>
                     </AnimatedElement>
                   ))}
-                  
+
                   {/* Tax */}
                   {tax > 0 && (
                     <StyledBreakdownItem>
                       <Typography variant="body2">Tax</Typography>
-                      <Typography variant="body2">
-                        {formatPrice(tax)}
-                      </Typography>
+                      <Typography variant="body2">{formatPrice(tax)}</Typography>
                     </StyledBreakdownItem>
                   )}
                 </Box>
               </>
             )}
-            
+
             {/* Discount Details */}
             {hasDiscount && discount > 0 && (
               <>
                 <Divider sx={{ my: 2, borderColor: tokens.color.base.sage[200] }} />
                 <StyledBreakdownItem>
                   <Box display="flex" alignItems="center" gap={1}>
-                    <Typography
-                      variant="body2"
-                      color={tokens.color.semantic.success.main}
-                    >
+                    <Typography variant="body2" color={tokens.color.semantic.success.main}>
                       {pricingCalculation.discount_details?.name}
                     </Typography>
                     {pricingCalculation.discount_details?.code && (
@@ -267,8 +247,7 @@ export const PricingDisplay: React.FC<PricingDisplayProps> = ({
                 </StyledBreakdownItem>
               </>
             )}
-            
-            
+
             {/* Total Summary */}
             <Divider sx={{ my: 2, borderColor: tokens.color.base.sage[200] }} />
             <Box
@@ -285,14 +264,13 @@ export const PricingDisplay: React.FC<PricingDisplayProps> = ({
                   {formatPrice(total)}
                 </Typography>
               </Box>
-              
+
               {hasDiscount && discount > 0 && (
                 <Typography variant="caption" color={tokens.color.semantic.success.dark}>
                   You saved {formatPrice(discount)}
                 </Typography>
               )}
             </Box>
-            
           </Collapse>
         </AnimatedElement>
       </StyledPriceContainer>
@@ -309,14 +287,14 @@ export const ProductCard: React.FC<{
 }> = ({ product, selected = false, onSelect, showDetails = true }) => {
   const basePrice = parseFloat(product.base_price);
   const hasExcessHours = product.has_excess_hours && product.excess_hour_price;
-  
+
   return (
     <Box
       onClick={() => onSelect?.(product)}
       sx={{
         p: 3,
         borderRadius: tokens.spacing.radius.card,
-        background: selected 
+        background: selected
           ? tokens.color.gradients.forest
           : tokens.color.glass.lightGlass.background,
         backdropFilter: tokens.color.glass.lightGlass.backdropFilter,
@@ -327,11 +305,13 @@ export const ProductCard: React.FC<{
         transition: tokens.animation.transition.all,
         cursor: onSelect ? 'pointer' : 'default',
         opacity: product.is_active ? 1 : 0.6,
-        
-        '&:hover': onSelect ? {
-          transform: 'translateY(-2px)',
-          boxShadow: tokens.shadow.elevation.lg,
-        } : {},
+
+        '&:hover': onSelect
+          ? {
+              transform: 'translateY(-2px)',
+              boxShadow: tokens.shadow.elevation.lg,
+            }
+          : {},
       }}
     >
       {/* Product Type Badge */}
@@ -354,18 +334,18 @@ export const ProductCard: React.FC<{
           />
         )}
       </Box>
-      
+
       {/* Product Name & Description */}
       <Typography variant="h5" fontWeight={600} mb={1}>
         {product.name}
       </Typography>
-      
+
       {showDetails && product.description && (
         <Typography variant="body2" sx={{ opacity: 0.8, mb: 2 }}>
           {product.description}
         </Typography>
       )}
-      
+
       {/* Pricing */}
       <Box display="flex" alignItems="baseline" gap={1} mb={2}>
         <Typography variant="h4" fontWeight={700}>
@@ -373,27 +353,28 @@ export const ProductCard: React.FC<{
         </Typography>
         {product.pricing_unit ? (
           <Typography variant="body2" sx={{ opacity: 0.7 }}>
-            {product.pricing_unit_display?.toLowerCase() || product.pricing_unit.replace('PER_', 'per ').toLowerCase()}
+            {product.pricing_unit_display?.toLowerCase() ||
+              product.pricing_unit.replace('PER_', 'per ').toLowerCase()}
           </Typography>
-        ) : product.pricing_model === 'HOURLY' && (
-          <Typography variant="body2" sx={{ opacity: 0.7 }}>
-            per hour
-          </Typography>
+        ) : (
+          product.pricing_model === 'HOURLY' && (
+            <Typography variant="body2" sx={{ opacity: 0.7 }}>
+              per hour
+            </Typography>
+          )
         )}
       </Box>
-      
+
       {/* Package Details */}
       {showDetails && (
         <Box>
           {product.included_hours && (
             <Box display="flex" alignItems="center" gap={1} mb={1}>
               <Schedule sx={{ fontSize: 16 }} />
-              <Typography variant="body2">
-                Includes {product.included_hours} hours
-              </Typography>
+              <Typography variant="body2">Includes {product.included_hours} hours</Typography>
             </Box>
           )}
-          
+
           {hasExcessHours && (
             <Box display="flex" alignItems="center" gap={1} mb={1}>
               <AttachMoney sx={{ fontSize: 16 }} />
@@ -402,7 +383,7 @@ export const ProductCard: React.FC<{
               </Typography>
             </Box>
           )}
-          
+
           {product.advance_booking_days && (
             <Typography variant="caption" display="block" sx={{ opacity: 0.7, mt: 1 }}>
               Book at least {product.advance_booking_days} days in advance
@@ -410,7 +391,7 @@ export const ProductCard: React.FC<{
           )}
         </Box>
       )}
-      
+
       {!product.is_active && (
         <Typography variant="caption" color="error" display="block" mt={1}>
           Currently unavailable
@@ -428,13 +409,13 @@ export const PriceCard: React.FC<{
   highlight?: boolean;
 }> = ({ price, label, period = 'starting from', highlight = false }) => {
   const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-  
+
   return (
     <Box
       sx={{
         p: 2,
         borderRadius: tokens.spacing.radius.md,
-        background: highlight 
+        background: highlight
           ? tokens.color.gradients.forest
           : tokens.color.glass.lightGlass.background,
         backdropFilter: tokens.color.glass.lightGlass.backdropFilter,
@@ -443,7 +424,7 @@ export const PriceCard: React.FC<{
           : tokens.color.glass.lightGlass.border,
         color: highlight ? 'white' : 'inherit',
         transition: tokens.animation.transition.all,
-        
+
         '&:hover': {
           transform: 'translateY(-2px)',
           boxShadow: tokens.shadow.elevation.lg,
@@ -455,11 +436,11 @@ export const PriceCard: React.FC<{
           {label}
         </Typography>
       )}
-      
+
       <Typography variant="h4" fontWeight={700}>
         ₱{numPrice.toLocaleString()}
       </Typography>
-      
+
       <Typography variant="caption" sx={{ opacity: 0.8 }}>
         {period}
       </Typography>

@@ -1,25 +1,16 @@
-import React, { useState } from "react";
-import {
-  Box,
-  Drawer,
-  useTheme,
-  useMediaQuery,
-  Fab,
-  Container,
-} from "@mui/material";
-import { Settings as SettingsIcon } from "@mui/icons-material";
-import { EnhancedSettingsNavigation } from "../../components/settings/EnhancedSettingsNavigation";
-import { EnhancedSettingsProvider } from "../../contexts/EnhancedSettingsContext";
+import React, { useState } from 'react';
+import { Box, Drawer, useTheme, useMediaQuery, Fab, Container } from '@mui/material';
+import { Settings as SettingsIcon } from '@mui/icons-material';
+import { EnhancedSettingsNavigation } from '../../components/settings/EnhancedSettingsNavigation';
+import { EnhancedSettingsProvider } from '../../contexts/EnhancedSettingsContext';
 
 interface EnhancedSettingsLayoutProps {
   children: React.ReactNode;
 }
 
-export const EnhancedSettingsLayout: React.FC<EnhancedSettingsLayoutProps> = ({
-  children,
-}) => {
+export const EnhancedSettingsLayout: React.FC<EnhancedSettingsLayoutProps> = ({ children }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -47,10 +38,10 @@ export const EnhancedSettingsLayout: React.FC<EnhancedSettingsLayoutProps> = ({
     <EnhancedSettingsProvider>
       <Box
         sx={{
-          display: "flex",
-          minHeight: "100%",
-          bgcolor: "background.default",
-          position: "relative",
+          display: 'flex',
+          minHeight: '100%',
+          bgcolor: 'background.default',
+          position: 'relative',
         }}
       >
         {/* Mobile Floating Action Button */}
@@ -58,18 +49,18 @@ export const EnhancedSettingsLayout: React.FC<EnhancedSettingsLayoutProps> = ({
           <Fab
             onClick={handleDrawerToggle}
             sx={{
-              position: "fixed",
+              position: 'fixed',
               bottom: 24,
               right: 24,
               zIndex: theme.zIndex.fab,
               background: `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.secondary.main} 90%)`,
-              color: "white",
+              color: 'white',
               boxShadow: theme.shadows[8],
-              "&:hover": {
+              '&:hover': {
                 boxShadow: theme.shadows[12],
-                transform: "scale(1.1)",
+                transform: 'scale(1.1)',
               },
-              transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
             <SettingsIcon />
@@ -86,10 +77,10 @@ export const EnhancedSettingsLayout: React.FC<EnhancedSettingsLayoutProps> = ({
               keepMounted: true,
             }}
             sx={{
-              "& .MuiDrawer-paper": {
+              '& .MuiDrawer-paper': {
                 width: 320,
-                boxSizing: "border-box",
-                borderRadius: "0 16px 16px 0",
+                boxSizing: 'border-box',
+                borderRadius: '0 16px 16px 0',
               },
             }}
           >
@@ -100,20 +91,20 @@ export const EnhancedSettingsLayout: React.FC<EnhancedSettingsLayoutProps> = ({
             sx={{
               width: sidebarCollapsed ? 80 : 320,
               flexShrink: 0,
-              transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+              transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
             <Box
               sx={{
                 width: sidebarCollapsed ? 80 : 320,
-                height: "calc(100vh - 64px)", // Account for header height
-                position: "fixed",
+                height: 'calc(100vh - 64px)', // Account for header height
+                position: 'fixed',
                 left: 0,
                 top: 64, // Start below the header (header height is typically 64px)
-                transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 zIndex: theme.zIndex.drawer - 1, // Lower z-index than header
-                borderRight: "1px solid",
-                borderColor: "divider",
+                borderRight: '1px solid',
+                borderColor: 'divider',
               }}
             >
               {navigationContent}
@@ -127,10 +118,10 @@ export const EnhancedSettingsLayout: React.FC<EnhancedSettingsLayoutProps> = ({
           sx={{
             flexGrow: 1,
             minWidth: 0,
-            minHeight: "100%",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
+            minHeight: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
           }}
         >
           <Container
@@ -139,20 +130,20 @@ export const EnhancedSettingsLayout: React.FC<EnhancedSettingsLayoutProps> = ({
               flex: 1,
               px: { xs: 2, sm: 3, md: 4 }, // 8px grid system
               py: { xs: 3, sm: 4, md: 5 }, // 8px grid system
-              maxWidth: "min(1200px, 100%)", // Responsive max-width that adapts to available space
+              maxWidth: 'min(1200px, 100%)', // Responsive max-width that adapts to available space
               ml: 0, // Left-align to avoid gap after sidebar
-              mr: "auto",
-              display: "flex",
-              flexDirection: "column",
-              animation: "fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-              "@keyframes fadeInUp": {
+              mr: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              animation: 'fadeInUp 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              '@keyframes fadeInUp': {
                 from: {
                   opacity: 0,
-                  transform: "translateY(20px)",
+                  transform: 'translateY(20px)',
                 },
                 to: {
                   opacity: 1,
-                  transform: "translateY(0)",
+                  transform: 'translateY(0)',
                 },
               },
             }}

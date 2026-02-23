@@ -21,7 +21,7 @@ export const formatNumber = (
     locale?: string;
     minimumFractionDigits?: number;
     maximumFractionDigits?: number;
-  } = {}
+  } = {},
 ): string => {
   const { locale = 'en-PH', minimumFractionDigits = 0, maximumFractionDigits = 0 } = options;
 
@@ -43,7 +43,7 @@ export const formatCompactNumber = (
   options: {
     locale?: string;
     maximumFractionDigits?: number;
-  } = {}
+  } = {},
 ): string => {
   const { locale = 'en-PH', maximumFractionDigits = 1 } = options;
 
@@ -86,7 +86,7 @@ export const formatNumberRange = (
   options: {
     locale?: string;
     separator?: string;
-  } = {}
+  } = {},
 ): string => {
   const { locale = 'en-PH', separator = ' - ' } = options;
   return `${formatNumber(min, { locale })}${separator}${formatNumber(max, { locale })}`;
@@ -112,7 +112,7 @@ export const formatOrdinal = (value: number): string => {
  */
 export const getThresholdColor = (
   value: number,
-  thresholds: { success: number; warning: number }
+  thresholds: { success: number; warning: number },
 ): 'success' | 'warning' | 'error' => {
   if (value >= thresholds.success) return 'success';
   if (value >= thresholds.warning) return 'warning';

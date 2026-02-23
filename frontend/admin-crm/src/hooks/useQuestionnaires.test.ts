@@ -1,21 +1,21 @@
 // frontend/admin-crm/src/hooks/useQuestionnaires.test.ts
 
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import {
   useQuestionnaires,
   useQuestionnaireFields,
   useQuestionnaireResponses,
-} from "./useQuestionnaires";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+} from './useQuestionnaires';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
-describe("useQuestionnaires", () => {
-  describe("Query Operations", () => {
-    it("fetches questionnaires successfully", async () => {
+describe('useQuestionnaires', () => {
+  describe('Query Operations', () => {
+    it('fetches questionnaires successfully', async () => {
       const { result } = renderHook(() => useQuestionnaires(), {
         wrapper: createTestWrapper(),
       });
@@ -31,14 +31,14 @@ describe("useQuestionnaires", () => {
 
       expect(result.current.questionnaires.length).toBeGreaterThan(0);
       expect(result.current.totalCount).toBeGreaterThan(0);
-      expect(result.current.questionnaires[0]).toHaveProperty("name");
-      expect(result.current.questionnaires[0]).toHaveProperty("is_active");
+      expect(result.current.questionnaires[0]).toHaveProperty('name');
+      expect(result.current.questionnaires[0]).toHaveProperty('is_active');
     });
 
-    it("handles API error gracefully", async () => {
+    it('handles API error gracefully', async () => {
       server.use(
         http.get(`${BASE_URL}/questionnaires/questionnaires/`, () => {
-          return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+          return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
         }),
       );
 
@@ -56,7 +56,7 @@ describe("useQuestionnaires", () => {
       expect(result.current.isLoadingQuestionnaires).toBe(false);
     });
 
-    it("returns pagination metadata", async () => {
+    it('returns pagination metadata', async () => {
       const { result } = renderHook(() => useQuestionnaires(), {
         wrapper: createTestWrapper(),
       });
@@ -68,14 +68,14 @@ describe("useQuestionnaires", () => {
         { timeout: 5000 },
       );
 
-      expect(typeof result.current.totalCount).toBe("number");
-      expect(typeof result.current.pageCount).toBe("number");
+      expect(typeof result.current.totalCount).toBe('number');
+      expect(typeof result.current.pageCount).toBe('number');
       expect(result.current.pageCount).toBeGreaterThanOrEqual(1);
     });
   });
 
-  describe("Mutation Operations", () => {
-    it("creates a questionnaire", async () => {
+  describe('Mutation Operations', () => {
+    it('creates a questionnaire', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useQuestionnaires(), { wrapper });
 
@@ -88,7 +88,7 @@ describe("useQuestionnaires", () => {
 
       act(() => {
         result.current.createQuestionnaire({
-          name: "New Questionnaire",
+          name: 'New Questionnaire',
           event_type: 1,
           is_active: true,
           order: 1,
@@ -105,7 +105,7 @@ describe("useQuestionnaires", () => {
       expect(result.current.createError).toBeFalsy();
     });
 
-    it("updates a questionnaire", async () => {
+    it('updates a questionnaire', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useQuestionnaires(), { wrapper });
 
@@ -122,7 +122,7 @@ describe("useQuestionnaires", () => {
       act(() => {
         result.current.updateQuestionnaire({
           id: questionnaire.id,
-          data: { name: "Updated Questionnaire" },
+          data: { name: 'Updated Questionnaire' },
         });
       });
 
@@ -136,7 +136,7 @@ describe("useQuestionnaires", () => {
       expect(result.current.updateError).toBeFalsy();
     });
 
-    it("deletes a questionnaire", async () => {
+    it('deletes a questionnaire', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useQuestionnaires(), { wrapper });
 
@@ -162,7 +162,7 @@ describe("useQuestionnaires", () => {
       expect(result.current.deleteError).toBeFalsy();
     });
 
-    it("reorders questionnaires", async () => {
+    it('reorders questionnaires', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useQuestionnaires(), { wrapper });
 
@@ -192,8 +192,8 @@ describe("useQuestionnaires", () => {
   });
 });
 
-describe("useQuestionnaireFields", () => {
-  it("fetches fields successfully", async () => {
+describe('useQuestionnaireFields', () => {
+  it('fetches fields successfully', async () => {
     const { result } = renderHook(() => useQuestionnaireFields(), {
       wrapper: createTestWrapper(),
     });
@@ -211,7 +211,7 @@ describe("useQuestionnaireFields", () => {
     expect(result.current.fieldsError).toBeFalsy();
   });
 
-  it("creates a field", async () => {
+  it('creates a field', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useQuestionnaireFields(), { wrapper });
 
@@ -225,8 +225,8 @@ describe("useQuestionnaireFields", () => {
     act(() => {
       result.current.createField({
         questionnaire: 1,
-        name: "New Field",
-        type: "text",
+        name: 'New Field',
+        type: 'text',
         required: true,
         order: 1,
       });
@@ -242,7 +242,7 @@ describe("useQuestionnaireFields", () => {
     expect(result.current.createFieldError).toBeFalsy();
   });
 
-  it("deletes a field", async () => {
+  it('deletes a field', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useQuestionnaireFields(), { wrapper });
 
@@ -269,8 +269,8 @@ describe("useQuestionnaireFields", () => {
   });
 });
 
-describe("useQuestionnaireResponses", () => {
-  it("fetches responses successfully", async () => {
+describe('useQuestionnaireResponses', () => {
+  it('fetches responses successfully', async () => {
     const { result } = renderHook(() => useQuestionnaireResponses(), {
       wrapper: createTestWrapper(),
     });
@@ -288,10 +288,10 @@ describe("useQuestionnaireResponses", () => {
     expect(result.current.responsesError).toBeFalsy();
   });
 
-  it("handles responses API error", async () => {
+  it('handles responses API error', async () => {
     server.use(
       http.get(`${BASE_URL}/questionnaires/responses/`, () => {
-        return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+        return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
       }),
     );
 
@@ -307,7 +307,7 @@ describe("useQuestionnaireResponses", () => {
     );
   });
 
-  it("saves event responses", async () => {
+  it('saves event responses', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useQuestionnaireResponses(), {
       wrapper,
@@ -324,8 +324,8 @@ describe("useQuestionnaireResponses", () => {
       result.current.saveEventResponses({
         event_id: 1,
         responses: [
-          { field: 1, value: "Answer 1" },
-          { field: 2, value: "Answer 2" },
+          { field: 1, value: 'Answer 1' },
+          { field: 2, value: 'Answer 2' },
         ],
       });
     });

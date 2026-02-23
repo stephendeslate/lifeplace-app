@@ -42,7 +42,11 @@ const QuoteSendConfirmDialog: React.FC<QuoteSendConfirmDialogProps> = ({
   const handleConfirm = async () => {
     try {
       await sendQuoteMutation.mutateAsync(quote.id);
-      showToast({ type: 'success', title: 'Quote Sent', message: 'Quote sent to client successfully' });
+      showToast({
+        type: 'success',
+        title: 'Quote Sent',
+        message: 'Quote sent to client successfully',
+      });
       onSuccess();
     } catch (error) {
       showToast({ type: 'error', title: 'Send Failed', message: 'Failed to send quote' });

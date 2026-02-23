@@ -87,11 +87,7 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Use centralized form handlers
-  const { handleSwitchChange } = useFormHandlers(
-    setFormData,
-    errors,
-    setErrors
-  );
+  const { handleSwitchChange } = useFormHandlers(setFormData, errors, setErrors);
 
   const {
     useAvailableQuestionnaires,
@@ -103,10 +99,10 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
     updateConfigurationError,
   } = useBookingFlowStepConfiguration();
 
-  const { 
-    data: availableQuestionnaires = [], 
+  const {
+    data: availableQuestionnaires = [],
     isLoading: isLoadingQuestionnaires,
-    error: questionnairesError 
+    error: questionnairesError,
   } = useAvailableQuestionnaires(step.id);
 
   useEffect(() => {
@@ -123,36 +119,40 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
   // Clear errors when data changes
   useEffect(() => {
     if (assignQuestionnairesError || updateConfigurationError) {
-      const errorMessage = (assignQuestionnairesError as { message?: string })?.message || 
-                          (updateConfigurationError as { message?: string })?.message || 
-                          'An error occurred';
+      const errorMessage =
+        (assignQuestionnairesError as { message?: string })?.message ||
+        (updateConfigurationError as { message?: string })?.message ||
+        'An error occurred';
       setErrors({ general: errorMessage });
     } else {
       setErrors({});
     }
   }, [assignQuestionnairesError, updateConfigurationError]);
 
-  const handleInputChange = (field: keyof QuestionnaireConfigFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | 
-           { target: { value: unknown } }
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
+  const handleInputChange =
+    (field: keyof QuestionnaireConfigFormData) =>
+    (
+      event:
+        | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        | { target: { value: unknown } },
+    ) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
         ...prev,
-        [field]: '',
+        [field]: value,
       }));
-    }
-  };
+
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: '',
+        }));
+      }
+    };
 
   const handleFileTypesChange = (value: string[]) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       allowed_file_types: value,
     }));
@@ -165,7 +165,7 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
       if (formData.max_file_size_mb <= 0 || formData.max_file_size_mb > 100) {
         newErrors.max_file_size_mb = 'File size must be between 1 and 100 MB';
       }
-      
+
       if (formData.allowed_file_types.length === 0) {
         newErrors.allowed_file_types = 'At least one file type must be allowed';
       }
@@ -180,7 +180,7 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
       try {
         await assignQuestionnaires({
           stepId: step.id,
-          data: { questionnaire_ids: selectedQuestionnaires }
+          data: { questionnaire_ids: selectedQuestionnaires },
         });
         setSelectedQuestionnaires([]);
         setAddDialogOpen(false);
@@ -194,17 +194,17 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
 
   const handleRemoveQuestionnaire = async (itemId: number) => {
     // Get the questionnaire ID from the item to remove
-    const itemToRemove = questionnaireItems.find(item => item.id === itemId);
+    const itemToRemove = questionnaireItems.find((item) => item.id === itemId);
     if (!itemToRemove) return;
 
     // Create new list excluding the removed questionnaire
-    const remainingItems = questionnaireItems.filter(item => item.id !== itemId);
-    const remainingQuestionnaireIds = remainingItems.map(item => item.questionnaire);
+    const remainingItems = questionnaireItems.filter((item) => item.id !== itemId);
+    const remainingQuestionnaireIds = remainingItems.map((item) => item.questionnaire);
 
     try {
       await assignQuestionnaires({
         stepId: step.id,
-        data: { questionnaire_ids: remainingQuestionnaireIds }
+        data: { questionnaire_ids: remainingQuestionnaireIds },
       });
       // Update local state immediately for better UX
       setQuestionnaireItems(remainingItems);
@@ -223,9 +223,9 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
           allow_file_uploads: formData.allow_file_uploads,
           max_file_size_mb: formData.max_file_size_mb,
           allowed_file_types: formData.allowed_file_types,
-        }
+        },
       });
-      
+
       // Also call the parent onUpdate for any additional handling
       onUpdate({
         allow_file_uploads: formData.allow_file_uploads,
@@ -238,8 +238,8 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
   };
 
   const getQuestionnaireNotAssigned = () => {
-    const assignedIds = questionnaireItems.map(item => item.questionnaire);
-    return availableQuestionnaires.filter(q => !assignedIds.includes(q.id));
+    const assignedIds = questionnaireItems.map((item) => item.questionnaire);
+    return availableQuestionnaires.filter((q) => !assignedIds.includes(q.id));
   };
 
   const isOperationLoading = isLoading || isUpdatingConfiguration || isAssigningQuestionnaires;
@@ -249,7 +249,7 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
       <Typography variant="h6" gutterBottom>
         Questionnaire Step Configuration
       </Typography>
-      
+
       <Alert severity="info" sx={{ mb: 3 }}>
         Configure which questionnaires to show and file upload settings for this step.
       </Alert>
@@ -283,33 +283,35 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
           </Box>
 
           {isLoadingQuestionnaires ? (
-              <Alert severity="info">Loading available questionnaires...</Alert>
-            ) : questionnaireItems.length === 0 ? (
-              <Alert severity="warning">
-                No questionnaires assigned. Clients will skip this step if no questionnaires are configured.
-              </Alert>
-            ) : (
-              <List dense>
-                {questionnaireItems
-                  .sort((a, b) => a.order - b.order)
-                  .map((item) => (
-                  <ListItem 
+            <Alert severity="info">Loading available questionnaires...</Alert>
+          ) : questionnaireItems.length === 0 ? (
+            <Alert severity="warning">
+              No questionnaires assigned. Clients will skip this step if no questionnaires are
+              configured.
+            </Alert>
+          ) : (
+            <List dense>
+              {questionnaireItems
+                .sort((a, b) => a.order - b.order)
+                .map((item) => (
+                  <ListItem
                     key={item.id}
-                    sx={{ 
-                      border: 1, 
-                      borderColor: 'divider', 
-                      borderRadius: 1, 
+                    sx={{
+                      border: 1,
+                      borderColor: 'divider',
+                      borderRadius: 1,
                       mb: 1,
-                      backgroundColor: 'background.paper'
+                      backgroundColor: 'background.paper',
                     }}
                   >
                     <DragIcon color="action" sx={{ mr: 1, cursor: 'grab' }} />
-                    
+
                     <ListItemText
                       primary={
                         <Box display="flex" alignItems="center" gap={1}>
                           <Typography variant="body2" fontWeight="medium">
-                            {item.questionnaire_details?.name || `Questionnaire ${item.questionnaire}`}
+                            {item.questionnaire_details?.name ||
+                              `Questionnaire ${item.questionnaire}`}
                           </Typography>
                           <Chip
                             label={`${item.questionnaire_details?.fields_count || 0} fields`}
@@ -321,11 +323,7 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                       }
                       secondary={
                         <Box display="flex" gap={1} mt={0.5}>
-                          <Chip
-                            label={`Order: ${item.order}`}
-                            size="small"
-                            variant="outlined"
-                          />
+                          <Chip label={`Order: ${item.order}`} size="small" variant="outlined" />
                           {item.is_conditional && (
                             <Chip
                               label="Conditional"
@@ -337,7 +335,7 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                         </Box>
                       }
                     />
-                    
+
                     <ListItemSecondaryAction>
                       <IconButton
                         edge="end"
@@ -351,113 +349,112 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                     </ListItemSecondaryAction>
                   </ListItem>
                 ))}
-              </List>
-            )}
+            </List>
+          )}
         </ConfigSection>
 
         {/* File Upload Settings */}
         <ConfigSection title="File Upload Settings">
           <Stack spacing={2}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.allow_file_uploads}
-                    onChange={handleSwitchChange('allow_file_uploads')}
-                    disabled={isOperationLoading}
-                  />
-                }
-                label="Allow File Uploads"
-              />
-              <Typography variant="caption" color="text.secondary">
-                Allow clients to upload files as part of questionnaire responses
-              </Typography>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formData.allow_file_uploads}
+                  onChange={handleSwitchChange('allow_file_uploads')}
+                  disabled={isOperationLoading}
+                />
+              }
+              label="Allow File Uploads"
+            />
+            <Typography variant="caption" color="text.secondary">
+              Allow clients to upload files as part of questionnaire responses
+            </Typography>
 
-              {formData.allow_file_uploads && (
-                <>
-                  <TextField
-                    label="Maximum File Size (MB)"
-                    type="number"
-                    value={formData.max_file_size_mb}
-                    onChange={handleInputChange('max_file_size_mb')}
-                    error={!!errors.max_file_size_mb}
-                    helperText={errors.max_file_size_mb || "Maximum file size allowed per upload"}
-                    inputProps={{ min: 1, max: 100 }}
-                    disabled={isOperationLoading}
-                    sx={{ maxWidth: 300 }}
-                  />
+            {formData.allow_file_uploads && (
+              <>
+                <TextField
+                  label="Maximum File Size (MB)"
+                  type="number"
+                  value={formData.max_file_size_mb}
+                  onChange={handleInputChange('max_file_size_mb')}
+                  error={!!errors.max_file_size_mb}
+                  helperText={errors.max_file_size_mb || 'Maximum file size allowed per upload'}
+                  inputProps={{ min: 1, max: 100 }}
+                  disabled={isOperationLoading}
+                  sx={{ maxWidth: 300 }}
+                />
 
-                  <FormControl 
-                    fullWidth 
-                    error={!!errors.allowed_file_types}
-                    disabled={isOperationLoading}
-                  >
-                    <InputLabel>Allowed File Types</InputLabel>
-                    <Select
-                      multiple
-                      value={formData.allowed_file_types}
-                      onChange={(e) => handleFileTypesChange(e.target.value as string[])}
-                      label="Allowed File Types"
-                      renderValue={(selected) => (
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                          {selected.map((value) => (
-                            <Chip key={value} label={value.toUpperCase()} size="small" />
-                          ))}
-                        </Box>
-                      )}
-                    >
-                      {FILE_TYPE_OPTIONS.map((option) => (
-                        <MenuItem key={option.value} value={option.value}>
-                          <Checkbox checked={formData.allowed_file_types.includes(option.value)} />
-                          <MuiListItemText primary={option.label} />
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.allowed_file_types && (
-                      <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
-                        {errors.allowed_file_types}
-                      </Typography>
+                <FormControl
+                  fullWidth
+                  error={!!errors.allowed_file_types}
+                  disabled={isOperationLoading}
+                >
+                  <InputLabel>Allowed File Types</InputLabel>
+                  <Select
+                    multiple
+                    value={formData.allowed_file_types}
+                    onChange={(e) => handleFileTypesChange(e.target.value as string[])}
+                    label="Allowed File Types"
+                    renderValue={(selected) => (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        {selected.map((value) => (
+                          <Chip key={value} label={value.toUpperCase()} size="small" />
+                        ))}
+                      </Box>
                     )}
-                  </FormControl>
-                </>
-              )}
-            </Stack>
+                  >
+                    {FILE_TYPE_OPTIONS.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        <Checkbox checked={formData.allowed_file_types.includes(option.value)} />
+                        <MuiListItemText primary={option.label} />
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.allowed_file_types && (
+                    <Typography variant="caption" color="error" sx={{ mt: 0.5 }}>
+                      {errors.allowed_file_types}
+                    </Typography>
+                  )}
+                </FormControl>
+              </>
+            )}
+          </Stack>
         </ConfigSection>
 
         {/* Summary */}
         <ConfigSection title="Configuration Summary">
           <Stack spacing={1}>
-              <Typography variant="body2">
-                <strong>Questionnaires:</strong> {questionnaireItems.length} assigned
-              </Typography>
-              
-              <Typography variant="body2">
-                <strong>File Uploads:</strong> {formData.allow_file_uploads ? 'Enabled' : 'Disabled'}
-              </Typography>
-              
-              {formData.allow_file_uploads && (
-                <>
-                  <Typography variant="body2">
-                    <strong>Max File Size:</strong> {formData.max_file_size_mb} MB
-                  </Typography>
-                  
-                  <Typography variant="body2">
-                    <strong>Allowed Types:</strong> {formData.allowed_file_types.length > 0 ? formData.allowed_file_types.join(', ').toUpperCase() : 'None'}
-                  </Typography>
-                </>
-              )}
-            </Stack>
+            <Typography variant="body2">
+              <strong>Questionnaires:</strong> {questionnaireItems.length} assigned
+            </Typography>
+
+            <Typography variant="body2">
+              <strong>File Uploads:</strong> {formData.allow_file_uploads ? 'Enabled' : 'Disabled'}
+            </Typography>
+
+            {formData.allow_file_uploads && (
+              <>
+                <Typography variant="body2">
+                  <strong>Max File Size:</strong> {formData.max_file_size_mb} MB
+                </Typography>
+
+                <Typography variant="body2">
+                  <strong>Allowed Types:</strong>{' '}
+                  {formData.allowed_file_types.length > 0
+                    ? formData.allowed_file_types.join(', ').toUpperCase()
+                    : 'None'}
+                </Typography>
+              </>
+            )}
+          </Stack>
         </ConfigSection>
 
         {/* Actions */}
         <Box display="flex" gap={2}>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={isOperationLoading}
-          >
+          <Button variant="contained" onClick={handleSave} disabled={isOperationLoading}>
             {isUpdatingConfiguration ? 'Saving...' : 'Save Configuration'}
           </Button>
-          
+
           <Button
             variant="outlined"
             onClick={() => {
@@ -472,28 +469,21 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
       </Stack>
 
       {/* Add Questionnaire Dialog */}
-      <Dialog 
-        open={addDialogOpen} 
-        onClose={() => setAddDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={addDialogOpen} onClose={() => setAddDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>
           <Box display="flex" alignItems="center" gap={1}>
             <QuestionnaireIcon color="primary" />
             Add Questionnaires
           </Box>
         </DialogTitle>
-        
+
         <DialogContent>
           <Typography variant="body2" color="text.secondary" gutterBottom>
             Select questionnaires to add to this step. They will be shown in the order selected.
           </Typography>
-          
+
           {isLoadingQuestionnaires ? (
-            <Alert severity="info">
-              Loading available questionnaires...
-            </Alert>
+            <Alert severity="info">Loading available questionnaires...</Alert>
           ) : getQuestionnaireNotAssigned().length === 0 ? (
             <Alert severity="info">
               All available questionnaires are already assigned to this step.
@@ -501,23 +491,25 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
           ) : (
             <List>
               {getQuestionnaireNotAssigned().map((questionnaire) => (
-                <ListItem 
+                <ListItem
                   key={questionnaire.id}
                   component="button"
                   onClick={() => {
                     const isSelected = selectedQuestionnaires.includes(questionnaire.id);
                     if (isSelected) {
-                      setSelectedQuestionnaires(prev => prev.filter(id => id !== questionnaire.id));
+                      setSelectedQuestionnaires((prev) =>
+                        prev.filter((id) => id !== questionnaire.id),
+                      );
                     } else {
-                      setSelectedQuestionnaires(prev => [...prev, questionnaire.id]);
+                      setSelectedQuestionnaires((prev) => [...prev, questionnaire.id]);
                     }
                   }}
-                  sx={{ 
-                    width: '100%', 
+                  sx={{
+                    width: '100%',
                     textAlign: 'left',
                     '&:hover': {
                       backgroundColor: 'action.hover',
-                    }
+                    },
                   }}
                   disabled={isAssigningQuestionnaires}
                 >
@@ -531,9 +523,7 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                     primary={questionnaire.name}
                     secondary={
                       <Box display="flex" alignItems="center" gap={1}>
-                        <Typography variant="caption">
-                          {questionnaire.name}
-                        </Typography>
+                        <Typography variant="caption">{questionnaire.name}</Typography>
                         {questionnaire.event_type && (
                           <Chip
                             label={`Event Type: ${questionnaire.event_type}`}
@@ -542,19 +532,9 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
                           />
                         )}
                         {questionnaire.is_active ? (
-                          <Chip
-                            label="Active"
-                            size="small"
-                            color="success"
-                            variant="outlined"
-                          />
+                          <Chip label="Active" size="small" color="success" variant="outlined" />
                         ) : (
-                          <Chip
-                            label="Inactive"
-                            size="small"
-                            color="error"
-                            variant="outlined"
-                          />
+                          <Chip label="Inactive" size="small" color="error" variant="outlined" />
                         )}
                       </Box>
                     }
@@ -564,9 +544,9 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
             </List>
           )}
         </DialogContent>
-        
+
         <DialogActions>
-          <Button 
+          <Button
             onClick={() => {
               setAddDialogOpen(false);
               setSelectedQuestionnaires([]);
@@ -580,7 +560,9 @@ export const QuestionnaireStepConfig: React.FC<QuestionnaireStepConfigProps> = (
             variant="contained"
             disabled={selectedQuestionnaires.length === 0 || isAssigningQuestionnaires}
           >
-            {isAssigningQuestionnaires ? 'Adding...' : `Add ${selectedQuestionnaires.length} Questionnaire${selectedQuestionnaires.length !== 1 ? 's' : ''}`}
+            {isAssigningQuestionnaires
+              ? 'Adding...'
+              : `Add ${selectedQuestionnaires.length} Questionnaire${selectedQuestionnaires.length !== 1 ? 's' : ''}`}
           </Button>
         </DialogActions>
       </Dialog>

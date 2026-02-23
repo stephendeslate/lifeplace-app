@@ -1,71 +1,70 @@
 // Questionnaire Templates Settings Page - Standardized Version
 // Migrated to use the unified settings system
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Quiz as QuestionnaireIcon,
   Edit as EditIcon,
   Visibility as PreviewIcon,
-} from "@mui/icons-material";
+} from '@mui/icons-material';
 import {
   PermissionAwareSettingsPage,
   type SettingsPageConfig,
   type SettingsTableColumn,
-} from "../../../components/common/settings";
-import { useQuestionnaires } from "../../../hooks/useQuestionnaires";
-import { useSettingsPagination } from "../../../hooks/useSettingsPagination";
-import { useEventTypes } from "../../../hooks/useEvents";
+} from '../../../components/common/settings';
+import { useQuestionnaires } from '../../../hooks/useQuestionnaires';
+import { useSettingsPagination } from '../../../hooks/useSettingsPagination';
+import { useEventTypes } from '../../../hooks/useEvents';
 import type {
   Questionnaire,
   CreateQuestionnaireData,
   UpdateQuestionnaireData,
-} from "../../../types/questionnaires.types";
-import type { ModernFormSection } from "../../../components/common/ModernForm";
+} from '../../../types/questionnaires.types';
+import type { ModernFormSection } from '../../../components/common/ModernForm';
 import {
   ManageQuestionsDialog,
   QuestionnairePreviewDialog,
-} from "../../../components/questionnaires";
+} from '../../../components/questionnaires';
 
 // Table columns configuration
 const columns: SettingsTableColumn<Questionnaire>[] = [
   {
-    key: "name",
-    label: "Questionnaire Name",
+    key: 'name',
+    label: 'Questionnaire Name',
     sortable: true,
     searchable: true,
   },
   {
-    key: "event_type_name",
-    label: "Event Type",
+    key: 'event_type_name',
+    label: 'Event Type',
     render: (value) => {
-      const eventTypeName = value as Questionnaire["event_type_name"];
-      return eventTypeName || "Any Event Type";
+      const eventTypeName = value as Questionnaire['event_type_name'];
+      return eventTypeName || 'Any Event Type';
     },
   },
   {
-    key: "fields_count",
-    label: "Questions",
-    align: "center",
+    key: 'fields_count',
+    label: 'Questions',
+    align: 'center',
     render: (value) => String(value || 0),
   },
   {
-    key: "order",
-    label: "Display Order",
-    align: "center",
+    key: 'order',
+    label: 'Display Order',
+    align: 'center',
     sortable: true,
   },
   {
-    key: "is_active",
-    label: "Status",
-    align: "center",
-    render: (value) => (value ? "Active" : "Inactive"),
+    key: 'is_active',
+    label: 'Status',
+    align: 'center',
+    render: (value) => (value ? 'Active' : 'Inactive'),
   },
   {
-    key: "updated_at",
-    label: "Last Modified",
+    key: 'updated_at',
+    label: 'Last Modified',
     sortable: true,
-    render: (value) =>
-      value ? new Date(String(value)).toLocaleDateString() : "-",
+    render: (value) => (value ? new Date(String(value)).toLocaleDateString() : '-'),
   },
 ];
 
@@ -74,44 +73,43 @@ const createFormSections = (
   eventTypes: Array<{ id: number; name: string }>,
 ): ModernFormSection[] => [
   {
-    title: "Basic Information",
+    title: 'Basic Information',
     fields: [
       {
-        name: "name",
-        label: "Questionnaire Name",
-        type: "text",
+        name: 'name',
+        label: 'Questionnaire Name',
+        type: 'text',
         required: true,
-        placeholder: "e.g., Wedding Planning Questionnaire",
-        helperText: "A descriptive name for this questionnaire",
+        placeholder: 'e.g., Wedding Planning Questionnaire',
+        helperText: 'A descriptive name for this questionnaire',
       },
       {
-        name: "event_type",
-        label: "Event Type",
-        type: "select",
-        helperText: "Leave empty to use for any event type",
+        name: 'event_type',
+        label: 'Event Type',
+        type: 'select',
+        helperText: 'Leave empty to use for any event type',
         options: [
-          { value: "", label: "Any Event Type" },
+          { value: '', label: 'Any Event Type' },
           ...eventTypes.map((et) => ({ value: et.id, label: et.name })),
         ],
       },
       {
-        name: "order",
-        label: "Display Order",
-        type: "number",
+        name: 'order',
+        label: 'Display Order',
+        type: 'number',
         required: true,
-        helperText:
-          "Order in which this questionnaire appears (lower numbers first)",
+        helperText: 'Order in which this questionnaire appears (lower numbers first)',
       },
     ],
   },
   {
-    title: "Settings",
+    title: 'Settings',
     fields: [
       {
-        name: "is_active",
-        label: "Active",
-        type: "switch",
-        helperText: "Active questionnaires are shown to clients during booking",
+        name: 'is_active',
+        label: 'Active',
+        type: 'switch',
+        helperText: 'Active questionnaires are shown to clients during booking',
       },
     ],
   },
@@ -120,22 +118,21 @@ const createFormSections = (
 // Default values for new questionnaire templates
 const defaultQuestionnaire: Questionnaire = {
   id: 0,
-  name: "",
+  name: '',
   event_type: null,
-  event_type_name: "",
+  event_type_name: '',
   is_active: true,
   order: 1,
   fields_count: 0,
   fields: [],
-  created_at: "",
-  updated_at: "",
+  created_at: '',
+  updated_at: '',
 };
 
 export const QuestionnaireTemplates = () => {
   const [manageQuestionsOpen, setManageQuestionsOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [selectedQuestionnaire, setSelectedQuestionnaire] =
-    useState<Questionnaire | null>(null);
+  const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<Questionnaire | null>(null);
   const paginationState = useSettingsPagination({ defaultPageSize: 25 });
 
   // Get questionnaires and event types
@@ -165,34 +162,33 @@ export const QuestionnaireTemplates = () => {
   // Settings page configuration
   const config: SettingsPageConfig<Questionnaire> = {
     page: {
-      title: "Questionnaire Templates",
-      subtitle: "Manage questionnaires to collect information from clients",
+      title: 'Questionnaire Templates',
+      subtitle: 'Manage questionnaires to collect information from clients',
       icon: React.createElement(QuestionnaireIcon),
       breadcrumbs: [
-        { label: "Settings", href: "/settings" },
-        { label: "Templates", href: "/settings/templates" },
-        { label: "Questionnaire Templates" },
+        { label: 'Settings', href: '/settings' },
+        { label: 'Templates', href: '/settings/templates' },
+        { label: 'Questionnaire Templates' },
       ],
     },
 
     table: {
       columns,
-      searchFields: ["name"],
-      defaultSort: { key: "order", order: "asc" },
+      searchFields: ['name'],
+      defaultSort: { key: 'order', order: 'asc' },
       emptyState: {
         icon: React.createElement(QuestionnaireIcon),
-        title: "No Questionnaires Found",
+        title: 'No Questionnaires Found',
         description:
-          "Create your first questionnaire to start collecting information from clients.",
+          'Create your first questionnaire to start collecting information from clients.',
       },
     },
 
     form: {
-      title: "Questionnaire Template",
-      subtitle:
-        "Configure questionnaire settings. Questions can be managed after creation.",
+      title: 'Questionnaire Template',
+      subtitle: 'Configure questionnaire settings. Questions can be managed after creation.',
       sections: createFormSections(eventTypes),
-      maxWidth: "md",
+      maxWidth: 'md',
     },
 
     features: {
@@ -257,11 +253,8 @@ export const QuestionnaireTemplates = () => {
   };
 
   // Fetch fresh questionnaire data before editing to ensure we have the latest values
-  const handleFetchItem = async (
-    id: string | number,
-  ): Promise<Questionnaire> => {
-    const { questionnairesApi } =
-      await import("../../../apis/questionnaires.api");
+  const handleFetchItem = async (id: string | number): Promise<Questionnaire> => {
+    const { questionnairesApi } = await import('../../../apis/questionnaires.api');
     return questionnairesApi.getQuestionnaire(Number(id));
   };
 
@@ -289,7 +282,7 @@ export const QuestionnaireTemplates = () => {
     <>
       <PermissionAwareSettingsPage
         config={config}
-        requiredPermissions={["can_manage_templates"]}
+        requiredPermissions={['can_manage_templates']}
         data={questionnaires}
         defaultValues={defaultQuestionnaire}
         isLoading={isLoadingQuestionnaires}
@@ -304,16 +297,16 @@ export const QuestionnaireTemplates = () => {
         isDeleting={isDeletingQuestionnaire}
         customTableActions={[
           {
-            label: "Preview",
+            label: 'Preview',
             icon: React.createElement(PreviewIcon),
             onClick: handlePreview,
-            color: "secondary",
+            color: 'secondary',
           },
           {
-            label: "Manage Questions",
+            label: 'Manage Questions',
             icon: React.createElement(EditIcon),
             onClick: handleManageQuestions,
-            color: "primary",
+            color: 'primary',
           },
         ]}
         pagination={{

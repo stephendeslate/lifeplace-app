@@ -4,87 +4,87 @@
 export const spacingTokens = {
   // Base spacing scale (8px base unit)
   space: {
-    0: '0px',       // 0
-    1: '4px',       // 0.5 units
-    2: '8px',       // 1 unit
-    3: '12px',      // 1.5 units
-    4: '16px',      // 2 units
-    5: '20px',      // 2.5 units
-    6: '24px',      // 3 units
-    7: '28px',      // 3.5 units
-    8: '32px',      // 4 units
-    10: '40px',     // 5 units
-    12: '48px',     // 6 units
-    14: '56px',     // 7 units
-    16: '64px',     // 8 units
-    20: '80px',     // 10 units
-    24: '96px',     // 12 units
-    28: '112px',    // 14 units
-    32: '128px',    // 16 units
-    40: '160px',    // 20 units
-    48: '192px',    // 24 units
-    56: '224px',    // 28 units
-    64: '256px',    // 32 units
+    0: '0px', // 0
+    1: '4px', // 0.5 units
+    2: '8px', // 1 unit
+    3: '12px', // 1.5 units
+    4: '16px', // 2 units
+    5: '20px', // 2.5 units
+    6: '24px', // 3 units
+    7: '28px', // 3.5 units
+    8: '32px', // 4 units
+    10: '40px', // 5 units
+    12: '48px', // 6 units
+    14: '56px', // 7 units
+    16: '64px', // 8 units
+    20: '80px', // 10 units
+    24: '96px', // 12 units
+    28: '112px', // 14 units
+    32: '128px', // 16 units
+    40: '160px', // 20 units
+    48: '192px', // 24 units
+    56: '224px', // 28 units
+    64: '256px', // 32 units
   },
 
   // Semantic spacing for specific use cases
   semantic: {
     // Component internal spacing
-    xs: '4px',      // Tight spacing within components
-    sm: '8px',      // Small component spacing
-    md: '16px',     // Default component spacing
-    lg: '24px',     // Generous component spacing
-    xl: '32px',     // Large component spacing
-    xxl: '48px',    // Extra large spacing
-    xxxl: '64px',   // Maximum component spacing
+    xs: '4px', // Tight spacing within components
+    sm: '8px', // Small component spacing
+    md: '16px', // Default component spacing
+    lg: '24px', // Generous component spacing
+    xl: '32px', // Large component spacing
+    xxl: '48px', // Extra large spacing
+    xxxl: '64px', // Maximum component spacing
 
     // Layout spacing
-    sectionGap: '48px',     // Between major sections
-    containerGap: '32px',   // Between containers
-    cardGap: '24px',        // Between cards
-    itemGap: '16px',        // Between list items
-    elementGap: '12px',     // Between inline elements
-    inlineGap: '8px',       // Between inline elements
-    tightGap: '4px',        // Tight spacing
+    sectionGap: '48px', // Between major sections
+    containerGap: '32px', // Between containers
+    cardGap: '24px', // Between cards
+    itemGap: '16px', // Between list items
+    elementGap: '12px', // Between inline elements
+    inlineGap: '8px', // Between inline elements
+    tightGap: '4px', // Tight spacing
 
     // Padding presets
-    pageDefault: '32px',    // Default page padding
-    pageMobile: '16px',     // Mobile page padding
-    cardDefault: '24px',    // Default card padding
-    cardCompact: '16px',    // Compact card padding
-    cardGenerous: '32px',   // Generous card padding
-    buttonDefault: '16px',  // Default button padding
-    inputDefault: '12px',   // Default input padding
+    pageDefault: '32px', // Default page padding
+    pageMobile: '16px', // Mobile page padding
+    cardDefault: '24px', // Default card padding
+    cardCompact: '16px', // Compact card padding
+    cardGenerous: '32px', // Generous card padding
+    buttonDefault: '16px', // Default button padding
+    inputDefault: '12px', // Default input padding
   },
 
   // Border radius scale
   radius: {
     none: '0px',
-    sm: '4px',      // Small radius
-    md: '6px',      // Default radius
-    lg: '8px',      // Large radius
-    xl: '12px',     // Extra large radius
-    xxl: '16px',    // Card radius
-    xxxl: '24px',   // Container radius
+    sm: '4px', // Small radius
+    md: '6px', // Default radius
+    lg: '8px', // Large radius
+    xl: '12px', // Extra large radius
+    xxl: '16px', // Card radius
+    xxxl: '24px', // Container radius
     full: '9999px', // Pill/circular
   },
 
   // Container and layout dimensions
   container: {
     // Max widths for different contexts
-    sm: '640px',    // Small container
-    md: '768px',    // Medium container
-    lg: '1024px',   // Large container
-    xl: '1280px',   // Extra large container
-    xxl: '1536px',  // Maximum container
+    sm: '640px', // Small container
+    md: '768px', // Medium container
+    lg: '1024px', // Large container
+    xl: '1280px', // Extra large container
+    xxl: '1536px', // Maximum container
 
     // Page containers
-    page: '1200px',     // Main page content
+    page: '1200px', // Main page content
     dashboard: '1400px', // Dashboard specific
-    modal: '600px',     // Modal dialogs
-    sidebar: '280px',   // Sidebar width
+    modal: '600px', // Modal dialogs
+    sidebar: '280px', // Sidebar width
     sidebarCollapsed: '64px', // Collapsed sidebar
-    header: '64px',     // Header height
+    header: '64px', // Header height
   },
 
   // Z-index scale for layering
@@ -106,12 +106,12 @@ export const spacingTokens = {
 
   // Breakpoints for responsive design
   breakpoints: {
-    xs: '320px',    // Mobile portrait
-    sm: '768px',    // Tablet portrait  
-    md: '1024px',   // Tablet landscape / small laptop
-    lg: '1280px',   // Desktop
-    xl: '1440px',   // Large desktop
-    xxl: '1920px',  // Ultra-wide
+    xs: '320px', // Mobile portrait
+    sm: '768px', // Tablet portrait
+    md: '1024px', // Tablet landscape / small laptop
+    lg: '1280px', // Desktop
+    xl: '1440px', // Large desktop
+    xxl: '1920px', // Ultra-wide
   },
 
   // Component-specific spacing patterns
@@ -139,47 +139,47 @@ export const spacingTokens = {
 
     // Form spacing
     form: {
-      fieldGap: '20px',     // Between form fields
-      sectionGap: '32px',   // Between form sections
-      labelGap: '8px',      // Between label and input
-      helperGap: '4px',     // Between input and helper text
-      buttonGap: '12px',    // Between form buttons
+      fieldGap: '20px', // Between form fields
+      sectionGap: '32px', // Between form sections
+      labelGap: '8px', // Between label and input
+      helperGap: '4px', // Between input and helper text
+      buttonGap: '12px', // Between form buttons
     },
 
     // List spacing
     list: {
-      itemGap: '12px',      // Between list items
-      sectionGap: '24px',   // Between list sections
-      indentSize: '24px',   // List indentation
+      itemGap: '12px', // Between list items
+      sectionGap: '24px', // Between list sections
+      indentSize: '24px', // List indentation
     },
 
     // Navigation spacing
     navigation: {
-      itemGap: '4px',       // Between nav items
-      sectionGap: '16px',   // Between nav sections
-      iconGap: '12px',      // Between icon and text
-      badgeGap: '8px',      // Between text and badge
+      itemGap: '4px', // Between nav items
+      sectionGap: '16px', // Between nav sections
+      iconGap: '12px', // Between icon and text
+      badgeGap: '8px', // Between text and badge
     },
 
     // Table spacing
     table: {
-      cellPadding: '12px',  // Table cell padding
-      rowGap: '0px',        // Between table rows
+      cellPadding: '12px', // Table cell padding
+      rowGap: '0px', // Between table rows
       headerPadding: '16px', // Table header padding
     },
 
     // Modal/Dialog spacing
     dialog: {
-      padding: '24px',      // Dialog content padding
-      buttonGap: '12px',    // Between dialog buttons
-      titleGap: '16px',     // Between title and content
+      padding: '24px', // Dialog content padding
+      buttonGap: '12px', // Between dialog buttons
+      titleGap: '16px', // Between title and content
     },
 
     // Toast/Alert spacing
     toast: {
-      padding: '16px',      // Toast padding
-      gap: '12px',          // Between toast elements
-      margin: '8px',        // Between toasts
+      padding: '16px', // Toast padding
+      gap: '12px', // Between toast elements
+      margin: '8px', // Between toasts
     },
   },
 } as const;
@@ -247,11 +247,7 @@ export const getRadius = (scale: RadiusScale): string => {
 };
 
 // Responsive spacing helper
-export const createResponsiveSpacing = (
-  mobile: string,
-  tablet?: string,
-  desktop?: string
-) => ({
+export const createResponsiveSpacing = (mobile: string, tablet?: string, desktop?: string) => ({
   mobile,
   tablet: tablet || mobile,
   desktop: desktop || tablet || mobile,
@@ -270,7 +266,7 @@ export const padding = {
 
 export const margin = {
   xs: spacingTokens.semantic.xs,
-  sm: spacingTokens.semantic.sm, 
+  sm: spacingTokens.semantic.sm,
   md: spacingTokens.semantic.md,
   lg: spacingTokens.semantic.lg,
   xl: spacingTokens.semantic.xl,

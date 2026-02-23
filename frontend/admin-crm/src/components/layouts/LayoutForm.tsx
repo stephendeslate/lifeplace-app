@@ -60,17 +60,16 @@ const SAMPLE_CONTENT = `
 <p>Best regards,<br>The LifePlace Team</p>
 `;
 
-export const LayoutForm: React.FC<LayoutFormProps> = ({
-  layout,
-  onSave,
-  onCancel,
-}) => {
+export const LayoutForm: React.FC<LayoutFormProps> = ({ layout, onSave, onCancel }) => {
   const [formData, setFormData] = useState<CreateLayoutData>({
     name: '',
     description: '',
-    header_template: '<div style="background-color: {{ primary_color }}; color: white; padding: 24px; text-align: center;">\n    <h1 style="margin: 0;">{{ header_title|default:site_name }}</h1>\n</div>',
-    footer_template: '<div style="padding: 24px; text-align: center; background-color: #f8f9fa;">\n    <p style="margin: 5px 0; color: #666;">{{ site_name }}</p>\n    <p style="margin: 5px 0; color: #999; font-size: 12px;">&copy; {{ current_year }} {{ site_name }}. All rights reserved.</p>\n</div>',
-    wrapper_template: '<div style="padding: 32px; background-color: white;">\n    {{ content }}\n</div>',
+    header_template:
+      '<div style="background-color: {{ primary_color }}; color: white; padding: 24px; text-align: center;">\n    <h1 style="margin: 0;">{{ header_title|default:site_name }}</h1>\n</div>',
+    footer_template:
+      '<div style="padding: 24px; text-align: center; background-color: #f8f9fa;">\n    <p style="margin: 5px 0; color: #666;">{{ site_name }}</p>\n    <p style="margin: 5px 0; color: #999; font-size: 12px;">&copy; {{ current_year }} {{ site_name }}. All rights reserved.</p>\n</div>',
+    wrapper_template:
+      '<div style="padding: 32px; background-color: white;">\n    {{ content }}\n</div>',
     base_styles: '',
     primary_color: '#1976d2',
     secondary_color: '#1565c0',
@@ -90,17 +89,20 @@ export const LayoutForm: React.FC<LayoutFormProps> = ({
   const isLoading = isCreating || isUpdating;
 
   // Sample data for variable substitution in preview
-  const samplePreviewData = useMemo(() => ({
-    site_name: 'LifePlace',
-    current_year: new Date().getFullYear().toString(),
-    primary_color: formData.primary_color,
-    secondary_color: formData.secondary_color,
-    header_title: 'Welcome to LifePlace',
-    header_subtitle: 'Your Event Management Partner',
-    support_email: 'support@lifeplace.com',
-    unsubscribe_link: '#unsubscribe',
-    logo_url: formData.logo_url || 'https://via.placeholder.com/150x50?text=Logo',
-  }), [formData.primary_color, formData.secondary_color, formData.logo_url]);
+  const samplePreviewData = useMemo(
+    () => ({
+      site_name: 'LifePlace',
+      current_year: new Date().getFullYear().toString(),
+      primary_color: formData.primary_color,
+      secondary_color: formData.secondary_color,
+      header_title: 'Welcome to LifePlace',
+      header_subtitle: 'Your Event Management Partner',
+      support_email: 'support@lifeplace.com',
+      unsubscribe_link: '#unsubscribe',
+      logo_url: formData.logo_url || 'https://via.placeholder.com/150x50?text=Logo',
+    }),
+    [formData.primary_color, formData.secondary_color, formData.logo_url],
+  );
 
   // Live preview - compose layout with sample content
   const livePreview = useMemo(() => {
@@ -158,7 +160,13 @@ export const LayoutForm: React.FC<LayoutFormProps> = ({
     `.trim();
 
     return composedHtml;
-  }, [formData.header_template, formData.footer_template, formData.wrapper_template, formData.base_styles, samplePreviewData]);
+  }, [
+    formData.header_template,
+    formData.footer_template,
+    formData.wrapper_template,
+    formData.base_styles,
+    samplePreviewData,
+  ]);
 
   useEffect(() => {
     if (layout) {
@@ -190,10 +198,7 @@ export const LayoutForm: React.FC<LayoutFormProps> = ({
 
     if (isEditing && layout) {
       const updateData: UpdateLayoutData = { ...formData, notes };
-      updateLayout(
-        { id: layout.id, data: updateData },
-        { onSuccess: onSave }
-      );
+      updateLayout({ id: layout.id, data: updateData }, { onSuccess: onSave });
     } else {
       createLayout(formData, { onSuccess: onSave });
     }
@@ -256,7 +261,12 @@ export const LayoutForm: React.FC<LayoutFormProps> = ({
 
             {/* Theme Configuration */}
             <Paper variant="outlined" sx={{ p: 2 }}>
-              <Typography variant="subtitle1" fontWeight="medium" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="subtitle1"
+                fontWeight="medium"
+                gutterBottom
+                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              >
                 <PaletteIcon fontSize="small" />
                 Theme Configuration
               </Typography>
@@ -264,7 +274,11 @@ export const LayoutForm: React.FC<LayoutFormProps> = ({
               <Stack spacing={2}>
                 <Box display="flex" gap={2}>
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mb: 0.5, display: 'block' }}
+                    >
                       Primary Color
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -283,7 +297,11 @@ export const LayoutForm: React.FC<LayoutFormProps> = ({
                     </Box>
                   </Box>
                   <Box sx={{ flex: 1 }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ mb: 0.5, display: 'block' }}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ mb: 0.5, display: 'block' }}
+                    >
                       Secondary Color
                     </Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -316,16 +334,22 @@ export const LayoutForm: React.FC<LayoutFormProps> = ({
 
             {/* Template Components */}
             <Paper variant="outlined" sx={{ p: 2 }}>
-              <Typography variant="subtitle1" fontWeight="medium" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography
+                variant="subtitle1"
+                fontWeight="medium"
+                gutterBottom
+                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              >
                 <CodeIcon fontSize="small" />
                 Layout Components
               </Typography>
 
               <Alert severity="info" sx={{ mb: 2 }}>
-                Available variables: <code>{'{{ site_name }}'}</code>, <code>{'{{ current_year }}'}</code>,{' '}
-                <code>{'{{ primary_color }}'}</code>, <code>{'{{ secondary_color }}'}</code>,{' '}
-                <code>{'{{ header_title }}'}</code>, <code>{'{{ header_subtitle }}'}</code>,{' '}
-                <code>{'{{ support_email }}'}</code>, <code>{'{{ unsubscribe_link }}'}</code>
+                Available variables: <code>{'{{ site_name }}'}</code>,{' '}
+                <code>{'{{ current_year }}'}</code>, <code>{'{{ primary_color }}'}</code>,{' '}
+                <code>{'{{ secondary_color }}'}</code>, <code>{'{{ header_title }}'}</code>,{' '}
+                <code>{'{{ header_subtitle }}'}</code>, <code>{'{{ support_email }}'}</code>,{' '}
+                <code>{'{{ unsubscribe_link }}'}</code>
               </Alert>
 
               <Tabs value={activeTab} onChange={(_, v) => setActiveTab(v)}>
@@ -367,7 +391,8 @@ export const LayoutForm: React.FC<LayoutFormProps> = ({
 
               <TabPanel value={activeTab} index={2}>
                 <Alert severity="warning" sx={{ mb: 2 }}>
-                  <strong>Important:</strong> Must contain <code>{'{{ content }}'}</code> placeholder where template content will be injected.
+                  <strong>Important:</strong> Must contain <code>{'{{ content }}'}</code>{' '}
+                  placeholder where template content will be injected.
                 </Alert>
                 <TextField
                   label="Content Wrapper Template"
@@ -379,9 +404,13 @@ export const LayoutForm: React.FC<LayoutFormProps> = ({
                   InputProps={{
                     sx: { fontFamily: 'monospace', fontSize: 13 },
                   }}
-                  error={!formData.wrapper_template.includes('{{ content }}') && !formData.wrapper_template.includes('{{content}}')}
+                  error={
+                    !formData.wrapper_template.includes('{{ content }}') &&
+                    !formData.wrapper_template.includes('{{content}}')
+                  }
                   helperText={
-                    !formData.wrapper_template.includes('{{ content }}') && !formData.wrapper_template.includes('{{content}}')
+                    !formData.wrapper_template.includes('{{ content }}') &&
+                    !formData.wrapper_template.includes('{{content}}')
                       ? 'Must contain {{ content }} placeholder'
                       : 'HTML wrapper around template content'
                   }
@@ -483,7 +512,13 @@ export const LayoutForm: React.FC<LayoutFormProps> = ({
                   />
                 </Box>
               ) : (
-                <Typography variant="body2" color="text.secondary" fontStyle="italic" textAlign="center" py={4}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  fontStyle="italic"
+                  textAlign="center"
+                  py={4}
+                >
                   Start editing to see preview...
                 </Typography>
               )}

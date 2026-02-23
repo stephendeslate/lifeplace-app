@@ -273,7 +273,7 @@ export const useQuestionnaireSummary = (dateRange: DateRange) => {
 
 export const useQuestionnaireFieldHeatmap = (
   questionnaireId: number | null,
-  dateRange: DateRange
+  dateRange: DateRange,
 ) => {
   return useQuery({
     queryKey: ['analytics', 'questionnaires', 'heatmap', questionnaireId, dateRange],

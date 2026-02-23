@@ -11,29 +11,28 @@ import type { SelectChangeEvent } from '@mui/material';
 export const useFormHandlers = <T extends object>(
   setFormData: React.Dispatch<React.SetStateAction<T>>,
   errors: Record<string, string>,
-  setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>
+  setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>,
 ) => {
   /**
    * Handle text input changes with automatic error clearing
    */
   const handleInputChange = useCallback(
-    (field: keyof T) =>
-      (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const value = event.target.value;
-        setFormData((prev) => ({
-          ...prev,
-          [field]: value,
-        }));
+    (field: keyof T) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
 
-        // Clear error when user starts typing
-        if (errors[field as string]) {
-          setErrors((prev) => ({
-            ...prev,
-            [field]: '',
-          }));
-        }
-      },
-    [errors, setErrors, setFormData]
+      // Clear error when user starts typing
+      if (errors[field as string]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: '',
+        }));
+      }
+    },
+    [errors, setErrors, setFormData],
   );
 
   /**
@@ -46,7 +45,7 @@ export const useFormHandlers = <T extends object>(
         [field]: event.target.checked,
       }));
     },
-    [setFormData]
+    [setFormData],
   );
 
   /**
@@ -67,31 +66,30 @@ export const useFormHandlers = <T extends object>(
         }));
       }
     },
-    [errors, setErrors, setFormData]
+    [errors, setErrors, setFormData],
   );
 
   /**
    * Handle numeric input changes
    */
   const handleNumberChange = useCallback(
-    (field: keyof T) =>
-      (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const value = event.target.value;
-        const numValue = value === '' ? 0 : parseFloat(value);
+    (field: keyof T) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      const numValue = value === '' ? 0 : parseFloat(value);
 
-        setFormData((prev) => ({
+      setFormData((prev) => ({
+        ...prev,
+        [field]: isNaN(numValue) ? 0 : numValue,
+      }));
+
+      if (errors[field as string]) {
+        setErrors((prev) => ({
           ...prev,
-          [field]: isNaN(numValue) ? 0 : numValue,
+          [field]: '',
         }));
-
-        if (errors[field as string]) {
-          setErrors((prev) => ({
-            ...prev,
-            [field]: '',
-          }));
-        }
-      },
-    [errors, setErrors, setFormData]
+      }
+    },
+    [errors, setErrors, setFormData],
   );
 
   /**
@@ -111,7 +109,7 @@ export const useFormHandlers = <T extends object>(
         }));
       }
     },
-    [errors, setErrors, setFormData]
+    [errors, setErrors, setFormData],
   );
 
   /**
@@ -124,7 +122,7 @@ export const useFormHandlers = <T extends object>(
         [field]: value,
       }));
     },
-    [setFormData]
+    [setFormData],
   );
 
   /**
@@ -137,7 +135,7 @@ export const useFormHandlers = <T extends object>(
         [field]: error,
       }));
     },
-    [setErrors]
+    [setErrors],
   );
 
   /**
@@ -157,7 +155,7 @@ export const useFormHandlers = <T extends object>(
         [field]: '',
       }));
     },
-    [setErrors]
+    [setErrors],
   );
 
   return {
@@ -178,17 +176,16 @@ export const useFormHandlers = <T extends object>(
  * For simple forms that don't need validation
  */
 export const useSimpleFormHandlers = <T extends object>(
-  setFormData: React.Dispatch<React.SetStateAction<T>>
+  setFormData: React.Dispatch<React.SetStateAction<T>>,
 ) => {
   const handleInputChange = useCallback(
-    (field: keyof T) =>
-      (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        setFormData((prev) => ({
-          ...prev,
-          [field]: event.target.value,
-        }));
-      },
-    [setFormData]
+    (field: keyof T) => (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: event.target.value,
+      }));
+    },
+    [setFormData],
   );
 
   const handleSwitchChange = useCallback(
@@ -198,7 +195,7 @@ export const useSimpleFormHandlers = <T extends object>(
         [field]: event.target.checked,
       }));
     },
-    [setFormData]
+    [setFormData],
   );
 
   const handleSelectChange = useCallback(
@@ -208,7 +205,7 @@ export const useSimpleFormHandlers = <T extends object>(
         [field]: event.target.value,
       }));
     },
-    [setFormData]
+    [setFormData],
   );
 
   const handleValueChange = useCallback(
@@ -218,7 +215,7 @@ export const useSimpleFormHandlers = <T extends object>(
         [field]: value,
       }));
     },
-    [setFormData]
+    [setFormData],
   );
 
   return {

@@ -24,9 +24,7 @@ import {
   AccordionDetails,
   ListSubheader,
 } from '@mui/material';
-import {
-  ExpandMore as ExpandMoreIcon,
-} from '@mui/icons-material';
+import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { useCommunications } from '../../hooks/useCommunications';
 import { useContractTemplates } from '../../hooks/useContracts';
 import { useQuoteTemplates } from '../../hooks/useSales';
@@ -39,11 +37,7 @@ import type {
   StageType,
   AutomationType,
 } from '../../types/workflows.types';
-import {
-  STAGE_TYPES,
-  AUTOMATION_TYPES,
-  PROGRESSION_CONDITIONS
-} from '../../types/workflows.types';
+import { STAGE_TYPES, AUTOMATION_TYPES, PROGRESSION_CONDITIONS } from '../../types/workflows.types';
 import { CustomTimingInput } from './CustomTimingInput';
 
 const defaultFormData: CreateWorkflowStageData = {
@@ -133,7 +127,7 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
 
   // Handler for metadata changes
   const handleMetadataChange = (key: string, value: unknown) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       metadata: {
         ...prev.metadata,
@@ -142,15 +136,18 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
     }));
   };
 
-  const handleInputChange = (field: keyof CreateWorkflowStageData, value: string | boolean | number | null) => {
-    setFormData(prev => ({
+  const handleInputChange = (
+    field: keyof CreateWorkflowStageData,
+    value: string | boolean | number | null,
+  ) => {
+    setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
         [field]: '',
       }));
@@ -168,12 +165,21 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
       newErrors.email_template = 'Email template is required for email automation';
     }
 
-    if (formData.is_automated && formData.automation_type === 'CONTRACT' && !formData.contract_template) {
+    if (
+      formData.is_automated &&
+      formData.automation_type === 'CONTRACT' &&
+      !formData.contract_template
+    ) {
       newErrors.contract_template = 'Contract template is required for contract automation';
     }
 
-    if (formData.is_automated && formData.automation_type === 'QUESTIONNAIRE' && !formData.questionnaire_template) {
-      newErrors.questionnaire_template = 'Questionnaire template is required for questionnaire automation';
+    if (
+      formData.is_automated &&
+      formData.automation_type === 'QUESTIONNAIRE' &&
+      !formData.questionnaire_template
+    ) {
+      newErrors.questionnaire_template =
+        'Questionnaire template is required for questionnaire automation';
     }
 
     if (formData.order && formData.order < 1) {
@@ -230,16 +236,17 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
 
   const requiresEmailTemplate = formData.is_automated && formData.automation_type === 'EMAIL';
   const requiresContractTemplate = formData.is_automated && formData.automation_type === 'CONTRACT';
-  const requiresQuestionnaireTemplate = formData.is_automated && formData.automation_type === 'QUESTIONNAIRE';
+  const requiresQuestionnaireTemplate =
+    formData.is_automated && formData.automation_type === 'QUESTIONNAIRE';
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={handleClose}
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { minHeight: '60vh' }
+        sx: { minHeight: '60vh' },
       }}
     >
       {open && (
@@ -247,7 +254,7 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
           <DialogTitle>
             {isEditing ? 'Edit Workflow Stage' : 'Create New Workflow Stage'}
           </DialogTitle>
-      
+
           <DialogContent>
             <Box sx={{ mt: 1 }}>
               <Stack spacing={3}>
@@ -256,7 +263,7 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                   <Typography variant="h6" gutterBottom>
                     Stage Information
                   </Typography>
-                  
+
                   <Stack spacing={2}>
                     <TextField
                       fullWidth
@@ -288,7 +295,9 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                         <TextField
                           label="Order"
                           value={formData.order}
-                          onChange={(e) => handleInputChange('order', parseInt(e.target.value) || 1)}
+                          onChange={(e) =>
+                            handleInputChange('order', parseInt(e.target.value) || 1)
+                          }
                           error={!!errors.order}
                           helperText={errors.order || 'Changing order may reorder other stages'}
                           type="number"
@@ -342,7 +351,12 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                               <Select
                                 value={formData.automation_type}
                                 label="Automation Type"
-                                onChange={(e) => handleInputChange('automation_type', e.target.value as AutomationType)}
+                                onChange={(e) =>
+                                  handleInputChange(
+                                    'automation_type',
+                                    e.target.value as AutomationType,
+                                  )
+                                }
                               >
                                 {AUTOMATION_TYPES.map((type) => (
                                   <MenuItem key={type.value} value={type.value}>
@@ -366,7 +380,9 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                               <Select
                                 value={formData.email_template || ''}
                                 label="Email Template"
-                                onChange={(e) => handleInputChange('email_template', e.target.value || null)}
+                                onChange={(e) =>
+                                  handleInputChange('email_template', e.target.value || null)
+                                }
                               >
                                 <MenuItem value="">
                                   <em>Select an email template</em>
@@ -378,7 +394,11 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                                 ))}
                               </Select>
                               {errors.email_template && (
-                                <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
+                                <Typography
+                                  variant="caption"
+                                  color="error"
+                                  sx={{ mt: 0.5, ml: 1.5 }}
+                                >
                                   {errors.email_template}
                                 </Typography>
                               )}
@@ -391,7 +411,9 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                               <Select
                                 value={formData.contract_template || ''}
                                 label="Contract Template"
-                                onChange={(e) => handleInputChange('contract_template', e.target.value || null)}
+                                onChange={(e) =>
+                                  handleInputChange('contract_template', e.target.value || null)
+                                }
                               >
                                 <MenuItem value="">
                                   <em>Select a contract template</em>
@@ -403,7 +425,11 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                                 ))}
                               </Select>
                               {errors.contract_template && (
-                                <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
+                                <Typography
+                                  variant="caption"
+                                  color="error"
+                                  sx={{ mt: 0.5, ml: 1.5 }}
+                                >
                                   {errors.contract_template}
                                 </Typography>
                               )}
@@ -417,7 +443,12 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                                 <Select
                                   value={formData.questionnaire_template || ''}
                                   label="Questionnaire Template"
-                                  onChange={(e) => handleInputChange('questionnaire_template', e.target.value || null)}
+                                  onChange={(e) =>
+                                    handleInputChange(
+                                      'questionnaire_template',
+                                      e.target.value || null,
+                                    )
+                                  }
                                 >
                                   <MenuItem value="">
                                     <em>Select a questionnaire template</em>
@@ -429,7 +460,11 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                                   ))}
                                 </Select>
                                 {errors.questionnaire_template && (
-                                  <Typography variant="caption" color="error" sx={{ mt: 0.5, ml: 1.5 }}>
+                                  <Typography
+                                    variant="caption"
+                                    color="error"
+                                    sx={{ mt: 0.5, ml: 1.5 }}
+                                  >
                                     {errors.questionnaire_template}
                                   </Typography>
                                 )}
@@ -440,7 +475,9 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                                 <Select
                                   value={formData.email_template || ''}
                                   label="Notification Email Template (Optional)"
-                                  onChange={(e) => handleInputChange('email_template', e.target.value || null)}
+                                  onChange={(e) =>
+                                    handleInputChange('email_template', e.target.value || null)
+                                  }
                                 >
                                   <MenuItem value="">
                                     <em>No email (in-app notification only)</em>
@@ -454,30 +491,35 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                               </FormControl>
 
                               <Alert severity="info">
-                                This automation sends a notification to the client with a link to complete the questionnaire.
-                                If the questionnaire is already complete, the notification is skipped.
-                                If partially complete, it acts as a reminder.
+                                This automation sends a notification to the client with a link to
+                                complete the questionnaire. If the questionnaire is already
+                                complete, the notification is skipped. If partially complete, it
+                                acts as a reminder.
                               </Alert>
                             </>
                           )}
 
                           {formData.automation_type === 'EMAIL' && !emailTemplates.length && (
                             <Alert severity="warning">
-                              No email templates found. Create email templates in Communication Settings first.
+                              No email templates found. Create email templates in Communication
+                              Settings first.
                             </Alert>
                           )}
 
                           {formData.automation_type === 'CONTRACT' && !contractTemplates.length && (
                             <Alert severity="warning">
-                              No contract templates found. Create contract templates in Template Settings first.
+                              No contract templates found. Create contract templates in Template
+                              Settings first.
                             </Alert>
                           )}
 
-                          {formData.automation_type === 'QUESTIONNAIRE' && !questionnaires.length && (
-                            <Alert severity="warning">
-                              No questionnaire templates found. Create questionnaire templates in Template Settings first.
-                            </Alert>
-                          )}
+                          {formData.automation_type === 'QUESTIONNAIRE' &&
+                            !questionnaires.length && (
+                              <Alert severity="warning">
+                                No questionnaire templates found. Create questionnaire templates in
+                                Template Settings first.
+                              </Alert>
+                            )}
 
                           {formData.trigger_time?.includes('BEFORE_EVENT') && (
                             <Alert severity="info">
@@ -493,7 +535,9 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                               <Select
                                 value={(formData.metadata?.task_priority as string) || 'MEDIUM'}
                                 label="Task Priority"
-                                onChange={(e) => handleMetadataChange('task_priority', e.target.value)}
+                                onChange={(e) =>
+                                  handleMetadataChange('task_priority', e.target.value)
+                                }
                               >
                                 <MenuItem value="LOW">Low</MenuItem>
                                 <MenuItem value="MEDIUM">Medium</MenuItem>
@@ -509,7 +553,12 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                               <Select
                                 value={(formData.metadata?.quote_template_id as string) || ''}
                                 label="Quote Template (Optional)"
-                                onChange={(e) => handleMetadataChange('quote_template_id', e.target.value ? parseInt(e.target.value as string) : null)}
+                                onChange={(e) =>
+                                  handleMetadataChange(
+                                    'quote_template_id',
+                                    e.target.value ? parseInt(e.target.value as string) : null,
+                                  )
+                                }
                               >
                                 <MenuItem value="">
                                   <em>Use Default (by Event Type)</em>
@@ -528,7 +577,12 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                               type="number"
                               label="Signature Deadline (Hours)"
                               value={(formData.metadata?.signature_deadline_hours as number) || 48}
-                              onChange={(e) => handleMetadataChange('signature_deadline_hours', parseInt(e.target.value) || 48)}
+                              onChange={(e) =>
+                                handleMetadataChange(
+                                  'signature_deadline_hours',
+                                  parseInt(e.target.value) || 48,
+                                )
+                              }
                               helperText="Hours until contract signature expires"
                               fullWidth
                             />
@@ -540,16 +594,26 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                                 type="number"
                                 label="Days Until Due"
                                 value={(formData.metadata?.days_until_due as number) || 7}
-                                onChange={(e) => handleMetadataChange('days_until_due', parseInt(e.target.value) || 7)}
+                                onChange={(e) =>
+                                  handleMetadataChange(
+                                    'days_until_due',
+                                    parseInt(e.target.value) || 7,
+                                  )
+                                }
                                 helperText="Number of days shown in the reminder"
                                 fullWidth
                               />
                               <FormControl fullWidth>
                                 <InputLabel>Reminder Type</InputLabel>
                                 <Select
-                                  value={(formData.metadata?.reminder_type as string) || 'WORKFLOW_REMINDER'}
+                                  value={
+                                    (formData.metadata?.reminder_type as string) ||
+                                    'WORKFLOW_REMINDER'
+                                  }
                                   label="Reminder Type"
-                                  onChange={(e) => handleMetadataChange('reminder_type', e.target.value)}
+                                  onChange={(e) =>
+                                    handleMetadataChange('reminder_type', e.target.value)
+                                  }
                                 >
                                   <MenuItem value="WORKFLOW_REMINDER">General Reminder</MenuItem>
                                   <MenuItem value="PAYMENT_REMINDER">Payment Reminder</MenuItem>
@@ -573,16 +637,19 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                     <AccordionDetails>
                       <Stack spacing={2}>
                         <Alert severity="info" sx={{ mb: 1 }}>
-                          <strong>Optional:</strong> In addition to the scheduled execution above, you can also trigger
-                          this automation immediately when specific business events occur. This runs the automation
-                          without waiting for the scheduled time and without advancing to the next stage.
+                          <strong>Optional:</strong> In addition to the scheduled execution above,
+                          you can also trigger this automation immediately when specific business
+                          events occur. This runs the automation without waiting for the scheduled
+                          time and without advancing to the next stage.
                         </Alert>
 
                         <FormControlLabel
                           control={
                             <Switch
                               checked={formData.trigger_on_event_created || false}
-                              onChange={(e) => handleInputChange('trigger_on_event_created', e.target.checked)}
+                              onChange={(e) =>
+                                handleInputChange('trigger_on_event_created', e.target.checked)
+                              }
                             />
                           }
                           label="Execute when event is created"
@@ -592,7 +659,9 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                           control={
                             <Switch
                               checked={formData.trigger_on_quote_sent || false}
-                              onChange={(e) => handleInputChange('trigger_on_quote_sent', e.target.checked)}
+                              onChange={(e) =>
+                                handleInputChange('trigger_on_quote_sent', e.target.checked)
+                              }
                             />
                           }
                           label="Execute when quote is sent"
@@ -602,7 +671,9 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                           control={
                             <Switch
                               checked={formData.trigger_on_quote_accepted || false}
-                              onChange={(e) => handleInputChange('trigger_on_quote_accepted', e.target.checked)}
+                              onChange={(e) =>
+                                handleInputChange('trigger_on_quote_accepted', e.target.checked)
+                              }
                             />
                           }
                           label="Execute when quote is accepted"
@@ -612,7 +683,9 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                           control={
                             <Switch
                               checked={formData.trigger_on_contract_signed || false}
-                              onChange={(e) => handleInputChange('trigger_on_contract_signed', e.target.checked)}
+                              onChange={(e) =>
+                                handleInputChange('trigger_on_contract_signed', e.target.checked)
+                              }
                             />
                           }
                           label="Execute when contract is signed"
@@ -622,7 +695,9 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                           control={
                             <Switch
                               checked={formData.trigger_on_payment_received || false}
-                              onChange={(e) => handleInputChange('trigger_on_payment_received', e.target.checked)}
+                              onChange={(e) =>
+                                handleInputChange('trigger_on_payment_received', e.target.checked)
+                              }
                             />
                           }
                           label="Execute when payment is received"
@@ -644,26 +719,34 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                         <Select
                           value={formData.progression_condition}
                           label="Progression Condition"
-                          onChange={(e) => handleInputChange('progression_condition', e.target.value)}
+                          onChange={(e) =>
+                            handleInputChange('progression_condition', e.target.value)
+                          }
                         >
                           <ListSubheader>Manual</ListSubheader>
-                          {PROGRESSION_CONDITIONS.filter(c => c.category === 'manual').map((condition) => (
-                            <MenuItem key={condition.value} value={condition.value}>
-                              {condition.label}
-                            </MenuItem>
-                          ))}
+                          {PROGRESSION_CONDITIONS.filter((c) => c.category === 'manual').map(
+                            (condition) => (
+                              <MenuItem key={condition.value} value={condition.value}>
+                                {condition.label}
+                              </MenuItem>
+                            ),
+                          )}
                           <ListSubheader>Event-Based</ListSubheader>
-                          {PROGRESSION_CONDITIONS.filter(c => c.category === 'event').map((condition) => (
-                            <MenuItem key={condition.value} value={condition.value}>
-                              {condition.label}
-                            </MenuItem>
-                          ))}
+                          {PROGRESSION_CONDITIONS.filter((c) => c.category === 'event').map(
+                            (condition) => (
+                              <MenuItem key={condition.value} value={condition.value}>
+                                {condition.label}
+                              </MenuItem>
+                            ),
+                          )}
                           <ListSubheader>Time-Based</ListSubheader>
-                          {PROGRESSION_CONDITIONS.filter(c => c.category === 'time').map((condition) => (
-                            <MenuItem key={condition.value} value={condition.value}>
-                              {condition.label}
-                            </MenuItem>
-                          ))}
+                          {PROGRESSION_CONDITIONS.filter((c) => c.category === 'time').map(
+                            (condition) => (
+                              <MenuItem key={condition.value} value={condition.value}>
+                                {condition.label}
+                              </MenuItem>
+                            ),
+                          )}
                         </Select>
                       </FormControl>
 
@@ -671,15 +754,17 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
                         control={
                           <Switch
                             checked={formData.required_tasks_completed}
-                            onChange={(e) => handleInputChange('required_tasks_completed', e.target.checked)}
+                            onChange={(e) =>
+                              handleInputChange('required_tasks_completed', e.target.checked)
+                            }
                           />
                         }
                         label="Require all tasks to be completed before progressing"
                       />
 
                       <Alert severity="info">
-                        Progression conditions determine when an event automatically moves to the next stage. 
-                        If no condition is set, progression will be manual.
+                        Progression conditions determine when an event automatically moves to the
+                        next stage. If no condition is set, progression will be manual.
                       </Alert>
                     </Stack>
                   </AccordionDetails>
@@ -687,15 +772,12 @@ export const WorkflowStageFormDialog: React.FC<WorkflowStageFormDialogProps> = (
               </Stack>
             </Box>
           </DialogContent>
-          
+
           <DialogActions sx={{ p: 3 }}>
-            <Button 
-              onClick={handleClose}
-              disabled={isLoading}
-            >
+            <Button onClick={handleClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmit}
               variant="contained"
               disabled={isLoading}

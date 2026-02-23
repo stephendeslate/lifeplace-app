@@ -72,7 +72,10 @@ interface ResponseFormData {
 }
 
 // Status chip colors and labels
-const STATUS_CONFIG: Record<EventQuestionnaireStatus, { color: 'default' | 'primary' | 'warning' | 'success'; label: string }> = {
+const STATUS_CONFIG: Record<
+  EventQuestionnaireStatus,
+  { color: 'default' | 'primary' | 'warning' | 'success'; label: string }
+> = {
   PENDING: { color: 'default', label: 'Pending' },
   SENT: { color: 'primary', label: 'Sent' },
   PARTIAL: { color: 'warning', label: 'In Progress' },
@@ -81,7 +84,9 @@ const STATUS_CONFIG: Record<EventQuestionnaireStatus, { color: 'default' | 'prim
 
 export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event }) => {
   const [editMode, setEditMode] = useState(false);
-  const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<EventQuestionnaire | null>(null);
+  const [selectedQuestionnaire, setSelectedQuestionnaire] = useState<EventQuestionnaire | null>(
+    null,
+  );
   const [formData, setFormData] = useState<ResponseFormData>({});
   const [expandedPanel, setExpandedPanel] = useState<string | false>(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
@@ -101,7 +106,7 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
     isLoadingResponses,
     saveEventResponses,
     isSavingEventResponses,
-    refetchResponses
+    refetchResponses,
   } = useQuestionnaireResponses({ event_id: event.id });
 
   // Mutations
@@ -113,7 +118,7 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
   useEffect(() => {
     if (responses && responses.length > 0) {
       const initialData: ResponseFormData = {};
-      responses.forEach(response => {
+      responses.forEach((response) => {
         initialData[response.field] = response.value;
       });
       setFormData(initialData);
@@ -125,9 +130,9 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
   };
 
   const handleFieldChange = (fieldId: number, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [fieldId]: value
+      [fieldId]: value,
     }));
   };
 
@@ -140,14 +145,14 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
         .filter(([fieldId, value]) => {
           // Only include fields from the selected questionnaire
           const field = selectedQuestionnaire.questionnaire_detail?.fields?.find(
-            f => f.id === parseInt(fieldId)
+            (f) => f.id === parseInt(fieldId),
           );
           return field && value !== '';
         })
         .map(([fieldId, value]) => ({
           field: parseInt(fieldId),
-          value
-        }))
+          value,
+        })),
     };
 
     saveEventResponses(responsesData, {
@@ -155,7 +160,7 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
         setEditMode(false);
         refetchResponses();
         refetchEventQuestionnaires();
-      }
+      },
     });
   };
 
@@ -217,7 +222,9 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
             onChange={(e) => handleFieldChange(field.id, e.target.value)}
             disabled={!editMode}
             type={field.type === 'email' ? 'email' : field.type === 'phone' ? 'tel' : 'text'}
-            placeholder={field.placeholder || (field.type === 'phone' ? '(123) 456-7890' : undefined)}
+            placeholder={
+              field.placeholder || (field.type === 'phone' ? '(123) 456-7890' : undefined)
+            }
             required={field.required}
             helperText={field.description}
           />
@@ -381,9 +388,7 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
     <Box>
       {/* Header */}
       <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h6">
-          Event Questionnaires
-        </Typography>
+        <Typography variant="h6">Event Questionnaires</Typography>
         <Stack direction="row" spacing={2}>
           <Button
             variant="outlined"
@@ -417,7 +422,7 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
                   // Reset form data to saved responses
                   if (responses && responses.length > 0) {
                     const savedData: ResponseFormData = {};
-                    responses.forEach(response => {
+                    responses.forEach((response) => {
                       savedData[response.field] = response.value;
                     });
                     setFormData(savedData);
@@ -475,21 +480,9 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
                     <Box sx={{ flex: 1 }}>
                       <Stack direction="row" spacing={2} alignItems="center">
                         {renderStatusIcon(eq)}
-                        <Typography variant="subtitle1">
-                          {eq.questionnaire_name}
-                        </Typography>
-                        <Chip
-                          label={statusConfig.label}
-                          size="small"
-                          color={statusConfig.color}
-                        />
-                        {eq.is_overdue && (
-                          <Chip
-                            label="Overdue"
-                            size="small"
-                            color="error"
-                          />
-                        )}
+                        <Typography variant="subtitle1">{eq.questionnaire_name}</Typography>
+                        <Chip label={statusConfig.label} size="small" color={statusConfig.color} />
+                        {eq.is_overdue && <Chip label="Overdue" size="small" color="error" />}
                         {eq.due_date && !eq.is_overdue && (
                           <Typography variant="caption" color="text.secondary">
                             Due: {format(new Date(eq.due_date), 'MMM d, yyyy')}
@@ -509,10 +502,7 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
                           color={stats.completion_percentage === 100 ? 'success' : 'primary'}
                         />
                       </Box>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => handleMenuOpen(e, eq.id)}
-                      >
+                      <IconButton size="small" onClick={(e) => handleMenuOpen(e, eq.id)}>
                         <MoreVertIcon />
                       </IconButton>
                     </Stack>
@@ -549,7 +539,8 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
 
                   {editMode && selectedQuestionnaire?.id === eq.id && (
                     <Alert severity="info" sx={{ mb: 2 }}>
-                      You are editing responses for this questionnaire. Fields marked with * are required.
+                      You are editing responses for this questionnaire. Fields marked with * are
+                      required.
                     </Alert>
                   )}
 
@@ -577,7 +568,8 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
                     ))}
                   </Stack>
 
-                  {(!eq.questionnaire_detail?.fields || eq.questionnaire_detail.fields.length === 0) && (
+                  {(!eq.questionnaire_detail?.fields ||
+                    eq.questionnaire_detail.fields.length === 0) && (
                     <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
                       This questionnaire has no fields configured.
                     </Typography>
@@ -628,11 +620,7 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
                             : `${stats.answered_count}/${stats.total_fields} fields completed`
                         }
                       />
-                      <Chip
-                        label={statusConfig.label}
-                        size="small"
-                        color={statusConfig.color}
-                      />
+                      <Chip label={statusConfig.label} size="small" color={statusConfig.color} />
                     </ListItem>
                   );
                 })}
@@ -643,36 +631,33 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
       )}
 
       {/* Action Menu */}
-      <Menu
-        anchorEl={menuAnchorEl}
-        open={Boolean(menuAnchorEl)}
-        onClose={handleMenuClose}
-      >
-        {menuTargetId && (() => {
-          const targetEq = eventQuestionnaires.find(eq => eq.id === menuTargetId);
-          if (!targetEq) return null;
+      <Menu anchorEl={menuAnchorEl} open={Boolean(menuAnchorEl)} onClose={handleMenuClose}>
+        {menuTargetId &&
+          (() => {
+            const targetEq = eventQuestionnaires.find((eq) => eq.id === menuTargetId);
+            if (!targetEq) return null;
 
-          return (
-            <>
-              {targetEq.status === 'PENDING' && (
-                <MenuItem onClick={() => handleSend(menuTargetId)}>
-                  <SendIcon sx={{ mr: 1 }} fontSize="small" />
-                  Send to Client
+            return (
+              <>
+                {targetEq.status === 'PENDING' && (
+                  <MenuItem onClick={() => handleSend(menuTargetId)}>
+                    <SendIcon sx={{ mr: 1 }} fontSize="small" />
+                    Send to Client
+                  </MenuItem>
+                )}
+                {['SENT', 'PARTIAL'].includes(targetEq.status) && (
+                  <MenuItem onClick={() => handleSendReminder(menuTargetId)}>
+                    <ReminderIcon sx={{ mr: 1 }} fontSize="small" />
+                    Send Reminder
+                  </MenuItem>
+                )}
+                <MenuItem onClick={() => handleDelete(menuTargetId)} sx={{ color: 'error.main' }}>
+                  <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
+                  Remove
                 </MenuItem>
-              )}
-              {['SENT', 'PARTIAL'].includes(targetEq.status) && (
-                <MenuItem onClick={() => handleSendReminder(menuTargetId)}>
-                  <ReminderIcon sx={{ mr: 1 }} fontSize="small" />
-                  Send Reminder
-                </MenuItem>
-              )}
-              <MenuItem onClick={() => handleDelete(menuTargetId)} sx={{ color: 'error.main' }}>
-                <DeleteIcon sx={{ mr: 1 }} fontSize="small" />
-                Remove
-              </MenuItem>
-            </>
-          );
-        })()}
+              </>
+            );
+          })()}
       </Menu>
 
       {/* Assign Dialog */}
@@ -681,7 +666,7 @@ export const EventQuestionnaires: React.FC<EventQuestionnairesProps> = ({ event 
         onClose={() => setAssignDialogOpen(false)}
         eventId={event.id}
         eventTypeId={event.event_type || undefined}
-        existingAssignments={eventQuestionnaires.map(eq => eq.questionnaire)}
+        existingAssignments={eventQuestionnaires.map((eq) => eq.questionnaire)}
         onSuccess={handleAssignSuccess}
       />
     </Box>

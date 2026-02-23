@@ -1,7 +1,7 @@
 // Modern Tasks Overview Page
 // Following the same patterns as Events, Clients, and Payments pages
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Tabs,
@@ -12,7 +12,7 @@ import {
   useMediaQuery,
   Stack,
   CircularProgress,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Assignment as TasksIcon,
   RequestQuote,
@@ -21,19 +21,15 @@ import {
   Email,
   Refresh as RefreshIcon,
   SupportAgent,
-} from "@mui/icons-material";
-import { useLocation, useNavigate } from "react-router-dom";
-import { useLayout } from "../../contexts/LayoutContext";
-import { useTasks } from "../../hooks/useTasks";
-import { useSendQuote } from "../../hooks/useSales";
-import { TaskSection } from "../../components/tasks";
-import {
-  ModernPageLayout,
-  ModernPageHeader,
-  ModernEmptyState,
-} from "../../components/common";
-import { tokens } from "../../design-system";
-import type { TaskDomain } from "../../types/tasks.types";
+} from '@mui/icons-material';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useLayout } from '../../contexts/LayoutContext';
+import { useTasks } from '../../hooks/useTasks';
+import { useSendQuote } from '../../hooks/useSales';
+import { TaskSection } from '../../components/tasks';
+import { ModernPageLayout, ModernPageHeader, ModernEmptyState } from '../../components/common';
+import { tokens } from '../../design-system';
+import type { TaskDomain } from '../../types/tasks.types';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -41,12 +37,7 @@ interface TabPanelProps {
   value: number;
 }
 
-const TabPanel: React.FC<TabPanelProps> = ({
-  children,
-  value,
-  index,
-  ...other
-}) => {
+const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other }) => {
   return (
     <div
       role="tabpanel"
@@ -55,9 +46,7 @@ const TabPanel: React.FC<TabPanelProps> = ({
       aria-labelledby={`tasks-tab-${index}`}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ position: "relative", zIndex: 1 }}>{children}</Box>
-      )}
+      {value === index && <Box sx={{ position: 'relative', zIndex: 1 }}>{children}</Box>}
     </div>
   );
 };
@@ -68,16 +57,16 @@ const tabConfig: Array<{
   label: string;
   icon: React.ElementType;
 }> = [
-  { domain: "quotes", label: "Quotes", icon: RequestQuote },
-  { domain: "contracts", label: "Contracts", icon: Description },
-  { domain: "payments", label: "Payments", icon: Payment },
-  { domain: "communications", label: "Communications", icon: Email },
-  { domain: "support", label: "Support", icon: SupportAgent },
+  { domain: 'quotes', label: 'Quotes', icon: RequestQuote },
+  { domain: 'contracts', label: 'Contracts', icon: Description },
+  { domain: 'payments', label: 'Payments', icon: Payment },
+  { domain: 'communications', label: 'Communications', icon: Email },
+  { domain: 'support', label: 'Support', icon: SupportAgent },
 ];
 
 export const TasksPage: React.FC = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
@@ -95,7 +84,7 @@ export const TasksPage: React.FC = () => {
 
   // Set breadcrumbs
   useEffect(() => {
-    setBreadcrumbs([{ label: "Tasks" }]);
+    setBreadcrumbs([{ label: 'Tasks' }]);
   }, [setBreadcrumbs]);
 
   // Hooks
@@ -143,18 +132,11 @@ export const TasksPage: React.FC = () => {
           {counts.contracts > 0 && (
             <TaskSection domain="contracts" tasks={tasksByDomain.contracts} />
           )}
-          {counts.payments > 0 && (
-            <TaskSection domain="payments" tasks={tasksByDomain.payments} />
-          )}
+          {counts.payments > 0 && <TaskSection domain="payments" tasks={tasksByDomain.payments} />}
           {counts.communications > 0 && (
-            <TaskSection
-              domain="communications"
-              tasks={tasksByDomain.communications}
-            />
+            <TaskSection domain="communications" tasks={tasksByDomain.communications} />
           )}
-          {counts.support > 0 && (
-            <TaskSection domain="support" tasks={tasksByDomain.support} />
-          )}
+          {counts.support > 0 && <TaskSection domain="support" tasks={tasksByDomain.support} />}
         </>
       )}
     </Stack>
@@ -166,19 +148,14 @@ export const TasksPage: React.FC = () => {
       domain={domain}
       tasks={tasksByDomain[domain]}
       defaultExpanded={true}
-      onSendQuote={domain === "quotes" ? handleSendQuote : undefined}
+      onSendQuote={domain === 'quotes' ? handleSendQuote : undefined}
     />
   );
 
   if (isLoading) {
     return (
       <ModernPageLayout backgroundPattern="default">
-        <Box
-          display="flex"
-          justifyContent="center"
-          alignItems="center"
-          minHeight={400}
-        >
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight={400}>
           <CircularProgress />
         </Box>
       </ModernPageLayout>
@@ -190,30 +167,30 @@ export const TasksPage: React.FC = () => {
       {/* Page Header - consistent with other overview pages */}
       <ModernPageHeader
         title="Tasks"
-        subtitle={`${counts.total} item${counts.total !== 1 ? "s" : ""} need${counts.total === 1 ? "s" : ""} attention`}
+        subtitle={`${counts.total} item${counts.total !== 1 ? 's' : ''} need${counts.total === 1 ? 's' : ''} attention`}
         icon={<TasksIcon />}
         size="medium"
         secondaryActions={[
           {
-            label: "Refresh",
+            label: 'Refresh',
             icon: <RefreshIcon />,
             onClick: handleRefresh,
-            variant: "icon",
-            tooltip: "Refresh tasks",
+            variant: 'icon',
+            tooltip: 'Refresh tasks',
           },
         ]}
       />
 
       {/* Stats Row */}
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 4 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 4 }}>
         <Box
           sx={{
             px: 2,
             py: 1,
             borderRadius: tokens.spacing.radius.md,
-            bgcolor: "background.paper",
-            border: "1px solid",
-            borderColor: "divider",
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
           }}
         >
           <Typography variant="body2" color="text.secondary">
@@ -228,9 +205,9 @@ export const TasksPage: React.FC = () => {
             px: 2,
             py: 1,
             borderRadius: tokens.spacing.radius.md,
-            bgcolor: "background.paper",
-            border: "1px solid",
-            borderColor: "divider",
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
           }}
         >
           <Typography variant="body2" color="text.secondary">
@@ -245,9 +222,9 @@ export const TasksPage: React.FC = () => {
             px: 2,
             py: 1,
             borderRadius: tokens.spacing.radius.md,
-            bgcolor: "background.paper",
-            border: "1px solid",
-            borderColor: "divider",
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
           }}
         >
           <Typography variant="body2" color="text.secondary">
@@ -262,9 +239,9 @@ export const TasksPage: React.FC = () => {
             px: 2,
             py: 1,
             borderRadius: tokens.spacing.radius.md,
-            bgcolor: "background.paper",
-            border: "1px solid",
-            borderColor: "divider",
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
           }}
         >
           <Typography variant="body2" color="text.secondary">
@@ -279,9 +256,9 @@ export const TasksPage: React.FC = () => {
             px: 2,
             py: 1,
             borderRadius: tokens.spacing.radius.md,
-            bgcolor: "background.paper",
-            border: "1px solid",
-            borderColor: "divider",
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
           }}
         >
           <Typography variant="body2" color="text.secondary">
@@ -297,25 +274,25 @@ export const TasksPage: React.FC = () => {
       <Box
         sx={{
           borderRadius: tokens.spacing.radius.md,
-          bgcolor: "background.paper",
-          border: "1px solid",
-          borderColor: "divider",
-          overflow: "visible",
-          position: "relative",
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+          overflow: 'visible',
+          position: 'relative',
         }}
       >
         {/* Tab System */}
         <Box
           sx={{
             borderBottom: 1,
-            borderColor: "divider",
+            borderColor: 'divider',
           }}
         >
           <Tabs
             value={activeTab}
             onChange={handleTabChange}
             aria-label="tasks tabs"
-            variant={isMobile ? "scrollable" : "standard"}
+            variant={isMobile ? 'scrollable' : 'standard'}
             scrollButtons="auto"
           >
             <Tab
@@ -330,7 +307,7 @@ export const TasksPage: React.FC = () => {
                       color="primary"
                       sx={{
                         height: 20,
-                        fontSize: "0.75rem",
+                        fontSize: '0.75rem',
                         fontWeight: 600,
                       }}
                     />
@@ -352,7 +329,7 @@ export const TasksPage: React.FC = () => {
                         variant="outlined"
                         sx={{
                           height: 20,
-                          fontSize: "0.75rem",
+                          fontSize: '0.75rem',
                           fontWeight: 600,
                         }}
                       />
@@ -365,7 +342,7 @@ export const TasksPage: React.FC = () => {
         </Box>
 
         {/* Tab Content */}
-        <Box sx={{ p: 3, position: "relative" }}>
+        <Box sx={{ p: 3, position: 'relative' }}>
           <TabPanel value={activeTab} index={0}>
             {renderAllTasks()}
           </TabPanel>

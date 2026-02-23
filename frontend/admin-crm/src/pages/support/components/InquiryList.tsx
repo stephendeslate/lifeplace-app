@@ -20,14 +20,26 @@ interface InquiryListProps {
   onSelect: (inquiry: SupportInquiry) => void;
 }
 
-const STATUS_CONFIG: Record<SupportStatus, { label: string; color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' }> = {
+const STATUS_CONFIG: Record<
+  SupportStatus,
+  {
+    label: string;
+    color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+  }
+> = {
   active: { label: 'Open', color: 'info' },
   waiting: { label: 'Awaiting', color: 'warning' },
   resolved: { label: 'Resolved', color: 'success' },
   archived: { label: 'Archived', color: 'default' },
 };
 
-const PRIORITY_CONFIG: Record<SupportPriority, { label: string; color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' }> = {
+const PRIORITY_CONFIG: Record<
+  SupportPriority,
+  {
+    label: string;
+    color: 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
+  }
+> = {
   urgent: { label: 'Urgent', color: 'error' },
   high: { label: 'High', color: 'warning' },
   normal: { label: 'Normal', color: 'default' },
@@ -119,18 +131,18 @@ export const InquiryList: React.FC<InquiryListProps> = ({ inquiries, onSelect })
                 />
               </TableCell>
               <TableCell>
-                <Chip
-                  label={statusConfig.label}
-                  size="small"
-                  color={statusConfig.color}
-                />
+                <Chip label={statusConfig.label} size="small" color={statusConfig.color} />
               </TableCell>
               <TableCell>
                 <Chip
                   label={priorityConfig.label}
                   size="small"
                   color={priorityConfig.color}
-                  variant={inquiry.priority === 'normal' || inquiry.priority === 'low' ? 'outlined' : 'filled'}
+                  variant={
+                    inquiry.priority === 'normal' || inquiry.priority === 'low'
+                      ? 'outlined'
+                      : 'filled'
+                  }
                 />
               </TableCell>
               <TableCell>

@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/booking/steps/PricingSummaryStep.tsx
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -21,18 +21,13 @@ import {
   Fade,
   FormControlLabel,
   Checkbox,
-} from "@mui/material";
-import {
-  Receipt,
-  LocalOffer,
-  CheckCircle,
-  Close as CloseIcon,
-} from "@mui/icons-material";
-import { useBooking } from "../../../contexts/BookingContext";
-import { useSimplePricing } from "../../../hooks/booking/useSimplePricing";
-import { BookingCoreApi } from "../../../apis/booking/core.api";
-import { useCurrencySettings } from "../../../hooks/useCurrency";
-import { formatPhilippinesTime } from "../../../utils/timezone";
+} from '@mui/material';
+import { Receipt, LocalOffer, CheckCircle, Close as CloseIcon } from '@mui/icons-material';
+import { useBooking } from '../../../contexts/BookingContext';
+import { useSimplePricing } from '../../../hooks/booking/useSimplePricing';
+import { BookingCoreApi } from '../../../apis/booking/core.api';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
+import { formatPhilippinesTime } from '../../../utils/timezone';
 import type {
   PricingSummaryStepData,
   PricingSummaryStepConfiguration,
@@ -40,7 +35,7 @@ import type {
   BookingFlow,
   BookingSession,
   SelectedPackage,
-} from "../../../types/booking";
+} from '../../../types/booking';
 
 interface PricingSummaryStepProps {
   stepData?: PricingSummaryStepData;
@@ -59,7 +54,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     applied_discount_code: undefined,
     terms_accepted: false,
     marketing_consent: false,
-    special_requests: "",
+    special_requests: '',
   },
   allStepData = {},
   config,
@@ -70,7 +65,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
 }) => {
   const { state, actions } = useBooking();
   const { formatAmount } = useCurrencySettings();
-  const [discountCodeInput, setDiscountCodeInput] = useState<string>("");
+  const [discountCodeInput, setDiscountCodeInput] = useState<string>('');
   const [discountError, setDiscountError] = useState<string | null>(null);
   const [validatingDiscount, setValidatingDiscount] = useState(false);
 
@@ -84,9 +79,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
           selected_packages?: SelectedPackage[];
         }
       )?.selected_packages ||
-      (state.currentSession?.booking_data?.selected_packages as
-        | SelectedPackage[]
-        | undefined) ||
+      (state.currentSession?.booking_data?.selected_packages as SelectedPackage[] | undefined) ||
       [],
     [
       state.stepData.package_selection?.selected_packages,
@@ -139,7 +132,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
   const updatePricingData = useCallback(async () => {
     const newStepData: PricingSummaryStepData = {
       applied_discount_code: stepData.applied_discount_code || undefined,
-      special_requests: stepData.special_requests || "",
+      special_requests: stepData.special_requests || '',
       terms_accepted: stepData.terms_accepted || false,
       marketing_consent: stepData.marketing_consent || false,
     };
@@ -154,10 +147,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
       onDataChange(newStepData);
 
       // Only update backend with the discount code
-      await actions.updateStepData(
-        "pricing_summary",
-        newStepData as Record<string, unknown>,
-      );
+      await actions.updateStepData('pricing_summary', newStepData as Record<string, unknown>);
 
       // Update global total price if different
       const totalString = pricing.total.toFixed(2);
@@ -165,8 +155,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
         await actions.updateTotalPrice(totalString);
       }
     } catch (error) {
-      if (import.meta.env.DEV)
-        console.error("Failed to update pricing data:", error);
+      if (import.meta.env.DEV) console.error('Failed to update pricing data:', error);
     }
     // Note: actions methods omitted from deps - actions object is not memoized and would cause loops
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -224,10 +213,10 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
           ...stepData,
           applied_discount_code: codeToValidate,
         });
-        setDiscountCodeInput("");
+        setDiscountCodeInput('');
       }
     } catch (_error) {
-      setDiscountError("Unable to validate discount code. Please try again.");
+      setDiscountError('Unable to validate discount code. Please try again.');
     } finally {
       setValidatingDiscount(false);
     }
@@ -241,14 +230,12 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
     };
     onDataChange(newStepData);
     setDiscountError(null);
-    setDiscountCodeInput("");
+    setDiscountCodeInput('');
     recalculate();
   };
 
   // Handle discount code input changes
-  const handleDiscountInputChange = (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
+  const handleDiscountInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setDiscountCodeInput(event.target.value);
     setDiscountError(null);
   };
@@ -279,19 +266,14 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
 
   // Format date helper - uses Philippines timezone for consistency
   const formatDate = (dateString: string) => {
-    if (!dateString) return "Not specified";
-    return formatPhilippinesTime(dateString, false, "MMMM d, yyyy");
+    if (!dateString) return 'Not specified';
+    return formatPhilippinesTime(dateString, false, 'MMMM d, yyyy');
   };
 
   // Show loading state on initial load
   if (calculatingPricing && !hasItems) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight={200}
-      >
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
         <CircularProgress size={48} />
         <Typography variant="body1" sx={{ ml: 2 }}>
           Calculating pricing...
@@ -325,10 +307,10 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
         <Typography
           variant="h5"
           gutterBottom
-          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
         >
           <Receipt />
-          {config?.header_text || "Pricing Summary"}
+          {config?.header_text || 'Pricing Summary'}
         </Typography>
 
         <Alert severity="info" sx={{ mb: 3 }}>
@@ -336,71 +318,63 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
             No Packages or Add-ons Selected
           </Typography>
           <Typography variant="body2">
-            You haven't selected any packages or add-ons yet. You can go back to
-            browse available options, or continue to request a custom quote for
-            your event.
+            You haven't selected any packages or add-ons yet. You can go back to browse available
+            options, or continue to request a custom quote for your event.
           </Typography>
         </Alert>
 
         {/* Event Details - show even without items */}
-        {config?.show_booking_review !== false &&
-          config?.show_event_details !== false && (
-            <Box sx={{ mb: 3 }}>
-              <Paper
-                elevation={0}
-                sx={{ p: 3, border: 1, borderColor: "divider" }}
-              >
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-                  Event Details
-                </Typography>
+        {config?.show_booking_review !== false && config?.show_event_details !== false && (
+          <Box sx={{ mb: 3 }}>
+            <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+              <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                Event Details
+              </Typography>
 
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Event Type
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  {flow?.event_type_name || 'Not specified'}
+                </Typography>
+              </Box>
+
+              {allStepData?.date_time?.start_date && (
                 <Box sx={{ mb: 2 }}>
                   <Typography variant="body2" color="text.secondary">
-                    Event Type
+                    Event Date
                   </Typography>
                   <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    {flow?.event_type_name || "Not specified"}
+                    {formatDate(allStepData.date_time.start_date)}
                   </Typography>
                 </Box>
-
-                {allStepData?.date_time?.start_date && (
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Event Date
-                    </Typography>
-                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                      {formatDate(allStepData.date_time.start_date)}
-                    </Typography>
-                  </Box>
-                )}
-              </Paper>
-            </Box>
-          )}
+              )}
+            </Paper>
+          </Box>
+        )}
 
         {/* Special Requests */}
         {config?.show_special_requests !== false && (
           <Box sx={{ mb: 3 }}>
-            <Paper
-              elevation={0}
-              sx={{ p: 3, border: 1, borderColor: "divider" }}
-            >
+            <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                 Special Requests
               </Typography>
 
               <textarea
                 placeholder="Any additional requests or special requirements for your event..."
-                value={stepData.special_requests || ""}
+                value={stepData.special_requests || ''}
                 onChange={(e) => handleSpecialRequestsChange(e.target.value)}
                 style={{
-                  width: "100%",
-                  minHeight: "80px",
-                  padding: "12px",
-                  border: "1px solid #ddd",
-                  borderRadius: "4px",
-                  fontSize: "14px",
-                  fontFamily: "inherit",
-                  resize: "vertical",
+                  width: '100%',
+                  minHeight: '80px',
+                  padding: '12px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px',
+                  fontFamily: 'inherit',
+                  resize: 'vertical',
                 }}
               />
             </Paper>
@@ -410,10 +384,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
         {/* Terms and Conditions - required even for quote requests */}
         {config?.show_terms_checkbox !== false && (
           <Box sx={{ mb: 3 }}>
-            <Paper
-              elevation={0}
-              sx={{ p: 3, border: 1, borderColor: "divider" }}
-            >
+            <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                 Terms and Conditions
               </Typography>
@@ -430,34 +401,26 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                   <Typography variant="body2">
                     {config?.terms_text || (
                       <>
-                        I agree to the{" "}
+                        I agree to the{' '}
                         <a
-                          href={
-                            config?.effective_terms_url ||
-                            config?.terms_url ||
-                            "/terms"
-                          }
+                          href={config?.effective_terms_url || config?.terms_url || '/terms'}
                           target="_blank"
                           rel="noreferrer"
                           style={{
-                            color: "inherit",
-                            textDecoration: "underline",
+                            color: 'inherit',
+                            textDecoration: 'underline',
                           }}
                         >
                           Terms of Service
-                        </a>{" "}
-                        and{" "}
+                        </a>{' '}
+                        and{' '}
                         <a
-                          href={
-                            config?.effective_privacy_url ||
-                            config?.privacy_url ||
-                            "/privacy"
-                          }
+                          href={config?.effective_privacy_url || config?.privacy_url || '/privacy'}
                           target="_blank"
                           rel="noreferrer"
                           style={{
-                            color: "inherit",
-                            textDecoration: "underline",
+                            color: 'inherit',
+                            textDecoration: 'underline',
                           }}
                         >
                           Privacy Policy
@@ -474,9 +437,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                   control={
                     <Checkbox
                       checked={stepData.marketing_consent || false}
-                      onChange={(e) =>
-                        handleMarketingConsentChange(e.target.checked)
-                      }
+                      onChange={(e) => handleMarketingConsentChange(e.target.checked)}
                       color="primary"
                     />
                   }
@@ -484,12 +445,11 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                 />
               )}
 
-              {config?.require_terms_acceptance !== false &&
-                validationErrors.terms_accepted && (
-                  <Alert severity="error" sx={{ mt: 2 }}>
-                    {validationErrors.terms_accepted[0]}
-                  </Alert>
-                )}
+              {config?.require_terms_acceptance !== false && validationErrors.terms_accepted && (
+                <Alert severity="error" sx={{ mt: 2 }}>
+                  {validationErrors.terms_accepted[0]}
+                </Alert>
+              )}
             </Paper>
           </Box>
         )}
@@ -509,15 +469,11 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
 
   return (
     <Box>
-      <Typography
-        variant="h5"
-        gutterBottom
-        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-      >
+      <Typography variant="h5" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Receipt />
-        {config?.header_text || "Pricing Summary"}
+        {config?.header_text || 'Pricing Summary'}
         <Fade in={isUpdatingPrices}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
             <CircularProgress size={16} />
             <Typography variant="caption" color="text.secondary">
               Updating prices...
@@ -528,8 +484,8 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
 
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         {isQuoteMode
-          ? "Review your selected add-ons below. Since no package is selected, you will receive a custom quote from our team."
-          : "Review your selected items and total cost. You can apply a discount code if you have one."}
+          ? 'Review your selected add-ons below. Since no package is selected, you will receive a custom quote from our team.'
+          : 'Review your selected items and total cost. You can apply a discount code if you have one.'}
       </Typography>
 
       {/* Quote mode alert - shown when only add-ons are selected */}
@@ -539,10 +495,9 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
             Quote Request Mode
           </Typography>
           <Typography variant="body2">
-            You've selected add-ons but no event package. The pricing below is
-            an estimate for your selected add-ons only. On the next step, you'll
-            be able to request a custom quote and our team will recommend the
-            best package options for your event.
+            You've selected add-ons but no event package. The pricing below is an estimate for your
+            selected add-ons only. On the next step, you'll be able to request a custom quote and
+            our team will recommend the best package options for your event.
           </Typography>
         </Alert>
       )}
@@ -555,245 +510,211 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
       )}
 
       {/* Selected Packages */}
-      {config?.show_package_breakdown !== false &&
-        selectedPackages.length > 0 && (
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Selected Packages
-            </Typography>
-            <TableContainer component={Paper} variant="outlined">
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Package</TableCell>
-                    <TableCell align="center">Quantity</TableCell>
-                    <TableCell align="right">Unit Price</TableCell>
-                    <TableCell align="right">Total</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {selectedPackages.map((pkg) => {
-                    // Find matching line item for excess hour details
-                    const lineItem = pricing.lineItems?.find(
-                      (item) => item.product_id === pkg.product_id,
-                    );
-                    const basePrice = lineItem?.base_unit_price
-                      ? parseFloat(lineItem.base_unit_price)
-                      : parseFloat(pkg.price);
-                    const unitPrice = basePrice; // Use base price, not total_unit_price
-                    const totalPrice = lineItem?.total_unit_price
-                      ? parseFloat(lineItem.total_unit_price)
-                      : parseFloat(pkg.price);
+      {config?.show_package_breakdown !== false && selectedPackages.length > 0 && (
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" gutterBottom>
+            Selected Packages
+          </Typography>
+          <TableContainer component={Paper} variant="outlined">
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Package</TableCell>
+                  <TableCell align="center">Quantity</TableCell>
+                  <TableCell align="right">Unit Price</TableCell>
+                  <TableCell align="right">Total</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {selectedPackages.map((pkg) => {
+                  // Find matching line item for excess hour details
+                  const lineItem = pricing.lineItems?.find(
+                    (item) => item.product_id === pkg.product_id,
+                  );
+                  const basePrice = lineItem?.base_unit_price
+                    ? parseFloat(lineItem.base_unit_price)
+                    : parseFloat(pkg.price);
+                  const unitPrice = basePrice; // Use base price, not total_unit_price
+                  const totalPrice = lineItem?.total_unit_price
+                    ? parseFloat(lineItem.total_unit_price)
+                    : parseFloat(pkg.price);
 
-                    // Check for new venue_details format (preferred) or legacy excess_hours
-                    const venueDetails = lineItem?.venue_details;
-                    const hasVenueExcess =
-                      venueDetails &&
-                      venueDetails.length > 0 &&
-                      venueDetails.some((v) => v.additional_hours > 0);
-                    const hasLegacyExcess =
-                      !hasVenueExcess &&
-                      lineItem?.excess_hours &&
-                      lineItem.excess_hours > 0;
+                  // Check for new venue_details format (preferred) or legacy excess_hours
+                  const venueDetails = lineItem?.venue_details;
+                  const hasVenueExcess =
+                    venueDetails &&
+                    venueDetails.length > 0 &&
+                    venueDetails.some((v) => v.additional_hours > 0);
+                  const hasLegacyExcess =
+                    !hasVenueExcess && lineItem?.excess_hours && lineItem.excess_hours > 0;
 
-                    // Check for attendee breakdown with multiple tiers
-                    const breakdown =
-                      pkg.attendee_breakdown || lineItem?.attendee_breakdown;
-                    const activeTiers = breakdown?.filter((t) => t.count > 0);
-                    const showBreakdown = activeTiers && activeTiers.length > 1;
+                  // Check for attendee breakdown with multiple tiers
+                  const breakdown = pkg.attendee_breakdown || lineItem?.attendee_breakdown;
+                  const activeTiers = breakdown?.filter((t) => t.count > 0);
+                  const showBreakdown = activeTiers && activeTiers.length > 1;
 
-                    return (
-                      <React.Fragment key={pkg.product_id}>
-                        <TableRow>
-                          <TableCell>
-                            <Box>
-                              <Typography
-                                variant="body2"
-                                sx={{ fontWeight: 500 }}
-                              >
-                                {pkg.name}
-                                {showBreakdown &&
-                                  pkg.pricing_unit === "PER_PERSON" && (
-                                    <Typography
-                                      component="span"
-                                      variant="body2"
-                                      color="text.secondary"
-                                      sx={{ fontWeight: 400 }}
-                                    >
-                                      {" "}
-                                      ({pkg.quantity} persons)
-                                    </Typography>
-                                  )}
-                              </Typography>
-                              {hasVenueExcess && (
-                                <Box sx={{ mt: 0.5 }}>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                    sx={{ display: "block" }}
-                                  >
-                                    Base: {formatAmount(basePrice.toString())}
-                                  </Typography>
-                                  {venueDetails?.map(
-                                    (venue) =>
-                                      venue.additional_hours > 0 && (
-                                        <Typography
-                                          key={venue.venue_id}
-                                          variant="caption"
-                                          color="text.secondary"
-                                          sx={{ display: "block" }}
-                                        >
-                                          {venue.venue_name}: +
-                                          {venue.additional_hours}h @{" "}
-                                          {formatAmount(
-                                            venue.excess_hour_price,
-                                          )}
-                                          /h
-                                        </Typography>
-                                      ),
-                                  )}
-                                </Box>
+                  return (
+                    <React.Fragment key={pkg.product_id}>
+                      <TableRow>
+                        <TableCell>
+                          <Box>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              {pkg.name}
+                              {showBreakdown && pkg.pricing_unit === 'PER_PERSON' && (
+                                <Typography
+                                  component="span"
+                                  variant="body2"
+                                  color="text.secondary"
+                                  sx={{ fontWeight: 400 }}
+                                >
+                                  {' '}
+                                  ({pkg.quantity} persons)
+                                </Typography>
                               )}
-                              {hasLegacyExcess && (
+                            </Typography>
+                            {hasVenueExcess && (
+                              <Box sx={{ mt: 0.5 }}>
                                 <Typography
                                   variant="caption"
                                   color="text.secondary"
-                                  sx={{ display: "block", mt: 0.5 }}
+                                  sx={{ display: 'block' }}
                                 >
                                   Base: {formatAmount(basePrice.toString())}
-                                  {lineItem.excess_hours &&
-                                    lineItem.excess_hour_price && (
-                                      <>
-                                        {" "}
-                                        + {lineItem.excess_hours}h excess @{" "}
-                                        {formatAmount(
-                                          lineItem.excess_hour_price,
-                                        )}
+                                </Typography>
+                                {venueDetails?.map(
+                                  (venue) =>
+                                    venue.additional_hours > 0 && (
+                                      <Typography
+                                        key={venue.venue_id}
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{ display: 'block' }}
+                                      >
+                                        {venue.venue_name}: +{venue.additional_hours}h @{' '}
+                                        {formatAmount(venue.excess_hour_price)}
                                         /h
-                                      </>
-                                    )}
-                                </Typography>
-                              )}
-                            </Box>
-                          </TableCell>
-                          <TableCell align="center">
-                            {!showBreakdown &&
-                            pkg.pricing_unit === "PER_PERSON" ? (
-                              <Box>
-                                <Typography variant="body2">
-                                  {pkg.quantity} persons
-                                </Typography>
-                                {pkg.minimum_guests &&
-                                  pkg.minimum_guests > 1 && (
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                      sx={{ display: "block" }}
-                                    >
-                                      min. {pkg.minimum_guests}
-                                    </Typography>
-                                  )}
+                                      </Typography>
+                                    ),
+                                )}
                               </Box>
-                            ) : showBreakdown ? (
-                              ""
-                            ) : (
-                              pkg.quantity
                             )}
-                          </TableCell>
-                          <TableCell align="right">
-                            <Box>
-                              <Typography variant="body2">
-                                {isUpdatingPrices ? (
-                                  <Skeleton width={60} animation="wave" />
-                                ) : !showBreakdown ? (
-                                  formatAmount(unitPrice.toString())
-                                ) : (
-                                  ""
+                            {hasLegacyExcess && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: 'block', mt: 0.5 }}
+                              >
+                                Base: {formatAmount(basePrice.toString())}
+                                {lineItem.excess_hours && lineItem.excess_hour_price && (
+                                  <>
+                                    {' '}
+                                    + {lineItem.excess_hours}h excess @{' '}
+                                    {formatAmount(lineItem.excess_hour_price)}
+                                    /h
+                                  </>
                                 )}
                               </Typography>
-                              {!showBreakdown &&
-                                pkg.pricing_unit === "PER_PERSON" && (
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                    sx={{ display: "block" }}
-                                  >
-                                    per person
-                                  </Typography>
-                                )}
-                              {(hasVenueExcess || hasLegacyExcess) && (
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell align="center">
+                          {!showBreakdown && pkg.pricing_unit === 'PER_PERSON' ? (
+                            <Box>
+                              <Typography variant="body2">{pkg.quantity} persons</Typography>
+                              {pkg.minimum_guests && pkg.minimum_guests > 1 && (
                                 <Typography
                                   variant="caption"
                                   color="text.secondary"
-                                  sx={{ display: "block" }}
+                                  sx={{ display: 'block' }}
                                 >
-                                  (+
-                                  {formatAmount(
-                                    (totalPrice - basePrice).toString(),
-                                  )}{" "}
-                                  excess)
+                                  min. {pkg.minimum_guests}
                                 </Typography>
                               )}
                             </Box>
-                          </TableCell>
-                          <TableCell align="right">
-                            {isUpdatingPrices ? (
-                              <Skeleton width={80} animation="wave" />
-                            ) : (
-                              formatAmount(
-                                (totalPrice * pkg.quantity).toString(),
-                              )
+                          ) : showBreakdown ? (
+                            ''
+                          ) : (
+                            pkg.quantity
+                          )}
+                        </TableCell>
+                        <TableCell align="right">
+                          <Box>
+                            <Typography variant="body2">
+                              {isUpdatingPrices ? (
+                                <Skeleton width={60} animation="wave" />
+                              ) : !showBreakdown ? (
+                                formatAmount(unitPrice.toString())
+                              ) : (
+                                ''
+                              )}
+                            </Typography>
+                            {!showBreakdown && pkg.pricing_unit === 'PER_PERSON' && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: 'block' }}
+                              >
+                                per person
+                              </Typography>
                             )}
-                          </TableCell>
-                        </TableRow>
-                        {/* Attendee breakdown sub-rows */}
-                        {showBreakdown &&
-                          activeTiers.map((tier, idx) => (
-                            <TableRow
-                              key={`${pkg.product_id}-tier-${idx}`}
-                              sx={{
-                                "& > .MuiTableCell-root": {
-                                  borderBottom:
-                                    idx === activeTiers.length - 1
-                                      ? undefined
-                                      : "none",
-                                  py: 0.5,
-                                },
-                              }}
-                            >
-                              <TableCell colSpan={2} sx={{ pl: 4 }}>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {tier.count} {tier.tier_label}
-                                  {tier.discount_percentage > 0
-                                    ? ` (${tier.discount_percentage}% off)`
-                                    : ""}{" "}
-                                  &times;{" "}
-                                  {formatAmount(tier.unit_price.toString())}
-                                  /person
-                                </Typography>
-                              </TableCell>
-                              <TableCell />
-                              <TableCell align="right">
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {formatAmount(tier.subtotal.toString())}
-                                </Typography>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                      </React.Fragment>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
-        )}
+                            {(hasVenueExcess || hasLegacyExcess) && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: 'block' }}
+                              >
+                                (+
+                                {formatAmount((totalPrice - basePrice).toString())} excess)
+                              </Typography>
+                            )}
+                          </Box>
+                        </TableCell>
+                        <TableCell align="right">
+                          {isUpdatingPrices ? (
+                            <Skeleton width={80} animation="wave" />
+                          ) : (
+                            formatAmount((totalPrice * pkg.quantity).toString())
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      {/* Attendee breakdown sub-rows */}
+                      {showBreakdown &&
+                        activeTiers.map((tier, idx) => (
+                          <TableRow
+                            key={`${pkg.product_id}-tier-${idx}`}
+                            sx={{
+                              '& > .MuiTableCell-root': {
+                                borderBottom: idx === activeTiers.length - 1 ? undefined : 'none',
+                                py: 0.5,
+                              },
+                            }}
+                          >
+                            <TableCell colSpan={2} sx={{ pl: 4 }}>
+                              <Typography variant="caption" color="text.secondary">
+                                {tier.count} {tier.tier_label}
+                                {tier.discount_percentage > 0
+                                  ? ` (${tier.discount_percentage}% off)`
+                                  : ''}{' '}
+                                &times; {formatAmount(tier.unit_price.toString())}
+                                /person
+                              </Typography>
+                            </TableCell>
+                            <TableCell />
+                            <TableCell align="right">
+                              <Typography variant="caption" color="text.secondary">
+                                {formatAmount(tier.subtotal.toString())}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                    </React.Fragment>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
 
       {/* Selected Add-ons */}
       {config?.show_addon_breakdown !== false && selectedAddons.length > 0 && (
@@ -854,14 +775,14 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
           <Typography
             variant="subtitle1"
             gutterBottom
-            sx={{ display: "flex", alignItems: "center", gap: 1 }}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
           >
             <LocalOffer />
             Discount Code
           </Typography>
 
           {stepData.applied_discount_code ? (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <Chip
                 label={stepData.applied_discount_code}
                 icon={<CheckCircle />}
@@ -874,21 +795,15 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
               </Typography>
             </Box>
           ) : (
-            <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+            <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
               <TextField
                 size="small"
-                placeholder={
-                  config?.discount_help_text || "Enter discount code"
-                }
+                placeholder={config?.discount_help_text || 'Enter discount code'}
                 value={discountCodeInput}
                 onChange={handleDiscountInputChange}
-                error={
-                  !!discountError || !!validationErrors.applied_discount_code
-                }
+                error={!!discountError || !!validationErrors.applied_discount_code}
                 helperText={
-                  discountError ||
-                  validationErrors.applied_discount_code?.join(", ") ||
-                  ""
+                  discountError || validationErrors.applied_discount_code?.join(', ') || ''
                 }
                 sx={{ flexGrow: 1 }}
                 disabled={validatingDiscount}
@@ -897,9 +812,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                 variant="outlined"
                 onClick={handleApplyDiscount}
                 disabled={!discountCodeInput.trim() || validatingDiscount}
-                startIcon={
-                  validatingDiscount ? <CircularProgress size={16} /> : null
-                }
+                startIcon={validatingDiscount ? <CircularProgress size={16} /> : null}
               >
                 Apply
               </Button>
@@ -913,16 +826,16 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
         variant="outlined"
         sx={{
           p: 2,
-          ...(isQuoteMode && { borderColor: "info.main", borderWidth: 2 }),
+          ...(isQuoteMode && { borderColor: 'info.main', borderWidth: 2 }),
         }}
       >
         <Typography variant="h6" gutterBottom>
-          {isQuoteMode ? "Estimated Add-ons Summary" : "Order Summary"}
+          {isQuoteMode ? 'Estimated Add-ons Summary' : 'Order Summary'}
         </Typography>
 
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {config?.show_subtotal !== false && (
-            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography>Subtotal ({totalItemCount} items)</Typography>
               <Typography>
                 {isUpdatingPrices ? (
@@ -935,14 +848,10 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
           )}
 
           {config?.show_tax_breakdown !== false && pricing.tax > 0 && (
-            <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
               <Typography>Tax</Typography>
               <Typography>
-                {isUpdatingPrices ? (
-                  <Skeleton width={80} animation="wave" />
-                ) : (
-                  pricing.formattedTax
-                )}
+                {isUpdatingPrices ? <Skeleton width={80} animation="wave" /> : pricing.formattedTax}
               </Typography>
             </Box>
           )}
@@ -950,9 +859,9 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
           {pricing.discount > 0 && (
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                color: "success.main",
+                display: 'flex',
+                justifyContent: 'space-between',
+                color: 'success.main',
               }}
             >
               <Typography>Discount</Typography>
@@ -968,14 +877,9 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
 
           <Divider sx={{ my: 1 }} />
 
-          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-            <Typography variant="h6">
-              {isQuoteMode ? "Estimated Total" : "Total"}
-            </Typography>
-            <Typography
-              variant="h6"
-              color={isQuoteMode ? "info.main" : "primary"}
-            >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Typography variant="h6">{isQuoteMode ? 'Estimated Total' : 'Total'}</Typography>
+            <Typography variant="h6" color={isQuoteMode ? 'info.main' : 'primary'}>
               {isUpdatingPrices ? (
                 <Skeleton width={100} animation="wave" />
               ) : (
@@ -987,10 +891,10 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
             <Typography
               variant="caption"
               color="text.secondary"
-              sx={{ display: "block", mt: 1, textAlign: "center" }}
+              sx={{ display: 'block', mt: 1, textAlign: 'center' }}
             >
-              * Final pricing will be provided in your custom quote, which will
-              include a recommended package.
+              * Final pricing will be provided in your custom quote, which will include a
+              recommended package.
             </Typography>
           )}
         </Box>
@@ -1002,10 +906,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
           {/* Event Details */}
           {config?.show_event_details !== false && (
             <Box sx={{ mt: 3 }}>
-              <Paper
-                elevation={0}
-                sx={{ p: 3, border: 1, borderColor: "divider" }}
-              >
+              <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
                 <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                   Event Details
                 </Typography>
@@ -1015,7 +916,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                     Event Type
                   </Typography>
                   <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                    {flow?.event_type_name || "Not specified"}
+                    {flow?.event_type_name || 'Not specified'}
                   </Typography>
                 </Box>
 
@@ -1047,27 +948,24 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
           {/* Special Requests */}
           {config?.show_special_requests !== false && (
             <Box sx={{ mt: 3 }}>
-              <Paper
-                elevation={0}
-                sx={{ p: 3, border: 1, borderColor: "divider" }}
-              >
+              <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
                 <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                   Special Requests
                 </Typography>
 
                 <textarea
                   placeholder="Any additional requests or special requirements for your event..."
-                  value={stepData.special_requests || ""}
+                  value={stepData.special_requests || ''}
                   onChange={(e) => handleSpecialRequestsChange(e.target.value)}
                   style={{
-                    width: "100%",
-                    minHeight: "80px",
-                    padding: "12px",
-                    border: "1px solid #ddd",
-                    borderRadius: "4px",
-                    fontSize: "14px",
-                    fontFamily: "inherit",
-                    resize: "vertical",
+                    width: '100%',
+                    minHeight: '80px',
+                    padding: '12px',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
                   }}
                 />
               </Paper>
@@ -1077,10 +975,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
           {/* Terms and Conditions */}
           {config?.show_terms_checkbox !== false && (
             <Box sx={{ mt: 3 }}>
-              <Paper
-                elevation={0}
-                sx={{ p: 3, border: 1, borderColor: "divider" }}
-              >
+              <Paper elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
                 <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
                   Terms and Conditions
                 </Typography>
@@ -1097,34 +992,28 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                     <Typography variant="body2">
                       {config?.terms_text || (
                         <>
-                          I agree to the{" "}
+                          I agree to the{' '}
                           <a
-                            href={
-                              config?.effective_terms_url ||
-                              config?.terms_url ||
-                              "/terms"
-                            }
+                            href={config?.effective_terms_url || config?.terms_url || '/terms'}
                             target="_blank"
                             rel="noreferrer"
                             style={{
-                              color: "inherit",
-                              textDecoration: "underline",
+                              color: 'inherit',
+                              textDecoration: 'underline',
                             }}
                           >
                             Terms of Service
-                          </a>{" "}
-                          and{" "}
+                          </a>{' '}
+                          and{' '}
                           <a
                             href={
-                              config?.effective_privacy_url ||
-                              config?.privacy_url ||
-                              "/privacy"
+                              config?.effective_privacy_url || config?.privacy_url || '/privacy'
                             }
                             target="_blank"
                             rel="noreferrer"
                             style={{
-                              color: "inherit",
-                              textDecoration: "underline",
+                              color: 'inherit',
+                              textDecoration: 'underline',
                             }}
                           >
                             Privacy Policy
@@ -1141,9 +1030,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                     control={
                       <Checkbox
                         checked={stepData.marketing_consent || false}
-                        onChange={(e) =>
-                          handleMarketingConsentChange(e.target.checked)
-                        }
+                        onChange={(e) => handleMarketingConsentChange(e.target.checked)}
                         color="primary"
                       />
                     }
@@ -1151,12 +1038,11 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
                   />
                 )}
 
-                {config?.require_terms_acceptance !== false &&
-                  validationErrors.terms_accepted && (
-                    <Alert severity="error" sx={{ mt: 2 }}>
-                      {validationErrors.terms_accepted[0]}
-                    </Alert>
-                  )}
+                {config?.require_terms_acceptance !== false && validationErrors.terms_accepted && (
+                  <Alert severity="error" sx={{ mt: 2 }}>
+                    {validationErrors.terms_accepted[0]}
+                  </Alert>
+                )}
               </Paper>
             </Box>
           )}
@@ -1172,7 +1058,7 @@ export const PricingSummaryStep: React.FC<PricingSummaryStepProps> = ({
 
       {/* Validation state indicator */}
       {isValidating && (
-        <Box sx={{ mt: 2, display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
           <CircularProgress size={16} />
           <Typography variant="body2" color="text.secondary">
             Validating pricing...

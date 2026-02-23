@@ -21,10 +21,7 @@ import {
   CircularProgress,
   Alert,
 } from '@mui/material';
-import {
-  Close as CloseIcon,
-  Restore as RestoreIcon,
-} from '@mui/icons-material';
+import { Close as CloseIcon, Restore as RestoreIcon } from '@mui/icons-material';
 import { useLayouts } from '../../hooks/useLayouts';
 import type { EmailLayout } from '../../types/layouts.types';
 
@@ -56,7 +53,7 @@ export const LayoutHistoryDialog: React.FC<LayoutHistoryDialogProps> = ({
             setSelectedVersion(null);
             onClose();
           },
-        }
+        },
       );
     }
   };
@@ -118,17 +115,24 @@ export const LayoutHistoryDialog: React.FC<LayoutHistoryDialogProps> = ({
                       <Chip
                         label={entry.reason}
                         size="small"
-                        color={getReasonColor(entry.reason) as 'success' | 'primary' | 'warning' | 'default'}
+                        color={
+                          getReasonColor(entry.reason) as
+                            | 'success'
+                            | 'primary'
+                            | 'warning'
+                            | 'default'
+                        }
                       />
                     </TableCell>
+                    <TableCell>{entry.changed_by_name || 'System'}</TableCell>
+                    <TableCell>{new Date(entry.created_at).toLocaleString()}</TableCell>
                     <TableCell>
-                      {entry.changed_by_name || 'System'}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(entry.created_at).toLocaleString()}
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 200 }} noWrap>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ maxWidth: 200 }}
+                        noWrap
+                      >
                         {entry.notes || '-'}
                       </Typography>
                     </TableCell>
@@ -159,7 +163,8 @@ export const LayoutHistoryDialog: React.FC<LayoutHistoryDialogProps> = ({
               Are you sure you want to restore to version {selectedVersion}?
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-              This will overwrite the current layout with the selected version. A new history entry will be created.
+              This will overwrite the current layout with the selected version. A new history entry
+              will be created.
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
               <Button

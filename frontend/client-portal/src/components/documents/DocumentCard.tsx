@@ -61,11 +61,7 @@ const getDocumentIcon = (doc: DocumentItem): React.ReactNode => {
   return typeIcons[doc.type] || <FileIcon sx={{ fontSize: 40, color: '#757575' }} />;
 };
 
-export const DocumentCard: React.FC<DocumentCardProps> = ({
-  document,
-  onDownload,
-  onPreview,
-}) => {
+export const DocumentCard: React.FC<DocumentCardProps> = ({ document, onDownload, onPreview }) => {
   const PHILIPPINE_TIMEZONE = 'Asia/Manila';
   const config = DOCUMENT_TYPE_CONFIGS[document.type];
 
@@ -161,11 +157,7 @@ export const DocumentCard: React.FC<DocumentCardProps> = ({
         </Stack>
 
         {/* Date */}
-        <Typography
-          variant="caption"
-          color="text.secondary"
-          sx={{ display: 'block', mt: 1 }}
-        >
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
           {formatInTimeZone(document.createdAt, PHILIPPINE_TIMEZONE, 'MMM dd, yyyy')}
         </Typography>
       </CardContent>

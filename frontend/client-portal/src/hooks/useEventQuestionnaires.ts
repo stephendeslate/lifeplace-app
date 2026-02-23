@@ -4,10 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToastActions } from '../contexts/ToastContext';
 import { questionnairesApi } from '../apis/questionnaires.api';
 import { ErrorHandler } from '../utils/errorHandler';
-import type {
-  QuestionnaireFilters,
-  SaveEventResponsesData,
-} from '../types/questionnaires.types';
+import type { QuestionnaireFilters, SaveEventResponsesData } from '../types/questionnaires.types';
 
 export const useEventQuestionnaires = () => {
   const queryClient = useQueryClient();
@@ -65,17 +62,16 @@ export const useEventQuestionnaires = () => {
   // Save Event Responses Mutation
   const useSaveEventResponses = () => {
     return useMutation({
-      mutationFn: (data: SaveEventResponsesData) =>
-        questionnairesApi.saveEventResponses(data),
+      mutationFn: (data: SaveEventResponsesData) => questionnairesApi.saveEventResponses(data),
       onSuccess: (_, variables) => {
         showSuccess(
           'Responses Saved',
-          'Your questionnaire responses have been saved successfully.'
+          'Your questionnaire responses have been saved successfully.',
         );
 
         // Invalidate event responses to show updated data
         queryClient.invalidateQueries({
-          queryKey: ['event-responses', variables.event_id]
+          queryKey: ['event-responses', variables.event_id],
         });
       },
       onError: (error: unknown) => {

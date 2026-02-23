@@ -1,6 +1,5 @@
 import type { SvgIconComponent } from '@mui/icons-material';
 
-
 export interface SettingsFavorite {
   id: string;
   path: string;

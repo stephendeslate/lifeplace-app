@@ -1,8 +1,8 @@
 // Communications Analytics Tab
 // Shows delivery metrics, open rates, and failure tracking for email/SMS
 
-import React, { useMemo } from "react";
-import { Box, Typography, Skeleton, Stack, Chip } from "@mui/material";
+import React, { useMemo } from 'react';
+import { Box, Typography, Skeleton, Stack, Chip } from '@mui/material';
 import {
   Email as EmailIcon,
   Sms as SmsIcon,
@@ -10,26 +10,22 @@ import {
   Error as FailedIcon,
   Visibility as OpenedIcon,
   Send as SentIcon,
-} from "@mui/icons-material";
-import { ModernCard } from "../../../components/common/ModernCard";
-import { KPICard, KPIGrid } from "../../../components/analytics";
-import { useCommunications } from "../../../hooks/useCommunications";
-import type { DateRange } from "../../../types/analytics.types";
+} from '@mui/icons-material';
+import { ModernCard } from '../../../components/common/ModernCard';
+import { KPICard, KPIGrid } from '../../../components/analytics';
+import { useCommunications } from '../../../hooks/useCommunications';
+import type { DateRange } from '../../../types/analytics.types';
 
 interface CommunicationsTabProps {
   dateRange: DateRange;
 }
 
-export const CommunicationsTab: React.FC<CommunicationsTabProps> = ({
-  dateRange,
-}) => {
+export const CommunicationsTab: React.FC<CommunicationsTabProps> = ({ dateRange }) => {
   // Convert dateRange to days for the analytics hook
   const days = useMemo(() => {
     const start = new Date(dateRange.startDate);
     const end = new Date(dateRange.endDate);
-    const diff = Math.ceil(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const diff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
     return Math.max(diff, 1);
   }, [dateRange]);
 
@@ -52,12 +48,7 @@ export const CommunicationsTab: React.FC<CommunicationsTabProps> = ({
           isLoading={isLoading}
           color="success"
         />
-        <KPICard
-          title="Opened"
-          value={analytics?.opened ?? 0}
-          isLoading={isLoading}
-          color="info"
-        />
+        <KPICard title="Opened" value={analytics?.opened ?? 0} isLoading={isLoading} color="info" />
         <KPICard
           title="Failed"
           value={analytics?.failed ?? 0}
@@ -87,14 +78,14 @@ export const CommunicationsTab: React.FC<CommunicationsTabProps> = ({
               {/* Delivery Rate */}
               <Box
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: 2,
                   p: 2,
-                  bgcolor: "success.50",
+                  bgcolor: 'success.50',
                   borderRadius: 1,
-                  border: "1px solid",
-                  borderColor: "success.200",
+                  border: '1px solid',
+                  borderColor: 'success.200',
                 }}
               >
                 <DeliveredIcon color="success" />
@@ -103,8 +94,8 @@ export const CommunicationsTab: React.FC<CommunicationsTabProps> = ({
                     Delivery Rate
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {analytics?.delivered ?? 0} of {analytics?.total_sent ?? 0}{" "}
-                    communications delivered successfully
+                    {analytics?.delivered ?? 0} of {analytics?.total_sent ?? 0} communications
+                    delivered successfully
                   </Typography>
                 </Box>
                 <Chip
@@ -117,14 +108,14 @@ export const CommunicationsTab: React.FC<CommunicationsTabProps> = ({
               {/* Open Rate */}
               <Box
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: 2,
                   p: 2,
-                  bgcolor: "info.50",
+                  bgcolor: 'info.50',
                   borderRadius: 1,
-                  border: "1px solid",
-                  borderColor: "info.200",
+                  border: '1px solid',
+                  borderColor: 'info.200',
                 }}
               >
                 <OpenedIcon color="info" />
@@ -133,8 +124,8 @@ export const CommunicationsTab: React.FC<CommunicationsTabProps> = ({
                     Open Rate
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {analytics?.opened ?? 0} of {analytics?.delivered ?? 0}{" "}
-                    delivered communications opened
+                    {analytics?.opened ?? 0} of {analytics?.delivered ?? 0} delivered communications
+                    opened
                   </Typography>
                 </Box>
                 <Chip
@@ -147,39 +138,29 @@ export const CommunicationsTab: React.FC<CommunicationsTabProps> = ({
               {/* Failure Rate */}
               <Box
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: 2,
                   p: 2,
-                  bgcolor:
-                    (analytics?.failure_rate ?? 0) > 5 ? "error.50" : "grey.50",
+                  bgcolor: (analytics?.failure_rate ?? 0) > 5 ? 'error.50' : 'grey.50',
                   borderRadius: 1,
-                  border: "1px solid",
-                  borderColor:
-                    (analytics?.failure_rate ?? 0) > 5
-                      ? "error.200"
-                      : "grey.200",
+                  border: '1px solid',
+                  borderColor: (analytics?.failure_rate ?? 0) > 5 ? 'error.200' : 'grey.200',
                 }}
               >
-                <FailedIcon
-                  color={
-                    (analytics?.failure_rate ?? 0) > 5 ? "error" : "action"
-                  }
-                />
+                <FailedIcon color={(analytics?.failure_rate ?? 0) > 5 ? 'error' : 'action'} />
                 <Box sx={{ flex: 1 }}>
                   <Typography variant="body2" fontWeight={600}>
                     Failure Rate
                   </Typography>
                   <Typography variant="caption" color="text.secondary">
-                    {analytics?.failed ?? 0} of {analytics?.total_sent ?? 0}{" "}
-                    communications failed to deliver
+                    {analytics?.failed ?? 0} of {analytics?.total_sent ?? 0} communications failed
+                    to deliver
                   </Typography>
                 </Box>
                 <Chip
                   label={`${analytics?.failure_rate?.toFixed(1) ?? 0}%`}
-                  color={
-                    (analytics?.failure_rate ?? 0) > 5 ? "error" : "default"
-                  }
+                  color={(analytics?.failure_rate ?? 0) > 5 ? 'error' : 'default'}
                   size="small"
                 />
               </Box>
@@ -196,17 +177,17 @@ export const CommunicationsTab: React.FC<CommunicationsTabProps> = ({
               Period Summary
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Last {days} day{days !== 1 ? "s" : ""}
+              Last {days} day{days !== 1 ? 's' : ''}
             </Typography>
 
             <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
               <Box
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: 1,
                   p: 1.5,
-                  bgcolor: "grey.50",
+                  bgcolor: 'grey.50',
                   borderRadius: 1,
                   flex: 1,
                   minWidth: 200,
@@ -224,11 +205,11 @@ export const CommunicationsTab: React.FC<CommunicationsTabProps> = ({
               </Box>
               <Box
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: 1,
                   p: 1.5,
-                  bgcolor: "grey.50",
+                  bgcolor: 'grey.50',
                   borderRadius: 1,
                   flex: 1,
                   minWidth: 200,
@@ -246,11 +227,11 @@ export const CommunicationsTab: React.FC<CommunicationsTabProps> = ({
               </Box>
               <Box
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: 1,
                   p: 1.5,
-                  bgcolor: "grey.50",
+                  bgcolor: 'grey.50',
                   borderRadius: 1,
                   flex: 1,
                   minWidth: 200,

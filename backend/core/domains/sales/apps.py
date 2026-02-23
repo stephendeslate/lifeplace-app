@@ -3,11 +3,10 @@ from django.apps import AppConfig
 
 
 class SalesConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'core.domains.sales'
-    label = 'sales'
-    verbose_name = 'Sales'
-    
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "core.domains.sales"
+    label = "sales"
+    verbose_name = "Sales"
+
     def ready(self):
         """Connect signals when app is ready"""
-        import core.domains.sales.signals

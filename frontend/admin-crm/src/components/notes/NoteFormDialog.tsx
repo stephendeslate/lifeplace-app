@@ -16,7 +16,7 @@ import {
   Switch,
 } from '@mui/material';
 import { Save as SaveIcon, Visibility as VisibilityIcon } from '@mui/icons-material';
-import { 
+import {
   type NoteFormDialogProps,
   type NoteFormData,
   type CreateNoteData,
@@ -56,23 +56,23 @@ export const NoteFormDialog: React.FC<NoteFormDialogProps> = ({
     }
   }, [editingNote, open]);
 
-  const handleInputChange = (field: keyof NoteFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
+  const handleInputChange =
+    (field: keyof NoteFormData) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
         ...prev,
-        [field]: '',
+        [field]: value,
       }));
-    }
-  };
+
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: '',
+        }));
+      }
+    };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -123,21 +123,19 @@ export const NoteFormDialog: React.FC<NoteFormDialogProps> = ({
   };
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={handleClose}
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { minHeight: 400 }
+        sx: { minHeight: 400 },
       }}
     >
       {open && (
         <>
-          <DialogTitle>
-            {editingNote ? 'Edit Note' : 'Add New Note'}
-          </DialogTitle>
-      
+          <DialogTitle>{editingNote ? 'Edit Note' : 'Add New Note'}</DialogTitle>
+
           <DialogContent>
             <Box component="form" noValidate sx={{ mt: 1 }}>
               <Stack spacing={3}>
@@ -151,7 +149,7 @@ export const NoteFormDialog: React.FC<NoteFormDialogProps> = ({
                   placeholder="Enter a brief title for this note"
                   disabled={isLoading}
                 />
-                
+
                 <TextField
                   fullWidth
                   label="Note Content"
@@ -167,25 +165,32 @@ export const NoteFormDialog: React.FC<NoteFormDialogProps> = ({
                   onKeyDown={handleKeyDown}
                 />
 
-                <Box sx={{
-                  p: 2,
-                  bgcolor: formData.is_client_visible ? 'success.50' : 'grey.50',
-                  borderRadius: 1,
-                  border: '1px solid',
-                  borderColor: formData.is_client_visible ? 'success.200' : 'grey.300',
-                }}>
+                <Box
+                  sx={{
+                    p: 2,
+                    bgcolor: formData.is_client_visible ? 'success.50' : 'grey.50',
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: formData.is_client_visible ? 'success.200' : 'grey.300',
+                  }}
+                >
                   <FormControlLabel
                     control={
                       <Switch
                         checked={formData.is_client_visible}
-                        onChange={(e) => setFormData(prev => ({ ...prev, is_client_visible: e.target.checked }))}
+                        onChange={(e) =>
+                          setFormData((prev) => ({ ...prev, is_client_visible: e.target.checked }))
+                        }
                         disabled={isLoading}
                         color="success"
                       />
                     }
                     label={
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <VisibilityIcon fontSize="small" color={formData.is_client_visible ? 'success' : 'disabled'} />
+                        <VisibilityIcon
+                          fontSize="small"
+                          color={formData.is_client_visible ? 'success' : 'disabled'}
+                        />
                         <Box>
                           <Typography variant="body2" fontWeight="medium">
                             {formData.is_client_visible ? 'Visible to Client' : 'Internal Only'}
@@ -193,8 +198,7 @@ export const NoteFormDialog: React.FC<NoteFormDialogProps> = ({
                           <Typography variant="caption" color="text.secondary">
                             {formData.is_client_visible
                               ? 'This note will be visible to the client in their portal'
-                              : 'This note will only be visible to admins'
-                            }
+                              : 'This note will only be visible to admins'}
                           </Typography>
                         </Box>
                       </Box>
@@ -211,15 +215,12 @@ export const NoteFormDialog: React.FC<NoteFormDialogProps> = ({
               </Stack>
             </Box>
           </DialogContent>
-          
+
           <DialogActions sx={{ p: 3 }}>
-            <Button 
-              onClick={handleClose}
-              disabled={isLoading}
-            >
+            <Button onClick={handleClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmit}
               variant="contained"
               disabled={isLoading || !formData.content.trim()}

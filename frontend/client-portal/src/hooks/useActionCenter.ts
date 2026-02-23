@@ -28,7 +28,10 @@ import {
 } from '../types/action-center.types';
 
 // Re-export urgency helpers for use in components
-export { calculateUrgencyFromDays, calculateUrgencyFromPriority } from '../types/action-center.types';
+export {
+  calculateUrgencyFromDays,
+  calculateUrgencyFromPriority,
+} from '../types/action-center.types';
 
 // ==================== HELPER FUNCTIONS ====================
 
@@ -56,7 +59,7 @@ const calculateDaysPastDue = (dateString: string): number => {
 const transformTaskToAction = (
   task: EventTask,
   eventId: number,
-  eventName: string
+  eventName: string,
 ): TaskActionItem => {
   const urgency = calculateUrgencyFromPriority(task.priority);
 
@@ -135,8 +138,12 @@ const transformContractToAction = (contract: {
   isExpired?: boolean;
 }): ContractActionItem => {
   const daysUntilExpiry = calculateDaysUntil(contract.expiresAt);
-  const isExpired = contract.isExpired || (daysUntilExpiry !== null && daysUntilExpiry <= 0) || contract.status === 'EXPIRED';
-  const isExpiringSoon = !isExpired && daysUntilExpiry !== null && daysUntilExpiry <= 3 && daysUntilExpiry > 0;
+  const isExpired =
+    contract.isExpired ||
+    (daysUntilExpiry !== null && daysUntilExpiry <= 0) ||
+    contract.status === 'EXPIRED';
+  const isExpiringSoon =
+    !isExpired && daysUntilExpiry !== null && daysUntilExpiry <= 3 && daysUntilExpiry > 0;
   const urgency = isExpired ? 'CRITICAL' : calculateUrgencyFromDays(daysUntilExpiry, false);
 
   return {
@@ -148,8 +155,8 @@ const transformContractToAction = (contract: {
       : `${contract.signatureProgress.signed_count} of ${contract.signatureProgress.total_required} signatures`,
     eventId: contract.eventId,
     eventName: contract.eventName,
-    urgency: isExpired ? 'CRITICAL' : (isExpiringSoon ? 'HIGH' : urgency),
-    urgencyScore: URGENCY_SCORES[isExpired ? 'CRITICAL' : (isExpiringSoon ? 'HIGH' : urgency)],
+    urgency: isExpired ? 'CRITICAL' : isExpiringSoon ? 'HIGH' : urgency,
+    urgencyScore: URGENCY_SCORES[isExpired ? 'CRITICAL' : isExpiringSoon ? 'HIGH' : urgency],
     dueDate: contract.expiresAt,
     createdAt: new Date().toISOString(), // Not available from contract data
     contractId: contract.id,
@@ -166,7 +173,7 @@ const transformContractToAction = (contract: {
     expiresAt: contract.expiresAt,
     daysUntilExpiry,
     canClientSign: !isExpired && (contract.canClientSign ?? true),
-    signDisabledReason: isExpired ? (contract.signDisabledReason || 'Contract has expired') : null,
+    signDisabledReason: isExpired ? contract.signDisabledReason || 'Contract has expired' : null,
     isExpired,
   };
 };
@@ -178,7 +185,9 @@ const transformInvoiceToAction = (invoice: Invoice): PaymentActionItem => {
   const daysPastDue = calculateDaysPastDue(invoice.due_date);
   const isOverdue = daysPastDue > 0;
   const urgency = isOverdue
-    ? (daysPastDue > 7 ? 'CRITICAL' : 'HIGH')
+    ? daysPastDue > 7
+      ? 'CRITICAL'
+      : 'HIGH'
     : calculateUrgencyFromDays(calculateDaysUntil(invoice.due_date), false);
 
   return {
@@ -209,7 +218,7 @@ const transformInvoiceToAction = (invoice: Invoice): PaymentActionItem => {
 const sortActions = (
   actions: AnyActionItem[],
   sortBy: ActionCenterSortOption,
-  direction: 'asc' | 'desc' = 'desc'
+  direction: 'asc' | 'desc' = 'desc',
 ): AnyActionItem[] => {
   const sorted = [...actions].sort((a, b) => {
     let comparison = 0;
@@ -273,11 +282,7 @@ interface UseActionCenterReturn {
 }
 
 export const useActionCenter = (options: UseActionCenterOptions = {}): UseActionCenterReturn => {
-  const {
-    filters = { types: [] },
-    sortBy = 'urgency',
-    sortDirection = 'desc'
-  } = options;
+  const { filters = { types: [] }, sortBy = 'urgency', sortDirection = 'desc' } = options;
 
   const queryClient = useQueryClient();
 
@@ -289,10 +294,8 @@ export const useActionCenter = (options: UseActionCenterOptions = {}): UseAction
   const { pendingContracts, isLoading: contractsLoading } = useContracts();
 
   // Calculate loading state
-  const isLoading = eventsQuery.isLoading ||
-                   pendingQuotesQuery.isLoading ||
-                   financialLoading ||
-                   contractsLoading;
+  const isLoading =
+    eventsQuery.isLoading || pendingQuotesQuery.isLoading || financialLoading || contractsLoading;
 
   // Calculate error state
   const error = eventsQuery.error
@@ -314,9 +317,10 @@ export const useActionCenter = (options: UseActionCenterOptions = {}): UseAction
       const eventDetail = event as EventDetail;
       if (eventDetail.upcoming_tasks && Array.isArray(eventDetail.upcoming_tasks)) {
         const clientTasks = eventDetail.upcoming_tasks
-          .filter((task: EventTask) =>
-            task.requires_client_input &&
-            (task.status === 'PENDING' || task.status === 'IN_PROGRESS')
+          .filter(
+            (task: EventTask) =>
+              task.requires_client_input &&
+              (task.status === 'PENDING' || task.status === 'IN_PROGRESS'),
           )
           .map((task: EventTask) => transformTaskToAction(task, event.id, event.name));
 
@@ -330,65 +334,63 @@ export const useActionCenter = (options: UseActionCenterOptions = {}): UseAction
       : [];
 
     pendingQuotes
-      .filter(quote => quote.status === 'SENT')
-      .forEach(quote => {
+      .filter((quote) => quote.status === 'SENT')
+      .forEach((quote) => {
         actions.push(transformQuoteToAction(quote));
       });
 
     // ============ CONTRACTS ============
     // Transform pending contracts from context (including expired for visibility)
-    pendingContracts.forEach(contract => {
+    pendingContracts.forEach((contract) => {
       // Include contracts that need signing OR are expired (for visibility)
       const isExpiredContract = contract.status === 'EXPIRED' || contract.is_expired;
-      const needsSignature = contract.can_client_sign || ['SENT', 'PARTIALLY_SIGNED'].includes(contract.status);
+      const needsSignature =
+        contract.can_client_sign || ['SENT', 'PARTIALLY_SIGNED'].includes(contract.status);
 
       if (needsSignature || isExpiredContract) {
-        const eventId = typeof contract.event === 'object'
-          ? parseInt(contract.event.id, 10)
-          : parseInt(contract.id, 10);
-        const eventName = typeof contract.event === 'object'
-          ? contract.event.title
-          : 'Event';
+        const eventId =
+          typeof contract.event === 'object'
+            ? parseInt(contract.event.id, 10)
+            : parseInt(contract.id, 10);
+        const eventName = typeof contract.event === 'object' ? contract.event.title : 'Event';
 
-        actions.push(transformContractToAction({
-          id: contract.id,
-          eventId,
-          eventName,
-          templateName: contract.template.name,
-          expiresAt: contract.valid_until,
-          signatureProgress: contract.signature_progress || {
-            total_required: 1,
-            signed_count: 0,
-            percentage: 0,
-          },
-          status: contract.status as 'SENT' | 'PARTIALLY_SIGNED' | 'EXPIRED',
-          canClientSign: contract.can_client_sign,
-          signDisabledReason: contract.sign_disabled_reason,
-          isExpired: isExpiredContract,
-        }));
+        actions.push(
+          transformContractToAction({
+            id: contract.id,
+            eventId,
+            eventName,
+            templateName: contract.template.name,
+            expiresAt: contract.valid_until,
+            signatureProgress: contract.signature_progress || {
+              total_required: 1,
+              signed_count: 0,
+              percentage: 0,
+            },
+            status: contract.status as 'SENT' | 'PARTIALLY_SIGNED' | 'EXPIRED',
+            canClientSign: contract.can_client_sign,
+            signDisabledReason: contract.sign_disabled_reason,
+            isExpired: isExpiredContract,
+          }),
+        );
       }
     });
 
     // ============ PAYMENTS (Outstanding Invoices) ============
     // Filter invoices that are truly outstanding (not fully paid)
     // Check both status AND remaining_amount/is_fully_paid to handle edge cases
-    const outstandingInvoices = invoices.filter(invoice =>
-      (invoice.status === 'ISSUED' || invoice.status === 'PARTIALLY_PAID') &&
-      !invoice.is_fully_paid &&
-      parseFloat(invoice.remaining_amount || '0') > 0
+    const outstandingInvoices = invoices.filter(
+      (invoice) =>
+        (invoice.status === 'ISSUED' || invoice.status === 'PARTIALLY_PAID') &&
+        !invoice.is_fully_paid &&
+        parseFloat(invoice.remaining_amount || '0') > 0,
     );
 
-    outstandingInvoices.forEach(invoice => {
+    outstandingInvoices.forEach((invoice) => {
       actions.push(transformInvoiceToAction(invoice));
     });
 
     return actions;
-  }, [
-    eventsQuery.data,
-    pendingQuotesQuery.data,
-    pendingContracts,
-    invoices
-  ]);
+  }, [eventsQuery.data, pendingQuotesQuery.data, pendingContracts, invoices]);
 
   // Apply filters
   const filteredActions = useMemo((): AnyActionItem[] => {
@@ -396,26 +398,27 @@ export const useActionCenter = (options: UseActionCenterOptions = {}): UseAction
 
     // Filter by type
     if (filters.types && filters.types.length > 0) {
-      result = result.filter(action => filters.types.includes(action.type));
+      result = result.filter((action) => filters.types.includes(action.type));
     }
 
     // Filter by event
     if (filters.eventId !== undefined) {
-      result = result.filter(action => action.eventId === filters.eventId);
+      result = result.filter((action) => action.eventId === filters.eventId);
     }
 
     // Filter by urgency
     if (filters.urgency && filters.urgency.length > 0) {
-      result = result.filter(action => filters.urgency!.includes(action.urgency));
+      result = result.filter((action) => filters.urgency!.includes(action.urgency));
     }
 
     // Filter by search
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      result = result.filter(action =>
-        action.title.toLowerCase().includes(searchLower) ||
-        action.description.toLowerCase().includes(searchLower) ||
-        action.eventName.toLowerCase().includes(searchLower)
+      result = result.filter(
+        (action) =>
+          action.title.toLowerCase().includes(searchLower) ||
+          action.description.toLowerCase().includes(searchLower) ||
+          action.eventName.toLowerCase().includes(searchLower),
       );
     }
 
@@ -429,12 +432,12 @@ export const useActionCenter = (options: UseActionCenterOptions = {}): UseAction
 
   // Calculate counts
   const counts = useMemo((): ActionCounts => {
-    const taskCount = allActions.filter(a => a.type === 'TASK').length;
-    const quoteCount = allActions.filter(a => a.type === 'QUOTE').length;
-    const contractCount = allActions.filter(a => a.type === 'CONTRACT').length;
-    const paymentCount = allActions.filter(a => a.type === 'PAYMENT').length;
-    const criticalCount = allActions.filter(a => a.urgency === 'CRITICAL').length;
-    const highCount = allActions.filter(a => a.urgency === 'HIGH').length;
+    const taskCount = allActions.filter((a) => a.type === 'TASK').length;
+    const quoteCount = allActions.filter((a) => a.type === 'QUOTE').length;
+    const contractCount = allActions.filter((a) => a.type === 'CONTRACT').length;
+    const paymentCount = allActions.filter((a) => a.type === 'PAYMENT').length;
+    const criticalCount = allActions.filter((a) => a.urgency === 'CRITICAL').length;
+    const highCount = allActions.filter((a) => a.urgency === 'HIGH').length;
 
     return {
       total: allActions.length,
@@ -448,18 +451,21 @@ export const useActionCenter = (options: UseActionCenterOptions = {}): UseAction
   }, [allActions]);
 
   // Counts by type for badges
-  const countsByType = useMemo((): Record<ActionType, number> => ({
-    TASK: counts.tasks,
-    QUOTE: counts.quotes,
-    CONTRACT: counts.contracts,
-    PAYMENT: counts.payments,
-  }), [counts]);
+  const countsByType = useMemo(
+    (): Record<ActionType, number> => ({
+      TASK: counts.tasks,
+      QUOTE: counts.quotes,
+      CONTRACT: counts.contracts,
+      PAYMENT: counts.payments,
+    }),
+    [counts],
+  );
 
   // Event filter options
   const eventOptions = useMemo((): EventFilterOption[] => {
     const eventMap = new Map<number, { name: string; count: number }>();
 
-    allActions.forEach(action => {
+    allActions.forEach((action) => {
       const existing = eventMap.get(action.eventId);
       if (existing) {
         existing.count++;

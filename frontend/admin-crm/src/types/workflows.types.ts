@@ -49,7 +49,14 @@ export interface WorkflowStage {
 }
 
 export type StageType = 'LEAD' | 'PRODUCTION' | 'POST_PRODUCTION';
-export type AutomationType = 'EMAIL' | 'TASK' | 'QUOTE' | 'CONTRACT' | 'QUESTIONNAIRE' | 'REMINDER' | 'NOTIFICATION';
+export type AutomationType =
+  | 'EMAIL'
+  | 'TASK'
+  | 'QUOTE'
+  | 'CONTRACT'
+  | 'QUESTIONNAIRE'
+  | 'REMINDER'
+  | 'NOTIFICATION';
 
 export const STAGE_TYPES = [
   { value: 'LEAD', label: 'Lead' },
@@ -286,9 +293,17 @@ export type OverrideType = 'SKIP' | 'DISABLE_AUTOMATION' | 'CUSTOM_TIMING' | 'AD
 
 export const OVERRIDE_TYPES = [
   { value: 'SKIP', label: 'Skip Stage', description: 'Completely skip this stage for this event' },
-  { value: 'DISABLE_AUTOMATION', label: 'Disable Automation', description: 'Run stage but skip automation' },
+  {
+    value: 'DISABLE_AUTOMATION',
+    label: 'Disable Automation',
+    description: 'Run stage but skip automation',
+  },
   { value: 'CUSTOM_TIMING', label: 'Custom Timing', description: 'Use different trigger timing' },
-  { value: 'ADD_STAGE', label: 'Add Custom Stage', description: 'Add a one-off stage for this event' },
+  {
+    value: 'ADD_STAGE',
+    label: 'Add Custom Stage',
+    description: 'Add a one-off stage for this event',
+  },
 ] as const;
 
 export interface EventWorkflowOverride {
@@ -448,7 +463,12 @@ export function stringToProgressionTiming(str: string): ProgressionTiming {
   }
 
   // Event-based conditions
-  const eventConditions = ['QUOTE_ACCEPTED', 'CONTRACT_SIGNED', 'PAYMENT_RECEIVED', 'TASKS_COMPLETED'];
+  const eventConditions = [
+    'QUOTE_ACCEPTED',
+    'CONTRACT_SIGNED',
+    'PAYMENT_RECEIVED',
+    'TASKS_COMPLETED',
+  ];
   if (eventConditions.includes(str)) {
     return { type: 'event', condition: str };
   }
@@ -496,10 +516,26 @@ export type WebhookEventType =
   | 'WORKFLOW_COMPLETED';
 
 export const WEBHOOK_EVENT_TYPES = [
-  { value: 'STAGE_ENTERED', label: 'Stage Entered', description: 'Triggered when a workflow enters a new stage' },
-  { value: 'STAGE_COMPLETED', label: 'Stage Completed', description: 'Triggered when a workflow stage is completed' },
-  { value: 'AUTOMATION_EXECUTED', label: 'Automation Executed', description: 'Triggered when a stage automation runs' },
-  { value: 'WORKFLOW_COMPLETED', label: 'Workflow Completed', description: 'Triggered when an entire workflow completes' },
+  {
+    value: 'STAGE_ENTERED',
+    label: 'Stage Entered',
+    description: 'Triggered when a workflow enters a new stage',
+  },
+  {
+    value: 'STAGE_COMPLETED',
+    label: 'Stage Completed',
+    description: 'Triggered when a workflow stage is completed',
+  },
+  {
+    value: 'AUTOMATION_EXECUTED',
+    label: 'Automation Executed',
+    description: 'Triggered when a stage automation runs',
+  },
+  {
+    value: 'WORKFLOW_COMPLETED',
+    label: 'Workflow Completed',
+    description: 'Triggered when an entire workflow completes',
+  },
 ] as const;
 
 export type WebhookDeliveryStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'RETRYING';

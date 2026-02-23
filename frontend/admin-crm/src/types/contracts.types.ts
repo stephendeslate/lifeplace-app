@@ -22,14 +22,16 @@ export interface ContractTemplate {
 
 export interface EventContract {
   id: number;
-  event: number | {
-    id: number;
-    name: string;
-    client_name?: string;
-    start_date: string;
-    end_date: string | null;
-    status: string;
-  };
+  event:
+    | number
+    | {
+        id: number;
+        name: string;
+        client_name?: string;
+        start_date: string;
+        end_date: string | null;
+        status: string;
+      };
   event_details?: {
     id: number;
     name: string;
@@ -173,9 +175,23 @@ export interface ContractNote {
   updated_at: string;
 }
 
-export type ContractStatus = 'DRAFT' | 'SENT' | 'PARTIALLY_SIGNED' | 'SIGNED' | 'EXPIRED' | 'VOID' | 'AMENDED';
+export type ContractStatus =
+  | 'DRAFT'
+  | 'SENT'
+  | 'PARTIALLY_SIGNED'
+  | 'SIGNED'
+  | 'EXPIRED'
+  | 'VOID'
+  | 'AMENDED';
 export type SignatureRole = 'CLIENT' | 'WITNESS' | 'COMPANY_REP' | 'GUARDIAN' | 'PARTNER' | 'OTHER';
-export type AmendmentStatus = 'REQUESTED' | 'DRAFT' | 'SENT_FOR_REVIEW' | 'APPROVED' | 'SIGNED' | 'REJECTED' | 'CANCELLED';
+export type AmendmentStatus =
+  | 'REQUESTED'
+  | 'DRAFT'
+  | 'SENT_FOR_REVIEW'
+  | 'APPROVED'
+  | 'SIGNED'
+  | 'REJECTED'
+  | 'CANCELLED';
 export type DocumentType = 'ATTACHMENT' | 'ADDENDUM' | 'SCHEDULE' | 'TERMS' | 'WAIVER' | 'OTHER';
 export type NoteCategory = 'GENERAL' | 'LEGAL' | 'NEGOTIATION' | 'AMENDMENT' | 'ISSUE' | 'REMINDER';
 

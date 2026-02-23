@@ -1,6 +1,6 @@
 // frontend/client-portal/src/components/contracts/ContractActivityTimeline.tsx
 
-import React, { useMemo } from "react";
+import React, { useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -11,7 +11,7 @@ import {
   alpha,
   Tooltip,
   IconButton,
-} from "@mui/material";
+} from '@mui/material';
 import {
   CheckCircle as CompletedIcon,
   Schedule as PendingIcon,
@@ -27,15 +27,15 @@ import {
   TrendingUp as ValueChangedIcon,
   Visibility as ViewedIcon,
   MoreVert as MoreIcon,
-} from "@mui/icons-material";
-import { GlassCard } from "../../design-system/components/GlassCard";
-import { AnimatedElement } from "../../design-system/components/AnimatedElement";
+} from '@mui/icons-material';
+import { GlassCard } from '../../design-system/components/GlassCard';
+import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import type {
   ContractTimelineEvent,
   ContractActivityType,
   Contract,
   ContractSignature,
-} from "../../types/contracts.types";
+} from '../../types/contracts.types';
 
 interface ContractActivityTimelineProps {
   contract: Contract;
@@ -52,26 +52,26 @@ interface TimelineEventProps {
 
 const getActivityIcon = (type: ContractActivityType) => {
   switch (type) {
-    case "CREATED":
+    case 'CREATED':
       return <CreatedIcon />;
-    case "SENT":
+    case 'SENT':
       return <SentIcon />;
-    case "VIEWED":
+    case 'VIEWED':
       return <ViewedIcon />;
-    case "SIGNED":
-    case "FULLY_SIGNED":
+    case 'SIGNED':
+    case 'FULLY_SIGNED':
       return <SignedIcon />;
-    case "AMENDED":
+    case 'AMENDED':
       return <AmendedIcon />;
-    case "VOIDED":
+    case 'VOIDED':
       return <VoidedIcon />;
-    case "EXPIRED":
+    case 'EXPIRED':
       return <ExpiredIcon />;
-    case "DOCUMENT_ADDED":
+    case 'DOCUMENT_ADDED':
       return <DocumentIcon />;
-    case "NOTE_ADDED":
+    case 'NOTE_ADDED':
       return <NoteIcon />;
-    case "VALUE_CHANGED":
+    case 'VALUE_CHANGED':
       return <ValueChangedIcon />;
     default:
       return <CreatedIcon />;
@@ -80,47 +80,43 @@ const getActivityIcon = (type: ContractActivityType) => {
 
 const getActivityColor = (
   type: ContractActivityType,
-): "primary" | "success" | "warning" | "error" | "info" => {
+): 'primary' | 'success' | 'warning' | 'error' | 'info' => {
   switch (type) {
-    case "CREATED":
-    case "SENT":
-      return "primary";
-    case "SIGNED":
-    case "FULLY_SIGNED":
-    case "DOCUMENT_ADDED":
-      return "success";
-    case "VIEWED":
-    case "NOTE_ADDED":
-      return "info";
-    case "AMENDED":
-    case "VALUE_CHANGED":
-      return "warning";
-    case "VOIDED":
-    case "EXPIRED":
-      return "error";
+    case 'CREATED':
+    case 'SENT':
+      return 'primary';
+    case 'SIGNED':
+    case 'FULLY_SIGNED':
+    case 'DOCUMENT_ADDED':
+      return 'success';
+    case 'VIEWED':
+    case 'NOTE_ADDED':
+      return 'info';
+    case 'AMENDED':
+    case 'VALUE_CHANGED':
+      return 'warning';
+    case 'VOIDED':
+    case 'EXPIRED':
+      return 'error';
     default:
-      return "primary";
+      return 'primary';
   }
 };
 
-const getStatusIcon = (status?: "completed" | "pending" | "failed") => {
+const getStatusIcon = (status?: 'completed' | 'pending' | 'failed') => {
   switch (status) {
-    case "completed":
+    case 'completed':
       return <CompletedIcon color="success" fontSize="small" />;
-    case "pending":
+    case 'pending':
       return <PendingIcon color="warning" fontSize="small" />;
-    case "failed":
+    case 'failed':
       return <FailedIcon color="error" fontSize="small" />;
     default:
       return null;
   }
 };
 
-const TimelineEvent: React.FC<TimelineEventProps> = ({
-  event,
-  isLast,
-  index,
-}) => {
+const TimelineEvent: React.FC<TimelineEventProps> = ({ event, isLast, index }) => {
   const theme = useTheme();
   const activityColor = getActivityColor(event.type);
   const activityIcon = getActivityIcon(event.type);
@@ -129,13 +125,13 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return {
-      date: date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
+      date: date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
       }),
-      time: date.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
+      time: date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
       }),
       year: date.getFullYear(),
     };
@@ -145,12 +141,12 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({
 
   return (
     <AnimatedElement animation="slideUp" delay={index * 100}>
-      <Box sx={{ position: "relative", pb: isLast ? 0 : 4 }}>
+      <Box sx={{ position: 'relative', pb: isLast ? 0 : 4 }}>
         {/* Timeline Line */}
         {!isLast && (
           <Box
             sx={{
-              position: "absolute",
+              position: 'absolute',
               left: 20,
               top: 40,
               bottom: -16,
@@ -161,11 +157,11 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({
         )}
 
         {/* Event Container */}
-        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
           {/* Timeline Dot */}
           <Box
             sx={{
-              position: "relative",
+              position: 'relative',
               zIndex: 1,
             }}
           >
@@ -176,7 +172,7 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({
                 backgroundColor: alpha(theme.palette[activityColor].main, 0.15),
                 color: theme.palette[activityColor].main,
                 border: `2px solid ${theme.palette[activityColor].main}`,
-                backdropFilter: "blur(10px)",
+                backdropFilter: 'blur(10px)',
               }}
             >
               {activityIcon}
@@ -192,16 +188,16 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({
               p: 3,
               border: `1px solid ${alpha(theme.palette[activityColor].main, 0.2)}`,
               backgroundColor: alpha(theme.palette[activityColor].main, 0.05),
-              position: "relative",
+              position: 'relative',
             }}
           >
             {/* Header */}
             <Box
               sx={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                flexWrap: "wrap",
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
                 gap: 1,
                 mb: 1,
               }}
@@ -209,26 +205,19 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Box
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: 1,
                     mb: 0.5,
                   }}
                 >
-                  <Typography
-                    variant="h6"
-                    sx={{ fontWeight: 600, fontSize: "1rem" }}
-                  >
+                  <Typography variant="h6" sx={{ fontWeight: 600, fontSize: '1rem' }}>
                     {event.title}
                   </Typography>
                   {statusIcon}
                 </Box>
 
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ mb: 1 }}
-                >
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   {event.description}
                 </Typography>
 
@@ -236,13 +225,13 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({
                 {event.user && (
                   <Box
                     sx={{
-                      display: "flex",
-                      alignItems: "center",
+                      display: 'flex',
+                      alignItems: 'center',
                       gap: 1,
                       mb: 1,
                     }}
                   >
-                    <Avatar sx={{ width: 20, height: 20, fontSize: "0.75rem" }}>
+                    <Avatar sx={{ width: 20, height: 20, fontSize: '0.75rem' }}>
                       {event.user.first_name?.[0]}
                       {event.user.last_name?.[0]}
                     </Avatar>
@@ -256,25 +245,22 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({
               {/* Date and Actions */}
               <Box
                 sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-end",
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
                   gap: 1,
                 }}
               >
                 <Stack direction="row" spacing={1} alignItems="center">
                   <Chip
-                    label={event.type.replace("_", " ").toLowerCase()}
+                    label={event.type.replace('_', ' ').toLowerCase()}
                     size="small"
                     color={activityColor}
                     variant="outlined"
                     sx={{
-                      backgroundColor: alpha(
-                        theme.palette[activityColor].main,
-                        0.1,
-                      ),
-                      textTransform: "capitalize",
-                      fontSize: "0.7rem",
+                      backgroundColor: alpha(theme.palette[activityColor].main, 0.1),
+                      textTransform: 'capitalize',
+                      fontSize: '0.7rem',
                       height: 20,
                     }}
                   />
@@ -285,18 +271,11 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({
                   </Tooltip>
                 </Stack>
 
-                <Box sx={{ textAlign: "right" }}>
-                  <Typography
-                    variant="caption"
-                    sx={{ fontWeight: 600, display: "block" }}
-                  >
+                <Box sx={{ textAlign: 'right' }}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, display: 'block' }}>
                     {formattedDate.date}
                   </Typography>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ fontSize: "0.7rem" }}
-                  >
+                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.7rem' }}>
                     {formattedDate.time}
                   </Typography>
                 </Box>
@@ -315,11 +294,11 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({
                 <Typography
                   variant="caption"
                   color="text.secondary"
-                  sx={{ fontWeight: 600, mb: 1, display: "block" }}
+                  sx={{ fontWeight: 600, mb: 1, display: 'block' }}
                 >
                   Additional Details:
                 </Typography>
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                   {Object.entries(event.metadata).map(([key, value]) => (
                     <Chip
                       key={key}
@@ -327,12 +306,9 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({
                       size="small"
                       variant="outlined"
                       sx={{
-                        fontSize: "0.65rem",
+                        fontSize: '0.65rem',
                         height: 18,
-                        backgroundColor: alpha(
-                          theme.palette.background.paper,
-                          0.5,
-                        ),
+                        backgroundColor: alpha(theme.palette.background.paper, 0.5),
                       }}
                     />
                   ))}
@@ -346,9 +322,10 @@ const TimelineEvent: React.FC<TimelineEventProps> = ({
   );
 };
 
-export const ContractActivityTimeline: React.FC<
-  ContractActivityTimelineProps
-> = ({ contract, maxEvents = 50 }) => {
+export const ContractActivityTimeline: React.FC<ContractActivityTimelineProps> = ({
+  contract,
+  maxEvents = 50,
+}) => {
   const theme = useTheme();
 
   // Generate timeline events from contract data
@@ -358,59 +335,57 @@ export const ContractActivityTimeline: React.FC<
     // Contract created
     events.push({
       id: `created-${contract.id}`,
-      type: "CREATED",
-      title: "Contract Created",
+      type: 'CREATED',
+      title: 'Contract Created',
       description: `Contract created from template: ${contract.template.name}`,
       date: contract.created_at,
-      status: "completed",
+      status: 'completed',
     });
 
     // Contract sent
     if (contract.sent_at) {
       events.push({
         id: `sent-${contract.id}`,
-        type: "SENT",
-        title: "Contract Sent",
-        description: "Contract sent to client for signature",
+        type: 'SENT',
+        title: 'Contract Sent',
+        description: 'Contract sent to client for signature',
         date: contract.sent_at,
-        status: "completed",
+        status: 'completed',
       });
     }
 
     // Signatures
-    contract.signatures?.forEach(
-      (signature: ContractSignature, index: number) => {
-        events.push({
-          id: `signature-${signature.id}`,
-          type:
-            index === contract.signatures.length - 1 && contract.is_fully_signed
-              ? "FULLY_SIGNED"
-              : "SIGNED",
-          title:
-            index === contract.signatures.length - 1 && contract.is_fully_signed
-              ? "Contract Fully Signed"
-              : `Contract Signed by ${signature.role_display}`,
-          description: `${signature.signer_name} signed as ${signature.role_display}`,
-          date: signature.signed_at,
-          user: signature.signer,
-          status: "completed",
-          metadata: {
-            role: signature.role_display,
-            verification: signature.verification_method,
-          },
-        });
-      },
-    );
+    contract.signatures?.forEach((signature: ContractSignature, index: number) => {
+      events.push({
+        id: `signature-${signature.id}`,
+        type:
+          index === contract.signatures.length - 1 && contract.is_fully_signed
+            ? 'FULLY_SIGNED'
+            : 'SIGNED',
+        title:
+          index === contract.signatures.length - 1 && contract.is_fully_signed
+            ? 'Contract Fully Signed'
+            : `Contract Signed by ${signature.role_display}`,
+        description: `${signature.signer_name} signed as ${signature.role_display}`,
+        date: signature.signed_at,
+        user: signature.signer,
+        status: 'completed',
+        metadata: {
+          role: signature.role_display,
+          verification: signature.verification_method,
+        },
+      });
+    });
 
     // Contract value changes (if any)
     if (contract.contract_value) {
       events.push({
         id: `value-${contract.id}`,
-        type: "VALUE_CHANGED",
-        title: "Contract Value Set",
+        type: 'VALUE_CHANGED',
+        title: 'Contract Value Set',
         description: `Contract value set to ${contract.currency} ${parseFloat(contract.contract_value).toLocaleString()}`,
         date: contract.updated_at,
-        status: "completed",
+        status: 'completed',
         metadata: {
           value: contract.contract_value,
           currency: contract.currency,
@@ -426,11 +401,7 @@ export const ContractActivityTimeline: React.FC<
 
   if (timelineEvents.length === 0) {
     return (
-      <GlassCard
-        variant="light"
-        intensity="subtle"
-        sx={{ p: 4, textAlign: "center" }}
-      >
+      <GlassCard variant="light" intensity="subtle" sx={{ p: 4, textAlign: 'center' }}>
         <Typography variant="body1" color="text.secondary">
           No timeline events available for this contract.
         </Typography>
@@ -451,7 +422,7 @@ export const ContractActivityTimeline: React.FC<
       </Box>
 
       {/* Timeline */}
-      <Box sx={{ position: "relative" }}>
+      <Box sx={{ position: 'relative' }}>
         {timelineEvents.map((event, index) => (
           <TimelineEvent
             key={event.id}
@@ -485,11 +456,11 @@ export const ContractActivityTimeline: React.FC<
             Timeline Summary
           </Typography>
           <Stack direction="row" spacing={2}>
-            <Box sx={{ textAlign: "center" }}>
+            <Box sx={{ textAlign: 'center' }}>
               <Typography
                 variant="h6"
                 color="primary.main"
-                sx={{ fontWeight: 600, fontSize: "1rem" }}
+                sx={{ fontWeight: 600, fontSize: '1rem' }}
               >
                 {timelineEvents.length}
               </Typography>
@@ -497,11 +468,11 @@ export const ContractActivityTimeline: React.FC<
                 Events
               </Typography>
             </Box>
-            <Box sx={{ textAlign: "center" }}>
+            <Box sx={{ textAlign: 'center' }}>
               <Typography
                 variant="h6"
                 color="success.main"
-                sx={{ fontWeight: 600, fontSize: "1rem" }}
+                sx={{ fontWeight: 600, fontSize: '1rem' }}
               >
                 {contract.signatures?.length || 0}
               </Typography>
@@ -510,11 +481,11 @@ export const ContractActivityTimeline: React.FC<
               </Typography>
             </Box>
             {contract.is_fully_signed && (
-              <Box sx={{ textAlign: "center" }}>
+              <Box sx={{ textAlign: 'center' }}>
                 <Typography
                   variant="h6"
                   color="success.main"
-                  sx={{ fontWeight: 600, fontSize: "1rem" }}
+                  sx={{ fontWeight: 600, fontSize: '1rem' }}
                 >
                   ✓
                 </Typography>

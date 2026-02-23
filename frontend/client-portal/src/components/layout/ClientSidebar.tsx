@@ -111,12 +111,7 @@ const secondaryItems: NavigationItem[] = [
   },
 ];
 
-export const ClientSidebar: React.FC<ClientSidebarProps> = ({
-  open,
-  onClose,
-  width,
-  variant,
-}) => {
+export const ClientSidebar: React.FC<ClientSidebarProps> = ({ open, onClose, width, variant }) => {
   const theme = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
@@ -125,7 +120,7 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
 
   // Enhanced navigation items with dynamic badges
   const getEnhancedNavigationItems = (): NavigationItem[] => {
-    return navigationItems.map(item => {
+    return navigationItems.map((item) => {
       if (item.id === 'actions') {
         return {
           ...item,
@@ -157,11 +152,7 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
   };
 
   const renderNavigationItem = (item: NavigationItem, index: number) => (
-    <AnimatedElement 
-      key={item.id}
-      animation="slideRight" 
-      delay={100 + (index * 50)}
-    >
+    <AnimatedElement key={item.id} animation="slideRight" delay={100 + index * 50}>
       <ListItem disablePadding sx={{ mb: 0.5 }}>
         <ListItemButton
           onClick={() => handleNavigation(item.path)}
@@ -171,7 +162,7 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
             mx: 1,
             mb: 0.5,
             transition: 'all 0.2s ease',
-            backgroundColor: isActive(item.path) 
+            backgroundColor: isActive(item.path)
               ? alpha(theme.palette.primary.main, 0.15)
               : 'transparent',
             color: isActive(item.path)
@@ -201,7 +192,7 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
               item.icon
             )}
           </ListItemIcon>
-          <ListItemText 
+          <ListItemText
             primary={item.label}
             primaryTypographyProps={{
               fontWeight: isActive(item.path) ? 600 : 500,
@@ -266,18 +257,18 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
           {getEnhancedNavigationItems().map((item, index) => renderNavigationItem(item, index))}
         </List>
 
-        <Divider 
-          sx={{ 
-            mx: 2, 
+        <Divider
+          sx={{
+            mx: 2,
             my: 2,
             borderColor: alpha('#fff', 0.1),
-          }} 
+          }}
         />
 
         {/* Secondary Navigation */}
         <List>
-          {secondaryItems.map((item, index) => 
-            renderNavigationItem(item, navigationItems.length + index)
+          {secondaryItems.map((item, index) =>
+            renderNavigationItem(item, navigationItems.length + index),
           )}
         </List>
       </Box>
@@ -325,7 +316,10 @@ export const ClientSidebar: React.FC<ClientSidebarProps> = ({
           backgroundColor: 'transparent',
           borderRight: 'none',
           mt: variant === 'persistent' ? { xs: '72px', md: '96px' } : 0,
-          height: variant === 'persistent' ? { xs: 'calc(100vh - 72px)', md: 'calc(100vh - 96px)' } : '100vh',
+          height:
+            variant === 'persistent'
+              ? { xs: 'calc(100vh - 72px)', md: 'calc(100vh - 96px)' }
+              : '100vh',
         },
       }}
       ModalProps={{

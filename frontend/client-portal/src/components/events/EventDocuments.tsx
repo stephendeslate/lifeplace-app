@@ -46,15 +46,12 @@ interface EventDocumentsProps {
   showEmpty?: boolean;
 }
 
-const EventDocuments: React.FC<EventDocumentsProps> = ({
-  eventId,
-  showEmpty = true
-}) => {
+const EventDocuments: React.FC<EventDocumentsProps> = ({ eventId, showEmpty = true }) => {
   const PHILIPPINE_TIMEZONE = 'Asia/Manila';
   const { useEventDocuments, useDownloadFile } = useEvents();
   const { data: documents, isLoading, error, refetch } = useEventDocuments(eventId);
   const downloadMutation = useDownloadFile();
-  
+
   // Upload dialog state
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
 
@@ -72,34 +69,43 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
     setViewingDocument(null);
   };
 
-  const getFileBlob = useCallback(async (fileId: number | string) => {
-    return eventsApi.getDocumentBlob(eventId, Number(fileId));
-  }, [eventId]);
+  const getFileBlob = useCallback(
+    async (fileId: number | string) => {
+      return eventsApi.getDocumentBlob(eventId, Number(fileId));
+    },
+    [eventId],
+  );
 
   const getFileIcon = (fileType?: string) => {
     if (!fileType) return <FileIcon color="action" />;
     const type = fileType.toLowerCase();
-    
+
     if (type.includes('pdf')) return <PdfIcon color="error" />;
-    if (type.includes('image') || ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].some(ext => type.includes(ext))) {
+    if (
+      type.includes('image') ||
+      ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].some((ext) => type.includes(ext))
+    ) {
       return <ImageIcon color="info" />;
     }
-    if (type.includes('video') || ['mp4', 'avi', 'mov', 'wmv', 'flv'].some(ext => type.includes(ext))) {
+    if (
+      type.includes('video') ||
+      ['mp4', 'avi', 'mov', 'wmv', 'flv'].some((ext) => type.includes(ext))
+    ) {
       return <VideoIcon color="secondary" />;
     }
-    if (type.includes('audio') || ['mp3', 'wav', 'flac', 'aac'].some(ext => type.includes(ext))) {
+    if (type.includes('audio') || ['mp3', 'wav', 'flac', 'aac'].some((ext) => type.includes(ext))) {
       return <AudioIcon color="warning" />;
     }
-    if (['doc', 'docx', 'txt', 'rtf'].some(ext => type.includes(ext))) {
+    if (['doc', 'docx', 'txt', 'rtf'].some((ext) => type.includes(ext))) {
       return <DocIcon color="primary" />;
     }
-    if (['xls', 'xlsx', 'csv'].some(ext => type.includes(ext))) {
+    if (['xls', 'xlsx', 'csv'].some((ext) => type.includes(ext))) {
       return <SpreadsheetIcon color="success" />;
     }
-    if (['zip', 'rar', '7z', 'tar', 'gz'].some(ext => type.includes(ext))) {
+    if (['zip', 'rar', '7z', 'tar', 'gz'].some((ext) => type.includes(ext))) {
       return <ArchiveIcon color="action" />;
     }
-    
+
     return <FileIcon color="action" />;
   };
 
@@ -158,9 +164,9 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
   if (!documents || documents.length === 0) {
     return showEmpty ? (
       <Box>
-        <Paper 
-          sx={{ 
-            p: 3, 
+        <Paper
+          sx={{
+            p: 3,
             textAlign: 'center',
             backgroundColor: 'grey.50',
           }}
@@ -172,15 +178,11 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
           <Typography variant="body2" color="text.secondary" paragraph>
             Event documents and files will appear here when they are shared with you.
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<UploadIcon />}
-            onClick={handleUploadClick}
-          >
+          <Button variant="contained" startIcon={<UploadIcon />} onClick={handleUploadClick}>
             Upload File
           </Button>
         </Paper>
-        
+
         <FileUpload
           eventId={eventId}
           open={uploadDialogOpen}
@@ -217,10 +219,8 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
               },
             }}
           >
-            <ListItemIcon sx={{ minWidth: 48 }}>
-              {getFileIcon(document.file_type)}
-            </ListItemIcon>
-            
+            <ListItemIcon sx={{ minWidth: 48 }}>{getFileIcon(document.file_type)}</ListItemIcon>
+
             <ListItemText
               primary={
                 <Typography
@@ -235,7 +235,12 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
                 </Typography>
               }
               secondary={
-                <Stack direction="row" spacing={2} alignItems="center" sx={{ flexWrap: 'wrap', gap: 1, display: 'inline-flex' }}>
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  alignItems="center"
+                  sx={{ flexWrap: 'wrap', gap: 1, display: 'inline-flex' }}
+                >
                   <Typography component="span" variant="caption" color="text.secondary">
                     {formatFileSize(document.size)}
                   </Typography>
@@ -254,7 +259,7 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
               }
               secondaryTypographyProps={{ component: 'div' }}
             />
-            
+
             <ListItemSecondaryAction>
               <Stack direction="row" spacing={0.5}>
                 <Tooltip title="View file">
@@ -295,7 +300,7 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
         onClose={() => setUploadDialogOpen(false)}
         onSuccess={handleUploadSuccess}
       />
-      
+
       {/* Floating Action Button for Mobile */}
       <Fab
         color="primary"
@@ -315,13 +320,17 @@ const EventDocuments: React.FC<EventDocumentsProps> = ({
       <FileViewerDialog
         open={viewDialogOpen}
         onClose={handleViewDialogClose}
-        file={viewingDocument ? {
-          id: viewingDocument.id,
-          name: viewingDocument.name,
-          fileType: viewingDocument.file_type,
-          fileSize: viewingDocument.size,
-          downloadUrl: viewingDocument.download_url,
-        } : null}
+        file={
+          viewingDocument
+            ? {
+                id: viewingDocument.id,
+                name: viewingDocument.name,
+                fileType: viewingDocument.file_type,
+                fileSize: viewingDocument.size,
+                downloadUrl: viewingDocument.download_url,
+              }
+            : null
+        }
         onDownload={viewingDocument ? () => handleDownload(viewingDocument) : undefined}
         getFileBlob={getFileBlob}
       />

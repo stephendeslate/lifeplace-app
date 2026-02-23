@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
-import { renderWithProviders } from "../../test/utils/render";
-import { AnalyticsDashboard } from "./AnalyticsDashboard";
+import { describe, it, expect } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import { renderWithProviders } from '../../test/utils/render';
+import { AnalyticsDashboard } from './AnalyticsDashboard';
 
-describe("AnalyticsDashboard", () => {
-  it("renders without crashing", async () => {
+describe('AnalyticsDashboard', () => {
+  it('renders without crashing', async () => {
     renderWithProviders(<AnalyticsDashboard />);
     await waitFor(
       () => {
@@ -14,7 +14,7 @@ describe("AnalyticsDashboard", () => {
     );
   });
 
-  it("renders Analytics heading", async () => {
+  it('renders Analytics heading', async () => {
     renderWithProviders(<AnalyticsDashboard />);
     await waitFor(
       () => {
@@ -24,7 +24,7 @@ describe("AnalyticsDashboard", () => {
     );
   });
 
-  it("renders tab navigation", async () => {
+  it('renders tab navigation', async () => {
     renderWithProviders(<AnalyticsDashboard />);
     await waitFor(
       () => {
@@ -35,7 +35,7 @@ describe("AnalyticsDashboard", () => {
     );
   });
 
-  it("renders Analytics tab options", async () => {
+  it('renders Analytics tab options', async () => {
     renderWithProviders(<AnalyticsDashboard />);
     await waitFor(
       () => {

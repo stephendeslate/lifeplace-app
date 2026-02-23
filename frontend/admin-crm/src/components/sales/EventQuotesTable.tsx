@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/sales/EventQuotesTable.tsx
 
-import React from "react";
+import React from 'react';
 import {
   Table,
   TableBody,
@@ -17,7 +17,7 @@ import {
   Menu,
   MenuItem,
   Stack,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -28,9 +28,9 @@ import {
   Close as RejectIcon,
   ContentCopy as DuplicateIcon,
   Receipt as QuoteIcon,
-} from "@mui/icons-material";
-import { formatDistanceToNow, format } from "date-fns";
-import type { EventQuote, QuoteStatus } from "../../types/sales.types";
+} from '@mui/icons-material';
+import { formatDistanceToNow, format } from 'date-fns';
+import type { EventQuote, QuoteStatus } from '../../types/sales.types';
 
 interface EventQuotesTableProps {
   quotes: EventQuote[];
@@ -66,14 +66,9 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
   isDuplicating,
 }) => {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
-  const [selectedQuote, setSelectedQuote] = React.useState<EventQuote | null>(
-    null,
-  );
+  const [selectedQuote, setSelectedQuote] = React.useState<EventQuote | null>(null);
 
-  const handleMenuOpen = (
-    event: React.MouseEvent<HTMLElement>,
-    quote: EventQuote,
-  ) => {
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, quote: EventQuote) => {
     event.stopPropagation();
     setAnchorEl(event.currentTarget);
     setSelectedQuote(quote);
@@ -135,11 +130,11 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
 
   const getStatusChip = (status: QuoteStatus) => {
     const statusConfig = {
-      DRAFT: { color: "default" as const, label: "Draft" },
-      SENT: { color: "info" as const, label: "Sent" },
-      ACCEPTED: { color: "success" as const, label: "Accepted" },
-      REJECTED: { color: "error" as const, label: "Rejected" },
-      EXPIRED: { color: "warning" as const, label: "Expired" },
+      DRAFT: { color: 'default' as const, label: 'Draft' },
+      SENT: { color: 'info' as const, label: 'Sent' },
+      ACCEPTED: { color: 'success' as const, label: 'Accepted' },
+      REJECTED: { color: 'error' as const, label: 'Rejected' },
+      EXPIRED: { color: 'warning' as const, label: 'Expired' },
     };
 
     const config = statusConfig[status];
@@ -151,8 +146,8 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
         variant="filled"
         sx={{
           fontWeight: 600,
-          fontSize: "0.75rem",
-          height: "24px",
+          fontSize: '0.75rem',
+          height: '24px',
         }}
       />
     );
@@ -160,41 +155,36 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
 
   const formatCurrency = (amount: string) => {
     const value = parseFloat(amount);
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
     }).format(value);
   };
 
   const getAvailableActions = (quote: EventQuote) => {
-    const actions: string[] = ["view", "edit"];
+    const actions: string[] = ['view', 'edit'];
 
-    if (quote.status === "DRAFT" && onSend) {
-      actions.push("send");
+    if (quote.status === 'DRAFT' && onSend) {
+      actions.push('send');
     }
 
-    if (quote.status === "SENT") {
-      if (onAccept) actions.push("accept");
-      if (onReject) actions.push("reject");
+    if (quote.status === 'SENT') {
+      if (onAccept) actions.push('accept');
+      if (onReject) actions.push('reject');
     }
 
     if (onDuplicate) {
-      actions.push("duplicate");
+      actions.push('duplicate');
     }
 
-    actions.push("delete");
+    actions.push('delete');
 
     return actions;
   };
 
   if (isLoading) {
     return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="200px"
-      >
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
         <CircularProgress />
       </Box>
     );
@@ -233,40 +223,34 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
       <TableContainer
         component={Paper}
         sx={{
-          boxShadow: "none",
+          boxShadow: 'none',
           border: 1,
-          borderColor: "divider",
+          borderColor: 'divider',
           borderRadius: 1,
-          overflowX: "auto",
+          overflowX: 'auto',
         }}
       >
         <Table size="small">
           <TableHead>
             <TableRow
               sx={{
-                "& .MuiTableCell-head": {
-                  bgcolor: "grey.50",
+                '& .MuiTableCell-head': {
+                  bgcolor: 'grey.50',
                   borderBottom: 1,
-                  borderColor: "divider",
+                  borderColor: 'divider',
                   fontWeight: 600,
-                  fontSize: "0.875rem",
-                  color: "text.secondary",
+                  fontSize: '0.875rem',
+                  color: 'text.secondary',
                 },
               }}
             >
               <TableCell>Quote Details</TableCell>
               <TableCell>Event</TableCell>
-              <TableCell sx={{ display: { xs: "none", lg: "table-cell" } }}>
-                Client
-              </TableCell>
+              <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Client</TableCell>
               <TableCell>Status</TableCell>
               <TableCell>Amount</TableCell>
-              <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
-                Valid Until
-              </TableCell>
-              <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
-                Created
-              </TableCell>
+              <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Valid Until</TableCell>
+              <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Created</TableCell>
               <TableCell align="right">Actions</TableCell>
             </TableRow>
           </TableHead>
@@ -276,30 +260,26 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
                 key={quote.id}
                 hover
                 sx={{
-                  cursor: "pointer",
-                  "&:hover": {
-                    bgcolor: "grey.50",
+                  cursor: 'pointer',
+                  '&:hover': {
+                    bgcolor: 'grey.50',
                   },
-                  "& .MuiTableCell-root": {
+                  '& .MuiTableCell-root': {
                     borderBottom: 1,
-                    borderColor: "divider",
+                    borderColor: 'divider',
                   },
                 }}
               >
                 <TableCell>
                   <Box>
-                    <Typography
-                      variant="body2"
-                      fontWeight="600"
-                      color="text.primary"
-                    >
+                    <Typography variant="body2" fontWeight="600" color="text.primary">
                       Quote v{quote.version}
                     </Typography>
                     {quote.template_details?.name && (
                       <Typography
                         variant="caption"
                         color="text.secondary"
-                        sx={{ display: "block", mt: 0.5 }}
+                        sx={{ display: 'block', mt: 0.5 }}
                       >
                         from {quote.template_details.name}
                       </Typography>
@@ -307,39 +287,24 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Typography
-                    variant="body2"
-                    color="text.primary"
-                    fontWeight="500"
-                  >
+                  <Typography variant="body2" color="text.primary" fontWeight="500">
                     {quote.event_details?.name || `Event #${quote.event}`}
                   </Typography>
                   {quote.event_details?.start_date && (
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                    >
-                      {format(
-                        new Date(quote.event_details.start_date),
-                        "MMM d, yyyy",
-                      )}
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      {format(new Date(quote.event_details.start_date), 'MMM d, yyyy')}
                     </Typography>
                   )}
                 </TableCell>
-                <TableCell sx={{ display: { xs: "none", lg: "table-cell" } }}>
+                <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>
                   <Typography variant="body2" color="text.secondary">
-                    {quote.event_details?.client_name || "Unknown Client"}
+                    {quote.event_details?.client_name || 'Unknown Client'}
                   </Typography>
                 </TableCell>
                 <TableCell>{getStatusChip(quote.status)}</TableCell>
                 <TableCell>
                   <Stack spacing={0.5}>
-                    <Typography
-                      variant="body2"
-                      color="text.primary"
-                      fontWeight="600"
-                    >
+                    <Typography variant="body2" color="text.primary" fontWeight="600">
                       {formatCurrency(quote.total_amount)}
                     </Typography>
                     {parseFloat(quote.discount_amount) > 0 && (
@@ -354,19 +319,17 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
                     )}
                   </Stack>
                 </TableCell>
-                <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                   <Typography
                     variant="body2"
                     color={
-                      new Date(quote.valid_until) < new Date()
-                        ? "error.main"
-                        : "text.secondary"
+                      new Date(quote.valid_until) < new Date() ? 'error.main' : 'text.secondary'
                     }
                   >
-                    {format(new Date(quote.valid_until), "MMM d, yyyy")}
+                    {format(new Date(quote.valid_until), 'MMM d, yyyy')}
                   </Typography>
                 </TableCell>
-                <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
                   <Typography variant="body2" color="text.secondary">
                     {formatDistanceToNow(new Date(quote.created_at), {
                       addSuffix: true,
@@ -378,11 +341,7 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
                     size="small"
                     onClick={(event) => handleMenuOpen(event, quote)}
                     disabled={
-                      isDeleting ||
-                      isSending ||
-                      isAccepting ||
-                      isRejecting ||
-                      isDuplicating
+                      isDeleting || isSending || isAccepting || isRejecting || isDuplicating
                     }
                   >
                     <MoreIcon />
@@ -400,18 +359,18 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
         anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "right",
+          vertical: 'bottom',
+          horizontal: 'right',
         }}
         transformOrigin={{
-          vertical: "top",
-          horizontal: "right",
+          vertical: 'top',
+          horizontal: 'right',
         }}
         PaperProps={{
           sx: {
             mt: 1,
             border: 1,
-            borderColor: "divider",
+            borderColor: 'divider',
             borderRadius: 1,
           },
         }}
@@ -429,41 +388,41 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
             > = {
               view: {
                 icon: <ViewIcon sx={{ mr: 1.5, fontSize: 16 }} />,
-                label: "View Quote",
+                label: 'View Quote',
                 onClick: handleView,
               },
               edit: {
                 icon: <EditIcon sx={{ mr: 1.5, fontSize: 16 }} />,
-                label: "Edit Quote",
+                label: 'Edit Quote',
                 onClick: handleEdit,
               },
               send: {
                 icon: <SendIcon sx={{ mr: 1.5, fontSize: 16 }} />,
-                label: "Send to Client",
+                label: 'Send to Client',
                 onClick: handleSend,
               },
               accept: {
                 icon: <AcceptIcon sx={{ mr: 1.5, fontSize: 16 }} />,
-                label: "Accept Quote",
+                label: 'Accept Quote',
                 onClick: handleAccept,
-                color: "success.main",
+                color: 'success.main',
               },
               reject: {
                 icon: <RejectIcon sx={{ mr: 1.5, fontSize: 16 }} />,
-                label: "Reject Quote",
+                label: 'Reject Quote',
                 onClick: handleReject,
-                color: "error.main",
+                color: 'error.main',
               },
               duplicate: {
                 icon: <DuplicateIcon sx={{ mr: 1.5, fontSize: 16 }} />,
-                label: "Duplicate Quote",
+                label: 'Duplicate Quote',
                 onClick: handleDuplicate,
               },
               delete: {
                 icon: <DeleteIcon sx={{ mr: 1.5, fontSize: 16 }} />,
-                label: "Delete Quote",
+                label: 'Delete Quote',
                 onClick: handleDelete,
-                color: "error.main",
+                color: 'error.main',
               },
             };
 
@@ -475,9 +434,9 @@ export const EventQuotesTable: React.FC<EventQuotesTableProps> = ({
                 key={action}
                 onClick={actionConfig.onClick}
                 sx={{
-                  fontSize: "0.875rem",
-                  color: actionConfig.color || "text.primary",
-                  "&:hover": actionConfig.color
+                  fontSize: '0.875rem',
+                  color: actionConfig.color || 'text.primary',
+                  '&:hover': actionConfig.color
                     ? {
                         backgroundColor: `${actionConfig.color}15`,
                       }

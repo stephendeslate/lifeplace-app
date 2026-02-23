@@ -1,14 +1,7 @@
 // design-system/components/SocialProof.tsx
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Avatar, 
-  Chip, 
-  Badge,
-  Fade
-} from '@mui/material';
+import { Box, Typography, Avatar, Chip, Badge, Fade } from '@mui/material';
 import { styled, keyframes } from '@mui/material/styles';
 import {
   Visibility,
@@ -17,7 +10,7 @@ import {
   TrendingUp,
   People,
   CheckCircle,
-  Schedule
+  Schedule,
 } from '@mui/icons-material';
 import { tokens } from '../tokens';
 import { AnimatedElement } from './AnimatedElement';
@@ -89,7 +82,7 @@ const StyledNotificationContainer = styled(Box)(() => ({
   zIndex: tokens.spacing.zIndex.toast,
   minWidth: '300px',
   maxWidth: '400px',
-  
+
   '@media (max-width: 768px)': {
     left: tokens.spacing.space[2],
     right: tokens.spacing.space[2],
@@ -103,7 +96,7 @@ const StyledNotificationCard = styled(GlassCard)(() => ({
   marginBottom: tokens.spacing.space[1],
   animation: `${slideIn} 0.5s ease-out`,
   cursor: 'pointer',
-  
+
   '&:hover': {
     transform: 'translateY(-2px) scale(1.02)',
   },
@@ -126,7 +119,7 @@ const StyledStatItem = styled(Box)(() => ({
   backdropFilter: tokens.color.glass.lightGlass.backdropFilter,
   border: tokens.color.glass.lightGlass.border,
   transition: tokens.animation.transition.all,
-  
+
   '&:hover': {
     animation: `${pulse} 1s infinite`,
   },
@@ -135,17 +128,25 @@ const StyledStatItem = styled(Box)(() => ({
 // Generate mock activities based on actual Event model structure
 const generateMockActivities = (): EventActivity[] => {
   const names = [
-    'Maria Santos', 'John Cruz', 'Anna Reyes', 'Carlos Garcia',
-    'Sofia Mendoza', 'Miguel Torres', 'Elena Flores', 'Diego Ramos'
+    'Maria Santos',
+    'John Cruz',
+    'Anna Reyes',
+    'Carlos Garcia',
+    'Sofia Mendoza',
+    'Miguel Torres',
+    'Elena Flores',
+    'Diego Ramos',
   ];
-  
-  const eventTypes = [
-    'Wedding', 'Corporate Event', 'Birthday Party', 'Workshop', 'Retreat'
+
+  const eventTypes = ['Wedding', 'Corporate Event', 'Birthday Party', 'Workshop', 'Retreat'];
+
+  const actions: Array<'confirmed' | 'completed' | 'updated'> = [
+    'confirmed',
+    'completed',
+    'updated',
   ];
-  
-  const actions: Array<'confirmed' | 'completed' | 'updated'> = ['confirmed', 'completed', 'updated'];
   const timeframes = ['2 min ago', '5 min ago', '1 hour ago', '3 hours ago', 'Yesterday'];
-  
+
   return Array.from({ length: 10 }, (_, i) => ({
     event: {
       id: i + 1,
@@ -170,26 +171,26 @@ export const EventActivityFeed: React.FC<EventActivityFeedProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visible, setVisible] = useState(true);
-  
+
   useEffect(() => {
     if (!autoRotate || activities.length <= 1) return;
-    
+
     const interval = setInterval(() => {
       setVisible(false);
-      
+
       setTimeout(() => {
         setCurrentIndex((prev) => (prev + 1) % activities.length);
         setVisible(true);
       }, 300);
     }, rotationInterval);
-    
+
     return () => clearInterval(interval);
   }, [autoRotate, activities.length, rotationInterval]);
-  
+
   if (!activities.length) return null;
-  
+
   const currentActivity = activities[currentIndex];
-  
+
   const getActionIcon = (action: string) => {
     switch (action) {
       case 'confirmed':
@@ -202,7 +203,7 @@ export const EventActivityFeed: React.FC<EventActivityFeedProps> = ({
         return <People />;
     }
   };
-  
+
   const getActionText = (activity: EventActivity) => {
     switch (activity.action) {
       case 'confirmed':
@@ -215,15 +216,15 @@ export const EventActivityFeed: React.FC<EventActivityFeedProps> = ({
         return 'updated their event';
     }
   };
-  
+
   return (
     <StyledNotificationContainer>
       <Fade in={visible} timeout={300}>
         <StyledNotificationCard variant="light" intensity="strong">
           <Box display="flex" alignItems="center" gap={2}>
             <Avatar
-              sx={{ 
-                width: 32, 
+              sx={{
+                width: 32,
                 height: 32,
                 bgcolor: tokens.color.base.forest[100],
                 color: tokens.color.base.forest[600],
@@ -231,7 +232,7 @@ export const EventActivityFeed: React.FC<EventActivityFeedProps> = ({
             >
               {currentActivity.clientName?.charAt(0) || 'C'}
             </Avatar>
-            
+
             <Box flex={1}>
               <Typography variant="body2" fontWeight={600}>
                 {currentActivity.clientName || 'A client'}
@@ -240,7 +241,7 @@ export const EventActivityFeed: React.FC<EventActivityFeedProps> = ({
                 {getActionText(currentActivity)}
               </Typography>
             </Box>
-            
+
             <Box display="flex" flexDirection="column" alignItems="center" gap={0.5}>
               {getActionIcon(currentActivity.action)}
               <Typography variant="caption" color="text.secondary">
@@ -254,10 +255,7 @@ export const EventActivityFeed: React.FC<EventActivityFeedProps> = ({
   );
 };
 
-export const SocialProofBadge: React.FC<SocialProofBadgeProps> = ({
-  stats,
-  compact = false,
-}) => {
+export const SocialProofBadge: React.FC<SocialProofBadgeProps> = ({ stats, compact = false }) => {
   return (
     <AnimatedElement animation="fadeIn" delay={200}>
       <GlassCard variant="light" intensity="medium" hover={false}>
@@ -265,7 +263,7 @@ export const SocialProofBadge: React.FC<SocialProofBadgeProps> = ({
           <StyledStatItem>
             <EventAvailable sx={{ fontSize: 20, color: tokens.color.semantic.success.main }} />
             <Box>
-              <Typography variant={compact ? "caption" : "body2"} fontWeight={600}>
+              <Typography variant={compact ? 'caption' : 'body2'} fontWeight={600}>
                 {stats.totalEvents.toLocaleString()}
               </Typography>
               {!compact && (
@@ -275,11 +273,11 @@ export const SocialProofBadge: React.FC<SocialProofBadgeProps> = ({
               )}
             </Box>
           </StyledStatItem>
-          
+
           <StyledStatItem>
             <CheckCircle sx={{ fontSize: 20, color: tokens.color.base.forest[600] }} />
             <Box>
-              <Typography variant={compact ? "caption" : "body2"} fontWeight={600}>
+              <Typography variant={compact ? 'caption' : 'body2'} fontWeight={600}>
                 {stats.completedEvents.toLocaleString()}
               </Typography>
               {!compact && (
@@ -289,11 +287,11 @@ export const SocialProofBadge: React.FC<SocialProofBadgeProps> = ({
               )}
             </Box>
           </StyledStatItem>
-          
+
           <StyledStatItem>
             <Schedule sx={{ fontSize: 20, color: tokens.color.semantic.info.main }} />
             <Box>
-              <Typography variant={compact ? "caption" : "body2"} fontWeight={600}>
+              <Typography variant={compact ? 'caption' : 'body2'} fontWeight={600}>
                 <Badge
                   badgeContent=""
                   variant="dot"
@@ -314,7 +312,7 @@ export const SocialProofBadge: React.FC<SocialProofBadgeProps> = ({
               )}
             </Box>
           </StyledStatItem>
-          
+
           {!compact && stats.clientSatisfactionRate && (
             <StyledStatItem>
               <Star sx={{ fontSize: 20, color: tokens.color.base.gold[500] }} />
@@ -328,7 +326,7 @@ export const SocialProofBadge: React.FC<SocialProofBadgeProps> = ({
               </Box>
             </StyledStatItem>
           )}
-          
+
           {!compact && (
             <StyledStatItem>
               <TrendingUp sx={{ fontSize: 20, color: tokens.color.base.forest[600] }} />
@@ -352,30 +350,30 @@ export const TrustIndicators: React.FC<TrustIndicatorsProps> = ({
   certifications = ['DOT Certified', 'ISO 9001', 'Green Venue'],
   testimonials = [
     {
-      text: "Absolutely perfect venue for our wedding! The team was amazing.",
-      author: "Maria & Carlos",
+      text: 'Absolutely perfect venue for our wedding! The team was amazing.',
+      author: 'Maria & Carlos',
       rating: 5,
     },
     {
-      text: "Great facilities and beautiful location. Highly recommend!",
-      author: "Corporate Client",
+      text: 'Great facilities and beautiful location. Highly recommend!',
+      author: 'Corporate Client',
       rating: 5,
     },
   ],
   compact = false,
 }) => {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
-  
+
   useEffect(() => {
     if (testimonials.length <= 1) return;
-    
+
     const interval = setInterval(() => {
       setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
     }, 4000);
-    
+
     return () => clearInterval(interval);
   }, [testimonials.length]);
-  
+
   return (
     <Box>
       {/* Certifications */}
@@ -383,7 +381,7 @@ export const TrustIndicators: React.FC<TrustIndicatorsProps> = ({
         {certifications.map((cert) => (
           <Chip
             key={cert}
-            size={compact ? "small" : "medium"}
+            size={compact ? 'small' : 'medium'}
             label={cert}
             color="success"
             variant="outlined"
@@ -397,7 +395,7 @@ export const TrustIndicators: React.FC<TrustIndicatorsProps> = ({
           />
         ))}
       </Box>
-      
+
       {/* Testimonials */}
       {testimonials.length > 0 && !compact && (
         <AnimatedElement animation="fadeIn" delay={300}>
@@ -408,24 +406,18 @@ export const TrustIndicators: React.FC<TrustIndicatorsProps> = ({
                   key={i}
                   sx={{
                     fontSize: 16,
-                    color: i < testimonials[currentTestimonial].rating
-                      ? tokens.color.base.gold[500]
-                      : tokens.color.base.sage[300],
+                    color:
+                      i < testimonials[currentTestimonial].rating
+                        ? tokens.color.base.gold[500]
+                        : tokens.color.base.sage[300],
                   }}
                 />
               ))}
             </Box>
-            <Typography
-              variant="body2"
-              sx={{ fontStyle: 'italic', mb: 1 }}
-            >
+            <Typography variant="body2" sx={{ fontStyle: 'italic', mb: 1 }}>
               "{testimonials[currentTestimonial].text}"
             </Typography>
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              fontWeight={600}
-            >
+            <Typography variant="caption" color="text.secondary" fontWeight={600}>
               — {testimonials[currentTestimonial].author}
             </Typography>
           </GlassCard>

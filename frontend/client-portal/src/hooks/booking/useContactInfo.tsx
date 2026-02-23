@@ -26,108 +26,128 @@ export const useContactInfo = (config?: ContactInfoStepConfiguration) => {
   }, [isAuthenticated, user]);
 
   // Validate contact info data
-  const validateData = useCallback((data: ContactInfoStepData) => {
-    setError(null);
-    setValidationErrors({});
+  const validateData = useCallback(
+    (data: ContactInfoStepData) => {
+      setError(null);
+      setValidationErrors({});
 
-    const validation = ContactInfoApi.validateData(data, config as unknown as Record<string, unknown>);
-    
-    if (!validation.isValid) {
-      setValidationErrors(validation.errors);
-    }
+      const validation = ContactInfoApi.validateData(
+        data,
+        config as unknown as Record<string, unknown>,
+      );
 
-    return validation;
-  }, [config]);
+      if (!validation.isValid) {
+        setValidationErrors(validation.errors);
+      }
+
+      return validation;
+    },
+    [config],
+  );
 
   // Update step data on server
-  const updateStepData = useCallback(async (
-    sessionId: string,
-    stepId: number,
-    stepData: ContactInfoStepData,
-    markCompleted: boolean = false
-  ) => {
-    setLoading(true);
-    setError(null);
-    setValidationErrors({});
-    
-    try {
-      const formattedData = ContactInfoApi.formatStepData(stepData);
-      const response = await ContactInfoApi.updateStepData(
-        sessionId,
-        stepId,
-        formattedData,
-        markCompleted
-      );
-      return response;
-    } catch (err) {
-      const errorMessage = ErrorHandler.extractMessage(err);
-      const validationErrs = ErrorHandler.extractValidationErrorsAsRecord(err);
-      
-      setError(errorMessage);
-      setValidationErrors(validationErrs);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const updateStepData = useCallback(
+    async (
+      sessionId: string,
+      stepId: number,
+      stepData: ContactInfoStepData,
+      markCompleted: boolean = false,
+    ) => {
+      setLoading(true);
+      setError(null);
+      setValidationErrors({});
+
+      try {
+        const formattedData = ContactInfoApi.formatStepData(stepData);
+        const response = await ContactInfoApi.updateStepData(
+          sessionId,
+          stepId,
+          formattedData,
+          markCompleted,
+        );
+        return response;
+      } catch (err) {
+        const errorMessage = ErrorHandler.extractMessage(err);
+        const validationErrs = ErrorHandler.extractValidationErrorsAsRecord(err);
+
+        setError(errorMessage);
+        setValidationErrors(validationErrs);
+        throw err;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   // Validate step data on server
-  const validateStepData = useCallback(async (
-    sessionId: string,
-    stepId: number,
-    stepData: ContactInfoStepData
-  ): Promise<StepValidationResult> => {
-    try {
-      const formattedData = ContactInfoApi.formatStepData(stepData);
-      const result = await ContactInfoApi.validateStepData(
-        sessionId,
-        stepId,
-        formattedData
-      );
-      
-      if (!result.isValid) {
-        const errors: Record<string, string[]> = {};
-        result.errors.forEach(error => {
-          errors[error.field] = [error.message];
-        });
-        setValidationErrors(errors);
-      } else {
-        setValidationErrors({});
+  const validateStepData = useCallback(
+    async (
+      sessionId: string,
+      stepId: number,
+      stepData: ContactInfoStepData,
+    ): Promise<StepValidationResult> => {
+      try {
+        const formattedData = ContactInfoApi.formatStepData(stepData);
+        const result = await ContactInfoApi.validateStepData(sessionId, stepId, formattedData);
+
+        if (!result.isValid) {
+          const errors: Record<string, string[]> = {};
+          result.errors.forEach((error) => {
+            errors[error.field] = [error.message];
+          });
+          setValidationErrors(errors);
+        } else {
+          setValidationErrors({});
+        }
+
+        return result;
+      } catch (err) {
+        const errorMessage = ErrorHandler.extractMessage(err);
+        setError(errorMessage);
+        return { isValid: false, errors: [{ field: 'general', message: errorMessage }] };
       }
-      
-      return result;
-    } catch (err) {
-      const errorMessage = ErrorHandler.extractMessage(err);
-      setError(errorMessage);
-      return { isValid: false, errors: [{ field: 'general', message: errorMessage }] };
-    }
-  }, []);
+    },
+    [],
+  );
 
   // Check if fields are required based on configuration
-  const fieldRequirements = useMemo(() => ({
-    full_name: config?.require_full_name ?? true,
-    email: config?.require_email ?? true,
-    phone: config?.require_phone ?? true,
-    address: config?.require_address ?? false,
-    company: config?.require_company ?? false,
-  }), [config]);
+  const fieldRequirements = useMemo(
+    () => ({
+      full_name: config?.require_full_name ?? true,
+      email: config?.require_email ?? true,
+      phone: config?.require_phone ?? true,
+      address: config?.require_address ?? false,
+      company: config?.require_company ?? false,
+    }),
+    [config],
+  );
 
   // Check if account creation is available
-  const accountCreationOptions = useMemo(() => ({
-    canCreateAccount: !isAuthenticated && config?.offer_account_creation,
-    mustCreateAccount: !isAuthenticated && config?.require_account_creation,
-    isAlreadyAuthenticated: isAuthenticated,
-  }), [isAuthenticated, config]);
+  const accountCreationOptions = useMemo(
+    () => ({
+      canCreateAccount: !isAuthenticated && config?.offer_account_creation,
+      mustCreateAccount: !isAuthenticated && config?.require_account_creation,
+      isAlreadyAuthenticated: isAuthenticated,
+    }),
+    [isAuthenticated, config],
+  );
 
   // Get field error helper
-  const getFieldError = useCallback((fieldName: string): string | undefined => {
-    return validationErrors[fieldName]?.[0];
-  }, [validationErrors]);
+  const getFieldError = useCallback(
+    (fieldName: string): string | undefined => {
+      return validationErrors[fieldName]?.[0];
+    },
+    [validationErrors],
+  );
 
   // Check if field has error helper
-  const hasFieldError = useCallback((fieldName: string): boolean => {
-    return !!(validationErrors[fieldName] && validationErrors[fieldName].length > 0);
-  }, [validationErrors]);
+  const hasFieldError = useCallback(
+    (fieldName: string): boolean => {
+      return !!(validationErrors[fieldName] && validationErrors[fieldName].length > 0);
+    },
+    [validationErrors],
+  );
 
   // Clear errors
   const clearErrors = useCallback(() => {
@@ -138,28 +158,28 @@ export const useContactInfo = (config?: ContactInfoStepConfiguration) => {
   return {
     // Data helpers
     getInitialData,
-    
+
     // Validation
     validateData,
     validateStepData,
-    
+
     // API operations
     updateStepData,
-    
+
     // Configuration
     fieldRequirements,
     accountCreationOptions,
-    
+
     // State
     loading,
     error,
     validationErrors,
-    
+
     // Helpers
     getFieldError,
     hasFieldError,
     clearErrors,
-    
+
     // User info
     isAuthenticated,
     user,
@@ -170,19 +190,31 @@ export const useContactInfo = (config?: ContactInfoStepConfiguration) => {
 export const useContactInfoValidation = (config?: ContactInfoStepConfiguration) => {
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
-  const validateData = useCallback((data: ContactInfoStepData) => {
-    const validation = ContactInfoApi.validateData(data, config as unknown as Record<string, unknown>);
-    setValidationErrors(validation.errors);
-    return validation;
-  }, [config]);
+  const validateData = useCallback(
+    (data: ContactInfoStepData) => {
+      const validation = ContactInfoApi.validateData(
+        data,
+        config as unknown as Record<string, unknown>,
+      );
+      setValidationErrors(validation.errors);
+      return validation;
+    },
+    [config],
+  );
 
-  const getFieldError = useCallback((fieldName: string): string | undefined => {
-    return validationErrors[fieldName]?.[0];
-  }, [validationErrors]);
+  const getFieldError = useCallback(
+    (fieldName: string): string | undefined => {
+      return validationErrors[fieldName]?.[0];
+    },
+    [validationErrors],
+  );
 
-  const hasFieldError = useCallback((fieldName: string): boolean => {
-    return !!(validationErrors[fieldName] && validationErrors[fieldName].length > 0);
-  }, [validationErrors]);
+  const hasFieldError = useCallback(
+    (fieldName: string): boolean => {
+      return !!(validationErrors[fieldName] && validationErrors[fieldName].length > 0);
+    },
+    [validationErrors],
+  );
 
   const clearErrors = useCallback(() => {
     setValidationErrors({});

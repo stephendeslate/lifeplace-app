@@ -1,19 +1,19 @@
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
 // We need to import the hook - let me check the exact exports
 import {
   useNotifications,
   useNotificationTypes,
   useNotificationPreferences,
-} from "./useNotifications";
+} from './useNotifications';
 
-describe("useNotifications", () => {
-  describe("Query Operations", () => {
-    it("fetches notifications", async () => {
+describe('useNotifications', () => {
+  describe('Query Operations', () => {
+    it('fetches notifications', async () => {
       const { result } = renderHook(() => useNotifications(), {
         wrapper: createTestWrapper(),
       });
@@ -28,17 +28,11 @@ describe("useNotifications", () => {
       expect(result.current.notifications.length).toBeGreaterThan(0);
     });
 
-    it("handles API error", async () => {
+    it('handles API error', async () => {
       server.use(
-        http.get(
-          "http://localhost:8000/api/notifications/notifications/",
-          () => {
-            return HttpResponse.json(
-              { detail: "Server error" },
-              { status: 500 },
-            );
-          },
-        ),
+        http.get('http://localhost:8000/api/notifications/notifications/', () => {
+          return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
+        }),
       );
 
       const { result } = renderHook(() => useNotifications(), {
@@ -54,8 +48,8 @@ describe("useNotifications", () => {
     });
   });
 
-  describe("Mutation Operations", () => {
-    it("marks a notification as read", async () => {
+  describe('Mutation Operations', () => {
+    it('marks a notification as read', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useNotifications(), { wrapper });
 
@@ -67,9 +61,7 @@ describe("useNotifications", () => {
         { timeout: 5000 },
       );
 
-      const unreadNotification = result.current.notifications.find(
-        (n) => !n.is_read,
-      );
+      const unreadNotification = result.current.notifications.find((n) => !n.is_read);
       if (unreadNotification) {
         act(() => {
           result.current.markAsRead(unreadNotification.id);
@@ -84,7 +76,7 @@ describe("useNotifications", () => {
       }
     });
 
-    it("marks all notifications as read", async () => {
+    it('marks all notifications as read', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useNotifications(), { wrapper });
 
@@ -107,7 +99,7 @@ describe("useNotifications", () => {
       );
     });
 
-    it("deletes a notification", async () => {
+    it('deletes a notification', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useNotifications(), { wrapper });
 
@@ -133,7 +125,7 @@ describe("useNotifications", () => {
       );
     });
 
-    it("creates a notification", async () => {
+    it('creates a notification', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useNotifications(), { wrapper });
 
@@ -147,7 +139,7 @@ describe("useNotifications", () => {
       act(() => {
         result.current.createNotification({
           recipient_ids: [1, 2],
-          notification_type_code: "EVENT_CREATED",
+          notification_type_code: 'EVENT_CREATED',
         });
       });
 
@@ -160,8 +152,8 @@ describe("useNotifications", () => {
     });
   });
 
-  describe("Notification Counts", () => {
-    it("fetches notification counts", async () => {
+  describe('Notification Counts', () => {
+    it('fetches notification counts', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useNotifications(), { wrapper });
 
@@ -173,10 +165,9 @@ describe("useNotifications", () => {
       );
 
       // The useNotificationCounts hook is accessed via the parent hook
-      const { result: countsResult } = renderHook(
-        () => result.current.useNotificationCounts(),
-        { wrapper },
-      );
+      const { result: countsResult } = renderHook(() => result.current.useNotificationCounts(), {
+        wrapper,
+      });
 
       await waitFor(
         () => {
@@ -192,8 +183,8 @@ describe("useNotifications", () => {
   });
 });
 
-describe("useNotificationTypes", () => {
-  it("fetches notification types", async () => {
+describe('useNotificationTypes', () => {
+  it('fetches notification types', async () => {
     const { result } = renderHook(() => useNotificationTypes(), {
       wrapper: createTestWrapper(),
     });
@@ -208,7 +199,7 @@ describe("useNotificationTypes", () => {
     expect(result.current.notificationTypes.length).toBeGreaterThan(0);
   });
 
-  it("creates a notification type", async () => {
+  it('creates a notification type', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useNotificationTypes(), { wrapper });
 
@@ -221,10 +212,10 @@ describe("useNotificationTypes", () => {
 
     act(() => {
       result.current.createType({
-        code: "NEW_TYPE",
-        name: "New Type",
-        category: "SYSTEM",
-        priority: "NORMAL",
+        code: 'NEW_TYPE',
+        name: 'New Type',
+        category: 'SYSTEM',
+        priority: 'NORMAL',
       } as never);
     });
 
@@ -237,8 +228,8 @@ describe("useNotificationTypes", () => {
   });
 });
 
-describe("useNotificationPreferences", () => {
-  it("fetches user preferences", async () => {
+describe('useNotificationPreferences', () => {
+  it('fetches user preferences', async () => {
     const { result } = renderHook(() => useNotificationPreferences(), {
       wrapper: createTestWrapper(),
     });
@@ -254,7 +245,7 @@ describe("useNotificationPreferences", () => {
     expect(result.current.preferences?.email_enabled).toBeDefined();
   });
 
-  it("updates preferences", async () => {
+  it('updates preferences', async () => {
     const wrapper = createTestWrapper();
     const { result } = renderHook(() => useNotificationPreferences(), {
       wrapper,

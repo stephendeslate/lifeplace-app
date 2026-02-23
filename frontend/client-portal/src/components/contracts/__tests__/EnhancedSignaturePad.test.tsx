@@ -24,11 +24,7 @@ vi.mock('signature_pad', () => ({
 const theme = createTheme();
 
 const renderWithTheme = (component: React.ReactElement) => {
-  return render(
-    <ThemeProvider theme={theme}>
-      {component}
-    </ThemeProvider>
-  );
+  return render(<ThemeProvider theme={theme}>{component}</ThemeProvider>);
 };
 
 describe('EnhancedSignaturePad', () => {
@@ -41,12 +37,12 @@ describe('EnhancedSignaturePad', () => {
   });
 
   it('renders with default props', () => {
-    renderWithTheme(
-      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />
-    );
+    renderWithTheme(<EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />);
 
     expect(screen.getByText('Your Signature')).toBeInTheDocument();
-    expect(screen.getByText('Please sign in the box above using your mouse or touch screen')).toBeInTheDocument();
+    expect(
+      screen.getByText('Please sign in the box above using your mouse or touch screen'),
+    ).toBeInTheDocument();
   });
 
   it('renders custom label and helper text', () => {
@@ -55,7 +51,7 @@ describe('EnhancedSignaturePad', () => {
         onSignatureChange={mockOnSignatureChange}
         label="Custom Signature Label"
         helperText="Custom helper text"
-      />
+      />,
     );
 
     expect(screen.getByText('Custom Signature Label')).toBeInTheDocument();
@@ -68,7 +64,7 @@ describe('EnhancedSignaturePad', () => {
         onSignatureChange={mockOnSignatureChange}
         required
         label="Required Signature"
-      />
+      />,
     );
 
     expect(screen.getByText('Required Signature *')).toBeInTheDocument();
@@ -80,7 +76,7 @@ describe('EnhancedSignaturePad', () => {
         onSignatureChange={mockOnSignatureChange}
         error
         errorText="Custom error message"
-      />
+      />,
     );
 
     // Error message appears in both helper text and alert
@@ -90,10 +86,7 @@ describe('EnhancedSignaturePad', () => {
 
   it('renders disabled state correctly', () => {
     const { container } = renderWithTheme(
-      <EnhancedSignaturePad
-        onSignatureChange={mockOnSignatureChange}
-        disabled
-      />
+      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} disabled />,
     );
 
     const canvas = container.querySelector('canvas');
@@ -106,7 +99,7 @@ describe('EnhancedSignaturePad', () => {
         onSignatureChange={mockOnSignatureChange}
         enableBiometricAnalysis
         showAnalytics
-      />
+      />,
     );
 
     // Initially no analysis should be shown
@@ -118,7 +111,7 @@ describe('EnhancedSignaturePad', () => {
       <EnhancedSignaturePad
         onSignatureChange={mockOnSignatureChange}
         onSignatureComplete={mockOnSignatureComplete}
-      />
+      />,
     );
 
     expect(screen.getByLabelText('Clear signature')).toBeInTheDocument();
@@ -128,17 +121,17 @@ describe('EnhancedSignaturePad', () => {
 
   it('disables action buttons when empty', () => {
     const { container } = renderWithTheme(
-      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />
+      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />,
     );
 
     // Query for buttons directly since MUI Tooltip wraps buttons with spans
     const buttons = container.querySelectorAll('button');
     // There should be 3 buttons: clear, undo, and complete (if visible)
-    const clearButton = Array.from(buttons).find(btn =>
-      btn.querySelector('[data-testid="ClearIcon"]')
+    const clearButton = Array.from(buttons).find((btn) =>
+      btn.querySelector('[data-testid="ClearIcon"]'),
     );
-    const undoButton = Array.from(buttons).find(btn =>
-      btn.querySelector('[data-testid="UndoIcon"]')
+    const undoButton = Array.from(buttons).find((btn) =>
+      btn.querySelector('[data-testid="UndoIcon"]'),
     );
 
     expect(clearButton).toBeDisabled();
@@ -148,9 +141,7 @@ describe('EnhancedSignaturePad', () => {
   it('calls onSignatureChange when signature changes', async () => {
     // This test verifies the component renders correctly
     // The actual signature change callback is tested via integration
-    renderWithTheme(
-      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />
-    );
+    renderWithTheme(<EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />);
 
     // Component renders correctly with signature change handler
     expect(screen.getByText('Your Signature')).toBeInTheDocument();
@@ -159,10 +150,7 @@ describe('EnhancedSignaturePad', () => {
 
   it('shows analysis progress when analyzing', async () => {
     renderWithTheme(
-      <EnhancedSignaturePad
-        onSignatureChange={mockOnSignatureChange}
-        enableBiometricAnalysis
-      />
+      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} enableBiometricAnalysis />,
     );
 
     // The component should show analyzing state during analysis
@@ -172,12 +160,13 @@ describe('EnhancedSignaturePad', () => {
   it('handles clear button click', async () => {
     // Clear button is disabled when signature is empty
     const { container } = renderWithTheme(
-      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />
+      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />,
     );
 
-    const clearButton = container.querySelector('button[data-testid="ClearIcon"]')?.closest('button') ||
-      Array.from(container.querySelectorAll('button')).find(btn =>
-        btn.querySelector('[data-testid="ClearIcon"]')
+    const clearButton =
+      container.querySelector('button[data-testid="ClearIcon"]')?.closest('button') ||
+      Array.from(container.querySelectorAll('button')).find((btn) =>
+        btn.querySelector('[data-testid="ClearIcon"]'),
       );
     // Button is disabled when empty (which is the default state)
     expect(clearButton).toBeDisabled();
@@ -186,11 +175,11 @@ describe('EnhancedSignaturePad', () => {
   it('handles undo button click', async () => {
     // Undo button is disabled when signature is empty
     const { container } = renderWithTheme(
-      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />
+      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />,
     );
 
-    const undoButton = Array.from(container.querySelectorAll('button')).find(btn =>
-      btn.querySelector('[data-testid="UndoIcon"]')
+    const undoButton = Array.from(container.querySelectorAll('button')).find((btn) =>
+      btn.querySelector('[data-testid="UndoIcon"]'),
     );
     // Button is disabled when empty (which is the default state)
     expect(undoButton).toBeDisabled();
@@ -202,11 +191,11 @@ describe('EnhancedSignaturePad', () => {
       <EnhancedSignaturePad
         onSignatureChange={mockOnSignatureChange}
         onSignatureComplete={mockOnSignatureComplete}
-      />
+      />,
     );
 
-    const completeButton = Array.from(container.querySelectorAll('button')).find(btn =>
-      btn.querySelector('[data-testid="CheckIcon"]')
+    const completeButton = Array.from(container.querySelectorAll('button')).find((btn) =>
+      btn.querySelector('[data-testid="CheckIcon"]'),
     );
     // Complete button is disabled when signature is empty
     expect(completeButton).toBeDisabled();
@@ -214,7 +203,7 @@ describe('EnhancedSignaturePad', () => {
 
   it('prevents context menu on canvas', () => {
     const { container } = renderWithTheme(
-      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />
+      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />,
     );
 
     const canvas = container.querySelector('canvas');
@@ -230,9 +219,7 @@ describe('EnhancedSignaturePad', () => {
   });
 
   it('handles window resize', () => {
-    renderWithTheme(
-      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />
-    );
+    renderWithTheme(<EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />);
 
     // Trigger window resize
     fireEvent(window, new Event('resize'));
@@ -243,11 +230,7 @@ describe('EnhancedSignaturePad', () => {
 
   it('renders with custom dimensions', () => {
     const { container } = renderWithTheme(
-      <EnhancedSignaturePad
-        onSignatureChange={mockOnSignatureChange}
-        width={400}
-        height={150}
-      />
+      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} width={400} height={150} />,
     );
 
     const canvas = container.querySelector('canvas');
@@ -260,7 +243,7 @@ describe('EnhancedSignaturePad', () => {
       <EnhancedSignaturePad
         onSignatureChange={mockOnSignatureChange}
         className="custom-signature-pad"
-      />
+      />,
     );
 
     expect(container.querySelector('.custom-signature-pad')).toBeInTheDocument();
@@ -271,13 +254,13 @@ describe('EnhancedSignaturePad', () => {
 describe('EnhancedSignaturePad Integration', () => {
   it('integrates with biometric analysis correctly', async () => {
     const mockOnSignatureChange = vi.fn();
-    
+
     renderWithTheme(
       <EnhancedSignaturePad
         onSignatureChange={mockOnSignatureChange}
         enableBiometricAnalysis
         showAnalytics
-      />
+      />,
     );
 
     // Test that the component can handle biometric analysis flow
@@ -288,15 +271,15 @@ describe('EnhancedSignaturePad Integration', () => {
     const mockOnSignatureChange = vi.fn();
 
     const { container } = renderWithTheme(
-      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />
+      <EnhancedSignaturePad onSignatureChange={mockOnSignatureChange} />,
     );
 
     // Verify initial empty state - query for actual buttons
-    const clearButton = Array.from(container.querySelectorAll('button')).find(btn =>
-      btn.querySelector('[data-testid="ClearIcon"]')
+    const clearButton = Array.from(container.querySelectorAll('button')).find((btn) =>
+      btn.querySelector('[data-testid="ClearIcon"]'),
     );
-    const undoButton = Array.from(container.querySelectorAll('button')).find(btn =>
-      btn.querySelector('[data-testid="UndoIcon"]')
+    const undoButton = Array.from(container.querySelectorAll('button')).find((btn) =>
+      btn.querySelector('[data-testid="UndoIcon"]'),
     );
 
     // Both buttons should be disabled in empty state

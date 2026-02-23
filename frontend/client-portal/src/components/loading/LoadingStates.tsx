@@ -23,22 +23,24 @@ interface LoadingStateProps {
 }
 
 // Individual skeleton components
-export const SkeletonText: React.FC<LoadingStateProps & { lines?: number }> = ({ 
+export const SkeletonText: React.FC<LoadingStateProps & { lines?: number }> = ({
   variant = 'default',
-  lines = 1 
+  lines = 1,
 }) => {
-  
   const getSkeletonProps = () => {
     const baseProps = {
       animation: 'wave' as const,
-      sx: variant === 'glass' ? {
-        backgroundColor: alpha('#fff', 0.1),
-        '&::after': {
-          background: `linear-gradient(90deg, transparent, ${alpha('#fff', 0.2)}, transparent)`,
-        }
-      } : {}
+      sx:
+        variant === 'glass'
+          ? {
+              backgroundColor: alpha('#fff', 0.1),
+              '&::after': {
+                background: `linear-gradient(90deg, transparent, ${alpha('#fff', 0.2)}, transparent)`,
+              },
+            }
+          : {},
     };
-    
+
     return baseProps;
   };
 
@@ -49,9 +51,9 @@ export const SkeletonText: React.FC<LoadingStateProps & { lines?: number }> = ({
           key={index}
           {...getSkeletonProps()}
           height={24}
-          sx={{ 
+          sx={{
             mb: index < lines - 1 ? 1 : 0,
-            ...getSkeletonProps().sx
+            ...getSkeletonProps().sx,
           }}
         />
       ))}
@@ -59,32 +61,33 @@ export const SkeletonText: React.FC<LoadingStateProps & { lines?: number }> = ({
   );
 };
 
-export const SkeletonAvatar: React.FC<LoadingStateProps> = ({ 
+export const SkeletonAvatar: React.FC<LoadingStateProps> = ({
   variant = 'default',
-  size = 'medium'
+  size = 'medium',
 }) => {
   const sizes = { small: 32, medium: 48, large: 64 };
-  
+
   return (
     <Skeleton
       variant="circular"
       width={sizes[size]}
       height={sizes[size]}
       animation="wave"
-      sx={variant === 'glass' ? {
-        backgroundColor: alpha('#fff', 0.1),
-        '&::after': {
-          background: `linear-gradient(90deg, transparent, ${alpha('#fff', 0.2)}, transparent)`,
-        }
-      } : {}}
+      sx={
+        variant === 'glass'
+          ? {
+              backgroundColor: alpha('#fff', 0.1),
+              '&::after': {
+                background: `linear-gradient(90deg, transparent, ${alpha('#fff', 0.2)}, transparent)`,
+              },
+            }
+          : {}
+      }
     />
   );
 };
 
-export const SkeletonCard: React.FC<LoadingStateProps> = ({ 
-  variant = 'default' 
-}) => {
-  
+export const SkeletonCard: React.FC<LoadingStateProps> = ({ variant = 'default' }) => {
   if (variant === 'glass') {
     return (
       <GlassCard
@@ -110,7 +113,7 @@ export const SkeletonCard: React.FC<LoadingStateProps> = ({
                     backgroundColor: alpha('#fff', 0.08),
                     '&::after': {
                       background: `linear-gradient(90deg, transparent, ${alpha('#fff', 0.15)}, transparent)`,
-                    }
+                    },
                   }}
                 />
               </Box>
@@ -130,11 +133,7 @@ export const SkeletonCard: React.FC<LoadingStateProps> = ({
           <Box sx={{ flex: 1 }}>
             <SkeletonText variant={variant} />
             <Box sx={{ mt: 1 }}>
-              <Skeleton
-                animation="wave"
-                width="60%"
-                height={16}
-              />
+              <Skeleton animation="wave" width="60%" height={16} />
             </Box>
           </Box>
         </Box>
@@ -144,10 +143,9 @@ export const SkeletonCard: React.FC<LoadingStateProps> = ({
   );
 };
 
-export const SkeletonChart: React.FC<LoadingStateProps & { height?: number }> = ({ 
-  height = 300
+export const SkeletonChart: React.FC<LoadingStateProps & { height?: number }> = ({
+  height = 300,
 }) => {
-  
   return (
     <GlassCard
       variant="light"
@@ -160,29 +158,41 @@ export const SkeletonChart: React.FC<LoadingStateProps & { height?: number }> = 
       }}
     >
       <Box sx={{ mb: 2 }}>
-        <Skeleton animation="wave" width="40%" height={24} sx={{
-          backgroundColor: alpha('#fff', 0.1),
-          '&::after': {
-            background: `linear-gradient(90deg, transparent, ${alpha('#fff', 0.2)}, transparent)`,
-          }
-        }} />
-        <Skeleton animation="wave" width="60%" height={16} sx={{ 
-          mt: 1,
-          backgroundColor: alpha('#fff', 0.08),
-          '&::after': {
-            background: `linear-gradient(90deg, transparent, ${alpha('#fff', 0.15)}, transparent)`,
-          }
-        }} />
+        <Skeleton
+          animation="wave"
+          width="40%"
+          height={24}
+          sx={{
+            backgroundColor: alpha('#fff', 0.1),
+            '&::after': {
+              background: `linear-gradient(90deg, transparent, ${alpha('#fff', 0.2)}, transparent)`,
+            },
+          }}
+        />
+        <Skeleton
+          animation="wave"
+          width="60%"
+          height={16}
+          sx={{
+            mt: 1,
+            backgroundColor: alpha('#fff', 0.08),
+            '&::after': {
+              background: `linear-gradient(90deg, transparent, ${alpha('#fff', 0.15)}, transparent)`,
+            },
+          }}
+        />
       </Box>
-      <Box sx={{ 
-        height,
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'space-between',
-        gap: 1,
-        px: 2,
-        pb: 2
-      }}>
+      <Box
+        sx={{
+          height,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'space-between',
+          gap: 1,
+          px: 2,
+          pb: 2,
+        }}
+      >
         {Array.from({ length: 12 }).map((_, index) => (
           <Box
             key={index}
@@ -212,10 +222,7 @@ export const SkeletonChart: React.FC<LoadingStateProps & { height?: number }> = 
   );
 };
 
-export const SkeletonTable: React.FC<LoadingStateProps & { rows?: number }> = ({ 
-  rows = 5
-}) => {
-  
+export const SkeletonTable: React.FC<LoadingStateProps & { rows?: number }> = ({ rows = 5 }) => {
   return (
     <GlassCard
       variant="light"
@@ -228,12 +235,14 @@ export const SkeletonTable: React.FC<LoadingStateProps & { rows?: number }> = ({
       }}
     >
       {/* Table Header */}
-      <Box sx={{ 
-        display: 'flex', 
-        p: 2, 
-        borderBottom: `1px solid ${alpha('#fff', 0.1)}`,
-        gap: 2
-      }}>
+      <Box
+        sx={{
+          display: 'flex',
+          p: 2,
+          borderBottom: `1px solid ${alpha('#fff', 0.1)}`,
+          gap: 2,
+        }}
+      >
         {Array.from({ length: 4 }).map((_, index) => (
           <Skeleton
             key={index}
@@ -244,21 +253,24 @@ export const SkeletonTable: React.FC<LoadingStateProps & { rows?: number }> = ({
               backgroundColor: alpha('#fff', 0.1),
               '&::after': {
                 background: `linear-gradient(90deg, transparent, ${alpha('#fff', 0.2)}, transparent)`,
-              }
+              },
             }}
           />
         ))}
       </Box>
-      
+
       {/* Table Rows */}
       {Array.from({ length: rows }).map((_, rowIndex) => (
-        <Box key={rowIndex} sx={{ 
-          display: 'flex', 
-          p: 2, 
-          borderBottom: `1px solid ${alpha('#fff', 0.05)}`,
-          gap: 2,
-          '&:last-child': { borderBottom: 'none' }
-        }}>
+        <Box
+          key={rowIndex}
+          sx={{
+            display: 'flex',
+            p: 2,
+            borderBottom: `1px solid ${alpha('#fff', 0.05)}`,
+            gap: 2,
+            '&:last-child': { borderBottom: 'none' },
+          }}
+        >
           {Array.from({ length: 4 }).map((_, colIndex) => (
             <Skeleton
               key={colIndex}
@@ -269,7 +281,7 @@ export const SkeletonTable: React.FC<LoadingStateProps & { rows?: number }> = ({
                 backgroundColor: alpha('#fff', 0.08),
                 '&::after': {
                   background: `linear-gradient(90deg, transparent, ${alpha('#fff', 0.15)}, transparent)`,
-                }
+                },
               }}
             />
           ))}
@@ -285,7 +297,7 @@ export const GlassSpinner: React.FC<{
   message?: string;
 }> = ({ size = 40, message }) => {
   const theme = useTheme();
-  
+
   return (
     <Fade in timeout={300}>
       <Box
@@ -350,7 +362,7 @@ export const GlassProgressBar: React.FC<{
   showPercentage?: boolean;
 }> = ({ progress, message, showPercentage = true }) => {
   const theme = useTheme();
-  
+
   return (
     <Grow in timeout={500}>
       <GlassCard
@@ -377,7 +389,7 @@ export const GlassProgressBar: React.FC<{
             {message}
           </Typography>
         )}
-        
+
         <Box sx={{ position: 'relative', mb: showPercentage ? 1 : 0 }}>
           <LinearProgress
             variant={progress !== undefined ? 'determinate' : 'indeterminate'}
@@ -402,7 +414,7 @@ export const GlassProgressBar: React.FC<{
             }}
           />
         </Box>
-        
+
         {showPercentage && progress !== undefined && (
           <Typography
             variant="body2"
@@ -425,7 +437,6 @@ export const LoadingOverlay: React.FC<{
   message?: string;
   progress?: number;
 }> = ({ message = 'Loading...', progress }) => {
-  
   return (
     <Fade in timeout={300}>
       <Box
@@ -444,11 +455,7 @@ export const LoadingOverlay: React.FC<{
         }}
       >
         {progress !== undefined ? (
-          <GlassProgressBar 
-            progress={progress} 
-            message={message}
-            showPercentage={true}
-          />
+          <GlassProgressBar progress={progress} message={message} showPercentage={true} />
         ) : (
           <GlassSpinner message={message} size={50} />
         )}
@@ -469,12 +476,14 @@ export const DashboardSkeleton: React.FC = () => {
       </AnimatedElement>
 
       <AnimatedElement animation="slideUp" delay={200}>
-        <Box sx={{ 
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: 3,
-          mb: 4
-        }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: 3,
+            mb: 4,
+          }}
+        >
           {Array.from({ length: 4 }).map((_, index) => (
             <SkeletonCard key={index} variant="glass" />
           ))}

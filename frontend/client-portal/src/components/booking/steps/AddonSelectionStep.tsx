@@ -14,12 +14,7 @@ import {
   Divider,
   IconButton,
 } from '@mui/material';
-import { 
-  Add, 
-  Remove, 
-  Star,
-  ShoppingCart,
-} from '@mui/icons-material';
+import { Add, Remove, Star, ShoppingCart } from '@mui/icons-material';
 import { ProductsApi } from '../../../apis/booking/products.api';
 import { VenuesApi } from '../../../apis/booking/venues.api';
 import type {
@@ -50,7 +45,10 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
   venueAdditionalHoursData = {},
 }) => {
   // Memoize config values to prevent unnecessary re-renders
-  const availableAddons = useMemo(() => config?.available_addons_details || [], [config?.available_addons_details]);
+  const availableAddons = useMemo(
+    () => config?.available_addons_details || [],
+    [config?.available_addons_details],
+  );
   const minSelection = config?.min_selection || 0;
   const maxSelection = config?.max_selection || 0; // 0 means unlimited
   const groupByCategory = config?.group_by_category || false;
@@ -59,24 +57,32 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
   const selectedAddons = useMemo(() => stepData.selected_addons || [], [stepData.selected_addons]);
 
   // State for venue additional hours (initialize from prop data)
-  const [venueAdditionalHours, setVenueAdditionalHours] = React.useState<Record<number, number>>(() => {
-    // Convert string keys to number keys
-    return Object.entries(venueAdditionalHoursData).reduce((acc, [key, value]) => ({
-      ...acc,
-      [parseInt(key)]: value
-    }), {});
-  });
+  const [venueAdditionalHours, setVenueAdditionalHours] = React.useState<Record<number, number>>(
+    () => {
+      // Convert string keys to number keys
+      return Object.entries(venueAdditionalHoursData).reduce(
+        (acc, [key, value]) => ({
+          ...acc,
+          [parseInt(key)]: value,
+        }),
+        {},
+      );
+    },
+  );
 
   // Sync venue hours when props change (e.g., when navigating from package selection)
   React.useEffect(() => {
-    const propsHours = Object.entries(venueAdditionalHoursData).reduce((acc, [key, value]) => ({
-      ...acc,
-      [parseInt(key)]: value
-    }), {} as Record<number, number>);
+    const propsHours = Object.entries(venueAdditionalHoursData).reduce(
+      (acc, [key, value]) => ({
+        ...acc,
+        [parseInt(key)]: value,
+      }),
+      {} as Record<number, number>,
+    );
 
     // Only update if the props have hours that aren't in local state
-    const hasNewHours = Object.keys(propsHours).length > 0 &&
-      Object.keys(venueAdditionalHours).length === 0;
+    const hasNewHours =
+      Object.keys(propsHours).length > 0 && Object.keys(venueAdditionalHours).length === 0;
     if (hasNewHours) {
       setVenueAdditionalHours(propsHours);
     }
@@ -91,117 +97,132 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
   }, [availableAddons, groupByCategory]);
 
   // Check if addon is selected - Fixed to use addon_id
-  const isAddonSelected = useCallback((addonId: number) => {
-    return selectedAddons.some(a => a.product_id === addonId);
-  }, [selectedAddons]);
+  const isAddonSelected = useCallback(
+    (addonId: number) => {
+      return selectedAddons.some((a) => a.product_id === addonId);
+    },
+    [selectedAddons],
+  );
 
   // Get selected addon details - Fixed to use addon_id
-  const getSelectedAddon = useCallback((addonId: number) => {
-    return selectedAddons.find(a => a.product_id === addonId);
-  }, [selectedAddons]);
+  const getSelectedAddon = useCallback(
+    (addonId: number) => {
+      return selectedAddons.find((a) => a.product_id === addonId);
+    },
+    [selectedAddons],
+  );
 
   // Handle venue hours change
   const handleVenueHoursChange = useCallback((venueId: number, hours: number) => {
-    setVenueAdditionalHours(prev => ({
+    setVenueAdditionalHours((prev) => ({
       ...prev,
-      [venueId]: hours
+      [venueId]: hours,
     }));
   }, []);
 
   // Helper to build complete data with venue hours
-  const buildCompleteData = useCallback((addons: SelectedAddon[]) => {
-    const venueHoursForApi = Object.entries(venueAdditionalHours).reduce((acc, [key, value]) => ({
-      ...acc,
-      [key]: value  // Keep as string key for API
-    }), {} as Record<string, number>);
+  const buildCompleteData = useCallback(
+    (addons: SelectedAddon[]) => {
+      const venueHoursForApi = Object.entries(venueAdditionalHours).reduce(
+        (acc, [key, value]) => ({
+          ...acc,
+          [key]: value, // Keep as string key for API
+        }),
+        {} as Record<string, number>,
+      );
 
-    const dataToSend: AddonSelectionStepData = {
-      selected_addons: addons,
-    };
-
-    if (selectedVenues.length > 0 && Object.keys(venueHoursForApi).length > 0) {
-      dataToSend.venue_additional_hours = venueHoursForApi;
-    }
-
-    return dataToSend;
-  }, [venueAdditionalHours, selectedVenues.length]);
-
-  // Handle addon toggle - Fixed to use addon_id
-  const handleAddonToggle = useCallback((addon: ProductOption) => {
-    let newSelectedAddons: SelectedAddon[];
-
-    if (isAddonSelected(addon.id)) {
-      // Remove addon
-      newSelectedAddons = selectedAddons.filter(a => a.product_id !== addon.id);
-    } else {
-      // Check max selection limit
-      if (maxSelection > 0 && selectedAddons.length >= maxSelection) {
-        return; // Don't add if at max
-      }
-
-      // Add addon with tax information - Fixed to use addon_id
-      const newAddon: SelectedAddon = {
-        product_id: addon.id, // Fixed: Changed from 'id' to 'addon_id'
-        name: addon.name,
-        price: addon.base_price,
-        quantity: 1,
-        // CRITICAL: Include tax information for proper pricing calculation
-        is_tax_inclusive: addon.is_tax_inclusive, // Tax-inclusive flag from backend
-        price_with_tax: addon.price_with_tax, // Pre-calculated price including tax
+      const dataToSend: AddonSelectionStepData = {
+        selected_addons: addons,
       };
 
-      newSelectedAddons = [...selectedAddons, newAddon];
-    }
+      if (selectedVenues.length > 0 && Object.keys(venueHoursForApi).length > 0) {
+        dataToSend.venue_additional_hours = venueHoursForApi;
+      }
 
-    onDataChange(buildCompleteData(newSelectedAddons));
-  }, [selectedAddons, maxSelection, isAddonSelected, onDataChange, buildCompleteData]);
+      return dataToSend;
+    },
+    [venueAdditionalHours, selectedVenues.length],
+  );
+
+  // Handle addon toggle - Fixed to use addon_id
+  const handleAddonToggle = useCallback(
+    (addon: ProductOption) => {
+      let newSelectedAddons: SelectedAddon[];
+
+      if (isAddonSelected(addon.id)) {
+        // Remove addon
+        newSelectedAddons = selectedAddons.filter((a) => a.product_id !== addon.id);
+      } else {
+        // Check max selection limit
+        if (maxSelection > 0 && selectedAddons.length >= maxSelection) {
+          return; // Don't add if at max
+        }
+
+        // Add addon with tax information - Fixed to use addon_id
+        const newAddon: SelectedAddon = {
+          product_id: addon.id, // Fixed: Changed from 'id' to 'addon_id'
+          name: addon.name,
+          price: addon.base_price,
+          quantity: 1,
+          // CRITICAL: Include tax information for proper pricing calculation
+          is_tax_inclusive: addon.is_tax_inclusive, // Tax-inclusive flag from backend
+          price_with_tax: addon.price_with_tax, // Pre-calculated price including tax
+        };
+
+        newSelectedAddons = [...selectedAddons, newAddon];
+      }
+
+      onDataChange(buildCompleteData(newSelectedAddons));
+    },
+    [selectedAddons, maxSelection, isAddonSelected, onDataChange, buildCompleteData],
+  );
 
   // Handle quantity change - Fixed to use addon_id
-  const handleQuantityChange = useCallback((addonId: number, delta: number) => {
-    const addonConfig = availableAddons.find(a => a.id === addonId);
-    const maxQty = addonConfig?.maximum_quantity ?? Infinity;
+  const handleQuantityChange = useCallback(
+    (addonId: number, delta: number) => {
+      const addonConfig = availableAddons.find((a) => a.id === addonId);
+      const maxQty = addonConfig?.maximum_quantity ?? Infinity;
 
-    const newSelectedAddons = selectedAddons.map(addon => {
-      if (addon.product_id === addonId) {
-        const newQuantity = Math.max(1, Math.min(maxQty, addon.quantity + delta));
-        return { ...addon, quantity: newQuantity };
-      }
-      return addon;
-    });
+      const newSelectedAddons = selectedAddons.map((addon) => {
+        if (addon.product_id === addonId) {
+          const newQuantity = Math.max(1, Math.min(maxQty, addon.quantity + delta));
+          return { ...addon, quantity: newQuantity };
+        }
+        return addon;
+      });
 
-    // Only update data, don't trigger navigation
-    onDataChange(buildCompleteData(newSelectedAddons));
-  }, [selectedAddons, availableAddons, onDataChange, buildCompleteData]);
+      // Only update data, don't trigger navigation
+      onDataChange(buildCompleteData(newSelectedAddons));
+    },
+    [selectedAddons, availableAddons, onDataChange, buildCompleteData],
+  );
 
   // Effect to update venue hours when they change (without changing addons)
   React.useEffect(() => {
     if (selectedVenues.length > 0) {
       onDataChange(buildCompleteData(selectedAddons));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- Other deps intentionally excluded to avoid infinite loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Other deps intentionally excluded to avoid infinite loops
   }, [venueAdditionalHours]);
 
   // Validation status
   const validationStatus = useMemo(() => {
     const errors: string[] = [];
-    
+
     if (minSelection > 0 && selectedAddons.length < minSelection) {
       errors.push(`Must select at least ${minSelection} add-on${minSelection > 1 ? 's' : ''}`);
     }
-    
+
     if (maxSelection > 0 && selectedAddons.length > maxSelection) {
       errors.push(`Cannot select more than ${maxSelection} add-on${maxSelection > 1 ? 's' : ''}`);
     }
-    
+
     // Merge with external validation errors
-    const allErrors = [
-      ...errors,
-      ...Object.values(validationErrors).flat()
-    ];
-    
+    const allErrors = [...errors, ...Object.values(validationErrors).flat()];
+
     return {
       isValid: allErrors.length === 0,
-      errors: allErrors
+      errors: allErrors,
     };
   }, [selectedAddons, minSelection, maxSelection, validationErrors]);
 
@@ -209,9 +230,9 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
   const totals = useMemo(() => {
     const subtotal = selectedAddons.reduce((total, addon) => {
       const price = parseFloat(addon.price);
-      return total + (price * addon.quantity);
+      return total + price * addon.quantity;
     }, 0);
-    
+
     return {
       subtotal,
       formatted: ProductsApi.formatPrice(subtotal.toString()),
@@ -242,7 +263,8 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
             Additional Hours
           </Typography>
           <Typography variant="body2" color="text.secondary" gutterBottom>
-            Extend your time at any venue. These hours are in addition to what's included in your package.
+            Extend your time at any venue. These hours are in addition to what's included in your
+            package.
           </Typography>
 
           {selectedVenues.map((venue) => {
@@ -274,11 +296,7 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
                         All-day access included
                       </Typography>
                     </Box>
-                    <Chip
-                      label="All Day"
-                      color="success"
-                      size="small"
-                    />
+                    <Chip label="All Day" color="success" size="small" />
                   </Box>
                 </Paper>
               );
@@ -297,7 +315,9 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
                   <Box display="flex" alignItems="center" gap={2}>
                     <IconButton
                       size="small"
-                      onClick={() => handleVenueHoursChange(venue.id, Math.max(0, additionalHours - 1))}
+                      onClick={() =>
+                        handleVenueHoursChange(venue.id, Math.max(0, additionalHours - 1))
+                      }
                       disabled={additionalHours === 0}
                     >
                       <Remove />
@@ -309,7 +329,9 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
 
                     <IconButton
                       size="small"
-                      onClick={() => handleVenueHoursChange(venue.id, Math.min(10, additionalHours + 1))}
+                      onClick={() =>
+                        handleVenueHoursChange(venue.id, Math.min(10, additionalHours + 1))
+                      }
                       disabled={additionalHours >= 10}
                     >
                       <Add />
@@ -342,7 +364,7 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
 
       <Typography variant="body2" color="text.secondary" gutterBottom>
         {totalAddons === 0
-          ? "No add-ons are currently available."
+          ? 'No add-ons are currently available.'
           : `Choose additional services to enhance your event. ${minSelection > 0 ? `Minimum ${minSelection} required.` : 'All optional.'}`}
       </Typography>
 
@@ -383,16 +405,16 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
                   {category}
                 </Typography>
               )}
-              
+
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {(addons as ProductOption[]).map((addon) => {
                   const isSelected = isAddonSelected(addon.id);
                   const selectedAddon = getSelectedAddon(addon.id);
-                  
+
                   return (
                     <Card
                       key={addon.id}
-                      variant={isSelected ? "elevation" : "outlined"}
+                      variant={isSelected ? 'elevation' : 'outlined'}
                       sx={{
                         border: isSelected ? 2 : 1,
                         borderColor: isSelected ? 'secondary.main' : 'divider',
@@ -400,12 +422,16 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
                       }}
                     >
                       <CardContent>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                          }}
+                        >
                           <Box sx={{ flex: 1, mr: 2 }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                              <Typography variant="h6">
-                                {addon.name}
-                              </Typography>
+                              <Typography variant="h6">{addon.name}</Typography>
                               {addon.is_featured && (
                                 <Chip
                                   icon={<Star />}
@@ -415,37 +441,53 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
                                 />
                               )}
                             </Box>
-                            
+
                             {addon.description && (
                               <Typography variant="body2" color="text.secondary" paragraph>
                                 {addon.description}
                               </Typography>
                             )}
-                            
+
                             <Typography variant="h6" color="primary">
                               {formatPrice(addon.base_price)}
                               {addon.pricing_unit ? (
                                 <Typography component="span" variant="body2" color="text.secondary">
-                                  {' '}{addon.pricing_unit_display?.toLowerCase() || addon.pricing_unit.replace('PER_', 'per ').toLowerCase()}
+                                  {' '}
+                                  {addon.pricing_unit_display?.toLowerCase() ||
+                                    addon.pricing_unit.replace('PER_', 'per ').toLowerCase()}
                                 </Typography>
-                              ) : addon.pricing_model === 'HOURLY' && (
-                                <Typography component="span" variant="body2" color="text.secondary">
-                                  {' '}per hour
-                                </Typography>
+                              ) : (
+                                addon.pricing_model === 'HOURLY' && (
+                                  <Typography
+                                    component="span"
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    {' '}
+                                    per hour
+                                  </Typography>
+                                )
                               )}
                             </Typography>
                           </Box>
-                          
-                          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'flex-end',
+                              gap: 1,
+                            }}
+                          >
                             <Button
-                              variant={isSelected ? "contained" : "outlined"}
+                              variant={isSelected ? 'contained' : 'outlined'}
                               color="secondary"
                               onClick={() => handleAddonToggle(addon)}
                               startIcon={isSelected ? null : <Add />}
                             >
                               {isSelected ? 'Remove' : 'Add'}
                             </Button>
-                            
+
                             {isSelected && addon.allow_multiple && (
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <IconButton
@@ -461,7 +503,11 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
                                 <IconButton
                                   size="small"
                                   onClick={() => handleQuantityChange(addon.id, 1)}
-                                  disabled={addon.maximum_quantity ? (selectedAddon?.quantity ?? 1) >= addon.maximum_quantity : false}
+                                  disabled={
+                                    addon.maximum_quantity
+                                      ? (selectedAddon?.quantity ?? 1) >= addon.maximum_quantity
+                                      : false
+                                  }
                                 >
                                   <Add />
                                 </IconButton>
@@ -489,15 +535,16 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
         <Paper variant="outlined" sx={{ p: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
             <ShoppingCart />
-            <Typography variant="subtitle1">
-              Selected Add-ons
-            </Typography>
+            <Typography variant="subtitle1">Selected Add-ons</Typography>
           </Box>
-          
+
           <Divider sx={{ mb: 2 }} />
-          
+
           {selectedAddons.map((addon) => (
-            <Box key={addon.product_id} sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            <Box
+              key={addon.product_id}
+              sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}
+            >
               <Typography variant="body2">
                 {addon.name} {addon.quantity > 1 && `x${addon.quantity}`}
               </Typography>
@@ -506,9 +553,9 @@ export const AddonSelectionStep: React.FC<AddonSelectionStepProps> = ({
               </Typography>
             </Box>
           ))}
-          
+
           <Divider sx={{ my: 2 }} />
-          
+
           <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
             <Typography variant="subtitle2">Add-ons Subtotal</Typography>
             <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>

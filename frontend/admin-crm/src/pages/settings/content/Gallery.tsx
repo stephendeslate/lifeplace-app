@@ -1,36 +1,31 @@
 // Gallery Settings Page
 // Manages gallery photos for the public-facing website
 
-import React, { useState } from "react";
-import {
-  PhotoLibrary as GalleryIcon,
-  CloudUpload as UploadIcon,
-} from "@mui/icons-material";
-import { Box, Chip } from "@mui/material";
+import React, { useState } from 'react';
+import { PhotoLibrary as GalleryIcon, CloudUpload as UploadIcon } from '@mui/icons-material';
+import { Box, Chip } from '@mui/material';
 import {
   PermissionAwareSettingsPage,
   type SettingsPageConfig,
   type SettingsTableColumn,
-} from "../../../components/common/settings";
-import { useGalleryPhotos } from "../../../hooks/useGallery";
-import { useSettingsPagination } from "../../../hooks/useSettingsPagination";
-import { GalleryPhotoFormDialog } from "../../../components/gallery/GalleryPhotoFormDialog";
-import { BulkUploadDialog } from "../../../components/gallery/BulkUploadDialog";
-import type { GalleryPhoto } from "../../../types/gallery.types";
-import { GALLERY_CATEGORIES } from "../../../types/gallery.types";
-import type { ModernFormSection } from "../../../components/common/ModernForm";
+} from '../../../components/common/settings';
+import { useGalleryPhotos } from '../../../hooks/useGallery';
+import { useSettingsPagination } from '../../../hooks/useSettingsPagination';
+import { GalleryPhotoFormDialog } from '../../../components/gallery/GalleryPhotoFormDialog';
+import { BulkUploadDialog } from '../../../components/gallery/BulkUploadDialog';
+import type { GalleryPhoto } from '../../../types/gallery.types';
+import { GALLERY_CATEGORIES } from '../../../types/gallery.types';
+import type { ModernFormSection } from '../../../components/common/ModernForm';
 
 // Category label lookup
-const categoryLabelMap = Object.fromEntries(
-  GALLERY_CATEGORIES.map((c) => [c.value, c.label]),
-);
+const categoryLabelMap = Object.fromEntries(GALLERY_CATEGORIES.map((c) => [c.value, c.label]));
 
 // Table columns configuration
 const columns: SettingsTableColumn<GalleryPhoto>[] = [
   {
-    key: "image",
-    label: "Photo",
-    width: "80px",
+    key: 'image',
+    label: 'Photo',
+    width: '80px',
     render: (value) => (
       <Box
         component="img"
@@ -39,23 +34,23 @@ const columns: SettingsTableColumn<GalleryPhoto>[] = [
         sx={{
           width: 56,
           height: 40,
-          objectFit: "cover",
+          objectFit: 'cover',
           borderRadius: 1,
-          border: "1px solid",
-          borderColor: "divider",
+          border: '1px solid',
+          borderColor: 'divider',
         }}
       />
     ),
   },
   {
-    key: "title",
-    label: "Title",
+    key: 'title',
+    label: 'Title',
     sortable: true,
     searchable: true,
   },
   {
-    key: "category",
-    label: "Category",
+    key: 'category',
+    label: 'Category',
     render: (value) => (
       <Chip
         label={categoryLabelMap[String(value)] || String(value)}
@@ -65,38 +60,32 @@ const columns: SettingsTableColumn<GalleryPhoto>[] = [
     ),
   },
   {
-    key: "venue_name",
-    label: "Venue",
-    render: (value) => String(value) || "-",
+    key: 'venue_name',
+    label: 'Venue',
+    render: (value) => String(value) || '-',
   },
   {
-    key: "is_featured",
-    label: "Featured",
-    align: "center",
-    render: (value) =>
-      value ? <Chip label="Featured" size="small" color="primary" /> : "-",
+    key: 'is_featured',
+    label: 'Featured',
+    align: 'center',
+    render: (value) => (value ? <Chip label="Featured" size="small" color="primary" /> : '-'),
   },
   {
-    key: "is_active",
-    label: "Status",
-    align: "center",
+    key: 'is_active',
+    label: 'Status',
+    align: 'center',
     render: (value) =>
       value ? (
         <Chip label="Active" size="small" color="success" variant="outlined" />
       ) : (
-        <Chip
-          label="Inactive"
-          size="small"
-          color="default"
-          variant="outlined"
-        />
+        <Chip label="Inactive" size="small" color="default" variant="outlined" />
       ),
   },
   {
-    key: "sort_order",
-    label: "Order",
+    key: 'sort_order',
+    label: 'Order',
     sortable: true,
-    align: "center",
+    align: 'center',
   },
 ];
 
@@ -107,10 +96,10 @@ const formSections: ModernFormSection[] = [];
 // Default values for new gallery photos
 const defaultGalleryPhoto: GalleryPhoto = {
   id: 0,
-  image: "",
-  title: "",
-  description: "",
-  category: "GENERAL",
+  image: '',
+  title: '',
+  description: '',
+  category: 'GENERAL',
   venue: null,
   venue_name: null,
   event_type: null,
@@ -118,50 +107,49 @@ const defaultGalleryPhoto: GalleryPhoto = {
   is_featured: false,
   is_active: true,
   sort_order: 0,
-  created_at: "",
-  updated_at: "",
+  created_at: '',
+  updated_at: '',
 };
 
 // Settings page configuration
 const config: SettingsPageConfig<GalleryPhoto> = {
   page: {
-    title: "Gallery",
-    subtitle: "Manage photos displayed on your public website",
+    title: 'Gallery',
+    subtitle: 'Manage photos displayed on your public website',
     icon: React.createElement(GalleryIcon),
     breadcrumbs: [
-      { label: "Settings", href: "/settings" },
-      { label: "Content", href: "/settings/content" },
-      { label: "Gallery" },
+      { label: 'Settings', href: '/settings' },
+      { label: 'Content', href: '/settings/content' },
+      { label: 'Gallery' },
     ],
   },
 
   table: {
     columns,
-    searchFields: ["title", "description"],
+    searchFields: ['title', 'description'],
     filters: [
       {
-        key: "category",
-        label: "Category",
+        key: 'category',
+        label: 'Category',
         options: GALLERY_CATEGORIES.map((c) => ({
           value: c.value,
           label: c.label,
         })),
       },
     ],
-    defaultSort: { key: "sort_order", order: "asc" },
+    defaultSort: { key: 'sort_order', order: 'asc' },
     emptyState: {
       icon: React.createElement(GalleryIcon),
-      title: "No Gallery Photos",
-      description:
-        "Add photos to showcase your venues and events on the public website.",
+      title: 'No Gallery Photos',
+      description: 'Add photos to showcase your venues and events on the public website.',
     },
   },
 
   form: {
-    title: "Gallery Photo",
-    subtitle: "Upload and configure a gallery photo.",
+    title: 'Gallery Photo',
+    subtitle: 'Upload and configure a gallery photo.',
     sections: formSections,
-    maxWidth: "sm",
+    maxWidth: 'sm',
   },
 
   features: {
@@ -224,10 +212,8 @@ export const Gallery = () => {
     });
   };
 
-  const handleFetchItem = async (
-    id: string | number,
-  ): Promise<GalleryPhoto> => {
-    const { galleryApi } = await import("../../../apis/gallery.api");
+  const handleFetchItem = async (id: string | number): Promise<GalleryPhoto> => {
+    const { galleryApi } = await import('../../../apis/gallery.api');
     return galleryApi.getGalleryPhoto(Number(id));
   };
 
@@ -235,7 +221,7 @@ export const Gallery = () => {
     <>
       <PermissionAwareSettingsPage
         config={config}
-        requiredPermissions={["can_manage_booking_flows"]}
+        requiredPermissions={['can_manage_booking_flows']}
         data={galleryPhotos}
         defaultValues={defaultGalleryPhoto}
         isLoading={isLoadingGalleryPhotos}
@@ -262,11 +248,11 @@ export const Gallery = () => {
         customHeaderActions={[
           {
             icon: React.createElement(UploadIcon),
-            label: "Bulk Upload",
+            label: 'Bulk Upload',
             onClick: () => setBulkUploadOpen(true),
-            variant: "outlined",
-            color: "primary",
-            tooltip: "Upload multiple photos at once",
+            variant: 'outlined',
+            color: 'primary',
+            tooltip: 'Upload multiple photos at once',
           },
         ]}
         customFormRenderer={({ open, onClose, item }) => (

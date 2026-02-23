@@ -139,8 +139,12 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({ tokenId })
         navigate('/login');
       }, 2000);
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { detail?: string; password_feedback?: string[] } }; message?: string };
-      const errorMessage = err?.response?.data?.detail || err.message || 'Failed to reset password. Please try again.';
+      const err = error as {
+        response?: { data?: { detail?: string; password_feedback?: string[] } };
+        message?: string;
+      };
+      const errorMessage =
+        err?.response?.data?.detail || err.message || 'Failed to reset password. Please try again.';
       const feedback = err?.response?.data?.password_feedback || [];
 
       setSubmitError(errorMessage);

@@ -27,9 +27,9 @@ export const safeBlyurActiveElement = (): void => {
  * @param delay - Optional delay before focusing (useful after dialog animations)
  */
 export const safeFocusElement = (
-  element: HTMLElement | null, 
+  element: HTMLElement | null,
   fallbackElement?: HTMLElement | null,
-  delay: number = 0
+  delay: number = 0,
 ): void => {
   const focusAction = () => {
     try {
@@ -37,7 +37,7 @@ export const safeFocusElement = (
         element.focus();
         return;
       }
-      
+
       if (fallbackElement && document.contains(fallbackElement)) {
         fallbackElement.focus();
         return;
@@ -68,15 +68,17 @@ export const safeFocusElement = (
  */
 export const storeFocusedElement = (): HTMLElement | null => {
   const activeElement = document.activeElement as HTMLElement;
-  
+
   // Don't store focus for temporary elements or elements inside dialogs
-  if (activeElement && 
-      activeElement !== document.body && 
-      !activeElement.closest('[role="dialog"]') &&
-      !activeElement.closest('.MuiModal-root')) {
+  if (
+    activeElement &&
+    activeElement !== document.body &&
+    !activeElement.closest('[role="dialog"]') &&
+    !activeElement.closest('.MuiModal-root')
+  ) {
     return activeElement;
   }
-  
+
   return null;
 };
 
@@ -91,18 +93,18 @@ export const createDialogCloseHandler = (
   onClose: () => void,
   storedFocusElement: HTMLElement | null,
   fallbackElement?: HTMLElement | null,
-  isLoading: boolean = false
+  isLoading: boolean = false,
 ) => {
   return () => {
     if (isLoading) return;
 
     // Clear focus from dialog elements first
     safeBlyurActiveElement();
-    
+
     // Close the dialog
     setTimeout(() => {
       onClose();
-      
+
       // Restore focus after dialog close animation
       setTimeout(() => {
         safeFocusElement(storedFocusElement, fallbackElement, 0);
@@ -116,10 +118,7 @@ export const createDialogCloseHandler = (
  * @param ariaLabelledBy - ID of the element that labels the dialog
  * @param ariaDescribedBy - ID of the element that describes the dialog
  */
-export const getEnhancedDialogProps = (
-  ariaLabelledBy?: string,
-  ariaDescribedBy?: string
-) => ({
+export const getEnhancedDialogProps = (ariaLabelledBy?: string, ariaDescribedBy?: string) => ({
   disableRestoreFocus: false,
   disableEnforceFocus: false,
   keepMounted: false,
@@ -136,11 +135,11 @@ export const getEnhancedDialogProps = (
 export const createMenuCloseHandler = (
   setMenuAnchor: (anchor: null) => void,
   triggerButtonRef: React.RefObject<HTMLElement>,
-  shouldRestoreFocus: boolean = true
+  shouldRestoreFocus: boolean = true,
 ) => {
   return () => {
     setMenuAnchor(null);
-    
+
     if (shouldRestoreFocus) {
       // Small delay to ensure menu is closed before focusing
       setTimeout(() => {
@@ -155,10 +154,7 @@ export const createMenuCloseHandler = (
  * @param event - Keyboard event
  * @param onActivate - Function to call when Enter or Space is pressed
  */
-export const handleKeyboardActivation = (
-  event: React.KeyboardEvent,
-  onActivate: () => void
-) => {
+export const handleKeyboardActivation = (event: React.KeyboardEvent, onActivate: () => void) => {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault();
     onActivate();
@@ -173,7 +169,7 @@ export const getFocusVisibleStyles = (theme?: { palette?: { primary?: { main?: s
     outline: '2px solid',
     outlineColor: theme?.palette?.primary?.main || '#0087ff',
     outlineOffset: '2px',
-  }
+  },
 });
 
 /**
@@ -206,7 +202,7 @@ export const isElementInDialog = (element: HTMLElement): boolean => {
 export const handleEscapeKey = (
   event: React.KeyboardEvent,
   onEscape: () => void,
-  isLoading: boolean = false
+  isLoading: boolean = false,
 ) => {
   if (event.key === 'Escape' && !isLoading) {
     event.preventDefault();

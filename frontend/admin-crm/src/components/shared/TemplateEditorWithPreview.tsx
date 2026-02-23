@@ -247,14 +247,8 @@ export const TemplateEditorWithPreview: React.FC<TemplateEditorWithPreviewProps>
       </Box>
 
       {/* Divider */}
-      <Divider
-        orientation="vertical"
-        flexItem
-        sx={{ display: { xs: 'none', md: 'block' } }}
-      />
-      <Divider
-        sx={{ display: { xs: 'block', md: 'none' } }}
-      />
+      <Divider orientation="vertical" flexItem sx={{ display: { xs: 'none', md: 'block' } }} />
+      <Divider sx={{ display: { xs: 'block', md: 'none' } }} />
 
       {/* Right Panel: Preview */}
       <Box
@@ -289,11 +283,12 @@ export const TemplateEditorWithPreview: React.FC<TemplateEditorWithPreviewProps>
             </Tooltip>
 
             <Tooltip title={showVariables ? 'Hide variables' : 'Edit preview variables'}>
-              <IconButton
-                size="small"
-                onClick={() => setShowVariables(!showVariables)}
-              >
-                {showVariables ? <CollapseIcon fontSize="small" /> : <ExpandIcon fontSize="small" />}
+              <IconButton size="small" onClick={() => setShowVariables(!showVariables)}>
+                {showVariables ? (
+                  <CollapseIcon fontSize="small" />
+                ) : (
+                  <ExpandIcon fontSize="small" />
+                )}
               </IconButton>
             </Tooltip>
           </Box>

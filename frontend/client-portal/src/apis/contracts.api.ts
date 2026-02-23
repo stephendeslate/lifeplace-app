@@ -12,7 +12,7 @@ import type {
   SignatureRole,
 } from '../types/contracts.types';
 
-// Interface for detailed contract status  
+// Interface for detailed contract status
 export interface DetailedContractStatus {
   contract_id: string;
   status: ContractStatus;
@@ -38,17 +38,20 @@ export interface DetailedContractStatus {
 // Transform API response to frontend Contract format
 const transformContractResponse = (apiResponse: ContractApiResponse): Contract => {
   // Handle event data - can be either an ID or a full object
-  const eventData = typeof apiResponse.event === 'object' ? {
-    id: apiResponse.event.id.toString(),
-    title: apiResponse.event.name || `Event #${apiResponse.event.id}`,
-    date: apiResponse.event.start_date || '',
-    status: apiResponse.event.status || '',
-  } : {
-    id: apiResponse.event.toString(),
-    title: `Event #${apiResponse.event}`, // Fallback when only ID is provided
-    date: '', 
-    status: '',
-  };
+  const eventData =
+    typeof apiResponse.event === 'object'
+      ? {
+          id: apiResponse.event.id.toString(),
+          title: apiResponse.event.name || `Event #${apiResponse.event.id}`,
+          date: apiResponse.event.start_date || '',
+          status: apiResponse.event.status || '',
+        }
+      : {
+          id: apiResponse.event.toString(),
+          title: `Event #${apiResponse.event}`, // Fallback when only ID is provided
+          date: '',
+          status: '',
+        };
 
   // Type for extended API response with all optional fields
   type ExtendedApiResponse = ContractApiResponse & {
@@ -72,7 +75,9 @@ const transformContractResponse = (apiResponse: ContractApiResponse): Contract =
       name: apiResponse.template_name,
       description: '',
       requires_signature: true, // Default assumption
-      signature_requirements: Array.from(new Set(extResponse.signatures?.map(s => s.role) || ['CLIENT'])), // Extract actual roles from signatures
+      signature_requirements: Array.from(
+        new Set(extResponse.signatures?.map((s) => s.role) || ['CLIENT']),
+      ), // Extract actual roles from signatures
     },
     status: apiResponse.status,
     content: extResponse.content || '', // Content may be missing in list endpoints
@@ -87,15 +92,22 @@ const transformContractResponse = (apiResponse: ContractApiResponse): Contract =
     amendment_number: apiResponse.amendment_number,
     signatures: extResponse.signatures || [], // May be missing in list endpoints
     is_fully_signed: apiResponse.is_fully_signed,
-    signature_progress: extResponse.signature_progress ? {
-      total_required: extResponse.signature_progress.total_required,
-      signed_count: extResponse.signature_progress.signed_count,
-      percentage: extResponse.signature_progress.percentage,
-      required_roles: ((extResponse.signature_progress as { required_roles?: string[] }).required_roles || []) as SignatureRole[],
-      signed_roles: ((extResponse.signature_progress as { signed_roles?: string[] }).signed_roles || []) as SignatureRole[],
-      missing_roles: ((extResponse.signature_progress as { missing_roles?: string[] }).missing_roles || []) as SignatureRole[],
-    } : undefined,
-    can_client_sign: extResponse.can_client_sign ?? (apiResponse.status === 'SENT' && !apiResponse.is_fully_signed),
+    signature_progress: extResponse.signature_progress
+      ? {
+          total_required: extResponse.signature_progress.total_required,
+          signed_count: extResponse.signature_progress.signed_count,
+          percentage: extResponse.signature_progress.percentage,
+          required_roles: ((extResponse.signature_progress as { required_roles?: string[] })
+            .required_roles || []) as SignatureRole[],
+          signed_roles: ((extResponse.signature_progress as { signed_roles?: string[] })
+            .signed_roles || []) as SignatureRole[],
+          missing_roles: ((extResponse.signature_progress as { missing_roles?: string[] })
+            .missing_roles || []) as SignatureRole[],
+        }
+      : undefined,
+    can_client_sign:
+      extResponse.can_client_sign ??
+      (apiResponse.status === 'SENT' && !apiResponse.is_fully_signed),
     // Expiry-related fields from backend
     is_expired: extResponse.is_expired,
     is_expiring_soon: extResponse.is_expiring_soon,
@@ -113,7 +125,7 @@ export const contractsApi = {
   getContracts: async (): Promise<Contract[]> => {
     const response = await api.get('/contracts/client/contracts/');
     const data = response.data as { results?: ContractApiResponse[] } | ContractApiResponse[];
-    const apiContracts = Array.isArray(data) ? data : (data.results || []);
+    const apiContracts = Array.isArray(data) ? data : data.results || [];
     return apiContracts.map(transformContractResponse);
   },
 
@@ -140,8 +152,14 @@ export const contractsApi = {
   },
 
   // Submit a signature for a contract
-  signContract: async (contractId: string, signatureData: SignatureSubmission): Promise<Contract> => {
-    const response = await api.post(`/contracts/client/contracts/${contractId}/sign/`, signatureData);
+  signContract: async (
+    contractId: string,
+    signatureData: SignatureSubmission,
+  ): Promise<Contract> => {
+    const response = await api.post(
+      `/contracts/client/contracts/${contractId}/sign/`,
+      signatureData,
+    );
     return transformContractResponse(response.data as ContractApiResponse);
   },
 
@@ -151,7 +169,7 @@ export const contractsApi = {
       const response = await api.get(`/contracts/client/contracts/${contractId}/download_pdf/`, {
         responseType: 'blob',
       });
-      
+
       // Check if the response is actually an error (JSON) instead of a PDF
       const dataBlob = response.data as Blob;
       if (dataBlob.type === 'application/json') {
@@ -160,13 +178,13 @@ export const contractsApi = {
         const errorData = JSON.parse(text);
         throw new Error(errorData.detail || errorData.error || 'Failed to download contract');
       }
-      
+
       return response.data as Blob;
     } catch (error: unknown) {
       // If it's an axios error with a blob response, try to parse it
       if ((error as { response?: { data?: Blob } }).response?.data instanceof Blob) {
         try {
-          const text = await ((error as { response: { data: Blob } }).response.data.text());
+          const text = await (error as { response: { data: Blob } }).response.data.text();
           const errorData = JSON.parse(text);
           throw new Error(errorData.detail || errorData.error || 'Failed to download contract');
         } catch (_parseError) {
@@ -182,7 +200,7 @@ export const contractsApi = {
   getContractSignatures: async (contractId: string): Promise<ContractSignature[]> => {
     const response = await api.get(`/contracts/client/signatures/?contract=${contractId}`);
     const data = response.data as { results?: ContractSignature[] } | ContractSignature[];
-    return Array.isArray(data) ? data : (data.results || []);
+    return Array.isArray(data) ? data : data.results || [];
   },
 
   // Get current user's signatures
@@ -213,7 +231,9 @@ export const contractUtils = {
   },
 
   // Get contract status color
-  getStatusColor: (status: Contract['status']): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
+  getStatusColor: (
+    status: Contract['status'],
+  ): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (status) {
       case 'DRAFT':
         return 'default';
@@ -284,7 +304,7 @@ export const contractUtils = {
       ctx.font = '14px Arial';
       ctx.fillText('Device fingerprint', 2, 2);
     }
-    
+
     const fingerprint = {
       userAgent: navigator.userAgent,
       language: navigator.language,
@@ -295,7 +315,7 @@ export const contractUtils = {
       canvas: canvas.toDataURL(),
       timestamp: Date.now(),
     };
-    
+
     return btoa(JSON.stringify(fingerprint));
   },
 
@@ -306,13 +326,14 @@ export const contractUtils = {
         hasData: !!signatureData,
         dataType: typeof signatureData,
         dataLength: signatureData?.length || 0,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
     }
 
     // Basic validation - signature should be a non-empty string
     if (!signatureData || signatureData.trim().length === 0) {
-      if (import.meta.env.DEV) console.log('🔍 VALIDATE SIGNATURE: FAILED - No data or empty string');
+      if (import.meta.env.DEV)
+        console.log('🔍 VALIDATE SIGNATURE: FAILED - No data or empty string');
       return false;
     }
 
@@ -322,7 +343,8 @@ export const contractUtils = {
       const base64Data = signatureData.split(',')[1];
 
       if (!base64Data) {
-        if (import.meta.env.DEV) console.log('🔍 VALIDATE SIGNATURE: FAILED - No base64 data after comma');
+        if (import.meta.env.DEV)
+          console.log('🔍 VALIDATE SIGNATURE: FAILED - No base64 data after comma');
         return false;
       }
 
@@ -333,12 +355,13 @@ export const contractUtils = {
           console.log('🔍 VALIDATE SIGNATURE: Base64 validation', {
             base64Length: base64Data.length,
             isValid,
-            minLength: 100
+            minLength: 100,
           });
         }
         return isValid;
       } catch (error) {
-        if (import.meta.env.DEV) console.log('🔍 VALIDATE SIGNATURE: FAILED - Invalid base64 data', error);
+        if (import.meta.env.DEV)
+          console.log('🔍 VALIDATE SIGNATURE: FAILED - Invalid base64 data', error);
         return false;
       }
     }
@@ -348,7 +371,7 @@ export const contractUtils = {
       console.log('🔍 VALIDATE SIGNATURE: Non-image data validation', {
         dataLength: signatureData.length,
         isValid,
-        minLength: 50
+        minLength: 50,
       });
     }
 

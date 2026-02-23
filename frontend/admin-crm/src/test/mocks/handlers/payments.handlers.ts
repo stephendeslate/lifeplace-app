@@ -1,4 +1,4 @@
-import { http, HttpResponse, delay } from "msw";
+import { http, HttpResponse, delay } from 'msw';
 import {
   mockGateways,
   mockTaxRates,
@@ -9,14 +9,10 @@ import {
   createMockPayment,
   createMockInvoice,
   createMockRefund,
-} from "../data/payments.mock";
-import type {
-  PaymentGateway,
-  TaxRate,
-  Payment,
-} from "../../../types/payments.types";
+} from '../data/payments.mock';
+import type { PaymentGateway, TaxRate, Payment } from '../../../types/payments.types';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
 let gatewaysStore: PaymentGateway[] = [...mockGateways];
 let taxRatesStore: TaxRate[] = [...mockTaxRates];
@@ -46,10 +42,7 @@ export const paymentsHandlers = [
 
   http.get(`${BASE_URL}/payments/gateways/health/`, async () => {
     await delay(30);
-    const health: Record<
-      number,
-      ReturnType<typeof createMockGatewayHealth>
-    > = {};
+    const health: Record<number, ReturnType<typeof createMockGatewayHealth>> = {};
     gatewaysStore.forEach((g) => {
       health[g.id] = createMockGatewayHealth(g.id);
     });
@@ -68,31 +61,28 @@ export const paymentsHandlers = [
     return HttpResponse.json(newGateway, { status: 201 });
   }),
 
-  http.put(
-    `${BASE_URL}/payments/gateways/:id/`,
-    async ({ params, request }) => {
-      await delay(50);
-      const id = Number(params.id);
-      const body = (await request.json()) as Record<string, unknown>;
-      const idx = gatewaysStore.findIndex((g) => g.id === id);
-      if (idx === -1) {
-        return HttpResponse.json({ detail: "Not found." }, { status: 404 });
-      }
-      gatewaysStore[idx] = {
-        ...gatewaysStore[idx],
-        ...body,
-        updated_at: new Date().toISOString(),
-      };
-      return HttpResponse.json(gatewaysStore[idx]);
-    },
-  ),
+  http.put(`${BASE_URL}/payments/gateways/:id/`, async ({ params, request }) => {
+    await delay(50);
+    const id = Number(params.id);
+    const body = (await request.json()) as Record<string, unknown>;
+    const idx = gatewaysStore.findIndex((g) => g.id === id);
+    if (idx === -1) {
+      return HttpResponse.json({ detail: 'Not found.' }, { status: 404 });
+    }
+    gatewaysStore[idx] = {
+      ...gatewaysStore[idx],
+      ...body,
+      updated_at: new Date().toISOString(),
+    };
+    return HttpResponse.json(gatewaysStore[idx]);
+  }),
 
   http.delete(`${BASE_URL}/payments/gateways/:id/`, async ({ params }) => {
     await delay(30);
     const id = Number(params.id);
     const idx = gatewaysStore.findIndex((g) => g.id === id);
     if (idx === -1) {
-      return HttpResponse.json({ detail: "Not found." }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found.' }, { status: 404 });
     }
     gatewaysStore.splice(idx, 1);
     return new HttpResponse(null, { status: 204 });
@@ -125,31 +115,28 @@ export const paymentsHandlers = [
     return HttpResponse.json(newRate, { status: 201 });
   }),
 
-  http.put(
-    `${BASE_URL}/payments/tax-rates/:id/`,
-    async ({ params, request }) => {
-      await delay(50);
-      const id = Number(params.id);
-      const body = (await request.json()) as Record<string, unknown>;
-      const idx = taxRatesStore.findIndex((t) => t.id === id);
-      if (idx === -1) {
-        return HttpResponse.json({ detail: "Not found." }, { status: 404 });
-      }
-      taxRatesStore[idx] = {
-        ...taxRatesStore[idx],
-        ...body,
-        updated_at: new Date().toISOString(),
-      };
-      return HttpResponse.json(taxRatesStore[idx]);
-    },
-  ),
+  http.put(`${BASE_URL}/payments/tax-rates/:id/`, async ({ params, request }) => {
+    await delay(50);
+    const id = Number(params.id);
+    const body = (await request.json()) as Record<string, unknown>;
+    const idx = taxRatesStore.findIndex((t) => t.id === id);
+    if (idx === -1) {
+      return HttpResponse.json({ detail: 'Not found.' }, { status: 404 });
+    }
+    taxRatesStore[idx] = {
+      ...taxRatesStore[idx],
+      ...body,
+      updated_at: new Date().toISOString(),
+    };
+    return HttpResponse.json(taxRatesStore[idx]);
+  }),
 
   http.delete(`${BASE_URL}/payments/tax-rates/:id/`, async ({ params }) => {
     await delay(30);
     const id = Number(params.id);
     const idx = taxRatesStore.findIndex((t) => t.id === id);
     if (idx === -1) {
-      return HttpResponse.json({ detail: "Not found." }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found.' }, { status: 404 });
     }
     taxRatesStore.splice(idx, 1);
     return new HttpResponse(null, { status: 204 });
@@ -160,9 +147,9 @@ export const paymentsHandlers = [
   http.get(`${BASE_URL}/payments/payments/`, async ({ request }) => {
     await delay(50);
     const url = new URL(request.url);
-    const status = url.searchParams.get("status");
-    const page = Number(url.searchParams.get("page") || 1);
-    const pageSize = Number(url.searchParams.get("page_size") || 25);
+    const status = url.searchParams.get('status');
+    const page = Number(url.searchParams.get('page') || 1);
+    const pageSize = Number(url.searchParams.get('page_size') || 25);
 
     let filtered = [...paymentsStore];
     if (status) {
@@ -195,24 +182,21 @@ export const paymentsHandlers = [
     return HttpResponse.json(newPayment, { status: 201 });
   }),
 
-  http.patch(
-    `${BASE_URL}/payments/payments/:id/`,
-    async ({ params, request }) => {
-      await delay(50);
-      const id = Number(params.id);
-      const body = (await request.json()) as Record<string, unknown>;
-      const idx = paymentsStore.findIndex((p) => p.id === id);
-      if (idx === -1) {
-        return HttpResponse.json({ detail: "Not found." }, { status: 404 });
-      }
-      paymentsStore[idx] = {
-        ...paymentsStore[idx],
-        ...body,
-        updated_at: new Date().toISOString(),
-      };
-      return HttpResponse.json(paymentsStore[idx]);
-    },
-  ),
+  http.patch(`${BASE_URL}/payments/payments/:id/`, async ({ params, request }) => {
+    await delay(50);
+    const id = Number(params.id);
+    const body = (await request.json()) as Record<string, unknown>;
+    const idx = paymentsStore.findIndex((p) => p.id === id);
+    if (idx === -1) {
+      return HttpResponse.json({ detail: 'Not found.' }, { status: 404 });
+    }
+    paymentsStore[idx] = {
+      ...paymentsStore[idx],
+      ...body,
+      updated_at: new Date().toISOString(),
+    };
+    return HttpResponse.json(paymentsStore[idx]);
+  }),
 
   // === Invoices ===
 
@@ -220,7 +204,7 @@ export const paymentsHandlers = [
     await delay(50);
     return HttpResponse.json([
       createMockInvoice({ id: 1 }),
-      createMockInvoice({ id: 2, status: "PAID" as never }),
+      createMockInvoice({ id: 2, status: 'PAID' as never }),
     ]);
   }),
 
@@ -236,8 +220,8 @@ export const paymentsHandlers = [
   http.post(`${BASE_URL}/payments/invoices/:id/send_invoice/`, async () => {
     await delay(30);
     return HttpResponse.json({
-      detail: "Invoice sent successfully.",
-      status: "sent",
+      detail: 'Invoice sent successfully.',
+      status: 'sent',
     });
   }),
 
@@ -269,23 +253,23 @@ export const paymentsHandlers = [
       {
         id: 1,
         event: 1,
-        total_amount: "50000.00",
-        down_payment_amount: "10000.00",
-        currency: "PHP",
-        down_payment_due_date: "2024-06-15",
+        total_amount: '50000.00',
+        down_payment_amount: '10000.00',
+        currency: 'PHP',
+        down_payment_due_date: '2024-06-15',
         number_of_installments: 4,
-        frequency: "MONTHLY",
-        frequency_display: "Monthly",
-        notes: "",
+        frequency: 'MONTHLY',
+        frequency_display: 'Monthly',
+        notes: '',
         quote: null,
         installments: [],
-        paid_amount: "10000.00",
-        remaining_balance: "40000.00",
-        status: "ACTIVE",
+        paid_amount: '10000.00',
+        remaining_balance: '40000.00',
+        status: 'ACTIVE',
         is_overdue: false,
-        next_payment_date: "2024-07-15",
-        created_at: "2024-06-15T10:00:00Z",
-        updated_at: "2024-06-15T10:00:00Z",
+        next_payment_date: '2024-07-15',
+        created_at: '2024-06-15T10:00:00Z',
+        updated_at: '2024-06-15T10:00:00Z',
       },
     ]);
   }),
@@ -297,7 +281,7 @@ export const paymentsHandlers = [
     return HttpResponse.json([
       {
         id: 1,
-        default_currency: "PHP",
+        default_currency: 'PHP',
         allow_partial_payments: true,
         auto_send_receipts: true,
         payment_due_days: 30,

@@ -9,7 +9,7 @@ and signal handlers.
 
 import logging
 from datetime import date, datetime
-from typing import Optional
+
 from django.utils import timezone
 
 from asgiref.sync import async_to_sync
@@ -18,7 +18,7 @@ from channels.layers import get_channel_layer
 logger = logging.getLogger(__name__)
 
 # Must match the group name in AvailabilityConsumer
-AVAILABILITY_GROUP = 'availability_updates'
+AVAILABILITY_GROUP = "availability_updates"
 
 
 class AvailabilityWebSocketService:
@@ -44,11 +44,7 @@ class AvailabilityWebSocketService:
     """
 
     @staticmethod
-    def broadcast_date_blocked(
-        date: date,
-        blocking_event_id: int,
-        reason: str = 'PAYMENT_COMPLETED'
-    ) -> bool:
+    def broadcast_date_blocked(date: date, blocking_event_id: int, reason: str = "PAYMENT_COMPLETED") -> bool:
         """
         Broadcast that a date has been blocked.
 
@@ -68,25 +64,20 @@ class AvailabilityWebSocketService:
                 return False
 
             # Convert date to string for JSON serialization
-            date_str = date.isoformat() if hasattr(date, 'isoformat') else str(date)
+            date_str = date.isoformat() if hasattr(date, "isoformat") else str(date)
 
             message = {
-                'type': 'date_blocked',
-                'date': date_str,
-                'event_id': blocking_event_id,
-                'reason': reason,
-                'timestamp': timezone.now().isoformat()
+                "type": "date_blocked",
+                "date": date_str,
+                "event_id": blocking_event_id,
+                "reason": reason,
+                "timestamp": timezone.now().isoformat(),
             }
 
             # Use async_to_sync to call async channel layer method
-            async_to_sync(channel_layer.group_send)(
-                AVAILABILITY_GROUP,
-                message
-            )
+            async_to_sync(channel_layer.group_send)(AVAILABILITY_GROUP, message)
 
-            logger.info(
-                f"Broadcast date_blocked: {date_str} by event {blocking_event_id}"
-            )
+            logger.info(f"Broadcast date_blocked: {date_str} by event {blocking_event_id}")
             return True
 
         except Exception as e:
@@ -94,10 +85,7 @@ class AvailabilityWebSocketService:
             return False
 
     @staticmethod
-    def broadcast_date_released(
-        date: date,
-        reason: str = 'RELEASED'
-    ) -> bool:
+    def broadcast_date_released(date: date, reason: str = "RELEASED") -> bool:
         """
         Broadcast that a date has been released.
 
@@ -115,19 +103,16 @@ class AvailabilityWebSocketService:
                 logger.warning("Channel layer not configured, cannot broadcast date_released")
                 return False
 
-            date_str = date.isoformat() if hasattr(date, 'isoformat') else str(date)
+            date_str = date.isoformat() if hasattr(date, "isoformat") else str(date)
 
             message = {
-                'type': 'date_released',
-                'date': date_str,
-                'reason': reason,
-                'timestamp': timezone.now().isoformat()
+                "type": "date_released",
+                "date": date_str,
+                "reason": reason,
+                "timestamp": timezone.now().isoformat(),
             }
 
-            async_to_sync(channel_layer.group_send)(
-                AVAILABILITY_GROUP,
-                message
-            )
+            async_to_sync(channel_layer.group_send)(AVAILABILITY_GROUP, message)
 
             logger.info(f"Broadcast date_released: {date_str} (reason: {reason})")
             return True
@@ -137,10 +122,7 @@ class AvailabilityWebSocketService:
             return False
 
     @staticmethod
-    def broadcast_reservation_created(
-        date: date,
-        expires_at: datetime
-    ) -> bool:
+    def broadcast_reservation_created(date: date, expires_at: datetime) -> bool:
         """
         Broadcast that a temporary reservation has been created.
 
@@ -161,20 +143,17 @@ class AvailabilityWebSocketService:
                 logger.debug("Channel layer not configured, cannot broadcast reservation_created")
                 return False
 
-            date_str = date.isoformat() if hasattr(date, 'isoformat') else str(date)
-            expires_str = expires_at.isoformat() if hasattr(expires_at, 'isoformat') else str(expires_at)
+            date_str = date.isoformat() if hasattr(date, "isoformat") else str(date)
+            expires_str = expires_at.isoformat() if hasattr(expires_at, "isoformat") else str(expires_at)
 
             message = {
-                'type': 'reservation_created',
-                'date': date_str,
-                'expires_at': expires_str,
-                'timestamp': timezone.now().isoformat()
+                "type": "reservation_created",
+                "date": date_str,
+                "expires_at": expires_str,
+                "timestamp": timezone.now().isoformat(),
             }
 
-            async_to_sync(channel_layer.group_send)(
-                AVAILABILITY_GROUP,
-                message
-            )
+            async_to_sync(channel_layer.group_send)(AVAILABILITY_GROUP, message)
 
             logger.debug(f"Broadcast reservation_created: {date_str}")
             return True
@@ -184,10 +163,7 @@ class AvailabilityWebSocketService:
             return False
 
     @staticmethod
-    def broadcast_reservation_released(
-        date: date,
-        reason: str = 'RELEASED'
-    ) -> bool:
+    def broadcast_reservation_released(date: date, reason: str = "RELEASED") -> bool:
         """
         Broadcast that a temporary reservation has been released.
 
@@ -205,19 +181,16 @@ class AvailabilityWebSocketService:
                 logger.debug("Channel layer not configured, cannot broadcast reservation_released")
                 return False
 
-            date_str = date.isoformat() if hasattr(date, 'isoformat') else str(date)
+            date_str = date.isoformat() if hasattr(date, "isoformat") else str(date)
 
             message = {
-                'type': 'reservation_released',
-                'date': date_str,
-                'reason': reason,
-                'timestamp': timezone.now().isoformat()
+                "type": "reservation_released",
+                "date": date_str,
+                "reason": reason,
+                "timestamp": timezone.now().isoformat(),
             }
 
-            async_to_sync(channel_layer.group_send)(
-                AVAILABILITY_GROUP,
-                message
-            )
+            async_to_sync(channel_layer.group_send)(AVAILABILITY_GROUP, message)
 
             logger.debug(f"Broadcast reservation_released: {date_str}")
             return True

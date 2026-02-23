@@ -7,11 +7,13 @@ Based on actual models in core/domains/users/models.py:
 - AdminInvitation (UUID primary key, 7-day expiration)
 """
 
-import factory
-from factory.django import DjangoModelFactory
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from datetime import timedelta
+
+import factory
+from factory.django import DjangoModelFactory
 
 User = get_user_model()
 
@@ -28,10 +30,10 @@ class UserFactory(DjangoModelFactory):
         model = User
         skip_postgeneration_save = True
 
-    email = factory.Sequence(lambda n: f'user{n}@example.com')
-    first_name = factory.Faker('first_name')
-    last_name = factory.Faker('last_name')
-    role = 'CLIENT'
+    email = factory.Sequence(lambda n: f"user{n}@example.com")
+    first_name = factory.Faker("first_name")
+    last_name = factory.Faker("last_name")
+    role = "CLIENT"
     is_active = True
     is_staff = False
     admin_permissions = factory.LazyFunction(dict)
@@ -42,47 +44,38 @@ class UserFactory(DjangoModelFactory):
         Use create_user manager method to properly hash password.
         This matches how the actual User model creates users.
         """
-        password = kwargs.pop('password', 'testpass123')
-        user = model_class.objects.create_user(
-            password=password,
-            **kwargs
-        )
+        password = kwargs.pop("password", "testpass123")
+        user = model_class.objects.create_user(password=password, **kwargs)
         return user
 
     class Params:
         """Traits for common user configurations."""
 
-        admin = factory.Trait(
-            role='ADMIN',
-            is_staff=True,
-            email=factory.Sequence(lambda n: f'admin{n}@example.com')
-        )
+        admin = factory.Trait(role="ADMIN", is_staff=True, email=factory.Sequence(lambda n: f"admin{n}@example.com"))
 
         superuser = factory.Trait(
-            role='ADMIN',
+            role="ADMIN",
             is_staff=True,
             is_superuser=True,
-            email=factory.Sequence(lambda n: f'superuser{n}@example.com')
+            email=factory.Sequence(lambda n: f"superuser{n}@example.com"),
         )
 
-        inactive = factory.Trait(
-            is_active=False
-        )
+        inactive = factory.Trait(is_active=False)
 
         with_full_permissions = factory.Trait(
-            role='ADMIN',
+            role="ADMIN",
             is_staff=True,
             admin_permissions={
-                'can_manage_company_settings': True,
-                'can_manage_admins': True,
-                'can_manage_financial_settings': True,
-                'can_manage_payment_gateways': True,
-                'can_manage_workflows': True,
-                'can_manage_booking_flows': True,
-                'can_manage_templates': True,
-                'can_export_data': True,
-                'can_delete_records': True,
-            }
+                "can_manage_company_settings": True,
+                "can_manage_admins": True,
+                "can_manage_financial_settings": True,
+                "can_manage_payment_gateways": True,
+                "can_manage_workflows": True,
+                "can_manage_booking_flows": True,
+                "can_manage_templates": True,
+                "can_export_data": True,
+                "can_delete_records": True,
+            },
         )
 
 
@@ -95,14 +88,14 @@ class UserProfileFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'users.UserProfile'
-        django_get_or_create = ('user',)
+        model = "users.UserProfile"
+        django_get_or_create = ("user",)
 
     user = factory.SubFactory(UserFactory)
-    phone = factory.Faker('phone_number')
-    company = factory.Faker('company')
-    display_timezone = 'Asia/Manila'
-    timezone_display_mode = 'business_only'
+    phone = factory.Faker("phone_number")
+    company = factory.Faker("company")
+    display_timezone = "Asia/Manila"
+    timezone_display_mode = "business_only"
 
 
 class AdminInvitationFactory(DjangoModelFactory):
@@ -113,11 +106,11 @@ class AdminInvitationFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'users.AdminInvitation'
+        model = "users.AdminInvitation"
 
-    email = factory.Sequence(lambda n: f'invite{n}@example.com')
-    first_name = factory.Faker('first_name')
-    last_name = factory.Faker('last_name')
+    email = factory.Sequence(lambda n: f"invite{n}@example.com")
+    first_name = factory.Faker("first_name")
+    last_name = factory.Faker("last_name")
     invited_by = factory.SubFactory(UserFactory, admin=True)
     is_accepted = False
     is_upgrade = False
@@ -131,26 +124,17 @@ class AdminInvitationFactory(DjangoModelFactory):
     class Params:
         """Traits for invitation states."""
 
-        expired = factory.Trait(
-            expires_at=factory.LazyFunction(
-                lambda: timezone.now() - timedelta(days=1)
-            )
-        )
+        expired = factory.Trait(expires_at=factory.LazyFunction(lambda: timezone.now() - timedelta(days=1)))
 
-        accepted = factory.Trait(
-            is_accepted=True
-        )
+        accepted = factory.Trait(is_accepted=True)
 
-        upgrade = factory.Trait(
-            is_upgrade=True,
-            user=factory.SubFactory(UserFactory, role='CLIENT')
-        )
+        upgrade = factory.Trait(is_upgrade=True, user=factory.SubFactory(UserFactory, role="CLIENT"))
 
         with_permissions = factory.Trait(
             permissions={
-                'can_manage_company_settings': True,
-                'can_manage_workflows': True,
-                'can_manage_templates': True,
+                "can_manage_company_settings": True,
+                "can_manage_workflows": True,
+                "can_manage_templates": True,
             }
         )
 
@@ -163,7 +147,7 @@ class PasswordResetTokenFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'users.PasswordResetToken'
+        model = "users.PasswordResetToken"
 
     user = factory.SubFactory(UserFactory)
     is_used = False
@@ -176,15 +160,9 @@ class PasswordResetTokenFactory(DjangoModelFactory):
     class Params:
         """Traits for token states."""
 
-        expired = factory.Trait(
-            expires_at=factory.LazyFunction(
-                lambda: timezone.now() - timedelta(hours=1)
-            )
-        )
+        expired = factory.Trait(expires_at=factory.LazyFunction(lambda: timezone.now() - timedelta(hours=1)))
 
-        used = factory.Trait(
-            is_used=True
-        )
+        used = factory.Trait(is_used=True)
 
 
 class ConsentRecordFactory(DjangoModelFactory):
@@ -193,30 +171,22 @@ class ConsentRecordFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'users.ConsentRecord'
+        model = "users.ConsentRecord"
 
     user = factory.SubFactory(UserFactory)
-    consent_type = 'MARKETING_EMAIL'
-    action = 'GRANT'
-    consent_text = 'I agree to receive marketing emails'
-    source = 'SETTINGS'
+    consent_type = "MARKETING_EMAIL"
+    action = "GRANT"
+    consent_text = "I agree to receive marketing emails"
+    source = "SETTINGS"
 
     class Params:
         """Traits for consent states."""
 
-        withdrawn = factory.Trait(
-            action='WITHDRAW'
-        )
+        withdrawn = factory.Trait(action="WITHDRAW")
 
-        marketing_sms = factory.Trait(
-            consent_type='MARKETING_SMS',
-            consent_text='I agree to receive marketing SMS'
-        )
+        marketing_sms = factory.Trait(consent_type="MARKETING_SMS", consent_text="I agree to receive marketing SMS")
 
-        analytics = factory.Trait(
-            consent_type='ANALYTICS',
-            consent_text='I agree to usage analytics'
-        )
+        analytics = factory.Trait(consent_type="ANALYTICS", consent_text="I agree to usage analytics")
 
 
 class PrivacyRequestFactory(DjangoModelFactory):
@@ -225,11 +195,11 @@ class PrivacyRequestFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'users.PrivacyRequest'
+        model = "users.PrivacyRequest"
 
     user = factory.SubFactory(UserFactory)
-    request_type = 'ACCESS'
-    status = 'PENDING'
+    request_type = "ACCESS"
+    status = "PENDING"
     request_data = factory.LazyFunction(dict)
     response_data = factory.LazyFunction(dict)
 
@@ -240,19 +210,10 @@ class PrivacyRequestFactory(DjangoModelFactory):
     class Params:
         """Traits for request states."""
 
-        completed = factory.Trait(
-            status='COMPLETED',
-            processed_at=factory.LazyFunction(timezone.now)
-        )
+        completed = factory.Trait(status="COMPLETED", processed_at=factory.LazyFunction(timezone.now))
 
-        deletion = factory.Trait(
-            request_type='DELETION'
-        )
+        deletion = factory.Trait(request_type="DELETION")
 
-        export = factory.Trait(
-            request_type='EXPORT'
-        )
+        export = factory.Trait(request_type="EXPORT")
 
-        correction = factory.Trait(
-            request_type='CORRECTION'
-        )
+        correction = factory.Trait(request_type="CORRECTION")

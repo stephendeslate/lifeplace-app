@@ -1,14 +1,7 @@
 // frontend/client-portal/src/components/common/SkeletonLoaders.tsx
 
 import React from 'react';
-import {
-  Card,
-  CardContent,
-  Skeleton,
-  Box,
-  Stack,
-  Paper,
-} from '@mui/material';
+import { Card, CardContent, Skeleton, Box, Stack, Paper } from '@mui/material';
 
 // Card skeleton for event cards, booking steps, etc.
 interface CardSkeletonProps {
@@ -81,9 +74,7 @@ export const ListSkeleton: React.FC<ListSkeletonProps> = ({
             gap: 2,
           }}
         >
-          {showAvatar && (
-            <Skeleton variant="circular" width={48} height={48} />
-          )}
+          {showAvatar && <Skeleton variant="circular" width={48} height={48} />}
           <Box sx={{ flex: 1 }}>
             <Skeleton variant="text" width="60%" height={24} />
             <Skeleton variant="text" width="80%" height={20} />
@@ -107,10 +98,7 @@ interface FormSkeletonProps {
   showButtons?: boolean;
 }
 
-export const FormSkeleton: React.FC<FormSkeletonProps> = ({ 
-  fields = 6,
-  showButtons = true 
-}) => {
+export const FormSkeleton: React.FC<FormSkeletonProps> = ({ fields = 6, showButtons = true }) => {
   return (
     <Box>
       <Stack spacing={3}>
@@ -149,14 +137,14 @@ export const BookingStepSkeleton: React.FC<BookingStepSkeletonProps> = ({
           <Skeleton variant="rectangular" height={8} sx={{ borderRadius: 1 }} />
         </Box>
       )}
-      
+
       <Card>
         <CardContent>
           <Skeleton variant="text" width="60%" height={32} sx={{ mb: 3 }} />
           <FormSkeleton fields={4} showButtons={false} />
         </CardContent>
       </Card>
-      
+
       {showNavigation && (
         <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
           <Skeleton variant="rectangular" width={80} height={40} />

@@ -1,15 +1,7 @@
 // frontend/admin-crm/src/pages/settings/account/Notifications.tsx
 
 import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Typography,
-  Alert,
-  Divider,
-  Stack,
-  Chip,
-  CircularProgress,
-} from '@mui/material';
+import { Box, Typography, Alert, Divider, Stack, Chip, CircularProgress } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
   Info,
@@ -27,7 +19,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import {
   useNotificationPreferences,
   useNotificationTypes,
-  useNotifications
+  useNotifications,
 } from '../../../hooks/useNotifications';
 import { NotificationPreferencesForm } from '../../../components/notifications/NotificationPreferencesForm';
 import { NotificationCountsDisplay } from '../../../components/notifications/NotificationCountsDisplay';
@@ -44,21 +36,17 @@ export const Notifications: React.FC = () => {
   const [isTestingNotification, setIsTestingNotification] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
-  const {
-    preferences,
-    isLoadingPreferences,
-    refetchPreferences,
-  } = useNotificationPreferences();
+  const { preferences, isLoadingPreferences, refetchPreferences } = useNotificationPreferences();
 
   const { notificationTypes, isLoadingTypes } = useNotificationTypes({ is_active: true });
 
-  const {
-    useNotificationCounts,
-    createNotification,
-    isCreating,
-  } = useNotifications();
+  const { useNotificationCounts, createNotification, isCreating } = useNotifications();
 
-  const { data: counts, isLoading: isLoadingCounts, refetch: refetchCounts } = useNotificationCounts();
+  const {
+    data: counts,
+    isLoading: isLoadingCounts,
+    refetch: refetchCounts,
+  } = useNotificationCounts();
 
   // Set breadcrumbs
   useEffect(() => {
@@ -81,7 +69,8 @@ export const Notifications: React.FC = () => {
         notification_type_code: 'SYSTEM_NOTIFICATION',
         context_data: {
           test: true,
-          message: 'This is a test notification to verify your notification settings are working correctly.',
+          message:
+            'This is a test notification to verify your notification settings are working correctly.',
           action_url: '/settings/account/notifications',
           created_by: 'Settings Page',
           timestamp: new Date().toISOString(),
@@ -92,19 +81,18 @@ export const Notifications: React.FC = () => {
 
       setTestResult({
         success: true,
-        message: 'Test notification sent successfully! Check your notifications.'
+        message: 'Test notification sent successfully! Check your notifications.',
       });
 
       // Refresh counts after creating test notification
       setTimeout(() => {
         refetchCounts();
       }, 1000);
-
     } catch (error) {
       console.error('Failed to send test notification:', error);
       setTestResult({
         success: false,
-        message: 'Failed to send test notification. Please try again.'
+        message: 'Failed to send test notification. Please try again.',
       });
     } finally {
       setIsTestingNotification(false);
@@ -153,10 +141,14 @@ export const Notifications: React.FC = () => {
             tooltip: 'Send a test notification to verify your settings',
           },
         ]}
-        stats={counts ? [
-          { label: 'Total Notifications', value: counts.total },
-          { label: 'Unread', value: counts.unread },
-        ] : undefined}
+        stats={
+          counts
+            ? [
+                { label: 'Total Notifications', value: counts.total },
+                { label: 'Unread', value: counts.unread },
+              ]
+            : undefined
+        }
         size="medium"
       />
 
@@ -178,7 +170,8 @@ export const Notifications: React.FC = () => {
         <Alert severity="info" icon={<Info />}>
           <Typography variant="body2">
             Notification preferences control how you receive system updates, event notifications,
-            and other important communications. Changes are saved automatically and take effect immediately.
+            and other important communications. Changes are saved automatically and take effect
+            immediately.
           </Typography>
         </Alert>
       </Box>
@@ -203,10 +196,7 @@ export const Notifications: React.FC = () => {
               </Stack>
             </Box>
 
-            <NotificationCountsDisplay
-              counts={counts}
-              isLoading={isLoadingCounts}
-            />
+            <NotificationCountsDisplay counts={counts} isLoading={isLoadingCounts} />
           </Box>
         )}
 
@@ -221,17 +211,15 @@ export const Notifications: React.FC = () => {
             </Box>
 
             <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-              {notificationTypes
-                .slice(0, 8)
-                .map((type) => (
-                  <Chip
-                    key={type.id}
-                    label={type.name}
-                    variant="outlined"
-                    size="small"
-                    sx={{ mb: 1 }}
-                  />
-                ))}
+              {notificationTypes.slice(0, 8).map((type) => (
+                <Chip
+                  key={type.id}
+                  label={type.name}
+                  variant="outlined"
+                  size="small"
+                  sx={{ mb: 1 }}
+                />
+              ))}
               {notificationTypes.length > 8 && (
                 <Chip
                   label={`+${notificationTypes.length - 8} more`}
@@ -255,14 +243,20 @@ export const Notifications: React.FC = () => {
           {preferences ? (
             <Box sx={{ position: 'relative' }}>
               {isLoading && (
-                <Box sx={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.8)' }}>
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                  }}
+                >
                   <CircularProgress />
                 </Box>
               )}
-              <NotificationPreferencesForm
-                preferences={preferences}
-                isLoading={isLoading}
-              />
+              <NotificationPreferencesForm preferences={preferences} isLoading={isLoading} />
             </Box>
           ) : (
             <Alert severity="error">
@@ -293,7 +287,9 @@ export const Notifications: React.FC = () => {
                   <Box display="flex" alignItems="flex-start" gap={2}>
                     <NotificationsIcon color="primary" sx={{ fontSize: '1.25rem' }} />
                     <Box>
-                      <Typography variant="body2" fontWeight="600">In-App Notifications</Typography>
+                      <Typography variant="body2" fontWeight="600">
+                        In-App Notifications
+                      </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Notifications appear in your dashboard and notification center
                       </Typography>
@@ -303,7 +299,9 @@ export const Notifications: React.FC = () => {
                   <Box display="flex" alignItems="flex-start" gap={2}>
                     <EmailIcon color="warning" sx={{ fontSize: '1.25rem' }} />
                     <Box>
-                      <Typography variant="body2" fontWeight="600">Email Notifications</Typography>
+                      <Typography variant="body2" fontWeight="600">
+                        Email Notifications
+                      </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Notifications sent to your registered email address
                       </Typography>
@@ -313,7 +311,9 @@ export const Notifications: React.FC = () => {
                   <Box display="flex" alignItems="flex-start" gap={2}>
                     <SmsIcon color="success" sx={{ fontSize: '1.25rem' }} />
                     <Box>
-                      <Typography variant="body2" fontWeight="600">SMS Notifications</Typography>
+                      <Typography variant="body2" fontWeight="600">
+                        SMS Notifications
+                      </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Text messages sent to your phone number (if configured)
                       </Typography>
@@ -328,12 +328,14 @@ export const Notifications: React.FC = () => {
             <Box>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
                 <Settings color="info" />
-                <Typography variant="h6" fontWeight="600">Categories</Typography>
+                <Typography variant="h6" fontWeight="600">
+                  Categories
+                </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
-                Configure delivery preferences for different types of notifications:
-                System updates, Event management, Task assignments, Payment processing,
-                Client management, Contract updates, Workflow progress, and Communication alerts.
+                Configure delivery preferences for different types of notifications: System updates,
+                Event management, Task assignments, Payment processing, Client management, Contract
+                updates, Workflow progress, and Communication alerts.
               </Typography>
             </Box>
 
@@ -342,11 +344,13 @@ export const Notifications: React.FC = () => {
             <Box>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
                 <ScheduleIcon color="info" />
-                <Typography variant="h6" fontWeight="600">Quiet Hours</Typography>
+                <Typography variant="h6" fontWeight="600">
+                  Quiet Hours
+                </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
-                Set specific hours when you don't want to receive notifications.
-                This applies to email and SMS only - urgent system notifications may still be delivered.
+                Set specific hours when you don't want to receive notifications. This applies to
+                email and SMS only - urgent system notifications may still be delivered.
               </Typography>
             </Box>
 
@@ -355,11 +359,13 @@ export const Notifications: React.FC = () => {
             <Box>
               <Box display="flex" alignItems="center" gap={1.5} mb={2}>
                 <SummarizeIcon color="info" />
-                <Typography variant="h6" fontWeight="600">Digest Mode</Typography>
+                <Typography variant="h6" fontWeight="600">
+                  Digest Mode
+                </Typography>
               </Box>
               <Typography variant="body2" color="text.secondary">
-                Instead of immediate notifications, receive a summary of notifications
-                at your preferred frequency (hourly, daily, or weekly).
+                Instead of immediate notifications, receive a summary of notifications at your
+                preferred frequency (hourly, daily, or weekly).
               </Typography>
             </Box>
           </Stack>

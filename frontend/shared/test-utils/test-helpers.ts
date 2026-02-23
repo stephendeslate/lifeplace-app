@@ -2,11 +2,11 @@
 /// <reference types="./types" />
 // Using vitest globals
 type MockedFunction<T extends (...args: any[]) => any> = T & {
-  mockResolvedValue: (value: Awaited<ReturnType<T>>) => MockedFunction<T>
-  mockRejectedValue: (error: any) => MockedFunction<T>
-  mockReturnValue: (value: ReturnType<T>) => MockedFunction<T>
-  mockImplementation: (fn: T) => MockedFunction<T>
-}
+  mockResolvedValue: (value: Awaited<ReturnType<T>>) => MockedFunction<T>;
+  mockRejectedValue: (error: any) => MockedFunction<T>;
+  mockReturnValue: (value: ReturnType<T>) => MockedFunction<T>;
+  mockImplementation: (fn: T) => MockedFunction<T>;
+};
 
 /**
  * Test data factories and utilities for the LifePlace application
@@ -52,7 +52,7 @@ export const mockContract = {
   can_client_sign: true,
   created_at: '2024-05-01T10:00:00Z',
   updated_at: '2024-05-01T10:00:00Z',
-}
+};
 
 export const mockEvent = {
   id: 'event-1',
@@ -70,7 +70,7 @@ export const mockEvent = {
   },
   created_at: '2024-05-01T10:00:00Z',
   updated_at: '2024-05-01T10:00:00Z',
-}
+};
 
 export const mockMessage = {
   id: 'msg-1',
@@ -91,47 +91,47 @@ export const mockMessage = {
   read: false,
   messageType: 'text' as const,
   attachments: [],
-}
+};
 
 // Mock API responses
 export const mockApiResponse = <T>(data: T, delay = 0) => {
   return new Promise<T>((resolve) => {
-    setTimeout(() => resolve(data), delay)
-  })
-}
+    setTimeout(() => resolve(data), delay);
+  });
+};
 
 export const mockApiError = (message = 'API Error', status = 500, delay = 0) => {
   return new Promise((_, reject) => {
     setTimeout(() => {
-      const error = new Error(message) as any
-      error.status = status
-      reject(error)
-    }, delay)
-  })
-}
+      const error = new Error(message) as any;
+      error.status = status;
+      reject(error);
+    }, delay);
+  });
+};
 
 // Enhanced mock utilities
 export const createMockFunction = <T extends (...args: any[]) => any>(
-  implementation?: T
+  implementation?: T,
 ): MockedFunction<T> => {
-  return vi.fn(implementation) as unknown as MockedFunction<T>
-}
+  return vi.fn(implementation) as unknown as MockedFunction<T>;
+};
 
 /**
  * Utility to wait for async operations in tests
  */
-export const waitForNextTick = () => new Promise(resolve => setTimeout(resolve, 0))
+export const waitForNextTick = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 /**
  * Utility to create mock form data for testing form components
  */
 export const createMockFormData = (fields: Record<string, any>) => {
-  const formData = new FormData()
+  const formData = new FormData();
   Object.entries(fields).forEach(([key, value]) => {
-    formData.append(key, value)
-  })
-  return formData
-}
+    formData.append(key, value);
+  });
+  return formData;
+};
 
 /**
  * Mock local storage for tests
@@ -140,15 +140,15 @@ export const mockLocalStorage = {
   store: {} as Record<string, string>,
   getItem: vi.fn((key: string) => mockLocalStorage.store[key] || null),
   setItem: vi.fn((key: string, value: string) => {
-    mockLocalStorage.store[key] = value
+    mockLocalStorage.store[key] = value;
   }),
   removeItem: vi.fn((key: string) => {
-    delete mockLocalStorage.store[key]
+    delete mockLocalStorage.store[key];
   }),
   clear: vi.fn(() => {
-    mockLocalStorage.store = {}
+    mockLocalStorage.store = {};
   }),
-}
+};
 
 /**
  * Mock window.matchMedia for responsive tests
@@ -166,8 +166,8 @@ export const mockMatchMedia = (matches = false) => {
       removeEventListener: vi.fn(),
       dispatchEvent: vi.fn(),
     })),
-  })
-}
+  });
+};
 
 /**
  * Mock intersection observer for scroll and lazy loading tests
@@ -177,22 +177,22 @@ export const mockIntersectionObserver = () => {
     observe: vi.fn(),
     unobserve: vi.fn(),
     disconnect: vi.fn(),
-  })
+  });
 
   Object.defineProperty(window, 'IntersectionObserver', {
     writable: true,
     configurable: true,
     value: mockIntersectionObserver,
-  })
+  });
 
   Object.defineProperty(global, 'IntersectionObserver', {
     writable: true,
     configurable: true,
     value: mockIntersectionObserver,
-  })
+  });
 
-  return mockIntersectionObserver
-}
+  return mockIntersectionObserver;
+};
 
 /**
  * Mock ResizeObserver for component resize tests
@@ -202,37 +202,37 @@ export const mockResizeObserver = () => {
     observe: vi.fn(),
     unobserve: vi.fn(),
     disconnect: vi.fn(),
-  })
+  });
 
   Object.defineProperty(window, 'ResizeObserver', {
     writable: true,
     configurable: true,
     value: mockResizeObserver,
-  })
+  });
 
-  return mockResizeObserver
-}
+  return mockResizeObserver;
+};
 
 /**
  * Helper to mock console methods and restore them
  */
 export const mockConsole = () => {
-  const originalConsole = { ...console }
+  const originalConsole = { ...console };
   const mockMethods = {
     log: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
     debug: vi.fn(),
-  }
+  };
 
-  Object.assign(console, mockMethods)
+  Object.assign(console, mockMethods);
 
   return {
     ...mockMethods,
     restore: () => Object.assign(console, originalConsole),
-  }
-}
+  };
+};
 
 /**
  * Creates a mock file for testing file upload components
@@ -240,17 +240,16 @@ export const mockConsole = () => {
 export const createMockFile = (
   name = 'test.txt',
   content = 'test content',
-  type = 'text/plain'
+  type = 'text/plain',
 ) => {
-  const file = new File([content], name, { type })
-  return file
-}
+  const file = new File([content], name, { type });
+  return file;
+};
 
 /**
  * Helper to simulate user interactions more realistically
  */
-export const simulateDelay = (ms = 100) => 
-  new Promise(resolve => setTimeout(resolve, ms))
+export const simulateDelay = (ms = 100) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /**
  * Mock clipboard API for copy/paste tests
@@ -259,12 +258,12 @@ export const mockClipboard = () => {
   const mockClipboard = {
     writeText: vi.fn().mockResolvedValue(undefined),
     readText: vi.fn().mockResolvedValue('mocked text'),
-  }
+  };
 
   Object.defineProperty(navigator, 'clipboard', {
     value: mockClipboard,
     configurable: true,
-  })
+  });
 
-  return mockClipboard
-}
+  return mockClipboard;
+};

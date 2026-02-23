@@ -16,8 +16,11 @@ export const useAuth = () => {
   const loginMutation = useMutation({
     mutationFn: (credentials: LoginCredentials) => authApi.login(credentials),
     onSuccess: (data) => {
-      showSuccess('Welcome back!', `Successfully logged in as ${data.user.first_name || data.user.email}`);
-      
+      showSuccess(
+        'Welcome back!',
+        `Successfully logged in as ${data.user.first_name || data.user.email}`,
+      );
+
       // Invalidate queries that depend on authentication
       queryClient.invalidateQueries({ queryKey: ['user'] });
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
@@ -34,11 +37,8 @@ export const useAuth = () => {
   const registerMutation = useMutation({
     mutationFn: (userData: RegisterCredentials) => authApi.register(userData),
     onSuccess: () => {
-      showSuccess(
-        'Welcome to LifePlace!',
-        'Your account has been created successfully.'
-      );
-      
+      showSuccess('Welcome to LifePlace!', 'Your account has been created successfully.');
+
       // Invalidate user-related queries
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
@@ -51,9 +51,9 @@ export const useAuth = () => {
 
   // Change password mutation
   const changePasswordMutation = useMutation({
-    mutationFn: (data: { 
-      current_password: string; 
-      new_password: string; 
+    mutationFn: (data: {
+      current_password: string;
+      new_password: string;
       confirm_password: string;
     }) => authApi.changePassword(data),
     onSuccess: () => {
@@ -71,12 +71,12 @@ export const useAuth = () => {
     mutationFn: (data: Partial<User>) => authApi.updateProfile(data),
     onSuccess: (data) => {
       showSuccess('Profile Updated', 'Your profile has been updated successfully.');
-      
+
       // Update the user in context
       if (authContext.user) {
         authContext.updateUser(data);
       }
-      
+
       // Invalidate user query
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
@@ -92,12 +92,12 @@ export const useAuth = () => {
     mutationFn: (file: File) => authApi.uploadAvatar(file),
     onSuccess: (data) => {
       showSuccess('Avatar Updated', 'Your profile picture has been updated.');
-      
+
       // Update user context with new avatar
       if (authContext.user) {
         authContext.updateUser(data);
       }
-      
+
       queryClient.invalidateQueries({ queryKey: ['user'] });
     },
     onError: (error: unknown) => {
@@ -149,12 +149,12 @@ export const useAuth = () => {
 
     // Query state
     isRefreshing: userQuery.isFetching,
-    
+
     // Error states
     loginError: loginMutation.error,
     registerError: registerMutation.error,
     profileError: updateProfileMutation.error,
-    
+
     // Reset functions
     resetLoginError: loginMutation.reset,
     resetRegisterError: registerMutation.reset,

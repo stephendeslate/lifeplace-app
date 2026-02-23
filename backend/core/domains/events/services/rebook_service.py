@@ -9,7 +9,6 @@ with pre-populated data from their cancelled events.
 import logging
 import uuid
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
 
 from django.db.models import QuerySet
 from django.utils import timezone
@@ -28,13 +27,13 @@ class EventRebookService:
     """
 
     REBOOKABLE_CANCELLATION_REASONS = [
-        'PAYMENT_TIMEOUT',
-        'DATE_TAKEN',
-        'CLIENT_REQUEST',
+        "PAYMENT_TIMEOUT",
+        "DATE_TAKEN",
+        "CLIENT_REQUEST",
     ]
 
     @staticmethod
-    def can_rebook(event: Event) -> Tuple[bool, str]:
+    def can_rebook(event: Event) -> tuple[bool, str]:
         """
         Check if an event can be rebooked.
 
@@ -45,7 +44,7 @@ class EventRebookService:
             Tuple[bool, str]: (can_rebook, reason)
         """
         # Check if event is cancelled
-        if event.status != 'CANCELLED':
+        if event.status != "CANCELLED":
             return False, "Only cancelled events can be rebooked"
 
         # Check if can_rebook flag is set
@@ -77,18 +76,23 @@ class EventRebookService:
         Returns:
             QuerySet of rebookable events
         """
-        return Event.objects.filter(
-            client=client,
-            status='CANCELLED',
-            can_rebook=True,
-            cancelled_reason__in=EventRebookService.REBOOKABLE_CANCELLATION_REASONS
-        ).exclude(
-            # Exclude events that have already been rebooked
-            rebooked_events__isnull=False
-        ).select_related('event_type').order_by('-cancelled_at')
+        return (
+            Event.objects.filter(
+                client=client,
+                status="CANCELLED",
+                can_rebook=True,
+                cancelled_reason__in=EventRebookService.REBOOKABLE_CANCELLATION_REASONS,
+            )
+            .exclude(
+                # Exclude events that have already been rebooked
+                rebooked_events__isnull=False
+            )
+            .select_related("event_type")
+            .order_by("-cancelled_at")
+        )
 
     @staticmethod
-    def create_rebook_session(event: Event, new_date: datetime = None) -> 'BookingSession':
+    def create_rebook_session(event: Event, new_date: datetime = None) -> "BookingSession":
         """
         Create a new booking session pre-populated with original event data.
 
@@ -113,10 +117,7 @@ class EventRebookService:
         booking_flow = None
 
         if event.event_type:
-            booking_flow = BookingFlow.objects.filter(
-                event_type=event.event_type,
-                is_active=True
-            ).first()
+            booking_flow = BookingFlow.objects.filter(event_type=event.event_type, is_active=True).first()
 
         if not booking_flow:
             # Fall back to any active booking flow
@@ -145,7 +146,7 @@ class EventRebookService:
         )
 
         # Store reference to original event
-        booking_data['rebook_from_event_id'] = event.id
+        booking_data["rebook_from_event_id"] = event.id
         session.booking_data = booking_data
         session.save()
 
@@ -157,7 +158,7 @@ class EventRebookService:
         return session
 
     @staticmethod
-    def _extract_booking_data_from_event(event: Event, new_date: datetime = None) -> Dict:
+    def _extract_booking_data_from_event(event: Event, new_date: datetime = None) -> dict:
         """
         Extract booking data from an event for pre-populating a new booking session.
 
@@ -169,33 +170,33 @@ class EventRebookService:
             dict: Booking data for the new session
         """
         booking_data = {
-            'rebook_source': 'cancelled_event',
-            'original_event_id': event.id,
-            'is_rebook': True,
+            "rebook_source": "cancelled_event",
+            "original_event_id": event.id,
+            "is_rebook": True,
         }
 
         # Extract date/time information
         if new_date:
-            booking_data['start_date'] = new_date.strftime('%Y-%m-%d')
-            booking_data['start_time'] = new_date.strftime('%H:%M')
+            booking_data["start_date"] = new_date.strftime("%Y-%m-%d")
+            booking_data["start_time"] = new_date.strftime("%H:%M")
         elif event.start_date:
             # Use original date/time as reference (client will likely change it)
-            booking_data['original_start_date'] = event.start_date.strftime('%Y-%m-%d')
-            booking_data['original_start_time'] = event.start_date.strftime('%H:%M')
+            booking_data["original_start_date"] = event.start_date.strftime("%Y-%m-%d")
+            booking_data["original_start_time"] = event.start_date.strftime("%H:%M")
 
         if event.end_date:
-            booking_data['original_end_date'] = event.end_date.strftime('%Y-%m-%d')
-            booking_data['original_end_time'] = event.end_date.strftime('%H:%M')
+            booking_data["original_end_date"] = event.end_date.strftime("%Y-%m-%d")
+            booking_data["original_end_time"] = event.end_date.strftime("%H:%M")
 
         # Extract guest count
         if event.guest_count:
-            booking_data['guest_count'] = event.guest_count
+            booking_data["guest_count"] = event.guest_count
 
         # Extract event name/description
         if event.name:
-            booking_data['event_name'] = event.name
+            booking_data["event_name"] = event.name
         if event.description:
-            booking_data['description'] = event.description
+            booking_data["description"] = event.description
 
         # Extract selected packages from EventProductOption
         selected_packages = []
@@ -203,22 +204,22 @@ class EventRebookService:
 
         for product_option in event.event_products.all():
             product_data = {
-                'product_id': product_option.product_option_id,
-                'quantity': product_option.quantity,
-                'price': str(product_option.final_price) if product_option.final_price else '0',
+                "product_id": product_option.product_option_id,
+                "quantity": product_option.quantity,
+                "price": str(product_option.final_price) if product_option.final_price else "0",
             }
 
             if product_option.num_participants:
-                product_data['num_participants'] = product_option.num_participants
+                product_data["num_participants"] = product_option.num_participants
             if product_option.num_nights:
-                product_data['num_nights'] = product_option.num_nights
+                product_data["num_nights"] = product_option.num_nights
             if product_option.excess_hours:
-                product_data['excess_hours'] = product_option.excess_hours
+                product_data["excess_hours"] = product_option.excess_hours
 
             # Determine if package or addon based on product type
-            if product_option.product_option and hasattr(product_option.product_option, 'category'):
+            if product_option.product_option and hasattr(product_option.product_option, "category"):
                 category = product_option.product_option.category
-                if category and category.name and 'addon' in category.name.lower():
+                if category and category.name and "addon" in category.name.lower():
                     selected_addons.append(product_data)
                 else:
                     selected_packages.append(product_data)
@@ -227,9 +228,9 @@ class EventRebookService:
                 selected_packages.append(product_data)
 
         if selected_packages:
-            booking_data['selected_packages'] = selected_packages
+            booking_data["selected_packages"] = selected_packages
         if selected_addons:
-            booking_data['selected_addons'] = selected_addons
+            booking_data["selected_addons"] = selected_addons
 
         # Extract questionnaire responses if available
         try:
@@ -239,13 +240,10 @@ class EventRebookService:
             questionnaire_responses = []
 
             for response in responses:
-                questionnaire_responses.append({
-                    'field': response.field_id,
-                    'value': response.value
-                })
+                questionnaire_responses.append({"field": response.field_id, "value": response.value})
 
             if questionnaire_responses:
-                booking_data['questionnaire_responses'] = questionnaire_responses
+                booking_data["questionnaire_responses"] = questionnaire_responses
         except Exception as e:
             logger.warning(f"Could not extract questionnaire responses: {e}")
 
@@ -267,20 +265,18 @@ class EventRebookService:
 
             # Link new event to original
             new_event.original_event = original_event
-            new_event.save(update_fields=['original_event'])
+            new_event.save(update_fields=["original_event"])
 
             # Mark original as no longer rebookable
             original_event.can_rebook = False
-            original_event.save(update_fields=['can_rebook'])
+            original_event.save(update_fields=["can_rebook"])
 
-            logger.info(
-                f"Completed rebook: new event {new_event.id} linked to original {original_event_id}"
-            )
+            logger.info(f"Completed rebook: new event {new_event.id} linked to original {original_event_id}")
         except Event.DoesNotExist:
             logger.warning(f"Original event {original_event_id} not found for rebook completion")
 
     @staticmethod
-    def get_rebook_history(event: Event) -> List[Dict]:
+    def get_rebook_history(event: Event) -> list[dict]:
         """
         Get the rebooking history for an event.
 
@@ -295,32 +291,35 @@ class EventRebookService:
         # Trace back to original event
         current = event
         while current.original_event:
-            history.append({
-                'event_id': current.original_event_id,
-                'cancelled_at': current.original_event.cancelled_at,
-                'cancelled_reason': current.original_event.cancelled_reason,
-                'rebooked_to': current.id,
-            })
+            history.append(
+                {
+                    "event_id": current.original_event_id,
+                    "cancelled_at": current.original_event.cancelled_at,
+                    "cancelled_reason": current.original_event.cancelled_reason,
+                    "rebooked_to": current.id,
+                }
+            )
             current = current.original_event
 
         # Get any events rebooked from this one
         for rebooked in event.rebooked_events.all():
-            history.append({
-                'event_id': event.id,
-                'cancelled_at': event.cancelled_at,
-                'cancelled_reason': event.cancelled_reason,
-                'rebooked_to': rebooked.id,
-            })
+            history.append(
+                {
+                    "event_id": event.id,
+                    "cancelled_at": event.cancelled_at,
+                    "cancelled_reason": event.cancelled_reason,
+                    "rebooked_to": rebooked.id,
+                }
+            )
 
         return history
-
 
     # ============================================================
     # RESCHEDULING FEE CALCULATION
     # ============================================================
 
     @staticmethod
-    def calculate_rescheduling_fee(event: Event) -> Dict:
+    def calculate_rescheduling_fee(event: Event) -> dict:
         """
         Calculate the rescheduling fee for an event.
 
@@ -331,71 +330,70 @@ class EventRebookService:
             dict: Fee calculation details
         """
         from decimal import Decimal
+
         from core.domains.payments.models import PaymentSettings
 
         result = {
-            'fee_applicable': False,
-            'fee_amount': Decimal('0.00'),
-            'fee_type': None,
-            'fee_percentage': None,
-            'within_grace_period': False,
-            'grace_period_hours': 0,
-            'hours_since_booking': 0,
-            'reason': None,
+            "fee_applicable": False,
+            "fee_amount": Decimal("0.00"),
+            "fee_type": None,
+            "fee_percentage": None,
+            "within_grace_period": False,
+            "grace_period_hours": 0,
+            "hours_since_booking": 0,
+            "reason": None,
         }
 
         try:
             settings = PaymentSettings.get_default_settings()
 
             if not settings.rescheduling_fee_enabled:
-                result['reason'] = 'Rescheduling fees not enabled'
+                result["reason"] = "Rescheduling fees not enabled"
                 return result
 
             # Check if within grace period
             if event.created_at:
                 hours_since_booking = (timezone.now() - event.created_at.replace(tzinfo=None)).total_seconds() / 3600
-                result['hours_since_booking'] = round(hours_since_booking, 2)
-                result['grace_period_hours'] = settings.rescheduling_grace_period_hours
+                result["hours_since_booking"] = round(hours_since_booking, 2)
+                result["grace_period_hours"] = settings.rescheduling_grace_period_hours
 
                 if hours_since_booking <= settings.rescheduling_grace_period_hours:
-                    result['within_grace_period'] = True
-                    result['reason'] = f'Within {settings.rescheduling_grace_period_hours}h grace period'
+                    result["within_grace_period"] = True
+                    result["reason"] = f"Within {settings.rescheduling_grace_period_hours}h grace period"
                     return result
 
             # Calculate fee based on type
-            result['fee_applicable'] = True
-            result['fee_type'] = settings.rescheduling_fee_type
+            result["fee_applicable"] = True
+            result["fee_type"] = settings.rescheduling_fee_type
 
-            if settings.rescheduling_fee_type == 'PERCENTAGE':
+            if settings.rescheduling_fee_type == "PERCENTAGE":
                 # Get contract/quote total for percentage calculation
                 contract_total = EventRebookService._get_event_contract_total(event)
-                fee_rate = settings.rescheduling_fee_percentage / Decimal('100')
-                result['fee_amount'] = (contract_total * fee_rate).quantize(Decimal('0.01'))
-                result['fee_percentage'] = settings.rescheduling_fee_percentage
-                result['reason'] = f'{settings.rescheduling_fee_percentage}% of contract total'
+                fee_rate = settings.rescheduling_fee_percentage / Decimal("100")
+                result["fee_amount"] = (contract_total * fee_rate).quantize(Decimal("0.01"))
+                result["fee_percentage"] = settings.rescheduling_fee_percentage
+                result["reason"] = f"{settings.rescheduling_fee_percentage}% of contract total"
             else:  # FIXED
-                result['fee_amount'] = settings.rescheduling_fee_fixed_amount or Decimal('0.00')
-                result['reason'] = 'Fixed rescheduling fee'
+                result["fee_amount"] = settings.rescheduling_fee_fixed_amount or Decimal("0.00")
+                result["reason"] = "Fixed rescheduling fee"
 
             return result
 
         except Exception as e:
             logger.error(f"Error calculating rescheduling fee: {e}")
-            result['reason'] = f'Error: {str(e)}'
+            result["reason"] = f"Error: {e!s}"
             return result
 
     @staticmethod
-    def _get_event_contract_total(event: Event) -> 'Decimal':
+    def _get_event_contract_total(event: Event) -> "Decimal":
         """Get the contract/quote total for an event."""
         from decimal import Decimal
 
         # Try to get from accepted quote
         try:
             from core.domains.sales.models import EventQuote
-            accepted_quote = EventQuote.objects.filter(
-                event=event,
-                status='ACCEPTED'
-            ).first()
+
+            accepted_quote = EventQuote.objects.filter(event=event, status="ACCEPTED").first()
             if accepted_quote:
                 return accepted_quote.total_amount
         except Exception:
@@ -404,6 +402,7 @@ class EventRebookService:
         # Try to get from invoice
         try:
             from core.domains.payments.models import Invoice
+
             invoice = Invoice.objects.filter(event=event).first()
             if invoice:
                 return invoice.total_amount
@@ -411,16 +410,12 @@ class EventRebookService:
             pass
 
         # Fallback to event total_price
-        return event.total_price or Decimal('0.00')
+        return event.total_price or Decimal("0.00")
 
     @staticmethod
     def process_reschedule(
-        event: Event,
-        new_start_date: datetime,
-        new_end_date: datetime = None,
-        apply_fee: bool = True,
-        notes: str = None
-    ) -> Dict:
+        event: Event, new_start_date: datetime, new_end_date: datetime = None, apply_fee: bool = True, notes: str = None
+    ) -> dict:
         """
         Process event rescheduling with fee calculation.
 
@@ -437,20 +432,20 @@ class EventRebookService:
         from django.utils import timezone
 
         result = {
-            'success': False,
-            'fee_applied': False,
-            'fee_amount': None,
-            'error': None,
+            "success": False,
+            "fee_applied": False,
+            "fee_amount": None,
+            "error": None,
         }
 
         try:
             # Validate event status
-            if event.status == 'CANCELLED':
-                result['error'] = 'Cannot reschedule a cancelled event'
+            if event.status == "CANCELLED":
+                result["error"] = "Cannot reschedule a cancelled event"
                 return result
 
-            if event.status == 'COMPLETED':
-                result['error'] = 'Cannot reschedule a completed event'
+            if event.status == "COMPLETED":
+                result["error"] = "Cannot reschedule a completed event"
                 return result
 
             # Store original date if this is the first reschedule
@@ -460,9 +455,9 @@ class EventRebookService:
             # Calculate fee if applicable
             fee_info = EventRebookService.calculate_rescheduling_fee(event)
 
-            if apply_fee and fee_info['fee_applicable']:
-                result['fee_applied'] = True
-                result['fee_amount'] = fee_info['fee_amount']
+            if apply_fee and fee_info["fee_applicable"]:
+                result["fee_applied"] = True
+                result["fee_amount"] = fee_info["fee_amount"]
                 # Note: Actual fee charging would be handled separately
                 # This just tracks that a fee should be applied
 
@@ -475,32 +470,38 @@ class EventRebookService:
             event.reschedule_count = (event.reschedule_count or 0) + 1
             event.last_rescheduled_at = timezone.now()
 
-            event.save(update_fields=[
-                'start_date', 'end_date',
-                'original_start_date', 'reschedule_count', 'last_rescheduled_at'
-            ])
+            event.save(
+                update_fields=[
+                    "start_date",
+                    "end_date",
+                    "original_start_date",
+                    "reschedule_count",
+                    "last_rescheduled_at",
+                ]
+            )
 
             # Log timeline entry
             try:
                 from core.domains.events.models import EventTimeline
+
                 EventTimeline.objects.create(
                     event=event,
-                    action_type='STATUS_CHANGE',
-                    description=f'Event rescheduled to {new_start_date.strftime("%B %d, %Y")}' +
-                               (f' (Fee: {fee_info["fee_amount"]})' if result['fee_applied'] else ' (No fee)'),
+                    action_type="STATUS_CHANGE",
+                    description=f"Event rescheduled to {new_start_date.strftime('%B %d, %Y')}"
+                    + (f" (Fee: {fee_info['fee_amount']})" if result["fee_applied"] else " (No fee)"),
                     is_public=True,
                     action_data={
-                        'previous_date': str(event.original_start_date) if event.original_start_date else None,
-                        'new_date': str(new_start_date),
-                        'reschedule_count': event.reschedule_count,
-                        'fee_applied': result['fee_applied'],
-                        'fee_amount': str(fee_info['fee_amount']) if fee_info['fee_amount'] else None,
-                    }
+                        "previous_date": str(event.original_start_date) if event.original_start_date else None,
+                        "new_date": str(new_start_date),
+                        "reschedule_count": event.reschedule_count,
+                        "fee_applied": result["fee_applied"],
+                        "fee_amount": str(fee_info["fee_amount"]) if fee_info["fee_amount"] else None,
+                    },
                 )
             except Exception as e:
                 logger.warning(f"Could not create timeline entry for reschedule: {e}")
 
-            result['success'] = True
+            result["success"] = True
             logger.info(
                 f"Rescheduled event {event.id} to {new_start_date} "
                 f"(count: {event.reschedule_count}, fee: {result['fee_amount']})"
@@ -510,11 +511,11 @@ class EventRebookService:
 
         except Exception as e:
             logger.error(f"Error processing reschedule for event {event.id}: {e}")
-            result['error'] = str(e)
+            result["error"] = str(e)
             return result
 
     @staticmethod
-    def preview_rescheduling_fee(event: Event) -> Dict:
+    def preview_rescheduling_fee(event: Event) -> dict:
         """
         Preview the rescheduling fee without actually rescheduling.
 
@@ -527,15 +528,15 @@ class EventRebookService:
         fee_info = EventRebookService.calculate_rescheduling_fee(event)
 
         return {
-            'fee_applicable': fee_info['fee_applicable'],
-            'fee_amount': str(fee_info['fee_amount']),
-            'fee_type': fee_info['fee_type'],
-            'fee_percentage': str(fee_info['fee_percentage']) if fee_info['fee_percentage'] else None,
-            'within_grace_period': fee_info['within_grace_period'],
-            'grace_period_hours': fee_info['grace_period_hours'],
-            'hours_since_booking': fee_info['hours_since_booking'],
-            'reason': fee_info['reason'],
-            'reschedule_count': event.reschedule_count or 0,
+            "fee_applicable": fee_info["fee_applicable"],
+            "fee_amount": str(fee_info["fee_amount"]),
+            "fee_type": fee_info["fee_type"],
+            "fee_percentage": str(fee_info["fee_percentage"]) if fee_info["fee_percentage"] else None,
+            "within_grace_period": fee_info["within_grace_period"],
+            "grace_period_hours": fee_info["grace_period_hours"],
+            "hours_since_booking": fee_info["hours_since_booking"],
+            "reason": fee_info["reason"],
+            "reschedule_count": event.reschedule_count or 0,
         }
 
 

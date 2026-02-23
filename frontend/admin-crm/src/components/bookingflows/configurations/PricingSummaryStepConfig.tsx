@@ -22,9 +22,7 @@ import {
   Visibility as PreviewIcon,
   Gavel as GavelIcon,
 } from '@mui/icons-material';
-import type { 
-  BookingFlowStep
-} from '../../../types/bookingflows.types';
+import type { BookingFlowStep } from '../../../types/bookingflows.types';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 
 interface PricingSummaryStepConfigProps {
@@ -83,30 +81,66 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const {
-    updateConfiguration,
-  } = useBookingFlowStepConfiguration();
+  const { updateConfiguration } = useBookingFlowStepConfiguration();
 
   // Initialize form data from config
   useEffect(() => {
     if (config) {
       setFormData({
-        show_package_breakdown: typeof config.show_package_breakdown === 'boolean' ? config.show_package_breakdown : defaultFormData.show_package_breakdown,
-        show_addon_breakdown: typeof config.show_addon_breakdown === 'boolean' ? config.show_addon_breakdown : defaultFormData.show_addon_breakdown,
-        show_tax_breakdown: typeof config.show_tax_breakdown === 'boolean' ? config.show_tax_breakdown : defaultFormData.show_tax_breakdown,
-        show_discount_field: typeof config.show_discount_field === 'boolean' ? config.show_discount_field : defaultFormData.show_discount_field,
-        show_subtotal: typeof config.show_subtotal === 'boolean' ? config.show_subtotal : defaultFormData.show_subtotal,
-        allow_discount_codes: typeof config.allow_discount_codes === 'boolean' ? config.allow_discount_codes : defaultFormData.allow_discount_codes,
-        calculate_tax: typeof config.calculate_tax === 'boolean' ? config.calculate_tax : defaultFormData.calculate_tax,
-        header_text: typeof config.header_text === 'string' ? config.header_text : defaultFormData.header_text,
-        footer_text: typeof config.footer_text === 'string' ? config.footer_text : defaultFormData.footer_text,
-        discount_help_text: typeof config.discount_help_text === 'string' ? config.discount_help_text : defaultFormData.discount_help_text,
-        show_terms_checkbox: typeof config.show_terms_checkbox === 'boolean' ? config.show_terms_checkbox : defaultFormData.show_terms_checkbox,
-        show_marketing_consent: typeof config.show_marketing_consent === 'boolean' ? config.show_marketing_consent : defaultFormData.show_marketing_consent,
-        require_terms_acceptance: typeof config.require_terms_acceptance === 'boolean' ? config.require_terms_acceptance : defaultFormData.require_terms_acceptance,
-        terms_text: typeof config.terms_text === 'string' ? config.terms_text : defaultFormData.terms_text,
-        terms_url: typeof config.terms_url === 'string' ? config.terms_url : defaultFormData.terms_url,
-        privacy_url: typeof config.privacy_url === 'string' ? config.privacy_url : defaultFormData.privacy_url,
+        show_package_breakdown:
+          typeof config.show_package_breakdown === 'boolean'
+            ? config.show_package_breakdown
+            : defaultFormData.show_package_breakdown,
+        show_addon_breakdown:
+          typeof config.show_addon_breakdown === 'boolean'
+            ? config.show_addon_breakdown
+            : defaultFormData.show_addon_breakdown,
+        show_tax_breakdown:
+          typeof config.show_tax_breakdown === 'boolean'
+            ? config.show_tax_breakdown
+            : defaultFormData.show_tax_breakdown,
+        show_discount_field:
+          typeof config.show_discount_field === 'boolean'
+            ? config.show_discount_field
+            : defaultFormData.show_discount_field,
+        show_subtotal:
+          typeof config.show_subtotal === 'boolean'
+            ? config.show_subtotal
+            : defaultFormData.show_subtotal,
+        allow_discount_codes:
+          typeof config.allow_discount_codes === 'boolean'
+            ? config.allow_discount_codes
+            : defaultFormData.allow_discount_codes,
+        calculate_tax:
+          typeof config.calculate_tax === 'boolean'
+            ? config.calculate_tax
+            : defaultFormData.calculate_tax,
+        header_text:
+          typeof config.header_text === 'string' ? config.header_text : defaultFormData.header_text,
+        footer_text:
+          typeof config.footer_text === 'string' ? config.footer_text : defaultFormData.footer_text,
+        discount_help_text:
+          typeof config.discount_help_text === 'string'
+            ? config.discount_help_text
+            : defaultFormData.discount_help_text,
+        show_terms_checkbox:
+          typeof config.show_terms_checkbox === 'boolean'
+            ? config.show_terms_checkbox
+            : defaultFormData.show_terms_checkbox,
+        show_marketing_consent:
+          typeof config.show_marketing_consent === 'boolean'
+            ? config.show_marketing_consent
+            : defaultFormData.show_marketing_consent,
+        require_terms_acceptance:
+          typeof config.require_terms_acceptance === 'boolean'
+            ? config.require_terms_acceptance
+            : defaultFormData.require_terms_acceptance,
+        terms_text:
+          typeof config.terms_text === 'string' ? config.terms_text : defaultFormData.terms_text,
+        terms_url:
+          typeof config.terms_url === 'string' ? config.terms_url : defaultFormData.terms_url,
+        privacy_url:
+          typeof config.privacy_url === 'string' ? config.privacy_url : defaultFormData.privacy_url,
       });
       setHasUnsavedChanges(false);
     } else {
@@ -116,9 +150,9 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
   }, [config]);
 
   const handleFormChange = (field: keyof PricingSummaryConfigFormData, value: unknown) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
     setHasUnsavedChanges(true);
     setSaveError(null);
@@ -127,15 +161,15 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
   const handleSave = async () => {
     setIsSaving(true);
     setSaveError(null);
-    
+
     try {
       await updateConfiguration({
         stepId: step.id,
-        data: { ...formData } as Record<string, unknown>
+        data: { ...formData } as Record<string, unknown>,
       });
-      
+
       setHasUnsavedChanges(false);
-      
+
       // Call parent callback
       onUpdate({ ...formData } as Record<string, unknown>);
     } catch (error) {
@@ -149,22 +183,60 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
   const handleReset = () => {
     if (config) {
       setFormData({
-        show_package_breakdown: typeof config.show_package_breakdown === 'boolean' ? config.show_package_breakdown : defaultFormData.show_package_breakdown,
-        show_addon_breakdown: typeof config.show_addon_breakdown === 'boolean' ? config.show_addon_breakdown : defaultFormData.show_addon_breakdown,
-        show_tax_breakdown: typeof config.show_tax_breakdown === 'boolean' ? config.show_tax_breakdown : defaultFormData.show_tax_breakdown,
-        show_discount_field: typeof config.show_discount_field === 'boolean' ? config.show_discount_field : defaultFormData.show_discount_field,
-        show_subtotal: typeof config.show_subtotal === 'boolean' ? config.show_subtotal : defaultFormData.show_subtotal,
-        allow_discount_codes: typeof config.allow_discount_codes === 'boolean' ? config.allow_discount_codes : defaultFormData.allow_discount_codes,
-        calculate_tax: typeof config.calculate_tax === 'boolean' ? config.calculate_tax : defaultFormData.calculate_tax,
-        header_text: typeof config.header_text === 'string' ? config.header_text : defaultFormData.header_text,
-        footer_text: typeof config.footer_text === 'string' ? config.footer_text : defaultFormData.footer_text,
-        discount_help_text: typeof config.discount_help_text === 'string' ? config.discount_help_text : defaultFormData.discount_help_text,
-        show_terms_checkbox: typeof config.show_terms_checkbox === 'boolean' ? config.show_terms_checkbox : defaultFormData.show_terms_checkbox,
-        show_marketing_consent: typeof config.show_marketing_consent === 'boolean' ? config.show_marketing_consent : defaultFormData.show_marketing_consent,
-        require_terms_acceptance: typeof config.require_terms_acceptance === 'boolean' ? config.require_terms_acceptance : defaultFormData.require_terms_acceptance,
-        terms_text: typeof config.terms_text === 'string' ? config.terms_text : defaultFormData.terms_text,
-        terms_url: typeof config.terms_url === 'string' ? config.terms_url : defaultFormData.terms_url,
-        privacy_url: typeof config.privacy_url === 'string' ? config.privacy_url : defaultFormData.privacy_url,
+        show_package_breakdown:
+          typeof config.show_package_breakdown === 'boolean'
+            ? config.show_package_breakdown
+            : defaultFormData.show_package_breakdown,
+        show_addon_breakdown:
+          typeof config.show_addon_breakdown === 'boolean'
+            ? config.show_addon_breakdown
+            : defaultFormData.show_addon_breakdown,
+        show_tax_breakdown:
+          typeof config.show_tax_breakdown === 'boolean'
+            ? config.show_tax_breakdown
+            : defaultFormData.show_tax_breakdown,
+        show_discount_field:
+          typeof config.show_discount_field === 'boolean'
+            ? config.show_discount_field
+            : defaultFormData.show_discount_field,
+        show_subtotal:
+          typeof config.show_subtotal === 'boolean'
+            ? config.show_subtotal
+            : defaultFormData.show_subtotal,
+        allow_discount_codes:
+          typeof config.allow_discount_codes === 'boolean'
+            ? config.allow_discount_codes
+            : defaultFormData.allow_discount_codes,
+        calculate_tax:
+          typeof config.calculate_tax === 'boolean'
+            ? config.calculate_tax
+            : defaultFormData.calculate_tax,
+        header_text:
+          typeof config.header_text === 'string' ? config.header_text : defaultFormData.header_text,
+        footer_text:
+          typeof config.footer_text === 'string' ? config.footer_text : defaultFormData.footer_text,
+        discount_help_text:
+          typeof config.discount_help_text === 'string'
+            ? config.discount_help_text
+            : defaultFormData.discount_help_text,
+        show_terms_checkbox:
+          typeof config.show_terms_checkbox === 'boolean'
+            ? config.show_terms_checkbox
+            : defaultFormData.show_terms_checkbox,
+        show_marketing_consent:
+          typeof config.show_marketing_consent === 'boolean'
+            ? config.show_marketing_consent
+            : defaultFormData.show_marketing_consent,
+        require_terms_acceptance:
+          typeof config.require_terms_acceptance === 'boolean'
+            ? config.require_terms_acceptance
+            : defaultFormData.require_terms_acceptance,
+        terms_text:
+          typeof config.terms_text === 'string' ? config.terms_text : defaultFormData.terms_text,
+        terms_url:
+          typeof config.terms_url === 'string' ? config.terms_url : defaultFormData.terms_url,
+        privacy_url:
+          typeof config.privacy_url === 'string' ? config.privacy_url : defaultFormData.privacy_url,
       });
     } else {
       setFormData(defaultFormData);
@@ -201,242 +273,254 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
         </Typography>
 
         {/* Error Display */}
-        {saveError && (
-          <Alert severity="error">
-            {saveError}
-          </Alert>
-        )}
+        {saveError && <Alert severity="error">{saveError}</Alert>}
 
         {/* Display Options */}
         <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+          >
             <PreviewIcon />
             Display Options
           </Typography>
-            
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_package_breakdown}
-                      onChange={(e) => handleFormChange('show_package_breakdown', e.target.checked)}
-                      disabled={isSaving}
-                    />
-                  }
-                  label="Show Package Breakdown"
-                />
-              </Box>
-              
-              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_addon_breakdown}
-                      onChange={(e) => handleFormChange('show_addon_breakdown', e.target.checked)}
-                      disabled={isSaving}
-                    />
-                  }
-                  label="Show Add-on Breakdown"
-                />
-              </Box>
-              
-              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_tax_breakdown}
-                      onChange={(e) => handleFormChange('show_tax_breakdown', e.target.checked)}
-                      disabled={isSaving}
-                    />
-                  }
-                  label="Show Tax Breakdown"
-                />
-              </Box>
-              
-              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_subtotal}
-                      onChange={(e) => handleFormChange('show_subtotal', e.target.checked)}
-                      disabled={isSaving}
-                    />
-                  }
-                  label="Show Subtotal"
-                />
-              </Box>
-              
-              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_discount_field}
-                      onChange={(e) => handleFormChange('show_discount_field', e.target.checked)}
-                      disabled={isSaving}
-                    />
-                  }
-                  label="Show Discount Field"
-                />
-              </Box>
+
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_package_breakdown}
+                    onChange={(e) => handleFormChange('show_package_breakdown', e.target.checked)}
+                    disabled={isSaving}
+                  />
+                }
+                label="Show Package Breakdown"
+              />
             </Box>
+
+            <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_addon_breakdown}
+                    onChange={(e) => handleFormChange('show_addon_breakdown', e.target.checked)}
+                    disabled={isSaving}
+                  />
+                }
+                label="Show Add-on Breakdown"
+              />
+            </Box>
+
+            <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_tax_breakdown}
+                    onChange={(e) => handleFormChange('show_tax_breakdown', e.target.checked)}
+                    disabled={isSaving}
+                  />
+                }
+                label="Show Tax Breakdown"
+              />
+            </Box>
+
+            <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_subtotal}
+                    onChange={(e) => handleFormChange('show_subtotal', e.target.checked)}
+                    disabled={isSaving}
+                  />
+                }
+                label="Show Subtotal"
+              />
+            </Box>
+
+            <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_discount_field}
+                    onChange={(e) => handleFormChange('show_discount_field', e.target.checked)}
+                    disabled={isSaving}
+                  />
+                }
+                label="Show Discount Field"
+              />
+            </Box>
+          </Box>
         </Box>
 
         {/* Behavior Options */}
         <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+          >
             <CalculateIcon />
             Behavior Options
           </Typography>
-            
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.allow_discount_codes}
-                      onChange={(e) => handleFormChange('allow_discount_codes', e.target.checked)}
-                      disabled={isSaving}
-                    />
-                  }
-                  label="Allow Discount Codes"
-                />
-              </Box>
-              
-              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.calculate_tax}
-                      onChange={(e) => handleFormChange('calculate_tax', e.target.checked)}
-                      disabled={isSaving}
-                    />
-                  }
-                  label="Calculate Tax"
-                />
-              </Box>
+
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.allow_discount_codes}
+                    onChange={(e) => handleFormChange('allow_discount_codes', e.target.checked)}
+                    disabled={isSaving}
+                  />
+                }
+                label="Allow Discount Codes"
+              />
             </Box>
+
+            <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.calculate_tax}
+                    onChange={(e) => handleFormChange('calculate_tax', e.target.checked)}
+                    disabled={isSaving}
+                  />
+                }
+                label="Calculate Tax"
+              />
+            </Box>
+          </Box>
         </Box>
 
         {/* Custom Messaging */}
         <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+          >
             <DiscountIcon />
             Custom Messaging
           </Typography>
 
-            <Stack spacing={2}>
-              <TextField
-                label="Header Text"
-                value={formData.header_text}
-                onChange={(e) => handleFormChange('header_text', e.target.value)}
-                disabled={isSaving}
-                fullWidth
-                placeholder="Review your order"
-              />
+          <Stack spacing={2}>
+            <TextField
+              label="Header Text"
+              value={formData.header_text}
+              onChange={(e) => handleFormChange('header_text', e.target.value)}
+              disabled={isSaving}
+              fullWidth
+              placeholder="Review your order"
+            />
 
-              <TextField
-                label="Footer Text"
-                value={formData.footer_text}
-                onChange={(e) => handleFormChange('footer_text', e.target.value)}
-                disabled={isSaving}
-                fullWidth
-                multiline
-                rows={3}
-                placeholder="Optional footer message (e.g., terms and conditions)"
-              />
+            <TextField
+              label="Footer Text"
+              value={formData.footer_text}
+              onChange={(e) => handleFormChange('footer_text', e.target.value)}
+              disabled={isSaving}
+              fullWidth
+              multiline
+              rows={3}
+              placeholder="Optional footer message (e.g., terms and conditions)"
+            />
 
-              <TextField
-                label="Discount Help Text"
-                value={formData.discount_help_text}
-                onChange={(e) => handleFormChange('discount_help_text', e.target.value)}
-                disabled={isSaving}
-                fullWidth
-                placeholder="Enter discount code"
-                helperText="Text shown in or near the discount code field"
-              />
-            </Stack>
+            <TextField
+              label="Discount Help Text"
+              value={formData.discount_help_text}
+              onChange={(e) => handleFormChange('discount_help_text', e.target.value)}
+              disabled={isSaving}
+              fullWidth
+              placeholder="Enter discount code"
+              helperText="Text shown in or near the discount code field"
+            />
+          </Stack>
         </Box>
 
         {/* Terms & Legal Options */}
         <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography
+            variant="h6"
+            gutterBottom
+            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+          >
             <GavelIcon />
             Terms & Legal
           </Typography>
 
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
-              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_terms_checkbox}
-                      onChange={(e) => handleFormChange('show_terms_checkbox', e.target.checked)}
-                      disabled={isSaving}
-                    />
-                  }
-                  label="Show Terms Checkbox"
-                />
-              </Box>
-
-              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.require_terms_acceptance}
-                      onChange={(e) => handleFormChange('require_terms_acceptance', e.target.checked)}
-                      disabled={isSaving || !formData.show_terms_checkbox}
-                    />
-                  }
-                  label="Require Terms Acceptance"
-                />
-              </Box>
-
-              <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={formData.show_marketing_consent}
-                      onChange={(e) => handleFormChange('show_marketing_consent', e.target.checked)}
-                      disabled={isSaving}
-                    />
-                  }
-                  label="Show Marketing Consent"
-                />
-              </Box>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 2 }}>
+            <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_terms_checkbox}
+                    onChange={(e) => handleFormChange('show_terms_checkbox', e.target.checked)}
+                    disabled={isSaving}
+                  />
+                }
+                label="Show Terms Checkbox"
+              />
             </Box>
 
-            <Stack spacing={2}>
-              <TextField
-                label="Custom Terms Label"
-                value={formData.terms_text}
-                onChange={(e) => handleFormChange('terms_text', e.target.value)}
-                disabled={isSaving}
-                fullWidth
-                placeholder="Leave empty for default text"
-                helperText="Custom text for the terms checkbox label"
+            <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.require_terms_acceptance}
+                    onChange={(e) => handleFormChange('require_terms_acceptance', e.target.checked)}
+                    disabled={isSaving || !formData.show_terms_checkbox}
+                  />
+                }
+                label="Require Terms Acceptance"
               />
+            </Box>
 
-              <TextField
-                label="Custom Terms URL"
-                value={formData.terms_url}
-                onChange={(e) => handleFormChange('terms_url', e.target.value)}
-                disabled={isSaving}
-                fullWidth
-                placeholder="https://... (leave empty for global Terms page)"
-                helperText="Override the default Terms of Service link"
+            <Box sx={{ flex: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={formData.show_marketing_consent}
+                    onChange={(e) => handleFormChange('show_marketing_consent', e.target.checked)}
+                    disabled={isSaving}
+                  />
+                }
+                label="Show Marketing Consent"
               />
+            </Box>
+          </Box>
 
-              <TextField
-                label="Custom Privacy URL"
-                value={formData.privacy_url}
-                onChange={(e) => handleFormChange('privacy_url', e.target.value)}
-                disabled={isSaving}
-                fullWidth
-                placeholder="https://... (leave empty for global Privacy page)"
-                helperText="Override the default Privacy Policy link"
-              />
-            </Stack>
+          <Stack spacing={2}>
+            <TextField
+              label="Custom Terms Label"
+              value={formData.terms_text}
+              onChange={(e) => handleFormChange('terms_text', e.target.value)}
+              disabled={isSaving}
+              fullWidth
+              placeholder="Leave empty for default text"
+              helperText="Custom text for the terms checkbox label"
+            />
+
+            <TextField
+              label="Custom Terms URL"
+              value={formData.terms_url}
+              onChange={(e) => handleFormChange('terms_url', e.target.value)}
+              disabled={isSaving}
+              fullWidth
+              placeholder="https://... (leave empty for global Terms page)"
+              helperText="Override the default Terms of Service link"
+            />
+
+            <TextField
+              label="Custom Privacy URL"
+              value={formData.privacy_url}
+              onChange={(e) => handleFormChange('privacy_url', e.target.value)}
+              disabled={isSaving}
+              fullWidth
+              placeholder="https://... (leave empty for global Privacy page)"
+              helperText="Override the default Privacy Policy link"
+            />
+          </Stack>
         </Box>
 
         {/* Actions */}
@@ -449,7 +533,7 @@ export const PricingSummaryStepConfig: React.FC<PricingSummaryStepConfigProps> =
           >
             Reset
           </Button>
-          
+
           <Button
             variant="contained"
             onClick={handleSave}

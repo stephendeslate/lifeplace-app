@@ -122,16 +122,18 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
   };
 
   // Value changes data
-  const valueChanges = contract.contract_value ? [
-    {
-      id: '1',
-      date: contract.updated_at,
-      old_value: null,
-      new_value: contract.contract_value,
-      reason: 'Initial contract value set',
-      changed_by: undefined,
-    },
-  ] : [];
+  const valueChanges = contract.contract_value
+    ? [
+        {
+          id: '1',
+          date: contract.updated_at,
+          old_value: null,
+          new_value: contract.contract_value,
+          reason: 'Initial contract value set',
+          changed_by: undefined,
+        },
+      ]
+    : [];
 
   // Contract statistics
   const contractStats = {
@@ -192,7 +194,7 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
             </Typography>
           </Box>
         </Box>
-        
+
         <IconButton
           onClick={onClose}
           sx={{
@@ -223,9 +225,9 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
                 direction={{ xs: 'column', md: 'row' }}
                 spacing={3}
                 divider={
-                  <Divider 
-                    orientation={isMobile ? 'horizontal' : 'vertical'} 
-                    flexItem 
+                  <Divider
+                    orientation={isMobile ? 'horizontal' : 'vertical'}
+                    flexItem
                     sx={{ opacity: 0.3 }}
                   />
                 }
@@ -236,7 +238,9 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
                   </Typography>
                   <Stack spacing={1.5}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Status:</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Status:
+                      </Typography>
                       <Chip
                         label={contract.status.replace('_', ' ')}
                         size="small"
@@ -245,17 +249,27 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
                       />
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Created:</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Created:
+                      </Typography>
                       <Typography variant="body2">{formatDate(contractStats.created)}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Last Modified:</Typography>
-                      <Typography variant="body2">{formatDate(contractStats.lastModified)}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Last Modified:
+                      </Typography>
+                      <Typography variant="body2">
+                        {formatDate(contractStats.lastModified)}
+                      </Typography>
                     </Box>
                     {contract.fully_signed_at && (
                       <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">Fully Signed:</Typography>
-                        <Typography variant="body2">{formatDate(contract.fully_signed_at)}</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Fully Signed:
+                        </Typography>
+                        <Typography variant="body2">
+                          {formatDate(contract.fully_signed_at)}
+                        </Typography>
                       </Box>
                     )}
                   </Stack>
@@ -267,23 +281,32 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
                   </Typography>
                   <Stack spacing={1.5}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Value:</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Value:
+                      </Typography>
                       <Typography variant="body2" sx={{ fontWeight: 600 }}>
                         {formatCurrency(contractStats.value, contractStats.currency)}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Signatures:</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Signatures:
+                      </Typography>
                       <Typography variant="body2">
-                        {contractStats.signatures} of {contract.template.signature_requirements?.length || 1}
+                        {contractStats.signatures} of{' '}
+                        {contract.template.signature_requirements?.length || 1}
                       </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Amendments:</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Amendments:
+                      </Typography>
                       <Typography variant="body2">{contractStats.amendments}</Typography>
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Template:</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Template:
+                      </Typography>
                       <Typography variant="body2">{contract.template.name}</Typography>
                     </Box>
                   </Stack>
@@ -308,16 +331,8 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
               },
             }}
           >
-            <Tab
-              label="Timeline"
-              icon={<TimelineIcon />}
-              iconPosition="start"
-            />
-            <Tab
-              label="Signatures"
-              icon={<SignatureIcon />}
-              iconPosition="start"
-            />
+            <Tab label="Timeline" icon={<TimelineIcon />} iconPosition="start" />
+            <Tab label="Signatures" icon={<SignatureIcon />} iconPosition="start" />
             <Tab
               label={`Amendments${amendments.length > 0 ? ` (${amendments.length})` : ''}`}
               icon={<AmendmentIcon />}
@@ -488,32 +503,46 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
                         </Typography>
                         <Stack direction="row" spacing={3} flexWrap="wrap">
                           <Box>
-                            <Typography variant="caption" color="text.secondary">Requested:</Typography>
-                            <Typography variant="body2">{formatDate(amendment.requested_at)}</Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              Requested:
+                            </Typography>
+                            <Typography variant="body2">
+                              {formatDate(amendment.requested_at)}
+                            </Typography>
                           </Box>
                           {amendment.requested_by && (
                             <Box>
-                              <Typography variant="caption" color="text.secondary">Requested By:</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Requested By:
+                              </Typography>
                               <Typography variant="body2">
-                                {amendment.requested_by.first_name} {amendment.requested_by.last_name}
+                                {amendment.requested_by.first_name}{' '}
+                                {amendment.requested_by.last_name}
                               </Typography>
                             </Box>
                           )}
                           {amendment.reviewed_at && (
                             <Box>
-                              <Typography variant="caption" color="text.secondary">Reviewed:</Typography>
-                              <Typography variant="body2">{formatDate(amendment.reviewed_at)}</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Reviewed:
+                              </Typography>
+                              <Typography variant="body2">
+                                {formatDate(amendment.reviewed_at)}
+                              </Typography>
                             </Box>
                           )}
                           {amendment.value_change && (
                             <Box>
-                              <Typography variant="caption" color="text.secondary">Value Change:</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                Value Change:
+                              </Typography>
                               <Typography
                                 variant="body2"
                                 sx={{
-                                  color: parseFloat(amendment.value_change) >= 0
-                                    ? theme.palette.success.main
-                                    : theme.palette.error.main,
+                                  color:
+                                    parseFloat(amendment.value_change) >= 0
+                                      ? theme.palette.success.main
+                                      : theme.palette.error.main,
                                   fontWeight: 600,
                                 }}
                               >
@@ -524,8 +553,17 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
                           )}
                         </Stack>
                         {amendment.review_notes && (
-                          <Box sx={{ mt: 2, p: 2, bgcolor: alpha(theme.palette.grey[500], 0.1), borderRadius: 1 }}>
-                            <Typography variant="caption" color="text.secondary">Review Notes:</Typography>
+                          <Box
+                            sx={{
+                              mt: 2,
+                              p: 2,
+                              bgcolor: alpha(theme.palette.grey[500], 0.1),
+                              borderRadius: 1,
+                            }}
+                          >
+                            <Typography variant="caption" color="text.secondary">
+                              Review Notes:
+                            </Typography>
                             <Typography variant="body2">{amendment.review_notes}</Typography>
                           </Box>
                         )}
@@ -561,12 +599,7 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
                   </Typography>
                   <Stack spacing={2}>
                     {documents.map((doc) => (
-                      <GlassCard
-                        key={doc.id}
-                        variant="light"
-                        intensity="medium"
-                        sx={{ p: 2 }}
-                      >
+                      <GlassCard key={doc.id} variant="light" intensity="medium" sx={{ p: 2 }}>
                         <Stack direction="row" justifyContent="space-between" alignItems="center">
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                             <Avatar sx={{ bgcolor: theme.palette.primary.main }}>
@@ -639,18 +672,15 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
                           <TableRow key={index}>
                             <TableCell>{formatDate(change.date)}</TableCell>
                             <TableCell>
-                              {change.old_value ? formatCurrency(change.old_value, contract.currency) : '-'}
+                              {change.old_value
+                                ? formatCurrency(change.old_value, contract.currency)
+                                : '-'}
                             </TableCell>
                             <TableCell>
                               {formatCurrency(change.new_value, contract.currency)}
                             </TableCell>
                             <TableCell>
-                              <Chip
-                                label="Initial"
-                                size="small"
-                                color="info"
-                                variant="outlined"
-                              />
+                              <Chip label="Initial" size="small" color="info" variant="outlined" />
                             </TableCell>
                             <TableCell>{change.reason}</TableCell>
                           </TableRow>
@@ -685,7 +715,7 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
         <Typography variant="caption" color="text.secondary">
           Contract ID: {contract.id}
         </Typography>
-        
+
         <Stack direction="row" spacing={1}>
           <Button
             variant="outlined"
@@ -698,11 +728,7 @@ export const ContractHistoryDialog: React.FC<ContractHistoryDialogProps> = ({
           >
             Export History
           </Button>
-          <Button
-            variant="contained"
-            onClick={onClose}
-            sx={{ textTransform: 'none' }}
-          >
+          <Button variant="contained" onClick={onClose} sx={{ textTransform: 'none' }}>
             Close
           </Button>
         </Stack>

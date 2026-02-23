@@ -137,7 +137,7 @@ const PaymentMethodEditDialog: React.FC<PaymentMethodEditDialogProps> = ({
           backgroundColor: alpha(theme.palette.background.paper, 0.95),
           backdropFilter: 'blur(10px)',
           border: `1px solid ${alpha('#fff', 0.1)}`,
-        }
+        },
       }}
     >
       <DialogTitle>
@@ -205,9 +205,10 @@ const PaymentMethodEditDialog: React.FC<PaymentMethodEditDialogProps> = ({
                 )}
                 {paymentMethod.expiry_date && (
                   <Typography variant="caption" color="text.secondary">
-                    Expires: {new Date(paymentMethod.expiry_date).toLocaleDateString('en-US', {
+                    Expires:{' '}
+                    {new Date(paymentMethod.expiry_date).toLocaleDateString('en-US', {
                       month: '2-digit',
-                      year: '2-digit'
+                      year: '2-digit',
                     })}
                   </Typography>
                 )}
@@ -222,7 +223,7 @@ const PaymentMethodEditDialog: React.FC<PaymentMethodEditDialogProps> = ({
               value={formData.nickname}
               onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
               placeholder="e.g., Main Credit Card, Business Account"
-              helperText={errors.nickname || "Give your payment method a memorable name (optional)"}
+              helperText={errors.nickname || 'Give your payment method a memorable name (optional)'}
               error={!!errors.nickname}
               disabled={updatePaymentMethod.isPending}
               fullWidth
@@ -283,8 +284,9 @@ const PaymentMethodEditDialog: React.FC<PaymentMethodEditDialogProps> = ({
                 Security Note
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                For security reasons, you cannot modify the card details or payment method type.
-                If you need to update your card information, please add a new payment method and delete this one.
+                For security reasons, you cannot modify the card details or payment method type. If
+                you need to update your card information, please add a new payment method and delete
+                this one.
               </Typography>
             </Box>
           </Stack>

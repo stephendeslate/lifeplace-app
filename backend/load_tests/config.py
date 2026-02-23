@@ -11,11 +11,11 @@ Total requests: ~50 (well under rate limits)
 
 import os
 from dataclasses import dataclass
-from typing import Optional
 from pathlib import Path
 
 from dotenv import load_dotenv
-env_path = Path(__file__).parent / '.env'
+
+env_path = Path(__file__).parent / ".env"
 load_dotenv(env_path)
 
 
@@ -31,9 +31,9 @@ class LoadTestConfig:
     client_password: str = os.getenv("LOAD_TEST_CLIENT_PASSWORD", "")
 
     # Booking flow IDs (from production database)
-    booking_flow_id: Optional[str] = os.getenv("LOAD_TEST_BOOKING_FLOW_ID")
-    package_id: Optional[str] = os.getenv("LOAD_TEST_PACKAGE_ID")
-    event_type_id: Optional[str] = os.getenv("LOAD_TEST_EVENT_TYPE_ID")
+    booking_flow_id: str | None = os.getenv("LOAD_TEST_BOOKING_FLOW_ID")
+    package_id: str | None = os.getenv("LOAD_TEST_PACKAGE_ID")
+    event_type_id: str | None = os.getenv("LOAD_TEST_EVENT_TYPE_ID")
 
     # Smoke test settings
     # 1 user per scenario, runs each critical path once
@@ -49,7 +49,7 @@ class LoadTestConfig:
     error_rate_threshold: float = 1.0
 
     # Rate limits from settings.py (for reference)
-    anon_rate_limit: int = 100   # per hour
+    anon_rate_limit: int = 100  # per hour
     user_rate_limit: int = 1000  # per hour
 
 

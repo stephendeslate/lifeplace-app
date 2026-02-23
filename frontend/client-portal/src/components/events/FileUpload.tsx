@@ -41,12 +41,7 @@ const FILE_CATEGORIES = [
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.txt', '.rtf'];
 
-const FileUploadComponent: React.FC<FileUploadProps> = ({
-  eventId,
-  open,
-  onClose,
-  onSuccess,
-}) => {
+const FileUploadComponent: React.FC<FileUploadProps> = ({ eventId, open, onClose, onSuccess }) => {
   const { useUploadEventFile } = useEvents();
   const uploadMutation = useUploadEventFile();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -147,11 +142,7 @@ const FileUploadComponent: React.FC<FileUploadProps> = ({
           <Typography variant="h6" component="div">
             Upload File
           </Typography>
-          <IconButton
-            onClick={handleClose}
-            disabled={uploadMutation.isPending}
-            size="small"
-          >
+          <IconButton onClick={handleClose} disabled={uploadMutation.isPending} size="small">
             <CloseIcon />
           </IconButton>
         </Stack>
@@ -200,8 +191,7 @@ const FileUploadComponent: React.FC<FileUploadProps> = ({
                   {selectedFile.name}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  Size: {formatFileSize(selectedFile.size)} • 
-                  Type: {selectedFile.type || 'Unknown'}
+                  Size: {formatFileSize(selectedFile.size)} • Type: {selectedFile.type || 'Unknown'}
                 </Typography>
               </Stack>
             </Paper>
@@ -263,10 +253,7 @@ const FileUploadComponent: React.FC<FileUploadProps> = ({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button
-          onClick={handleClose}
-          disabled={uploadMutation.isPending}
-        >
+        <Button onClick={handleClose} disabled={uploadMutation.isPending}>
           Cancel
         </Button>
         <Button

@@ -59,21 +59,23 @@ export const useThemeColors = () => {
       900: isDark ? theme.palette.grey[50] : theme.palette.grey[900],
     },
     // Surface elevation levels for dark mode (solid colors, not transparent)
-    surface: isDark ? {
-      base: darkSurfaces.base,
-      level1: darkSurfaces.surface1,
-      level2: darkSurfaces.surface2,
-      level3: darkSurfaces.surface3,
-      level4: darkSurfaces.surface4,
-      level5: darkSurfaces.surface5,
-    } : {
-      base: '#fafafa',
-      level1: '#ffffff',
-      level2: 'rgba(255, 255, 255, 0.8)',
-      level3: 'rgba(255, 255, 255, 0.9)',
-      level4: 'rgba(255, 255, 255, 0.95)',
-      level5: '#ffffff',
-    },
+    surface: isDark
+      ? {
+          base: darkSurfaces.base,
+          level1: darkSurfaces.surface1,
+          level2: darkSurfaces.surface2,
+          level3: darkSurfaces.surface3,
+          level4: darkSurfaces.surface4,
+          level5: darkSurfaces.surface5,
+        }
+      : {
+          base: '#fafafa',
+          level1: '#ffffff',
+          level2: 'rgba(255, 255, 255, 0.8)',
+          level3: 'rgba(255, 255, 255, 0.9)',
+          level4: 'rgba(255, 255, 255, 0.95)',
+          level5: '#ffffff',
+        },
     // Borders with proper contrast
     border: {
       subtle: isDark ? darkSurfaces.border.subtle : 'rgba(0, 0, 0, 0.06)',
@@ -81,13 +83,31 @@ export const useThemeColors = () => {
       prominent: isDark ? darkSurfaces.border.prominent : 'rgba(0, 0, 0, 0.23)',
     },
     // Semantic colors for status indicators
-    semantic: isDark ? darkSurfaces.semantic : {
-      primary: { bg: 'rgba(33, 150, 243, 0.1)', border: 'rgba(33, 150, 243, 0.3)', text: '#1976d2' },
-      success: { bg: 'rgba(76, 175, 80, 0.1)', border: 'rgba(76, 175, 80, 0.3)', text: '#2e7d32' },
-      warning: { bg: 'rgba(255, 152, 0, 0.1)', border: 'rgba(255, 152, 0, 0.3)', text: '#ed6c02' },
-      error: { bg: 'rgba(244, 67, 54, 0.1)', border: 'rgba(244, 67, 54, 0.3)', text: '#d32f2f' },
-      info: { bg: 'rgba(3, 169, 244, 0.1)', border: 'rgba(3, 169, 244, 0.3)', text: '#0288d1' },
-    },
+    semantic: isDark
+      ? darkSurfaces.semantic
+      : {
+          primary: {
+            bg: 'rgba(33, 150, 243, 0.1)',
+            border: 'rgba(33, 150, 243, 0.3)',
+            text: '#1976d2',
+          },
+          success: {
+            bg: 'rgba(76, 175, 80, 0.1)',
+            border: 'rgba(76, 175, 80, 0.3)',
+            text: '#2e7d32',
+          },
+          warning: {
+            bg: 'rgba(255, 152, 0, 0.1)',
+            border: 'rgba(255, 152, 0, 0.3)',
+            text: '#ed6c02',
+          },
+          error: {
+            bg: 'rgba(244, 67, 54, 0.1)',
+            border: 'rgba(244, 67, 54, 0.3)',
+            text: '#d32f2f',
+          },
+          info: { bg: 'rgba(3, 169, 244, 0.1)', border: 'rgba(3, 169, 244, 0.3)', text: '#0288d1' },
+        },
     primary: theme.palette.primary,
     secondary: theme.palette.secondary,
     success: theme.palette.success,

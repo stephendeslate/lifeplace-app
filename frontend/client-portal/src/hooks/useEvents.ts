@@ -10,7 +10,7 @@ import type {
   EventPreferencesUpdate,
   TaskUpdate,
   FileUpload,
-  FeedbackSubmission
+  FeedbackSubmission,
 } from '../types/events.types';
 
 export const useEvents = () => {
@@ -69,8 +69,13 @@ export const useEvents = () => {
   // Create event note mutation
   const useCreateEventNote = () => {
     return useMutation({
-      mutationFn: ({ eventId, data }: { eventId: number; data: { content: string; title?: string } }) =>
-        eventsApi.createEventNote(eventId, data),
+      mutationFn: ({
+        eventId,
+        data,
+      }: {
+        eventId: number;
+        data: { content: string; title?: string };
+      }) => eventsApi.createEventNote(eventId, data),
       onSuccess: (_, variables) => {
         showSuccess('Note Added', 'Your note has been added successfully.');
 
@@ -85,9 +90,10 @@ export const useEvents = () => {
       },
       onError: (error: unknown) => {
         const err = error as { response?: { data?: { detail?: string; error?: string } } };
-        const message = err.response?.data?.detail ||
-                       err.response?.data?.error ||
-                       'Failed to add note. Please try again.';
+        const message =
+          err.response?.data?.detail ||
+          err.response?.data?.error ||
+          'Failed to add note. Please try again.';
         showError('Note Failed', message);
       },
     });
@@ -119,18 +125,19 @@ export const useEvents = () => {
         eventsApi.updatePreferences(id, data),
       onSuccess: (updatedEvent, variables) => {
         showSuccess('Preferences Updated', 'Your event preferences have been saved successfully.');
-        
+
         // Update the specific event in cache
         queryClient.setQueryData(['event', variables.id], updatedEvent);
-        
+
         // Invalidate the events list to reflect any changes
         queryClient.invalidateQueries({ queryKey: ['events'] });
       },
       onError: (error: unknown) => {
         const err = error as { response?: { data?: { detail?: string; error?: string } } };
-        const message = err.response?.data?.detail || 
-                       err.response?.data?.error || 
-                       'Failed to update preferences. Please try again.';
+        const message =
+          err.response?.data?.detail ||
+          err.response?.data?.error ||
+          'Failed to update preferences. Please try again.';
         showError('Update Failed', message);
       },
     });
@@ -165,22 +172,30 @@ export const useEvents = () => {
   // Update event task mutation
   const useUpdateEventTask = () => {
     return useMutation({
-      mutationFn: ({ eventId, taskId, data }: { eventId: number; taskId: number; data: TaskUpdate }) =>
-        eventsApi.updateEventTask(eventId, taskId, data),
+      mutationFn: ({
+        eventId,
+        taskId,
+        data,
+      }: {
+        eventId: number;
+        taskId: number;
+        data: TaskUpdate;
+      }) => eventsApi.updateEventTask(eventId, taskId, data),
       onSuccess: (updatedTask, variables) => {
         showSuccess('Task Updated', `Task "${updatedTask.title}" has been updated successfully.`);
-        
+
         // Update tasks in cache
         queryClient.invalidateQueries({ queryKey: ['event-tasks', variables.eventId] });
-        
+
         // Update the event detail to refresh task counts
         queryClient.invalidateQueries({ queryKey: ['event', variables.eventId] });
       },
       onError: (error: unknown) => {
         const err = error as { response?: { data?: { detail?: string; error?: string } } };
-        const message = err.response?.data?.detail || 
-                       err.response?.data?.error || 
-                       'Failed to update task. Please try again.';
+        const message =
+          err.response?.data?.detail ||
+          err.response?.data?.error ||
+          'Failed to update task. Please try again.';
         showError('Update Failed', message);
       },
     });
@@ -192,8 +207,11 @@ export const useEvents = () => {
       mutationFn: ({ eventId, data }: { eventId: number; data: FileUpload }) =>
         eventsApi.uploadEventFile(eventId, data),
       onSuccess: (uploadedFile, variables) => {
-        showSuccess('Upload Successful', `File "${uploadedFile.name}" has been uploaded successfully.`);
-        
+        showSuccess(
+          'Upload Successful',
+          `File "${uploadedFile.name}" has been uploaded successfully.`,
+        );
+
         // Invalidate related queries
         queryClient.invalidateQueries({ queryKey: ['event-documents', variables.eventId] });
         queryClient.invalidateQueries({ queryKey: ['event', variables.eventId] });
@@ -201,9 +219,10 @@ export const useEvents = () => {
       },
       onError: (error: unknown) => {
         const err = error as { response?: { data?: { detail?: string; error?: string } } };
-        const message = err.response?.data?.detail || 
-                       err.response?.data?.error || 
-                       'Failed to upload file. Please try again.';
+        const message =
+          err.response?.data?.detail ||
+          err.response?.data?.error ||
+          'Failed to upload file. Please try again.';
         showError('Upload Failed', message);
       },
     });
@@ -231,19 +250,23 @@ export const useEvents = () => {
       mutationFn: ({ eventId, data }: { eventId: number; data: FeedbackSubmission }) =>
         eventsApi.submitEventFeedback(eventId, data),
       onSuccess: (feedback, variables) => {
-        showSuccess('Feedback Submitted', 'Thank you for your feedback! Your input helps us improve our services.');
-        
+        showSuccess(
+          'Feedback Submitted',
+          'Thank you for your feedback! Your input helps us improve our services.',
+        );
+
         // Update feedback in cache
         queryClient.setQueryData(['event-feedback', variables.eventId], feedback);
-        
+
         // Invalidate timeline to show new feedback entry
         queryClient.invalidateQueries({ queryKey: ['event-timeline', variables.eventId] });
       },
       onError: (error: unknown) => {
         const err = error as { response?: { data?: { detail?: string; error?: string } } };
-        const message = err.response?.data?.detail || 
-                       err.response?.data?.error || 
-                       'Failed to submit feedback. Please try again.';
+        const message =
+          err.response?.data?.detail ||
+          err.response?.data?.error ||
+          'Failed to submit feedback. Please try again.';
         showError('Submission Failed', message);
       },
     });
@@ -252,19 +275,27 @@ export const useEvents = () => {
   // Update event feedback mutation
   const useUpdateEventFeedback = () => {
     return useMutation({
-      mutationFn: ({ eventId, feedbackId, data }: { eventId: number; feedbackId: number; data: Partial<FeedbackSubmission> }) =>
-        eventsApi.updateEventFeedback(eventId, feedbackId, data),
+      mutationFn: ({
+        eventId,
+        feedbackId,
+        data,
+      }: {
+        eventId: number;
+        feedbackId: number;
+        data: Partial<FeedbackSubmission>;
+      }) => eventsApi.updateEventFeedback(eventId, feedbackId, data),
       onSuccess: (feedback, variables) => {
         showSuccess('Feedback Updated', 'Your feedback has been updated successfully.');
-        
+
         // Update feedback in cache
         queryClient.setQueryData(['event-feedback', variables.eventId], feedback);
       },
       onError: (error: unknown) => {
         const err = error as { response?: { data?: { detail?: string; error?: string } } };
-        const message = err.response?.data?.detail || 
-                       err.response?.data?.error || 
-                       'Failed to update feedback. Please try again.';
+        const message =
+          err.response?.data?.detail ||
+          err.response?.data?.error ||
+          'Failed to update feedback. Please try again.';
         showError('Update Failed', message);
       },
     });

@@ -1,12 +1,13 @@
 """Tests for phone number validation and normalization utilities."""
 
-import pytest
 from django.core.exceptions import ValidationError
 
+import pytest
+
 from core.utils.validators import (
-    validate_phone_number,
-    normalize_phone_number,
     PhoneNumberValidator,
+    normalize_phone_number,
+    validate_phone_number,
 )
 
 
@@ -14,38 +15,47 @@ class TestValidatePhoneNumber:
     """Tests for validate_phone_number()."""
 
     # Valid Philippine formats
-    @pytest.mark.parametrize("phone", [
-        "09123456789",       # Local mobile
-        "+639123456789",     # International
-        "9123456789",        # Without leading 0
-        "+63 912 345 6789",  # With spaces
-        "0912-345-6789",     # With dashes
-        "(0912) 345-6789",   # With parens
-    ])
+    @pytest.mark.parametrize(
+        "phone",
+        [
+            "09123456789",  # Local mobile
+            "+639123456789",  # International
+            "9123456789",  # Without leading 0
+            "+63 912 345 6789",  # With spaces
+            "0912-345-6789",  # With dashes
+            "(0912) 345-6789",  # With parens
+        ],
+    )
     def test_valid_ph_numbers(self, phone):
         assert validate_phone_number(phone) is True
 
     # Valid international numbers
-    @pytest.mark.parametrize("phone", [
-        "+14155551234",      # US
-        "+442071234567",     # UK
-        "+81312345678",      # Japan
-        "+61412345678",      # Australia
-        "+1 415 555 1234",   # US with spaces
-    ])
+    @pytest.mark.parametrize(
+        "phone",
+        [
+            "+14155551234",  # US
+            "+442071234567",  # UK
+            "+81312345678",  # Japan
+            "+61412345678",  # Australia
+            "+1 415 555 1234",  # US with spaces
+        ],
+    )
     def test_valid_international_numbers(self, phone):
         assert validate_phone_number(phone) is True
 
     # Invalid numbers
-    @pytest.mark.parametrize("phone", [
-        "",
-        "   ",
-        "1234",
-        "09abc456789",
-        "not-a-number",
-        "+0000000000",
-        "12345",
-    ])
+    @pytest.mark.parametrize(
+        "phone",
+        [
+            "",
+            "   ",
+            "1234",
+            "09abc456789",
+            "not-a-number",
+            "+0000000000",
+            "12345",
+        ],
+    )
     def test_invalid_numbers(self, phone):
         assert validate_phone_number(phone) is False
 
@@ -59,15 +69,18 @@ class TestValidatePhoneNumber:
 class TestNormalizePhoneNumber:
     """Tests for normalize_phone_number()."""
 
-    @pytest.mark.parametrize("input_phone,expected", [
-        ("09123456789", "+639123456789"),
-        ("+639123456789", "+639123456789"),
-        ("9123456789", "+639123456789"),
-        ("+63 912 345 6789", "+639123456789"),
-        ("0912-345-6789", "+639123456789"),
-        ("+14155551234", "+14155551234"),
-        ("+442071234567", "+442071234567"),
-    ])
+    @pytest.mark.parametrize(
+        "input_phone,expected",
+        [
+            ("09123456789", "+639123456789"),
+            ("+639123456789", "+639123456789"),
+            ("9123456789", "+639123456789"),
+            ("+63 912 345 6789", "+639123456789"),
+            ("0912-345-6789", "+639123456789"),
+            ("+14155551234", "+14155551234"),
+            ("+442071234567", "+442071234567"),
+        ],
+    )
     def test_normalization(self, input_phone, expected):
         assert normalize_phone_number(input_phone) == expected
 

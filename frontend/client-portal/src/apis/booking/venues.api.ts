@@ -19,7 +19,6 @@ import type {
  * Venues API for client-facing booking flow
  */
 export class VenuesApi {
-
   /**
    * Get all active bookable venues
    */
@@ -35,7 +34,9 @@ export class VenuesApi {
    */
   static async getRentableVenues(eventTypeId?: number): Promise<RentableVenueWithEventType[]> {
     const params = eventTypeId ? { event_type_id: eventTypeId } : {};
-    const response = await api.get<RentableVenueWithEventType[]>('/venues/public/rentable/', { params });
+    const response = await api.get<RentableVenueWithEventType[]>('/venues/public/rentable/', {
+      params,
+    });
     return response.data;
   }
 
@@ -54,8 +55,10 @@ export class VenuesApi {
     if (venueWithEventType.has_event_type_config) {
       return {
         basePrice: venueWithEventType.effective_base_price || venue.standalone_base_price,
-        includedHours: venueWithEventType.effective_included_hours || venue.standalone_included_hours,
-        excessHourPrice: venueWithEventType.effective_excess_hour_price || venue.standalone_excess_hour_price,
+        includedHours:
+          venueWithEventType.effective_included_hours || venue.standalone_included_hours,
+        excessHourPrice:
+          venueWithEventType.effective_excess_hour_price || venue.standalone_excess_hour_price,
         isAllDayAccess: venueWithEventType.is_all_day_access || false,
       };
     }
@@ -73,9 +76,11 @@ export class VenuesApi {
    * Get all venues with event-type-specific pricing
    * @param eventTypeId Event type ID for event-type-specific pricing
    */
-  static async getRentableVenuesWithEventType(eventTypeId: number): Promise<RentableVenueWithEventType[]> {
+  static async getRentableVenuesWithEventType(
+    eventTypeId: number,
+  ): Promise<RentableVenueWithEventType[]> {
     const response = await api.get<RentableVenueWithEventType[]>('/venues/public/rentable/', {
-      params: { event_type_id: eventTypeId }
+      params: { event_type_id: eventTypeId },
     });
     return response.data;
   }
@@ -86,7 +91,7 @@ export class VenuesApi {
   static async createFromVenues(data: CreateFromVenuesRequest): Promise<CreateFromVenuesResponse> {
     const response = await api.post<CreateFromVenuesResponse>(
       '/products/products/create_from_venues/',
-      data
+      data,
     );
     return response.data;
   }
@@ -95,10 +100,12 @@ export class VenuesApi {
    * Find pre-made packages that match or partially match the selected venues.
    * Returns packages with price comparison data for recommendations.
    */
-  static async findMatchingPackages(data: FindMatchingPackagesRequest): Promise<FindMatchingPackagesResponse> {
+  static async findMatchingPackages(
+    data: FindMatchingPackagesRequest,
+  ): Promise<FindMatchingPackagesResponse> {
     const response = await api.post<FindMatchingPackagesResponse>(
       '/products/products/find_matching_packages/',
-      data
+      data,
     );
     return response.data;
   }
@@ -116,7 +123,7 @@ export class VenuesApi {
    */
   static async getPackageVenues(packageId: number): Promise<PackageVenuePublic[]> {
     const response = await api.get<PackageVenuePublic[]>(
-      `/venues/package-venues/by_package/?package_id=${packageId}`
+      `/venues/package-venues/by_package/?package_id=${packageId}`,
     );
     return response.data;
   }
@@ -126,7 +133,7 @@ export class VenuesApi {
    */
   static async getPrimaryVenueForPackage(packageId: number): Promise<PackageVenuePublic | null> {
     const venues = await this.getPackageVenues(packageId);
-    return venues.find(v => v.is_primary) || venues[0] || null;
+    return venues.find((v) => v.is_primary) || venues[0] || null;
   }
 
   /**
@@ -134,11 +141,11 @@ export class VenuesApi {
    */
   static async calculateTimes(
     venueId: number,
-    data: CalculateTimesRequest
+    data: CalculateTimesRequest,
   ): Promise<VenueTimeCalculation> {
     const response = await api.post<VenueTimeCalculation>(
       `/venues/public/${venueId}/calculate_times/`,
-      data
+      data,
     );
     return response.data;
   }
@@ -149,10 +156,10 @@ export class VenuesApi {
   static async getVenueAvailability(
     venueId: number,
     startDate: string,
-    endDate: string
+    endDate: string,
   ): Promise<VenueAvailabilityResponse> {
     const response = await api.get<VenueAvailabilityResponse>(
-      `/venues/public/${venueId}/availability/?start_date=${startDate}&end_date=${endDate}`
+      `/venues/public/${venueId}/availability/?start_date=${startDate}&end_date=${endDate}`,
     );
     return response.data;
   }
@@ -162,11 +169,11 @@ export class VenuesApi {
    */
   static async isDateAvailable(
     venueId: number,
-    date: string
+    date: string,
   ): Promise<{ available: boolean; reason?: string }> {
     try {
       const availability = await this.getVenueAvailability(venueId, date, date);
-      const blockedDate = availability.blocked_dates.find(b => b.date === date);
+      const blockedDate = availability.blocked_dates.find((b) => b.date === date);
 
       if (blockedDate) {
         return {
@@ -211,19 +218,14 @@ export class VenuesApi {
       defaultCheckout: rules.default_checkout_time,
       defaultDuration: parseFloat(rules.default_program_hours) || 3,
       minDuration: parseFloat(rules.minimum_program_hours) || 1,
-      maxDuration: rules.maximum_program_hours
-        ? parseFloat(rules.maximum_program_hours)
-        : null,
+      maxDuration: rules.maximum_program_hours ? parseFloat(rules.maximum_program_hours) : null,
     };
   }
 
   /**
    * Calculate early check-in fee
    */
-  static calculateEarlyCheckinFee(
-    venue: VenuePublic,
-    hours: number
-  ): number | null {
+  static calculateEarlyCheckinFee(venue: VenuePublic, hours: number): number | null {
     const rules = venue.operating_rules;
 
     if (!rules?.early_checkin_allowed || !rules.early_checkin_fee_per_hour) {
@@ -237,10 +239,7 @@ export class VenuesApi {
   /**
    * Calculate late checkout fee
    */
-  static calculateLateCheckoutFee(
-    venue: VenuePublic,
-    hours: number
-  ): number | null {
+  static calculateLateCheckoutFee(venue: VenuePublic, hours: number): number | null {
     const rules = venue.operating_rules;
 
     if (!rules?.late_checkout_allowed || !rules.late_checkout_fee_per_hour) {

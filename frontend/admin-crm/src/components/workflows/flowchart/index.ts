@@ -6,7 +6,11 @@ export { SwimlaneHeader } from './nodes/SwimlaneHeader';
 export { AddStageNode } from './nodes/AddStageNode';
 export { ProgressionEdge } from './edges/ProgressionEdge';
 export { useFlowchartState } from './hooks/useFlowchartState';
-export { calculateLayout, getFlowchartBounds, calculateReorderMapping } from './utils/layoutCalculator';
+export {
+  calculateLayout,
+  getFlowchartBounds,
+  calculateReorderMapping,
+} from './utils/layoutCalculator';
 
 // Types
 export type {

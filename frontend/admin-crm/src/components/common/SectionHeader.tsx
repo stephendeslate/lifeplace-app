@@ -29,13 +29,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   sx,
 }) => {
   return (
-    <Box
-      display="flex"
-      justifyContent="space-between"
-      alignItems="flex-start"
-      mb={2}
-      sx={sx}
-    >
+    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2} sx={sx}>
       <Box display="flex" alignItems="center" gap={1.5}>
         {icon && (
           <Box

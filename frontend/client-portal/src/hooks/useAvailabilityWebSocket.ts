@@ -93,7 +93,7 @@ interface UseAvailabilityWebSocketResult {
  * ```
  */
 export const useAvailabilityWebSocket = (
-  options: UseAvailabilityWebSocketOptions = {}
+  options: UseAvailabilityWebSocketOptions = {},
 ): UseAvailabilityWebSocketResult => {
   const {
     enabled = true,
@@ -149,7 +149,8 @@ export const useAvailabilityWebSocket = (
 
             // Check if this affects the selected date
             if (selectedDate && blockedMsg.date === selectedDate) {
-              if (import.meta.env.DEV) console.log('[AvailabilityWS] Selected date was blocked!', selectedDate);
+              if (import.meta.env.DEV)
+                console.log('[AvailabilityWS] Selected date was blocked!', selectedDate);
               setSelectedDateBlocked(true);
               setBlockedDate(blockedMsg.date);
             }
@@ -161,7 +162,8 @@ export const useAvailabilityWebSocket = (
 
           case 'date_released': {
             const releasedMsg = message as DateReleasedMessage;
-            if (import.meta.env.DEV) console.log('[AvailabilityWS] Date released:', releasedMsg.date);
+            if (import.meta.env.DEV)
+              console.log('[AvailabilityWS] Date released:', releasedMsg.date);
 
             // Invalidate the availability query to refresh calendar
             queryClient.invalidateQueries({ queryKey: ['eventAvailability'] });
@@ -191,14 +193,7 @@ export const useAvailabilityWebSocket = (
         if (import.meta.env.DEV) console.error('[AvailabilityWS] Error parsing message:', error);
       }
     },
-    [
-      queryClient,
-      selectedDate,
-      blockedDate,
-      onDateBlocked,
-      onDateReleased,
-      clearBlockedDate,
-    ]
+    [queryClient, selectedDate, blockedDate, onDateBlocked, onDateReleased, clearBlockedDate],
   );
 
   // Start ping interval
@@ -249,7 +244,8 @@ export const useAvailabilityWebSocket = (
       ws.onmessage = handleMessage;
 
       ws.onclose = (event) => {
-        if (import.meta.env.DEV) console.log('[AvailabilityWS] Disconnected:', event.code, event.reason);
+        if (import.meta.env.DEV)
+          console.log('[AvailabilityWS] Disconnected:', event.code, event.reason);
         setIsConnected(false);
         stopPing();
         onDisconnect?.();

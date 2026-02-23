@@ -12,10 +12,7 @@ import {
   Alert,
   CircularProgress,
 } from '@mui/material';
-import {
-  Note as NoteIcon,
-  Send as SendIcon,
-} from '@mui/icons-material';
+import { Note as NoteIcon, Send as SendIcon } from '@mui/icons-material';
 import { format } from 'date-fns';
 import { useEvents } from '../../hooks/useEvents';
 
@@ -40,7 +37,7 @@ export const EventNotes: React.FC<EventNotesProps> = ({ eventId }) => {
         onSuccess: () => {
           setNewNoteContent('');
         },
-      }
+      },
     );
   };
 
@@ -91,7 +88,9 @@ export const EventNotes: React.FC<EventNotesProps> = ({ eventId }) => {
               type="submit"
               variant="contained"
               disabled={!newNoteContent.trim() || createNoteMutation.isPending}
-              startIcon={createNoteMutation.isPending ? <CircularProgress size={20} /> : <SendIcon />}
+              startIcon={
+                createNoteMutation.isPending ? <CircularProgress size={20} /> : <SendIcon />
+              }
             >
               {createNoteMutation.isPending ? 'Sending...' : 'Send Note'}
             </Button>
@@ -116,7 +115,8 @@ export const EventNotes: React.FC<EventNotesProps> = ({ eventId }) => {
             No Notes Yet
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Use the form above to add your first note. Notes are a great way to communicate with us about your event.
+            Use the form above to add your first note. Notes are a great way to communicate with us
+            about your event.
           </Typography>
         </Paper>
       ) : (

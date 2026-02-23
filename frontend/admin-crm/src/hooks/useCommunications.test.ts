@@ -1,20 +1,19 @@
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
-import { useCommunications } from "./useCommunications";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { useCommunications } from './useCommunications';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-describe("useCommunications", () => {
-  describe("Templates", () => {
-    it("fetches templates", async () => {
+describe('useCommunications', () => {
+  describe('Templates', () => {
+    it('fetches templates', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useCommunications(), { wrapper });
 
-      const { result: templatesResult } = renderHook(
-        () => result.current.useTemplates(),
-        { wrapper },
-      );
+      const { result: templatesResult } = renderHook(() => result.current.useTemplates(), {
+        wrapper,
+      });
 
       await waitFor(
         () => {
@@ -27,14 +26,13 @@ describe("useCommunications", () => {
       expect(templatesResult.current.data!.length).toBeGreaterThan(0);
     });
 
-    it("fetches single template by ID", async () => {
+    it('fetches single template by ID', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useCommunications(), { wrapper });
 
-      const { result: templateResult } = renderHook(
-        () => result.current.useTemplate(1),
-        { wrapper },
-      );
+      const { result: templateResult } = renderHook(() => result.current.useTemplate(1), {
+        wrapper,
+      });
 
       await waitFor(
         () => {
@@ -47,22 +45,21 @@ describe("useCommunications", () => {
       expect(templateResult.current.data?.id).toBe(1);
     });
 
-    it("creates a template", async () => {
+    it('creates a template', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useCommunications(), { wrapper });
 
-      const { result: createResult } = renderHook(
-        () => result.current.useCreateTemplate(),
-        { wrapper },
-      );
+      const { result: createResult } = renderHook(() => result.current.useCreateTemplate(), {
+        wrapper,
+      });
 
       act(() => {
         createResult.current.mutate({
-          name: "New Template",
-          channel: "EMAIL",
-          category: "MANUAL",
-          context_type: "GENERAL" as never,
-          body_template: "<p>Hello</p>",
+          name: 'New Template',
+          channel: 'EMAIL',
+          category: 'MANUAL',
+          context_type: 'GENERAL' as never,
+          body_template: '<p>Hello</p>',
         });
       });
 
@@ -75,19 +72,18 @@ describe("useCommunications", () => {
       );
     });
 
-    it("updates a template", async () => {
+    it('updates a template', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useCommunications(), { wrapper });
 
-      const { result: updateResult } = renderHook(
-        () => result.current.useUpdateTemplate(),
-        { wrapper },
-      );
+      const { result: updateResult } = renderHook(() => result.current.useUpdateTemplate(), {
+        wrapper,
+      });
 
       act(() => {
         updateResult.current.mutate({
           id: 1,
-          data: { name: "Updated Template" },
+          data: { name: 'Updated Template' },
         });
       });
 
@@ -100,14 +96,13 @@ describe("useCommunications", () => {
       );
     });
 
-    it("deletes a template", async () => {
+    it('deletes a template', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useCommunications(), { wrapper });
 
-      const { result: deleteResult } = renderHook(
-        () => result.current.useDeleteTemplate(),
-        { wrapper },
-      );
+      const { result: deleteResult } = renderHook(() => result.current.useDeleteTemplate(), {
+        wrapper,
+      });
 
       act(() => {
         deleteResult.current.mutate(1);
@@ -122,14 +117,13 @@ describe("useCommunications", () => {
       );
     });
 
-    it("previews a template", async () => {
+    it('previews a template', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useCommunications(), { wrapper });
 
-      const { result: previewResult } = renderHook(
-        () => result.current.usePreviewTemplate(),
-        { wrapper },
-      );
+      const { result: previewResult } = renderHook(() => result.current.usePreviewTemplate(), {
+        wrapper,
+      });
 
       act(() => {
         previewResult.current.mutate({ id: 1, data: {} });
@@ -144,14 +138,13 @@ describe("useCommunications", () => {
       );
     });
 
-    it("duplicates a template", async () => {
+    it('duplicates a template', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useCommunications(), { wrapper });
 
-      const { result: duplicateResult } = renderHook(
-        () => result.current.useDuplicateTemplate(),
-        { wrapper },
-      );
+      const { result: duplicateResult } = renderHook(() => result.current.useDuplicateTemplate(), {
+        wrapper,
+      });
 
       act(() => {
         duplicateResult.current.mutate({ templateId: 1 });
@@ -166,31 +159,27 @@ describe("useCommunications", () => {
       );
     });
 
-    it("handles create error", async () => {
+    it('handles create error', async () => {
       server.use(
-        http.post("http://localhost:8000/api/communications/templates/", () => {
-          return HttpResponse.json(
-            { detail: "Template name already exists" },
-            { status: 400 },
-          );
+        http.post('http://localhost:8000/api/communications/templates/', () => {
+          return HttpResponse.json({ detail: 'Template name already exists' }, { status: 400 });
         }),
       );
 
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useCommunications(), { wrapper });
 
-      const { result: createResult } = renderHook(
-        () => result.current.useCreateTemplate(),
-        { wrapper },
-      );
+      const { result: createResult } = renderHook(() => result.current.useCreateTemplate(), {
+        wrapper,
+      });
 
       act(() => {
         createResult.current.mutate({
-          name: "Duplicate",
-          channel: "EMAIL",
-          category: "MANUAL",
-          context_type: "GENERAL" as never,
-          body_template: "<p>Test</p>",
+          name: 'Duplicate',
+          channel: 'EMAIL',
+          category: 'MANUAL',
+          context_type: 'GENERAL' as never,
+          body_template: '<p>Test</p>',
         });
       });
 
@@ -203,15 +192,12 @@ describe("useCommunications", () => {
     });
   });
 
-  describe("Records", () => {
-    it("fetches communication records", async () => {
+  describe('Records', () => {
+    it('fetches communication records', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useCommunications(), { wrapper });
 
-      const { result: recordsResult } = renderHook(
-        () => result.current.useRecords(),
-        { wrapper },
-      );
+      const { result: recordsResult } = renderHook(() => result.current.useRecords(), { wrapper });
 
       await waitFor(
         () => {
@@ -223,21 +209,18 @@ describe("useCommunications", () => {
       expect(recordsResult.current.data).toBeDefined();
     });
 
-    it("sends a manual communication", async () => {
+    it('sends a manual communication', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useCommunications(), { wrapper });
 
-      const { result: sendResult } = renderHook(
-        () => result.current.useSendManual(),
-        { wrapper },
-      );
+      const { result: sendResult } = renderHook(() => result.current.useSendManual(), { wrapper });
 
       act(() => {
         sendResult.current.mutate({
-          recipient: "client@example.com",
-          subject: "Test Subject",
-          body: "Test body",
-          channel: "EMAIL",
+          recipient: 'client@example.com',
+          subject: 'Test Subject',
+          body: 'Test body',
+          channel: 'EMAIL',
         } as never);
       });
 
@@ -250,14 +233,11 @@ describe("useCommunications", () => {
       );
     });
 
-    it("sends bulk communication", async () => {
+    it('sends bulk communication', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useCommunications(), { wrapper });
 
-      const { result: bulkResult } = renderHook(
-        () => result.current.useSendBulk(),
-        { wrapper },
-      );
+      const { result: bulkResult } = renderHook(() => result.current.useSendBulk(), { wrapper });
 
       act(() => {
         bulkResult.current.mutate({
@@ -276,15 +256,14 @@ describe("useCommunications", () => {
     });
   });
 
-  describe("Analytics", () => {
-    it("fetches communication analytics", async () => {
+  describe('Analytics', () => {
+    it('fetches communication analytics', async () => {
       const wrapper = createTestWrapper();
       const { result } = renderHook(() => useCommunications(), { wrapper });
 
-      const { result: analyticsResult } = renderHook(
-        () => result.current.useAnalytics(),
-        { wrapper },
-      );
+      const { result: analyticsResult } = renderHook(() => result.current.useAnalytics(), {
+        wrapper,
+      });
 
       await waitFor(
         () => {

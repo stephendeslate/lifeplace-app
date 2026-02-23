@@ -14,9 +14,10 @@
  * 3. If refresh fails, clear auth state (user will be logged out)
  */
 
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore } from "@/stores/authStore";
+import { env } from "@/env";
 
 // =============================================================================
 // CONFIGURATION
@@ -26,7 +27,7 @@ import { useAuthStore } from '@/stores/authStore';
  * API base URL from environment variables.
  * EXPO_PUBLIC_ prefix makes it available in client code.
  */
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api';
+const API_URL = env.EXPO_PUBLIC_API_URL;
 
 // =============================================================================
 // PUBLIC ENDPOINTS
@@ -37,18 +38,18 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000/api';
  * These match the backend configuration.
  */
 const PUBLIC_ENDPOINTS = [
-  '/users/login/',
-  '/users/register/',
-  '/users/password-reset/',
-  '/users/token/refresh/',
-  '/bookingflow/public/',
-  '/events/event-types/',
-  '/events/public/availability/',
-  '/venues/public/',
-  '/payments/public/',
-  '/settings/public/',
-  '/products/categories/',  // Categories are public catalog data
-  '/products/products/',    // Products are public catalog data
+  "/users/login/",
+  "/users/register/",
+  "/users/password-reset/",
+  "/users/token/refresh/",
+  "/bookingflow/public/",
+  "/events/event-types/",
+  "/events/public/availability/",
+  "/venues/public/",
+  "/payments/public/",
+  "/settings/public/",
+  "/products/categories/", // Categories are public catalog data
+  "/products/products/", // Products are public catalog data
 ];
 
 const isPublicEndpoint = (url?: string): boolean => {
@@ -64,8 +65,8 @@ export const api = axios.create({
   baseURL: API_URL,
   timeout: 30000, // 30 seconds
   headers: {
-    'Content-Type': 'application/json',
-    Accept: 'application/json',
+    "Content-Type": "application/json",
+    Accept: "application/json",
   },
 });
 
@@ -90,7 +91,7 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // =============================================================================
@@ -153,7 +154,7 @@ api.interceptors.response.use(
       clearAuth();
       return Promise.reject(refreshError);
     }
-  }
+  },
 );
 
 // =============================================================================
@@ -204,7 +205,7 @@ export function isRequestCancelled(error: unknown): boolean {
   if (axios.isCancel(error)) {
     return true;
   }
-  if (error instanceof Error && error.name === 'AbortError') {
+  if (error instanceof Error && error.name === "AbortError") {
     return true;
   }
   return false;

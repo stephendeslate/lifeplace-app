@@ -10,16 +10,18 @@ Tests:
 - Service charge application
 """
 
-import pytest
-from decimal import Decimal
 from datetime import timedelta
-from unittest.mock import patch, MagicMock
+from decimal import Decimal
+from unittest.mock import MagicMock, patch
+
 from django.utils import timezone
 
+import pytest
+
 from core.domains.sales.pricing_service import (
+    PricingBreakdown,
     PricingCalculationService,
     PricingLineItem,
-    PricingBreakdown,
     get_default_tax_rate,
     get_tax_rate_for_product,
 )
@@ -29,11 +31,9 @@ from core.domains.sales.pricing_service import (
 def product_category(db):
     """Create a product category for testing."""
     from core.domains.products.models import ProductCategory
+
     return ProductCategory.objects.create(
-        name='Test Category',
-        slug='test-category',
-        description='Test category description',
-        is_active=True
+        name="Test Category", slug="test-category", description="Test category description", is_active=True
     )
 
 
@@ -41,13 +41,14 @@ def product_category(db):
 def product_option(db, product_category):
     """Create a product option for testing."""
     from core.domains.products.models import ProductOption
+
     return ProductOption.objects.create(
-        name='Test Package',
-        description='Test package description',
+        name="Test Package",
+        description="Test package description",
         category=product_category,
-        base_price=Decimal('5000.00'),
-        type='PACKAGE',
-        is_active=True
+        base_price=Decimal("5000.00"),
+        type="PACKAGE",
+        is_active=True,
     )
 
 
@@ -55,13 +56,14 @@ def product_option(db, product_category):
 def addon_product(db, product_category):
     """Create an addon product for testing."""
     from core.domains.products.models import ProductOption
+
     return ProductOption.objects.create(
-        name='Test Add-on',
-        description='Test addon description',
+        name="Test Add-on",
+        description="Test addon description",
         category=product_category,
-        base_price=Decimal('1000.00'),
-        type='ADDON',
-        is_active=True
+        base_price=Decimal("1000.00"),
+        type="ADDON",
+        is_active=True,
     )
 
 
@@ -69,14 +71,15 @@ def addon_product(db, product_category):
 def tax_inclusive_product(db, product_category):
     """Create a tax-inclusive product for testing."""
     from core.domains.products.models import ProductOption
+
     return ProductOption.objects.create(
-        name='Tax Inclusive Package',
-        description='Package with tax included in price',
+        name="Tax Inclusive Package",
+        description="Package with tax included in price",
         category=product_category,
-        base_price=Decimal('10000.00'),
-        type='PACKAGE',
+        base_price=Decimal("10000.00"),
+        type="PACKAGE",
         is_active=True,
-        is_tax_inclusive=True
+        is_tax_inclusive=True,
     )
 
 
@@ -84,22 +87,20 @@ def tax_inclusive_product(db, product_category):
 def default_tax_rate(db):
     """Create a default tax rate."""
     from core.domains.payments.models import TaxRate
-    return TaxRate.objects.create(
-        name='VAT',
-        rate=Decimal('12.00'),
-        is_default=True
-    )
+
+    return TaxRate.objects.create(name="VAT", rate=Decimal("12.00"), is_default=True)
 
 
 @pytest.fixture
 def discount(db):
     """Create a discount for testing."""
     from core.domains.products.models import Discount
+
     return Discount.objects.create(
-        name='Test Discount',
-        code='TEST10',
-        discount_type='PERCENTAGE',
-        value=Decimal('10.00'),
+        name="Test Discount",
+        code="TEST10",
+        discount_type="PERCENTAGE",
+        value=Decimal("10.00"),
         is_active=True,
         valid_from=timezone.now().date(),
     )
@@ -109,11 +110,12 @@ def discount(db):
 def fixed_discount(db):
     """Create a fixed amount discount for testing."""
     from core.domains.products.models import Discount
+
     return Discount.objects.create(
-        name='Fixed Discount',
-        code='FIXED500',
-        discount_type='FIXED',
-        value=Decimal('500.00'),
+        name="Fixed Discount",
+        code="FIXED500",
+        discount_type="FIXED",
+        value=Decimal("500.00"),
         is_active=True,
         valid_from=timezone.now().date(),
     )
@@ -123,14 +125,15 @@ def fixed_discount(db):
 def venue_with_hours(db):
     """Create a venue with hours configuration."""
     from core.domains.venues.models import Venue
+
     return Venue.objects.create(
-        name='Main Hall',
-        code='MAIN_HALL',
-        description='Main event hall',
+        name="Main Hall",
+        code="MAIN_HALL",
+        description="Main event hall",
         maximum_capacity=200,
         standalone_included_hours=4,
-        standalone_excess_hour_price=Decimal('500.00'),
-        is_active=True
+        standalone_excess_hour_price=Decimal("500.00"),
+        is_active=True,
     )
 
 
@@ -138,27 +141,25 @@ def venue_with_hours(db):
 def package_with_venue(db, product_option, venue_with_hours):
     """Create a package-venue association."""
     from core.domains.venues.models import PackageVenue
-    return PackageVenue.objects.create(
-        package=product_option,
-        venue=venue_with_hours,
-        is_primary=True
-    )
+
+    return PackageVenue.objects.create(package=product_option, venue=venue_with_hours, is_primary=True)
 
 
 @pytest.fixture
 def payment_settings(db):
     """Create payment settings with service charge."""
     from core.domains.payments.models import PaymentSettings
+
     settings, created = PaymentSettings.objects.get_or_create(
         pk=1,
         defaults={
-            'service_charge_enabled': True,
-            'service_charge_percentage': Decimal('5.00'),
-        }
+            "service_charge_enabled": True,
+            "service_charge_percentage": Decimal("5.00"),
+        },
     )
     if not created:
         settings.service_charge_enabled = True
-        settings.service_charge_percentage = Decimal('5.00')
+        settings.service_charge_percentage = Decimal("5.00")
         settings.save()
     return settings
 
@@ -166,6 +167,7 @@ def payment_settings(db):
 # =============================================================================
 # PRICING LINE ITEM DATACLASS TESTS
 # =============================================================================
+
 
 @pytest.mark.django_db
 class TestPricingLineItem:
@@ -175,80 +177,77 @@ class TestPricingLineItem:
         """Test basic line item total calculation."""
         item = PricingLineItem(
             product_id=1,
-            name='Test Package',
-            description='Test Package',
+            name="Test Package",
+            description="Test Package",
             quantity=2,
-            base_unit_price=Decimal('5000.00')
+            base_unit_price=Decimal("5000.00"),
         )
 
-        assert item.total_unit_price == Decimal('5000.00')
-        assert item.line_total == Decimal('10000.00')
-        assert item.excess_cost == Decimal('0')
+        assert item.total_unit_price == Decimal("5000.00")
+        assert item.line_total == Decimal("10000.00")
+        assert item.excess_cost == Decimal("0")
 
     def test_line_item_with_excess_hours(self):
         """Test line item with excess hours pricing."""
         item = PricingLineItem(
             product_id=1,
-            name='Package with Extra Hours',
-            description='Package with Extra Hours',
+            name="Package with Extra Hours",
+            description="Package with Extra Hours",
             quantity=1,
-            base_unit_price=Decimal('5000.00'),
+            base_unit_price=Decimal("5000.00"),
             excess_hours=3,
-            excess_hour_price=Decimal('500.00')
+            excess_hour_price=Decimal("500.00"),
         )
 
-        assert item.excess_cost == Decimal('1500.00')
-        assert item.total_unit_price == Decimal('6500.00')
-        assert item.line_total == Decimal('6500.00')
+        assert item.excess_cost == Decimal("1500.00")
+        assert item.total_unit_price == Decimal("6500.00")
+        assert item.line_total == Decimal("6500.00")
 
     def test_line_item_with_quantity_and_excess(self):
         """Test line item with both quantity and excess hours."""
         item = PricingLineItem(
             product_id=1,
-            name='Multi-day Package',
-            description='Multi-day Package',
+            name="Multi-day Package",
+            description="Multi-day Package",
             quantity=2,
-            base_unit_price=Decimal('5000.00'),
+            base_unit_price=Decimal("5000.00"),
             excess_hours=4,
-            excess_hour_price=Decimal('500.00')
+            excess_hour_price=Decimal("500.00"),
         )
 
         # Excess cost is total (4 * 500 = 2000)
-        assert item.excess_cost == Decimal('2000.00')
+        assert item.excess_cost == Decimal("2000.00")
         # Per unit: base + (excess_cost / quantity) = 5000 + 1000 = 6000
-        assert item.total_unit_price == Decimal('6000.00')
+        assert item.total_unit_price == Decimal("6000.00")
         # Line total: 6000 * 2 = 12000
-        assert item.line_total == Decimal('12000.00')
+        assert item.line_total == Decimal("12000.00")
 
     def test_line_item_default_item_type(self):
         """Test default item type is PACKAGE."""
         item = PricingLineItem(
-            product_id=1,
-            name='Test',
-            description='Test',
-            quantity=1,
-            base_unit_price=Decimal('1000.00')
+            product_id=1, name="Test", description="Test", quantity=1, base_unit_price=Decimal("1000.00")
         )
 
-        assert item.item_type == 'PACKAGE'
+        assert item.item_type == "PACKAGE"
 
     def test_line_item_addon_type(self):
         """Test addon item type."""
         item = PricingLineItem(
             product_id=1,
-            name='Test Addon',
-            description='Test Addon',
+            name="Test Addon",
+            description="Test Addon",
             quantity=1,
-            base_unit_price=Decimal('500.00'),
-            item_type='ADDON'
+            base_unit_price=Decimal("500.00"),
+            item_type="ADDON",
         )
 
-        assert item.item_type == 'ADDON'
+        assert item.item_type == "ADDON"
 
 
 # =============================================================================
 # PRICING BREAKDOWN DATACLASS TESTS
 # =============================================================================
+
 
 @pytest.mark.django_db
 class TestPricingBreakdown:
@@ -258,52 +257,41 @@ class TestPricingBreakdown:
         """Test that breakdown calculates subtotal from line items."""
         items = [
             PricingLineItem(
-                product_id=1,
-                name='Item 1',
-                description='Item 1',
-                quantity=1,
-                base_unit_price=Decimal('5000.00')
+                product_id=1, name="Item 1", description="Item 1", quantity=1, base_unit_price=Decimal("5000.00")
             ),
             PricingLineItem(
-                product_id=2,
-                name='Item 2',
-                description='Item 2',
-                quantity=2,
-                base_unit_price=Decimal('1000.00')
-            )
+                product_id=2, name="Item 2", description="Item 2", quantity=2, base_unit_price=Decimal("1000.00")
+            ),
         ]
 
         breakdown = PricingBreakdown(line_items=items)
 
-        assert breakdown.subtotal == Decimal('7000.00')
+        assert breakdown.subtotal == Decimal("7000.00")
 
     def test_breakdown_initial_total(self):
         """Test initial total equals subtotal."""
         items = [
             PricingLineItem(
-                product_id=1,
-                name='Item',
-                description='Item',
-                quantity=1,
-                base_unit_price=Decimal('5000.00')
+                product_id=1, name="Item", description="Item", quantity=1, base_unit_price=Decimal("5000.00")
             )
         ]
 
         breakdown = PricingBreakdown(line_items=items)
 
-        assert breakdown.total_amount == Decimal('5000.00')
+        assert breakdown.total_amount == Decimal("5000.00")
 
     def test_breakdown_empty_line_items(self):
         """Test breakdown with empty line items."""
         breakdown = PricingBreakdown(line_items=[])
 
-        assert breakdown.subtotal == Decimal('0')
-        assert breakdown.total_amount == Decimal('0')
+        assert breakdown.subtotal == Decimal("0")
+        assert breakdown.total_amount == Decimal("0")
 
 
 # =============================================================================
 # TAX RATE FUNCTION TESTS
 # =============================================================================
+
 
 @pytest.mark.django_db
 class TestTaxRateFunctions:
@@ -312,96 +300,91 @@ class TestTaxRateFunctions:
     def test_get_default_tax_rate_returns_rate(self, default_tax_rate):
         """Test getting default tax rate."""
         rate = get_default_tax_rate()
-        assert rate == Decimal('12.00')
+        assert rate == Decimal("12.00")
 
     def test_get_default_tax_rate_returns_zero_when_no_default(self, db):
         """Test returns 0 when no default tax rate exists."""
         from core.domains.payments.models import TaxRate
+
         TaxRate.objects.filter(is_default=True).delete()
 
         rate = get_default_tax_rate()
-        assert rate == Decimal('0')
+        assert rate == Decimal("0")
 
     def test_get_tax_rate_for_tax_inclusive_product(self, tax_inclusive_product, default_tax_rate):
         """Test tax-inclusive products return 0."""
         rate = get_tax_rate_for_product(tax_inclusive_product)
-        assert rate == Decimal('0')
+        assert rate == Decimal("0")
 
     def test_get_tax_rate_for_regular_product(self, product_option, default_tax_rate):
         """Test regular products return default tax rate."""
         rate = get_tax_rate_for_product(product_option)
-        assert rate == Decimal('12.00')
+        assert rate == Decimal("12.00")
 
 
 # =============================================================================
 # PRICING CALCULATION SERVICE TESTS
 # =============================================================================
 
+
 @pytest.mark.django_db
 class TestPricingCalculationServiceBasic:
     """Basic tests for PricingCalculationService."""
 
-    def test_calculate_from_booking_data_single_package(
-        self, product_option, default_tax_rate
-    ):
+    def test_calculate_from_booking_data_single_package(self, product_option, default_tax_rate):
         """Test calculating pricing for a single package."""
         booking_data = {
-            'selected_packages': [
+            "selected_packages": [
                 {
-                    'product_id': product_option.id,
-                    'name': product_option.name,
-                    'price': float(product_option.base_price),
-                    'quantity': 1
+                    "product_id": product_option.id,
+                    "name": product_option.name,
+                    "price": float(product_option.base_price),
+                    "quantity": 1,
                 }
             ],
-            'selected_addons': []
+            "selected_addons": [],
         }
 
         breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
 
         assert len(breakdown.line_items) == 1
-        assert breakdown.subtotal == Decimal('5000.00')
+        assert breakdown.subtotal == Decimal("5000.00")
 
-    def test_calculate_from_booking_data_multiple_packages(
-        self, product_option, addon_product, default_tax_rate
-    ):
+    def test_calculate_from_booking_data_multiple_packages(self, product_option, addon_product, default_tax_rate):
         """Test calculating pricing for multiple packages."""
         booking_data = {
-            'selected_packages': [
+            "selected_packages": [
                 {
-                    'product_id': product_option.id,
-                    'name': product_option.name,
-                    'price': float(product_option.base_price),
-                    'quantity': 1
+                    "product_id": product_option.id,
+                    "name": product_option.name,
+                    "price": float(product_option.base_price),
+                    "quantity": 1,
                 }
             ],
-            'selected_addons': [
+            "selected_addons": [
                 {
-                    'product_id': addon_product.id,
-                    'name': addon_product.name,
-                    'price': float(addon_product.base_price),
-                    'quantity': 2
+                    "product_id": addon_product.id,
+                    "name": addon_product.name,
+                    "price": float(addon_product.base_price),
+                    "quantity": 2,
                 }
-            ]
+            ],
         }
 
         breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
 
         assert len(breakdown.line_items) == 2
         # Addon quantity is clamped to 1 because allow_multiple=False by default
-        assert breakdown.subtotal == Decimal('6000.00')  # 5000 + 1*1000
+        assert breakdown.subtotal == Decimal("6000.00")  # 5000 + 1*1000
 
     def test_calculate_from_booking_data_empty(self):
         """Test calculating pricing for empty booking data."""
-        booking_data = {
-            'selected_packages': [],
-            'selected_addons': []
-        }
+        booking_data = {"selected_packages": [], "selected_addons": []}
 
         breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
 
         assert len(breakdown.line_items) == 0
-        assert breakdown.subtotal == Decimal('0')
+        assert breakdown.subtotal == Decimal("0")
 
 
 @pytest.mark.django_db
@@ -410,46 +393,38 @@ class TestPricingCalculationServiceVenueHours:
 
     def test_get_venue_hours_info_empty(self):
         """Test get_venue_hours_info with empty hours."""
-        total, details = PricingCalculationService.get_venue_hours_info(
-            product_id=1,
-            venue_additional_hours={}
-        )
+        total, details = PricingCalculationService.get_venue_hours_info(product_id=1, venue_additional_hours={})
 
-        assert total == Decimal('0.00')
+        assert total == Decimal("0.00")
         assert details == []
 
-    def test_get_venue_hours_info_with_package_venue(
-        self, product_option, package_with_venue, venue_with_hours
-    ):
+    def test_get_venue_hours_info_with_package_venue(self, product_option, package_with_venue, venue_with_hours):
         """Test get_venue_hours_info with package venue configuration."""
-        venue_additional_hours = {
-            str(venue_with_hours.id): 2
-        }
+        venue_additional_hours = {str(venue_with_hours.id): 2}
 
         total, details = PricingCalculationService.get_venue_hours_info(
-            product_id=product_option.id,
-            venue_additional_hours=venue_additional_hours
+            product_id=product_option.id, venue_additional_hours=venue_additional_hours
         )
 
-        assert total == Decimal('1000.00')  # 2 hours * 500
+        assert total == Decimal("1000.00")  # 2 hours * 500
         assert len(details) == 1
-        assert details[0]['venue_id'] == venue_with_hours.id
-        assert details[0]['additional_hours'] == 2
+        assert details[0]["venue_id"] == venue_with_hours.id
+        assert details[0]["additional_hours"] == 2
 
     def test_create_package_line_item_basic(self, product_option, default_tax_rate):
         """Test creating a package line item."""
         package_data = {
-            'product_id': product_option.id,
-            'name': product_option.name,
-            'price': float(product_option.base_price),
-            'quantity': 1
+            "product_id": product_option.id,
+            "name": product_option.name,
+            "price": float(product_option.base_price),
+            "quantity": 1,
         }
 
         item = PricingCalculationService._create_package_line_item(package_data, None)
 
         assert item is not None
         assert item.name == product_option.name
-        assert item.base_unit_price == Decimal('5000.00')
+        assert item.base_unit_price == Decimal("5000.00")
         assert item.quantity == 1
 
     def test_create_package_line_item_with_venue_hours(
@@ -457,39 +432,35 @@ class TestPricingCalculationServiceVenueHours:
     ):
         """Test creating a package line item with venue hours."""
         package_data = {
-            'product_id': product_option.id,
-            'name': product_option.name,
-            'price': float(product_option.base_price),
-            'quantity': 1
+            "product_id": product_option.id,
+            "name": product_option.name,
+            "price": float(product_option.base_price),
+            "quantity": 1,
         }
-        venue_additional_hours = {
-            str(venue_with_hours.id): 2
-        }
+        venue_additional_hours = {str(venue_with_hours.id): 2}
 
-        item = PricingCalculationService._create_package_line_item(
-            package_data, venue_additional_hours
-        )
+        item = PricingCalculationService._create_package_line_item(package_data, venue_additional_hours)
 
         assert item is not None
         assert item.excess_hours == 2
-        assert item.excess_cost == Decimal('1000.00')
+        assert item.excess_cost == Decimal("1000.00")
 
     def test_create_addon_line_item(self, addon_product, default_tax_rate):
         """Test creating an addon line item."""
         addon_data = {
-            'product_id': addon_product.id,
-            'name': addon_product.name,
-            'price': float(addon_product.base_price),
-            'quantity': 1  # allow_multiple=False by default, so quantity must be 1
+            "product_id": addon_product.id,
+            "name": addon_product.name,
+            "price": float(addon_product.base_price),
+            "quantity": 1,  # allow_multiple=False by default, so quantity must be 1
         }
 
         item = PricingCalculationService._create_addon_line_item(addon_data)
 
         assert item is not None
         assert item.name == addon_product.name
-        assert item.base_unit_price == Decimal('1000.00')
+        assert item.base_unit_price == Decimal("1000.00")
         assert item.quantity == 1
-        assert item.item_type == 'ADDON'
+        assert item.item_type == "ADDON"
 
 
 @pytest.mark.django_db
@@ -500,182 +471,168 @@ class TestPricingCalculationServiceDiscounts:
         """Test applying percentage discount."""
         items = [
             PricingLineItem(
-                product_id=1,
-                name='Package',
-                description='Package',
-                quantity=1,
-                base_unit_price=Decimal('10000.00')
+                product_id=1, name="Package", description="Package", quantity=1, base_unit_price=Decimal("10000.00")
             )
         ]
         breakdown = PricingBreakdown(line_items=items)
 
         PricingCalculationService.apply_discount(breakdown, discount)
 
-        assert breakdown.discount_amount == Decimal('1000.00')  # 10% of 10000
+        assert breakdown.discount_amount == Decimal("1000.00")  # 10% of 10000
         assert breakdown.applied_discount == discount
 
     def test_apply_fixed_discount(self, fixed_discount):
         """Test applying fixed discount."""
         items = [
             PricingLineItem(
-                product_id=1,
-                name='Package',
-                description='Package',
-                quantity=1,
-                base_unit_price=Decimal('10000.00')
+                product_id=1, name="Package", description="Package", quantity=1, base_unit_price=Decimal("10000.00")
             )
         ]
         breakdown = PricingBreakdown(line_items=items)
 
         PricingCalculationService.apply_discount(breakdown, fixed_discount)
 
-        assert breakdown.discount_amount == Decimal('500.00')
+        assert breakdown.discount_amount == Decimal("500.00")
 
     def test_fixed_discount_capped_at_subtotal(self, db):
         """Test that fixed discount is capped at subtotal."""
         from core.domains.products.models import Discount
 
         large_discount = Discount.objects.create(
-            name='Large Discount',
-            code='LARGE',
-            discount_type='FIXED',
-            value=Decimal('50000.00'),  # Larger than subtotal
+            name="Large Discount",
+            code="LARGE",
+            discount_type="FIXED",
+            value=Decimal("50000.00"),  # Larger than subtotal
             is_active=True,
             valid_from=timezone.now().date(),
         )
 
         items = [
             PricingLineItem(
-                product_id=1,
-                name='Package',
-                description='Package',
-                quantity=1,
-                base_unit_price=Decimal('5000.00')
+                product_id=1, name="Package", description="Package", quantity=1, base_unit_price=Decimal("5000.00")
             )
         ]
         breakdown = PricingBreakdown(line_items=items)
 
         PricingCalculationService.apply_discount(breakdown, large_discount)
 
-        assert breakdown.discount_amount == Decimal('5000.00')  # Capped at subtotal
+        assert breakdown.discount_amount == Decimal("5000.00")  # Capped at subtotal
 
-    def test_calculate_with_discount_code(
-        self, product_option, discount, default_tax_rate
-    ):
+    def test_calculate_with_discount_code(self, product_option, discount, default_tax_rate):
         """Test calculate_from_booking_data with discount code."""
         booking_data = {
-            'selected_packages': [
+            "selected_packages": [
                 {
-                    'product_id': product_option.id,
-                    'name': product_option.name,
-                    'price': float(product_option.base_price),
-                    'quantity': 1
+                    "product_id": product_option.id,
+                    "name": product_option.name,
+                    "price": float(product_option.base_price),
+                    "quantity": 1,
                 }
             ],
-            'selected_addons': [],
-            'applied_discount_code': discount.code
+            "selected_addons": [],
+            "applied_discount_code": discount.code,
         }
 
         breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
 
-        assert breakdown.discount_amount == Decimal('500.00')  # 10% of 5000
+        assert breakdown.discount_amount == Decimal("500.00")  # 10% of 5000
         assert breakdown.applied_discount == discount
 
     def test_invalid_discount_code_sets_error(self, product_option, default_tax_rate):
         """Test that an invalid discount code populates discount_error on breakdown."""
         booking_data = {
-            'selected_packages': [
+            "selected_packages": [
                 {
-                    'product_id': product_option.id,
-                    'name': product_option.name,
-                    'price': float(product_option.base_price),
-                    'quantity': 1
+                    "product_id": product_option.id,
+                    "name": product_option.name,
+                    "price": float(product_option.base_price),
+                    "quantity": 1,
                 }
             ],
-            'selected_addons': [],
-            'applied_discount_code': 'NONEXISTENT'
+            "selected_addons": [],
+            "applied_discount_code": "NONEXISTENT",
         }
 
         breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
 
         # Pricing should still calculate correctly
-        assert breakdown.subtotal == Decimal('5000.00')
-        assert breakdown.total_amount > Decimal('0')
+        assert breakdown.subtotal == Decimal("5000.00")
+        assert breakdown.total_amount > Decimal("0")
         # Discount should not be applied
-        assert breakdown.discount_amount == Decimal('0')
+        assert breakdown.discount_amount == Decimal("0")
         assert breakdown.applied_discount is None
         # Error fields should be set
         assert breakdown.discount_error is not None
-        assert 'not found' in breakdown.discount_error.lower()
-        assert breakdown.discount_error_type == 'discount_not_found'
+        assert "not found" in breakdown.discount_error.lower()
+        assert breakdown.discount_error_type == "discount_not_found"
 
     def test_expired_discount_code_sets_error(self, product_option, default_tax_rate):
         """Test that an expired discount code populates discount_error on breakdown."""
         from core.domains.products.models import Discount
 
-        expired_discount = Discount.objects.create(
-            name='Expired Discount',
-            code='EXPIRED10',
-            discount_type='PERCENTAGE',
-            value=Decimal('10.00'),
+        Discount.objects.create(
+            name="Expired Discount",
+            code="EXPIRED10",
+            discount_type="PERCENTAGE",
+            value=Decimal("10.00"),
             is_active=True,
             valid_from=(timezone.now() - timedelta(days=30)).date(),
             valid_until=(timezone.now() - timedelta(days=1)).date(),
         )
 
         booking_data = {
-            'selected_packages': [
+            "selected_packages": [
                 {
-                    'product_id': product_option.id,
-                    'name': product_option.name,
-                    'price': float(product_option.base_price),
-                    'quantity': 1
+                    "product_id": product_option.id,
+                    "name": product_option.name,
+                    "price": float(product_option.base_price),
+                    "quantity": 1,
                 }
             ],
-            'selected_addons': [],
-            'applied_discount_code': 'EXPIRED10'
+            "selected_addons": [],
+            "applied_discount_code": "EXPIRED10",
         }
 
         breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
 
-        assert breakdown.discount_amount == Decimal('0')
+        assert breakdown.discount_amount == Decimal("0")
         assert breakdown.discount_error is not None
-        assert 'expired' in breakdown.discount_error.lower()
-        assert breakdown.discount_error_type == 'discount_expired'
+        assert "expired" in breakdown.discount_error.lower()
+        assert breakdown.discount_error_type == "discount_expired"
 
     def test_valid_discount_code_no_error(self, product_option, discount, default_tax_rate):
         """Test that a valid discount code has no discount_error."""
         booking_data = {
-            'selected_packages': [
+            "selected_packages": [
                 {
-                    'product_id': product_option.id,
-                    'name': product_option.name,
-                    'price': float(product_option.base_price),
-                    'quantity': 1
+                    "product_id": product_option.id,
+                    "name": product_option.name,
+                    "price": float(product_option.base_price),
+                    "quantity": 1,
                 }
             ],
-            'selected_addons': [],
-            'applied_discount_code': discount.code
+            "selected_addons": [],
+            "applied_discount_code": discount.code,
         }
 
         breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
 
-        assert breakdown.discount_amount > Decimal('0')
+        assert breakdown.discount_amount > Decimal("0")
         assert breakdown.discount_error is None
         assert breakdown.discount_error_type is None
 
     def test_no_discount_code_no_error(self, product_option, default_tax_rate):
         """Test that no discount code results in no discount_error."""
         booking_data = {
-            'selected_packages': [
+            "selected_packages": [
                 {
-                    'product_id': product_option.id,
-                    'name': product_option.name,
-                    'price': float(product_option.base_price),
-                    'quantity': 1
+                    "product_id": product_option.id,
+                    "name": product_option.name,
+                    "price": float(product_option.base_price),
+                    "quantity": 1,
                 }
             ],
-            'selected_addons': [],
+            "selected_addons": [],
         }
 
         breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
@@ -686,21 +643,21 @@ class TestPricingCalculationServiceDiscounts:
     def test_promo_code_field_extracted(self, product_option, discount, default_tax_rate):
         """Test that promo_code field is recognized as a discount code."""
         booking_data = {
-            'selected_packages': [
+            "selected_packages": [
                 {
-                    'product_id': product_option.id,
-                    'name': product_option.name,
-                    'price': float(product_option.base_price),
-                    'quantity': 1
+                    "product_id": product_option.id,
+                    "name": product_option.name,
+                    "price": float(product_option.base_price),
+                    "quantity": 1,
                 }
             ],
-            'selected_addons': [],
-            'promo_code': discount.code
+            "selected_addons": [],
+            "promo_code": discount.code,
         }
 
         breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
 
-        assert breakdown.discount_amount > Decimal('0')
+        assert breakdown.discount_amount > Decimal("0")
         assert breakdown.applied_discount == discount
         assert breakdown.discount_error is None
 
@@ -714,84 +671,82 @@ class TestPricingCalculationServiceTax:
         items = [
             PricingLineItem(
                 product_id=1,
-                name='Package',
-                description='Package',
+                name="Package",
+                description="Package",
                 quantity=1,
-                base_unit_price=Decimal('10000.00'),
-                tax_rate=Decimal('12.00')
+                base_unit_price=Decimal("10000.00"),
+                tax_rate=Decimal("12.00"),
             )
         ]
         breakdown = PricingBreakdown(line_items=items)
 
-        PricingCalculationService.apply_tax(breakdown, Decimal('12.00'))
+        PricingCalculationService.apply_tax(breakdown, Decimal("12.00"))
 
-        assert breakdown.tax_amount == Decimal('1200.00')
-        assert breakdown.tax_rate == Decimal('12.00')
+        assert breakdown.tax_amount == Decimal("1200.00")
+        assert breakdown.tax_rate == Decimal("12.00")
 
     def test_apply_item_based_tax_regular_products(self, product_option, default_tax_rate):
         """Test item-based tax for regular products."""
         items = [
             PricingLineItem(
                 product_id=product_option.id,
-                name='Package',
-                description='Package',
+                name="Package",
+                description="Package",
                 quantity=1,
-                base_unit_price=Decimal('10000.00'),
-                tax_rate=Decimal('12.00')
+                base_unit_price=Decimal("10000.00"),
+                tax_rate=Decimal("12.00"),
             )
         ]
         breakdown = PricingBreakdown(line_items=items)
 
         PricingCalculationService.apply_item_based_tax(breakdown)
 
-        assert breakdown.tax_amount == Decimal('1200.00')
+        assert breakdown.tax_amount == Decimal("1200.00")
 
     def test_apply_item_based_tax_tax_inclusive(self, tax_inclusive_product, default_tax_rate):
         """Test item-based tax for tax-inclusive products."""
         items = [
             PricingLineItem(
                 product_id=tax_inclusive_product.id,
-                name='Tax Inclusive Package',
-                description='Tax Inclusive Package',
+                name="Tax Inclusive Package",
+                description="Tax Inclusive Package",
                 quantity=1,
-                base_unit_price=Decimal('10000.00'),
-                tax_rate=Decimal('0.00')  # Tax-inclusive products have 0 rate
+                base_unit_price=Decimal("10000.00"),
+                tax_rate=Decimal("0.00"),  # Tax-inclusive products have 0 rate
             )
         ]
         breakdown = PricingBreakdown(line_items=items)
 
         PricingCalculationService.apply_item_based_tax(breakdown)
 
-        assert breakdown.tax_amount == Decimal('0')
+        assert breakdown.tax_amount == Decimal("0")
 
-    def test_apply_item_based_tax_mixed_products(
-        self, product_option, tax_inclusive_product, default_tax_rate
-    ):
+    def test_apply_item_based_tax_mixed_products(self, product_option, tax_inclusive_product, default_tax_rate):
         """Test item-based tax with mixed products."""
         items = [
             PricingLineItem(
                 product_id=product_option.id,
-                name='Regular Package',
-                description='Regular Package',
+                name="Regular Package",
+                description="Regular Package",
                 quantity=1,
-                base_unit_price=Decimal('5000.00'),
-                tax_rate=Decimal('12.00')
+                base_unit_price=Decimal("5000.00"),
+                tax_rate=Decimal("12.00"),
             ),
             PricingLineItem(
                 product_id=tax_inclusive_product.id,
-                name='Tax Inclusive',
-                description='Tax Inclusive',
+                name="Tax Inclusive",
+                description="Tax Inclusive",
                 quantity=1,
-                base_unit_price=Decimal('10000.00'),
-                tax_rate=Decimal('0.00')
-            )
+                base_unit_price=Decimal("10000.00"),
+                tax_rate=Decimal("0.00"),
+            ),
         ]
         breakdown = PricingBreakdown(line_items=items)
 
         PricingCalculationService.apply_item_based_tax(breakdown)
 
         # Only regular package taxed: 5000 * 12% = 600
-        assert breakdown.tax_amount == Decimal('600.00')
+        assert breakdown.tax_amount == Decimal("600.00")
 
 
 @pytest.mark.django_db
@@ -802,28 +757,20 @@ class TestPricingCalculationServiceServiceCharge:
         """Test applying service charge."""
         items = [
             PricingLineItem(
-                product_id=1,
-                name='Package',
-                description='Package',
-                quantity=1,
-                base_unit_price=Decimal('10000.00')
+                product_id=1, name="Package", description="Package", quantity=1, base_unit_price=Decimal("10000.00")
             )
         ]
         breakdown = PricingBreakdown(line_items=items)
 
         PricingCalculationService.apply_service_charge(breakdown)
 
-        assert breakdown.service_charge_amount == Decimal('500.00')  # 5% of 10000
+        assert breakdown.service_charge_amount == Decimal("500.00")  # 5% of 10000
 
     def test_apply_service_charge_after_discount(self, payment_settings, discount):
         """Test service charge is applied after discount."""
         items = [
             PricingLineItem(
-                product_id=1,
-                name='Package',
-                description='Package',
-                quantity=1,
-                base_unit_price=Decimal('10000.00')
+                product_id=1, name="Package", description="Package", quantity=1, base_unit_price=Decimal("10000.00")
             )
         ]
         breakdown = PricingBreakdown(line_items=items)
@@ -834,97 +781,75 @@ class TestPricingCalculationServiceServiceCharge:
         PricingCalculationService.apply_service_charge(breakdown)
 
         # Service charge on 9000 (10000 - 1000 discount) = 450
-        assert breakdown.service_charge_amount == Decimal('450.00')
+        assert breakdown.service_charge_amount == Decimal("450.00")
 
-    @patch('core.domains.payments.models.PaymentSettings.get_default_settings')
+    @patch("core.domains.payments.models.PaymentSettings.get_default_settings")
     def test_service_charge_disabled(self, mock_settings):
         """Test service charge when disabled."""
-        mock_settings.return_value = MagicMock(
-            service_charge_enabled=False,
-            service_charge_percentage=Decimal('5.00')
-        )
+        mock_settings.return_value = MagicMock(service_charge_enabled=False, service_charge_percentage=Decimal("5.00"))
 
         items = [
             PricingLineItem(
-                product_id=1,
-                name='Package',
-                description='Package',
-                quantity=1,
-                base_unit_price=Decimal('10000.00')
+                product_id=1, name="Package", description="Package", quantity=1, base_unit_price=Decimal("10000.00")
             )
         ]
         breakdown = PricingBreakdown(line_items=items)
 
         PricingCalculationService.apply_service_charge(breakdown)
 
-        assert breakdown.service_charge_amount == Decimal('0.00')
+        assert breakdown.service_charge_amount == Decimal("0.00")
 
 
 @pytest.mark.django_db
 class TestPricingCalculationServiceVIP:
     """Tests for VIP benefits application."""
 
-    @patch('core.domains.vip.services.VIPPricingIntegrationService')
+    @patch("core.domains.vip.services.VIPPricingIntegrationService")
     def test_apply_vip_benefits(self, mock_vip_service, user_factory):
         """Test applying VIP benefits."""
-        mock_vip_service.calculate_vip_discount.return_value = (
-            Decimal('1000.00'),
-            ['10% VIP Discount']
-        )
+        mock_vip_service.calculate_vip_discount.return_value = (Decimal("1000.00"), ["10% VIP Discount"])
         mock_vip_service.should_waive_fee.return_value = False
 
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         items = [
             PricingLineItem(
-                product_id=1,
-                name='Package',
-                description='Package',
-                quantity=1,
-                base_unit_price=Decimal('10000.00')
+                product_id=1, name="Package", description="Package", quantity=1, base_unit_price=Decimal("10000.00")
             )
         ]
         breakdown = PricingBreakdown(line_items=items)
 
         PricingCalculationService.apply_vip_benefits(breakdown, client)
 
-        assert breakdown.vip_discount_amount == Decimal('1000.00')
-        assert '10% VIP Discount' in breakdown.applied_vip_benefits
+        assert breakdown.vip_discount_amount == Decimal("1000.00")
+        assert "10% VIP Discount" in breakdown.applied_vip_benefits
 
-    @patch('core.domains.vip.services.VIPPricingIntegrationService')
+    @patch("core.domains.vip.services.VIPPricingIntegrationService")
     def test_apply_vip_service_charge_waiver(self, mock_vip_service, user_factory, payment_settings):
         """Test VIP service charge waiver."""
-        mock_vip_service.calculate_vip_discount.return_value = (Decimal('0'), [])
+        mock_vip_service.calculate_vip_discount.return_value = (Decimal("0"), [])
         mock_vip_service.should_waive_fee.return_value = True
 
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         items = [
             PricingLineItem(
-                product_id=1,
-                name='Package',
-                description='Package',
-                quantity=1,
-                base_unit_price=Decimal('10000.00')
+                product_id=1, name="Package", description="Package", quantity=1, base_unit_price=Decimal("10000.00")
             )
         ]
         breakdown = PricingBreakdown(line_items=items)
 
         PricingCalculationService.apply_vip_benefits(breakdown, client)
 
-        assert 'Service charge waived' in breakdown.applied_vip_benefits
+        assert "Service charge waived" in breakdown.applied_vip_benefits
 
         # Now apply service charge - should be zero
         PricingCalculationService.apply_service_charge(breakdown)
-        assert breakdown.service_charge_amount == Decimal('0.00')
+        assert breakdown.service_charge_amount == Decimal("0.00")
 
     def test_vip_benefits_no_client(self):
         """Test that VIP benefits are not applied without client."""
         items = [
             PricingLineItem(
-                product_id=1,
-                name='Package',
-                description='Package',
-                quantity=1,
-                base_unit_price=Decimal('10000.00')
+                product_id=1, name="Package", description="Package", quantity=1, base_unit_price=Decimal("10000.00")
             )
         ]
         breakdown = PricingBreakdown(line_items=items)
@@ -932,7 +857,7 @@ class TestPricingCalculationServiceVIP:
         # Should not raise error, just skip VIP benefits
         PricingCalculationService.apply_vip_benefits(breakdown, None)
 
-        assert breakdown.vip_discount_amount == Decimal('0')
+        assert breakdown.vip_discount_amount == Decimal("0")
 
 
 @pytest.mark.django_db
@@ -944,41 +869,42 @@ class TestPricingCalculationServiceIntegration:
     ):
         """Test complete pricing calculation with all components."""
         booking_data = {
-            'selected_packages': [
+            "selected_packages": [
                 {
-                    'product_id': product_option.id,
-                    'name': product_option.name,
-                    'price': float(product_option.base_price),
-                    'quantity': 1
+                    "product_id": product_option.id,
+                    "name": product_option.name,
+                    "price": float(product_option.base_price),
+                    "quantity": 1,
                 }
             ],
-            'selected_addons': [
+            "selected_addons": [
                 {
-                    'product_id': addon_product.id,
-                    'name': addon_product.name,
-                    'price': float(addon_product.base_price),
-                    'quantity': 2
+                    "product_id": addon_product.id,
+                    "name": addon_product.name,
+                    "price": float(addon_product.base_price),
+                    "quantity": 2,
                 }
             ],
-            'applied_discount_code': discount.code
+            "applied_discount_code": discount.code,
         }
 
         breakdown = PricingCalculationService.calculate_from_booking_data(booking_data)
 
         # Subtotal: 5000 + 1*1000 = 6000 (addon quantity clamped to 1 since allow_multiple=False)
-        assert breakdown.subtotal == Decimal('6000.00')
+        assert breakdown.subtotal == Decimal("6000.00")
 
         # Discount: 10% of 6000 = 600
-        assert breakdown.discount_amount == Decimal('600.00')
+        assert breakdown.discount_amount == Decimal("600.00")
 
         # Service charge: 5% of (6000 - 600) = 270
-        assert breakdown.service_charge_amount == Decimal('270.00')
+        assert breakdown.service_charge_amount == Decimal("270.00")
 
         # Tax is calculated per-item
-        assert breakdown.tax_amount > Decimal('0')
+        assert breakdown.tax_amount > Decimal("0")
 
     def test_calculate_from_quote_line_items(self, product_option):
         """Test calculating from existing quote line items."""
+
         # Create mock line items
         class MockLineItem:
             def __init__(self, description, quantity, unit_price, tax_rate):
@@ -989,23 +915,21 @@ class TestPricingCalculationServiceIntegration:
                 self.product_id = product_option.id
 
         line_items = [
-            MockLineItem('Package 1', 1, Decimal('5000.00'), Decimal('12.00')),
-            MockLineItem('Addon 1', 2, Decimal('1000.00'), Decimal('12.00'))
+            MockLineItem("Package 1", 1, Decimal("5000.00"), Decimal("12.00")),
+            MockLineItem("Addon 1", 2, Decimal("1000.00"), Decimal("12.00")),
         ]
 
         breakdown = PricingCalculationService.calculate_from_quote_line_items(line_items)
 
         assert len(breakdown.line_items) == 2
-        assert breakdown.subtotal == Decimal('7000.00')
+        assert breakdown.subtotal == Decimal("7000.00")
 
     def test_extract_discount_code_from_nested_data(self, discount):
         """Test extracting discount code from nested booking data."""
         booking_data = {
-            'step_pricing': {
-                'applied_discount_code': discount.code
-            },
-            'selected_packages': [],
-            'selected_addons': []
+            "step_pricing": {"applied_discount_code": discount.code},
+            "selected_packages": [],
+            "selected_addons": [],
         }
 
         code = PricingCalculationService._extract_discount_code(booking_data)
@@ -1015,20 +939,16 @@ class TestPricingCalculationServiceIntegration:
     def test_extract_selected_items_alternative_keys(self):
         """Test extracting items using alternative key names."""
         booking_data = {
-            'packages': [  # Alternative key
-                {'product_id': 1, 'name': 'Test', 'price': 1000, 'quantity': 1}
+            "packages": [  # Alternative key
+                {"product_id": 1, "name": "Test", "price": 1000, "quantity": 1}
             ],
-            'add_ons': [  # Alternative key
-                {'product_id': 2, 'name': 'Addon', 'price': 500, 'quantity': 1}
-            ]
+            "add_ons": [  # Alternative key
+                {"product_id": 2, "name": "Addon", "price": 500, "quantity": 1}
+            ],
         }
 
-        packages = PricingCalculationService._extract_selected_items(
-            booking_data, 'selected_packages'
-        )
-        addons = PricingCalculationService._extract_selected_items(
-            booking_data, 'selected_addons'
-        )
+        packages = PricingCalculationService._extract_selected_items(booking_data, "selected_packages")
+        addons = PricingCalculationService._extract_selected_items(booking_data, "selected_addons")
 
         assert len(packages) == 1
         assert len(addons) == 1
@@ -1041,9 +961,9 @@ class TestPricingCalculationServiceEdgeCases:
     def test_create_line_item_invalid_data(self):
         """Test creating line item with invalid data returns None."""
         package_data = {
-            'product_id': None,
-            'name': 'Test',
-            'quantity': 'invalid'  # Invalid quantity triggers ValueError in int()
+            "product_id": None,
+            "name": "Test",
+            "quantity": "invalid",  # Invalid quantity triggers ValueError in int()
         }
 
         item = PricingCalculationService._create_package_line_item(package_data, None)
@@ -1053,8 +973,8 @@ class TestPricingCalculationServiceEdgeCases:
     def test_create_addon_line_item_invalid_data(self):
         """Test creating addon line item with invalid data returns None."""
         addon_data = {
-            'name': 'Test',
-            'quantity': 'invalid'  # Invalid quantity
+            "name": "Test",
+            "quantity": "invalid",  # Invalid quantity
         }
 
         item = PricingCalculationService._create_addon_line_item(addon_data)
@@ -1066,33 +986,33 @@ class TestPricingCalculationServiceEdgeCases:
         items = [
             PricingLineItem(
                 product_id=1,
-                name='Test',
-                description='Test',
+                name="Test",
+                description="Test",
                 quantity=1,
-                base_unit_price=Decimal('1000.00'),
-                tax_rate=Decimal('12.00')
+                base_unit_price=Decimal("1000.00"),
+                tax_rate=Decimal("12.00"),
             )
         ]
 
         rate = PricingCalculationService.get_applicable_tax_rate(items)
 
-        assert rate == Decimal('12.00')
+        assert rate == Decimal("12.00")
 
     def test_calculate_pricing_breakdown_from_line_items(self):
         """Test calculate_pricing_breakdown method."""
         items = [
             PricingLineItem(
                 product_id=1,
-                name='Item 1',
-                description='Item 1',
+                name="Item 1",
+                description="Item 1",
                 quantity=2,
-                base_unit_price=Decimal('1000.00'),
-                tax_rate=Decimal('12.00')
+                base_unit_price=Decimal("1000.00"),
+                tax_rate=Decimal("12.00"),
             )
         ]
 
         breakdown = PricingCalculationService.calculate_pricing_breakdown(items)
 
-        assert breakdown.subtotal == Decimal('2000.00')
-        assert breakdown.tax_amount == Decimal('240.00')
-        assert breakdown.total_amount == Decimal('2240.00')
+        assert breakdown.subtotal == Decimal("2000.00")
+        assert breakdown.tax_amount == Decimal("240.00")
+        assert breakdown.total_amount == Decimal("2240.00")

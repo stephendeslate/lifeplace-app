@@ -12,7 +12,7 @@ Uses CompanySettings to provide consistent branding across all PDF documents:
 import logging
 import os
 from dataclasses import dataclass
-from typing import Optional
+
 from reportlab.lib import colors
 
 logger = logging.getLogger(__name__)
@@ -43,8 +43,8 @@ class PDFBrandingContext:
     accent_color_rgb: colors.Color
 
     # Logo paths
-    logo_path: Optional[str]
-    logo_dark_path: Optional[str]
+    logo_path: str | None
+    logo_dark_path: str | None
 
     # Document text
     pdf_footer_text: str
@@ -77,13 +77,13 @@ class PDFBrandingService:
     """
 
     # Default values (fallback if CompanySettings not available)
-    DEFAULT_COMPANY_NAME = 'LifePlace Retreat & Events Center'
-    DEFAULT_PRIMARY_COLOR = '#2c5aa0'
-    DEFAULT_SECONDARY_COLOR = '#1a365d'
-    DEFAULT_ACCENT_COLOR = '#38a169'
-    DEFAULT_EMAIL = os.getenv('DEFAULT_COMPANY_EMAIL', 'info@lifeplace.dev')
-    DEFAULT_WEBSITE = os.getenv('DEFAULT_COMPANY_WEBSITE', 'https://lifeplace.dev')
-    DEFAULT_FOOTER = 'Thank you for choosing LifePlace Retreat & Events Center!'
+    DEFAULT_COMPANY_NAME = "LifePlace Retreat & Events Center"
+    DEFAULT_PRIMARY_COLOR = "#2c5aa0"
+    DEFAULT_SECONDARY_COLOR = "#1a365d"
+    DEFAULT_ACCENT_COLOR = "#38a169"
+    DEFAULT_EMAIL = os.getenv("DEFAULT_COMPANY_EMAIL", "info@lifeplace.dev")
+    DEFAULT_WEBSITE = os.getenv("DEFAULT_COMPANY_WEBSITE", "https://lifeplace.dev")
+    DEFAULT_FOOTER = "Thank you for choosing LifePlace Retreat & Events Center!"
 
     @classmethod
     def get_branding_context(cls) -> PDFBrandingContext:
@@ -94,6 +94,7 @@ class PDFBrandingService:
         """
         try:
             from core.domains.settings.models import CompanySettings
+
             settings = CompanySettings.get_settings()
 
             # Get logo paths safely
@@ -113,14 +114,13 @@ class PDFBrandingService:
             return PDFBrandingContext(
                 # Company info
                 company_name=settings.company_name or cls.DEFAULT_COMPANY_NAME,
-                company_tagline=settings.company_tagline or '',
+                company_tagline=settings.company_tagline or "",
                 email=settings.email or cls.DEFAULT_EMAIL,
                 support_email=settings.support_email or settings.email or cls.DEFAULT_EMAIL,
-                phone=settings.phone or '',
-                phone_secondary=settings.phone_secondary or '',
+                phone=settings.phone or "",
+                phone_secondary=settings.phone_secondary or "",
                 website=settings.website or cls.DEFAULT_WEBSITE,
                 full_address=settings.get_full_address(),
-
                 # Colors
                 primary_color=settings.primary_color or cls.DEFAULT_PRIMARY_COLOR,
                 secondary_color=settings.secondary_color or cls.DEFAULT_SECONDARY_COLOR,
@@ -128,26 +128,22 @@ class PDFBrandingService:
                 primary_color_rgb=cls._hex_to_color(settings.primary_color or cls.DEFAULT_PRIMARY_COLOR),
                 secondary_color_rgb=cls._hex_to_color(settings.secondary_color or cls.DEFAULT_SECONDARY_COLOR),
                 accent_color_rgb=cls._hex_to_color(settings.accent_color or cls.DEFAULT_ACCENT_COLOR),
-
                 # Logos
                 logo_path=logo_path,
                 logo_dark_path=logo_dark_path,
-
                 # Document text
                 pdf_footer_text=settings.pdf_footer_text or cls.DEFAULT_FOOTER,
-                invoice_terms=settings.invoice_terms or '',
-                receipt_terms=settings.receipt_terms or '',
-
+                invoice_terms=settings.invoice_terms or "",
+                receipt_terms=settings.receipt_terms or "",
                 # Business info
-                business_registration_number=settings.business_registration_number or '',
-                vat_number=settings.vat_number or '',
-
+                business_registration_number=settings.business_registration_number or "",
+                vat_number=settings.vat_number or "",
                 # Bank details
-                bank_name=settings.bank_name or '',
-                bank_account_name=settings.bank_account_name or '',
-                bank_account_number=settings.bank_account_number or '',
-                bank_branch=settings.bank_branch or '',
-                bank_swift_code=settings.bank_swift_code or '',
+                bank_name=settings.bank_name or "",
+                bank_account_name=settings.bank_account_name or "",
+                bank_account_number=settings.bank_account_number or "",
+                bank_branch=settings.bank_branch or "",
+                bank_swift_code=settings.bank_swift_code or "",
             )
 
         except Exception as e:
@@ -159,36 +155,31 @@ class PDFBrandingService:
         """Get default branding context when settings are unavailable."""
         return PDFBrandingContext(
             company_name=cls.DEFAULT_COMPANY_NAME,
-            company_tagline='',
+            company_tagline="",
             email=cls.DEFAULT_EMAIL,
             support_email=cls.DEFAULT_EMAIL,
-            phone='',
-            phone_secondary='',
+            phone="",
+            phone_secondary="",
             website=cls.DEFAULT_WEBSITE,
-            full_address='Alfonso, Cavite\nPhilippines',
-
+            full_address="Alfonso, Cavite\nPhilippines",
             primary_color=cls.DEFAULT_PRIMARY_COLOR,
             secondary_color=cls.DEFAULT_SECONDARY_COLOR,
             accent_color=cls.DEFAULT_ACCENT_COLOR,
             primary_color_rgb=cls._hex_to_color(cls.DEFAULT_PRIMARY_COLOR),
             secondary_color_rgb=cls._hex_to_color(cls.DEFAULT_SECONDARY_COLOR),
             accent_color_rgb=cls._hex_to_color(cls.DEFAULT_ACCENT_COLOR),
-
             logo_path=None,
             logo_dark_path=None,
-
             pdf_footer_text=cls.DEFAULT_FOOTER,
-            invoice_terms='',
-            receipt_terms='',
-
-            business_registration_number='',
-            vat_number='',
-
-            bank_name='',
-            bank_account_name='',
-            bank_account_number='',
-            bank_branch='',
-            bank_swift_code='',
+            invoice_terms="",
+            receipt_terms="",
+            business_registration_number="",
+            vat_number="",
+            bank_name="",
+            bank_account_name="",
+            bank_account_number="",
+            bank_branch="",
+            bank_swift_code="",
         )
 
     @staticmethod
@@ -197,7 +188,7 @@ class PDFBrandingService:
         try:
             return colors.HexColor(hex_color)
         except Exception:
-            return colors.HexColor('#2c5aa0')  # Fallback to default blue
+            return colors.HexColor("#2c5aa0")  # Fallback to default blue
 
     @classmethod
     def get_company_header_data(cls) -> dict:
@@ -218,13 +209,13 @@ class PDFBrandingService:
             contact_parts.append(ctx.website)
 
         return {
-            'company_name': ctx.company_name,
-            'tagline': ctx.company_tagline,
-            'contact_line': ' | '.join(contact_parts),
-            'address': ctx.full_address,
-            'logo_path': ctx.logo_path,
-            'primary_color': ctx.primary_color_rgb,
-            'secondary_color': ctx.secondary_color_rgb,
+            "company_name": ctx.company_name,
+            "tagline": ctx.company_tagline,
+            "contact_line": " | ".join(contact_parts),
+            "address": ctx.full_address,
+            "logo_path": ctx.logo_path,
+            "primary_color": ctx.primary_color_rgb,
+            "secondary_color": ctx.secondary_color_rgb,
         }
 
     @classmethod
@@ -232,9 +223,9 @@ class PDFBrandingService:
         """Get formatted data for PDF footer section."""
         ctx = cls.get_branding_context()
         return {
-            'footer_text': ctx.pdf_footer_text,
-            'company_name': ctx.company_name,
-            'website': ctx.website,
+            "footer_text": ctx.pdf_footer_text,
+            "company_name": ctx.company_name,
+            "website": ctx.website,
         }
 
     @classmethod
@@ -247,9 +238,9 @@ class PDFBrandingService:
             return {}
 
         return {
-            'bank_name': ctx.bank_name,
-            'account_name': ctx.bank_account_name,
-            'account_number': ctx.bank_account_number,
-            'branch': ctx.bank_branch,
-            'swift_code': ctx.bank_swift_code,
+            "bank_name": ctx.bank_name,
+            "account_name": ctx.bank_account_name,
+            "account_number": ctx.bank_account_number,
+            "branch": ctx.bank_branch,
+            "swift_code": ctx.bank_swift_code,
         }

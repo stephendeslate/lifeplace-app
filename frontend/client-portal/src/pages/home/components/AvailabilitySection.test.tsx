@@ -32,9 +32,7 @@ const createWrapper = () => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        {children}
-      </ToastProvider>
+      <ToastProvider>{children}</ToastProvider>
     </QueryClientProvider>
   );
 };
@@ -47,30 +45,31 @@ describe('AvailabilitySection', () => {
   });
 
   it('renders section with heading', () => {
-    render(
-      <AvailabilitySection onNavigateToBooking={mockOnNavigateToBooking} />,
-      { wrapper: createWrapper() }
-    );
+    render(<AvailabilitySection onNavigateToBooking={mockOnNavigateToBooking} />, {
+      wrapper: createWrapper(),
+    });
 
     expect(screen.getByText('Check Availability')).toBeInTheDocument();
   });
 
   it('renders description text', () => {
-    render(
-      <AvailabilitySection onNavigateToBooking={mockOnNavigateToBooking} />,
-      { wrapper: createWrapper() }
-    );
+    render(<AvailabilitySection onNavigateToBooking={mockOnNavigateToBooking} />, {
+      wrapper: createWrapper(),
+    });
 
-    expect(screen.getByText(/See available dates and book your perfect event/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/See available dates and book your perfect event/i),
+    ).toBeInTheDocument();
   });
 
   it('renders instructions text', () => {
-    render(
-      <AvailabilitySection onNavigateToBooking={mockOnNavigateToBooking} />,
-      { wrapper: createWrapper() }
-    );
+    render(<AvailabilitySection onNavigateToBooking={mockOnNavigateToBooking} />, {
+      wrapper: createWrapper(),
+    });
 
-    expect(screen.getByText(/Click on any available date to begin your booking journey/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Click on any available date to begin your booking journey/i),
+    ).toBeInTheDocument();
   });
 
   it('shows loading state', async () => {
@@ -87,10 +86,9 @@ describe('AvailabilitySection', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
-    render(
-      <AvailabilitySection onNavigateToBooking={mockOnNavigateToBooking} />,
-      { wrapper: createWrapper() }
-    );
+    render(<AvailabilitySection onNavigateToBooking={mockOnNavigateToBooking} />, {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       const progressBar = screen.getByRole('progressbar');
@@ -112,10 +110,9 @@ describe('AvailabilitySection', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
-    render(
-      <AvailabilitySection onNavigateToBooking={mockOnNavigateToBooking} />,
-      { wrapper: createWrapper() }
-    );
+    render(<AvailabilitySection onNavigateToBooking={mockOnNavigateToBooking} />, {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(screen.getByText(/Unable to load availability data/i)).toBeInTheDocument();
@@ -125,7 +122,7 @@ describe('AvailabilitySection', () => {
   it('has proper semantic structure for accessibility', () => {
     const { container } = render(
       <AvailabilitySection onNavigateToBooking={mockOnNavigateToBooking} />,
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     );
 
     // Check for section element
@@ -139,7 +136,7 @@ describe('AvailabilitySection', () => {
   it('uses design system tokens for styling', () => {
     const { container } = render(
       <AvailabilitySection onNavigateToBooking={mockOnNavigateToBooking} />,
-      { wrapper: createWrapper() }
+      { wrapper: createWrapper() },
     );
 
     // Check if container has the expected class/styling structure
@@ -158,7 +155,7 @@ describe('AvailabilitySection', () => {
           start_date: '2026-03-15T10:00:00',
           end_date: '2026-03-15T18:00:00',
           payment_status: 'PAID',
-        }
+        },
       ],
       isLoading: false,
       isError: false,
@@ -170,10 +167,9 @@ describe('AvailabilitySection', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
-    render(
-      <AvailabilitySection onNavigateToBooking={mockOnNavigateToBooking} />,
-      { wrapper: createWrapper() }
-    );
+    render(<AvailabilitySection onNavigateToBooking={mockOnNavigateToBooking} />, {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => {
       expect(screen.getByText('Start Your Booking')).toBeInTheDocument();

@@ -68,7 +68,9 @@ const getCategoryIcon = (category?: string, channel?: string): React.ReactNode =
 };
 
 // Get color for category
-const getCategoryColor = (category?: string): 'primary' | 'secondary' | 'success' | 'warning' | 'info' => {
+const getCategoryColor = (
+  category?: string,
+): 'primary' | 'secondary' | 'success' | 'warning' | 'info' => {
   switch (category) {
     case 'welcome':
       return 'success';
@@ -267,17 +269,12 @@ export const TemplateStartersGallery: React.FC<TemplateStartersGalleryProps> = (
       </Box>
 
       {/* Confirmation Dialog */}
-      <Dialog
-        open={confirmDialogOpen}
-        onClose={handleCancel}
-        maxWidth="xs"
-        fullWidth
-      >
+      <Dialog open={confirmDialogOpen} onClose={handleCancel} maxWidth="xs" fullWidth>
         <DialogTitle>Load Template?</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Loading "{selectedTemplate?.name}" will replace your current content.
-            This action cannot be undone.
+            Loading "{selectedTemplate?.name}" will replace your current content. This action cannot
+            be undone.
           </DialogContentText>
         </DialogContent>
         <DialogActions>

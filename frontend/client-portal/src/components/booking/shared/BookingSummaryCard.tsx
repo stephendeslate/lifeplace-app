@@ -14,12 +14,7 @@ import {
   Divider,
   Stack,
 } from '@mui/material';
-import {
-  CalendarToday,
-  AccessTime,
-  Place,
-  Receipt,
-} from '@mui/icons-material';
+import { CalendarToday, AccessTime, Place, Receipt } from '@mui/icons-material';
 import { useCurrencySettings } from '../../../hooks/useCurrency';
 import type {
   EventSummary,
@@ -127,8 +122,12 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                 {packages.map((pkg) => {
                   // Check for new venue_details format (preferred) or legacy excess_hours
                   const venueDetails = pkg.venue_details;
-                  const hasVenueExcess = venueDetails && venueDetails.length > 0 && venueDetails.some(v => v.additional_hours > 0);
-                  const hasLegacyExcess = !hasVenueExcess && pkg.excess_hours && pkg.excess_hours > 0;
+                  const hasVenueExcess =
+                    venueDetails &&
+                    venueDetails.length > 0 &&
+                    venueDetails.some((v) => v.additional_hours > 0);
+                  const hasLegacyExcess =
+                    !hasVenueExcess && pkg.excess_hours && pkg.excess_hours > 0;
 
                   return (
                     <TableRow key={pkg.product_id}>
@@ -139,22 +138,39 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                           </Typography>
                           {hasVenueExcess && (
                             <Box sx={{ mt: 0.5 }}>
-                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: 'block' }}
+                              >
                                 Base: {formatAmount(pkg.base_price)}
                               </Typography>
-                              {venueDetails?.map(venue => (
-                                venue.additional_hours > 0 && (
-                                  <Typography key={venue.venue_id} variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                                    {venue.venue_name}: +{venue.additional_hours}h @ {formatAmount(venue.excess_hour_price)}/h
-                                  </Typography>
-                                )
-                              ))}
+                              {venueDetails?.map(
+                                (venue) =>
+                                  venue.additional_hours > 0 && (
+                                    <Typography
+                                      key={venue.venue_id}
+                                      variant="caption"
+                                      color="text.secondary"
+                                      sx={{ display: 'block' }}
+                                    >
+                                      {venue.venue_name}: +{venue.additional_hours}h @{' '}
+                                      {formatAmount(venue.excess_hour_price)}/h
+                                    </Typography>
+                                  ),
+                              )}
                             </Box>
                           )}
                           {hasLegacyExcess && (
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: 'block', mt: 0.5 }}
+                            >
                               Base: {formatAmount(pkg.base_price)}
-                              {' + '}{pkg.excess_hours}h excess @ {formatAmount(pkg.excess_hour_price || '0')}/h
+                              {' + '}
+                              {pkg.excess_hours}h excess @{' '}
+                              {formatAmount(pkg.excess_hour_price || '0')}/h
                             </Typography>
                           )}
                         </Box>
@@ -162,12 +178,18 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                       <TableCell align="center">{pkg.quantity}</TableCell>
                       <TableCell align="right">
                         <Box>
-                          <Typography variant="body2">
-                            {formatAmount(pkg.unit_price)}
-                          </Typography>
+                          <Typography variant="body2">{formatAmount(pkg.unit_price)}</Typography>
                           {pkg.excess_cost && parseFloat(pkg.excess_cost) > 0 && (
-                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                              (+{formatAmount((parseFloat(pkg.excess_cost) / pkg.quantity).toString())} excess)
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{ display: 'block' }}
+                            >
+                              (+
+                              {formatAmount(
+                                (parseFloat(pkg.excess_cost) / pkg.quantity).toString(),
+                              )}{' '}
+                              excess)
                             </Typography>
                           )}
                         </Box>
@@ -212,9 +234,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
                     </TableCell>
                     <TableCell align="center">{addon.quantity}</TableCell>
                     <TableCell align="right">
-                      <Typography variant="body2">
-                        {formatAmount(addon.unit_price)}
-                      </Typography>
+                      <Typography variant="body2">{formatAmount(addon.unit_price)}</Typography>
                     </TableCell>
                     <TableCell align="right">
                       <Typography variant="body2" sx={{ fontWeight: 500 }}>
@@ -231,7 +251,11 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
 
       {/* No Items Message */}
       {!hasItems && (
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center', py: 2 }}>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ mb: 2, textAlign: 'center', py: 2 }}
+        >
           No packages or add-ons selected
         </Typography>
       )}

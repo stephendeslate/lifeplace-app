@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/communications/TemplateForm.tsx
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -17,33 +17,26 @@ import {
   CircularProgress,
   Paper,
   Tooltip,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Save as SaveIcon,
   Cancel as CancelIcon,
   Info as InfoIcon,
   Send as SendTestIcon,
-} from "@mui/icons-material";
-import DOMPurify from "dompurify";
-import { useCommunications } from "../../hooks/useCommunications";
-import { useLayouts } from "../../hooks/useLayouts";
+} from '@mui/icons-material';
+import DOMPurify from 'dompurify';
+import { useCommunications } from '../../hooks/useCommunications';
+import { useLayouts } from '../../hooks/useLayouts';
 import type {
   CommunicationTemplate,
   CreateTemplateData,
   UpdateTemplateData,
-} from "../../types/communications.types";
-import { TemplateContentEditor, TemplateVariableInserter } from "../shared";
-import type { TemplateContentEditorHandle } from "../shared";
-import type {
-  TemplateStarter,
-  ContextType,
-  TemplateEditorMode,
-} from "../../types/templates.types";
-import {
-  CONTEXT_TYPE_LABELS,
-  CONTEXT_TYPE_DESCRIPTIONS,
-} from "../../types/templates.types";
-import { ModernPageHeader, ModernPageLayout } from "../common";
+} from '../../types/communications.types';
+import { TemplateContentEditor, TemplateVariableInserter } from '../shared';
+import type { TemplateContentEditorHandle } from '../shared';
+import type { TemplateStarter, ContextType, TemplateEditorMode } from '../../types/templates.types';
+import { CONTEXT_TYPE_LABELS, CONTEXT_TYPE_DESCRIPTIONS } from '../../types/templates.types';
+import { ModernPageHeader, ModernPageLayout } from '../common';
 
 interface TemplateFormProps {
   template?: CommunicationTemplate;
@@ -51,24 +44,20 @@ interface TemplateFormProps {
   onCancel: () => void;
 }
 
-export const TemplateForm: React.FC<TemplateFormProps> = ({
-  template,
-  onSave,
-  onCancel,
-}) => {
+export const TemplateForm: React.FC<TemplateFormProps> = ({ template, onSave, onCancel }) => {
   const [formData, setFormData] = useState<CreateTemplateData>({
-    name: "",
-    channel: "EMAIL",
-    category: "MANUAL",
-    context_type: "MANUAL" as ContextType,
+    name: '',
+    channel: 'EMAIL',
+    category: 'MANUAL',
+    context_type: 'MANUAL' as ContextType,
     include_client_context: false,
     include_event_context: false,
-    subject_template: "",
-    body_template: "",
+    subject_template: '',
+    body_template: '',
     layout: null,
   });
 
-  const [editorMode, setEditorMode] = useState<TemplateEditorMode>("visual");
+  const [editorMode, setEditorMode] = useState<TemplateEditorMode>('visual');
   const editorRef = useRef<TemplateContentEditorHandle>(null);
 
   const {
@@ -92,7 +81,7 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
   } = usePreviewTemplate();
 
   const { mutate: sendTest, isPending: isSendingTest } = useSendTest();
-  const [testRecipient, setTestRecipient] = useState("");
+  const [testRecipient, setTestRecipient] = useState('');
   const [showTestSend, setShowTestSend] = useState(false);
 
   const isEditing = !!template;
@@ -101,30 +90,28 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
   // Sample data for live preview - defined first so it can be used in effects
   const samplePreviewData = useMemo(
     () => ({
-      first_name: "John",
-      last_name: "Doe",
-      email: "john.doe@example.com",
-      company: "Example Corp",
-      site_name: "LifePlace",
+      first_name: 'John',
+      last_name: 'Doe',
+      email: 'john.doe@example.com',
+      company: 'Example Corp',
+      site_name: 'LifePlace',
       current_date: new Date().toLocaleDateString(),
-      support_email: "support@lifeplace.com",
-      invitation_link: "https://app.lifeplace.com/accept-invitation/123",
-      invited_by: "Jane Smith",
-      expiry_date: "December 31, 2024",
-      event_name: "Annual Gala",
-      event_date: "March 15, 2024",
-      venue: "Grand Ballroom",
-      client_name: "John Doe",
-      phone: "(555) 123-4567",
+      support_email: 'support@lifeplace.com',
+      invitation_link: 'https://app.lifeplace.com/accept-invitation/123',
+      invited_by: 'Jane Smith',
+      expiry_date: 'December 31, 2024',
+      event_name: 'Annual Gala',
+      event_date: 'March 15, 2024',
+      venue: 'Grand Ballroom',
+      client_name: 'John Doe',
+      phone: '(555) 123-4567',
     }),
     [],
   );
 
   // Debounced preview using backend API
   const [debouncedBody, setDebouncedBody] = useState(formData.body_template);
-  const [debouncedSubject, setDebouncedSubject] = useState(
-    formData.subject_template,
-  );
+  const [debouncedSubject, setDebouncedSubject] = useState(formData.subject_template);
   const [debouncedLayout, setDebouncedLayout] = useState(formData.layout);
 
   // Debounce the body, subject, and layout changes
@@ -167,31 +154,26 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
     // If we have a backend preview result (editing mode), use it
     if (isEditing && previewResult) {
       return {
-        subject: previewResult.subject || "",
-        body: previewResult.body || "",
+        subject: previewResult.subject || '',
+        body: previewResult.body || '',
       };
     }
 
     // Fallback: client-side substitution for new templates
-    if (!formData.body_template) return { subject: "", body: "" };
+    if (!formData.body_template) return { subject: '', body: '' };
 
     const substituteVariables = (text: string) => {
       let result = text;
 
       // Step 1: Remove variable pill spans entirely - match any span containing {{ variable }}
-      result = result.replace(
-        /<span[^>]*>\s*\{\{\s*(\w+)\s*\}\}\s*<\/span>/gi,
-        (_, varName) => {
-          const value =
-            samplePreviewData[varName as keyof typeof samplePreviewData];
-          return value !== undefined ? String(value) : `{{ ${varName} }}`;
-        },
-      );
+      result = result.replace(/<span[^>]*>\s*\{\{\s*(\w+)\s*\}\}\s*<\/span>/gi, (_, varName) => {
+        const value = samplePreviewData[varName as keyof typeof samplePreviewData];
+        return value !== undefined ? String(value) : `{{ ${varName} }}`;
+      });
 
       // Step 2: Substitute any remaining {{ variable }} patterns (plain text not in spans)
       result = result.replace(/\{\{\s*(\w+)\s*\}\}/g, (match, varName) => {
-        const value =
-          samplePreviewData[varName as keyof typeof samplePreviewData];
+        const value = samplePreviewData[varName as keyof typeof samplePreviewData];
         return value !== undefined ? String(value) : match;
       });
 
@@ -199,7 +181,7 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
     };
 
     return {
-      subject: substituteVariables(formData.subject_template || ""),
+      subject: substituteVariables(formData.subject_template || ''),
       body: substituteVariables(formData.body_template),
     };
   }, [
@@ -216,20 +198,17 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
         name: template.name,
         channel: template.channel,
         category: template.category,
-        context_type: (template.context_type || "MANUAL") as ContextType,
+        context_type: (template.context_type || 'MANUAL') as ContextType,
         include_client_context: template.include_client_context || false,
         include_event_context: template.include_event_context || false,
-        subject_template: template.subject_template || "",
+        subject_template: template.subject_template || '',
         body_template: template.body_template,
         layout: template.layout,
       });
     }
   }, [template]);
 
-  const handleInputChange = (
-    field: keyof CreateTemplateData,
-    value: unknown,
-  ) => {
+  const handleInputChange = (field: keyof CreateTemplateData, value: unknown) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -256,7 +235,7 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
       {
         onSuccess: () => {
           setShowTestSend(false);
-          setTestRecipient("");
+          setTestRecipient('');
         },
       },
     );
@@ -269,11 +248,10 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
   };
 
   // Template content data (used by loadTemplate)
-  const templateContentData: Record<string, { subject: string; body: string }> =
-    {
-      welcome: {
-        subject: "Welcome to {{ site_name }}!",
-        body: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+  const templateContentData: Record<string, { subject: string; body: string }> = {
+    welcome: {
+      subject: 'Welcome to {{ site_name }}!',
+      body: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
   <div style="background-color: #1976d2; color: white; padding: 24px; text-align: center;">
     <h1>Welcome to {{ site_name }}!</h1>
   </div>
@@ -292,10 +270,10 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
     </div>
   </div>
 </div>`,
-      },
-      reminder: {
-        subject: "Reminder: {{ event_name }}",
-        body: `<p>Hello <strong>{{ first_name }}</strong>,</p>
+    },
+    reminder: {
+      subject: 'Reminder: {{ event_name }}',
+      body: `<p>Hello <strong>{{ first_name }}</strong>,</p>
 
 <p>This is a friendly reminder about your upcoming event:</p>
 
@@ -309,10 +287,10 @@ export const TemplateForm: React.FC<TemplateFormProps> = ({
 
 <p>Best regards,<br>
 The {{ site_name }} Team</p>`,
-      },
-      followup: {
-        subject: "Thank you for choosing {{ site_name }}",
-        body: `<p>Dear <strong>{{ first_name }}</strong>,</p>
+    },
+    followup: {
+      subject: 'Thank you for choosing {{ site_name }}',
+      body: `<p>Dear <strong>{{ first_name }}</strong>,</p>
 
 <p>Thank you for allowing us to be part of your special event. We hope everything went perfectly!</p>
 
@@ -322,46 +300,45 @@ The {{ site_name }} Team</p>`,
 
 <p>Best regards,<br>
 The {{ site_name }} Team</p>`,
-      },
-      // SMS templates
-      sms_reminder: {
-        subject: "",
-        body: `Hi {{ first_name }}! Reminder: {{ event_name }} on {{ event_date }} at {{ venue }}. Looking forward to working with you! - {{ site_name }}`,
-      },
-      sms_confirmation: {
-        subject: "",
-        body: `Hi {{ first_name }}! Your booking for {{ event_name }} is confirmed for {{ event_date }}. We'll be in touch soon! - {{ site_name }}`,
-      },
-    };
+    },
+    // SMS templates
+    sms_reminder: {
+      subject: '',
+      body: `Hi {{ first_name }}! Reminder: {{ event_name }} on {{ event_date }} at {{ venue }}. Looking forward to working with you! - {{ site_name }}`,
+    },
+    sms_confirmation: {
+      subject: '',
+      body: `Hi {{ first_name }}! Your booking for {{ event_name }} is confirmed for {{ event_date }}. We'll be in touch soon! - {{ site_name }}`,
+    },
+  };
 
   // Template starters for the TemplateVariableInserter component
   const getTemplateStarters = (): Record<string, TemplateStarter> => {
-    if (formData.channel === "SMS") {
+    if (formData.channel === 'SMS') {
       return {
         sms_reminder: {
-          name: "SMS Reminder",
-          description: "A short reminder message for upcoming events",
+          name: 'SMS Reminder',
+          description: 'A short reminder message for upcoming events',
         },
         sms_confirmation: {
-          name: "SMS Confirmation",
-          description: "Confirm a booking or appointment",
+          name: 'SMS Confirmation',
+          description: 'Confirm a booking or appointment',
         },
       };
     }
 
     return {
       welcome: {
-        name: "Welcome Email",
-        description:
-          "Welcomes new users to the platform with a branded template",
+        name: 'Welcome Email',
+        description: 'Welcomes new users to the platform with a branded template',
       },
       reminder: {
-        name: "Event Reminder",
-        description: "Reminds clients about upcoming events with event details",
+        name: 'Event Reminder',
+        description: 'Reminds clients about upcoming events with event details',
       },
       followup: {
-        name: "Follow-up Email",
-        description: "Thanks clients after an event and invites feedback",
+        name: 'Follow-up Email',
+        description: 'Thanks clients after an event and invites feedback',
       },
     };
   };
@@ -370,19 +347,17 @@ The {{ site_name }} Team</p>`,
     const templateContent = templateContentData[templateKey];
 
     if (templateContent) {
-      handleInputChange("subject_template", templateContent.subject);
-      handleInputChange("body_template", templateContent.body);
+      handleInputChange('subject_template', templateContent.subject);
+      handleInputChange('body_template', templateContent.body);
     }
   };
 
   return (
     <ModernPageLayout>
       <ModernPageHeader
-        title={isEditing ? "Edit Template" : "Create Template"}
+        title={isEditing ? 'Edit Template' : 'Create Template'}
         subtitle={
-          isEditing
-            ? "Modify your communication template"
-            : "Create a new communication template"
+          isEditing ? 'Modify your communication template' : 'Create a new communication template'
         }
         size="medium"
       />
@@ -390,7 +365,7 @@ The {{ site_name }} Team</p>`,
       <Box component="form" onSubmit={handleSubmit}>
         <Stack spacing={4}>
           {/* Basic Information */}
-          <Box sx={{ borderRadius: 1, bgcolor: "background.paper", p: 3 }}>
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Basic Information
             </Typography>
@@ -399,7 +374,7 @@ The {{ site_name }} Team</p>`,
               <TextField
                 label="Template Name"
                 value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
+                onChange={(e) => handleInputChange('name', e.target.value)}
                 required
                 fullWidth
                 disabled={template?.is_system}
@@ -413,8 +388,8 @@ The {{ site_name }} Team</p>`,
                     value={formData.channel}
                     label="Channel"
                     onChange={(e) => {
-                      handleInputChange("channel", e.target.value);
-                      setEditorMode("visual");
+                      handleInputChange('channel', e.target.value);
+                      setEditorMode('visual');
                     }}
                     disabled={template?.is_system}
                   >
@@ -428,9 +403,7 @@ The {{ site_name }} Team</p>`,
                   <Select
                     value={formData.category}
                     label="Category"
-                    onChange={(e) =>
-                      handleInputChange("category", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange('category', e.target.value)}
                     disabled={template?.is_system}
                   >
                     <MenuItem value="MANUAL">Manual</MenuItem>
@@ -449,8 +422,8 @@ The {{ site_name }} Team</p>`,
                       sx={{
                         fontSize: 14,
                         ml: 0.5,
-                        verticalAlign: "middle",
-                        color: "text.secondary",
+                        verticalAlign: 'middle',
+                        color: 'text.secondary',
                       }}
                     />
                   </Tooltip>
@@ -458,9 +431,7 @@ The {{ site_name }} Team</p>`,
                 <Select
                   value={formData.context_type}
                   label="Context Type"
-                  onChange={(e) =>
-                    handleInputChange("context_type", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange('context_type', e.target.value)}
                   disabled={template?.is_system}
                 >
                   {Object.entries(CONTEXT_TYPE_LABELS).map(([value, label]) => (
@@ -477,18 +448,17 @@ The {{ site_name }} Team</p>`,
               </FormControl>
 
               {/* MANUAL context type options */}
-              {formData.context_type === "MANUAL" && (
-                <Paper variant="outlined" sx={{ p: 2, bgcolor: "grey.50" }}>
+              {formData.context_type === 'MANUAL' && (
+                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
                   <Typography variant="subtitle2" gutterBottom>
                     Optional Context
                   </Typography>
                   <Typography
                     variant="caption"
                     color="text.secondary"
-                    sx={{ display: "block", mb: 1 }}
+                    sx={{ display: 'block', mb: 1 }}
                   >
-                    Include additional variables when a client or event is
-                    provided at send time.
+                    Include additional variables when a client or event is provided at send time.
                   </Typography>
                   <Stack direction="row" spacing={2}>
                     <FormControlLabel
@@ -496,10 +466,7 @@ The {{ site_name }} Team</p>`,
                         <Checkbox
                           checked={formData.include_client_context}
                           onChange={(e) =>
-                            handleInputChange(
-                              "include_client_context",
-                              e.target.checked,
-                            )
+                            handleInputChange('include_client_context', e.target.checked)
                           }
                         />
                       }
@@ -510,10 +477,7 @@ The {{ site_name }} Team</p>`,
                         <Checkbox
                           checked={formData.include_event_context}
                           onChange={(e) =>
-                            handleInputChange(
-                              "include_event_context",
-                              e.target.checked,
-                            )
+                            handleInputChange('include_event_context', e.target.checked)
                           }
                         />
                       }
@@ -524,7 +488,7 @@ The {{ site_name }} Team</p>`,
               )}
 
               {/* Email Layout Selector - Only for EMAIL channel */}
-              {formData.channel === "EMAIL" && (
+              {formData.channel === 'EMAIL' && (
                 <FormControl fullWidth>
                   <InputLabel>
                     Email Layout
@@ -533,21 +497,19 @@ The {{ site_name }} Team</p>`,
                         sx={{
                           fontSize: 14,
                           ml: 0.5,
-                          verticalAlign: "middle",
-                          color: "text.secondary",
+                          verticalAlign: 'middle',
+                          color: 'text.secondary',
                         }}
                       />
                     </Tooltip>
                   </InputLabel>
                   <Select
-                    value={formData.layout ?? ""}
+                    value={formData.layout ?? ''}
                     label="Email Layout"
                     onChange={(e) =>
                       handleInputChange(
-                        "layout",
-                        String(e.target.value) === ""
-                          ? null
-                          : Number(e.target.value),
+                        'layout',
+                        String(e.target.value) === '' ? null : Number(e.target.value),
                       )
                     }
                     disabled={layoutsLoading}
@@ -564,7 +526,7 @@ The {{ site_name }} Team</p>`,
                               <Typography
                                 component="span"
                                 variant="caption"
-                                sx={{ ml: 1, color: "primary.main" }}
+                                sx={{ ml: 1, color: 'primary.main' }}
                               >
                                 (Default)
                               </Typography>
@@ -574,7 +536,7 @@ The {{ site_name }} Team</p>`,
                             <Typography
                               variant="caption"
                               color="text.secondary"
-                              sx={{ display: "block" }}
+                              sx={{ display: 'block' }}
                             >
                               {layout.description}
                             </Typography>
@@ -589,20 +551,18 @@ The {{ site_name }} Team</p>`,
           </Box>
 
           {/* Template Content */}
-          <Box sx={{ borderRadius: 1, bgcolor: "background.paper", p: 3 }}>
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
             <Typography variant="h6" gutterBottom>
               Template Content
             </Typography>
 
             <Stack spacing={2}>
-              {formData.channel === "EMAIL" && (
+              {formData.channel === 'EMAIL' && (
                 <TextField
                   label="Subject Template"
                   value={formData.subject_template}
-                  onChange={(e) =>
-                    handleInputChange("subject_template", e.target.value)
-                  }
-                  required={formData.channel === "EMAIL"}
+                  onChange={(e) => handleInputChange('subject_template', e.target.value)}
+                  required={formData.channel === 'EMAIL'}
                   fullWidth
                   placeholder="Use {{ variable_name }} for dynamic content"
                   helperText="The subject line of your email"
@@ -612,29 +572,25 @@ The {{ site_name }} Team</p>`,
               <TemplateContentEditor
                 ref={editorRef}
                 value={formData.body_template}
-                onChange={(value) => handleInputChange("body_template", value)}
-                mode={formData.channel === "SMS" ? "text" : editorMode}
+                onChange={(value) => handleInputChange('body_template', value)}
+                mode={formData.channel === 'SMS' ? 'text' : editorMode}
                 onModeChange={setEditorMode}
-                showModeToggle={formData.channel === "EMAIL"}
-                availableModes={
-                  formData.channel === "SMS" ? ["text"] : ["visual", "html"]
-                }
-                label={
-                  formData.channel === "SMS" ? "Message Content" : "Email Body"
-                }
+                showModeToggle={formData.channel === 'EMAIL'}
+                availableModes={formData.channel === 'SMS' ? ['text'] : ['visual', 'html']}
+                label={formData.channel === 'SMS' ? 'Message Content' : 'Email Body'}
                 placeholder={
-                  formData.channel === "SMS"
-                    ? "Hi {{ first_name }}! Your message here..."
-                    : "Start typing your email content... Type {{ to insert variables."
+                  formData.channel === 'SMS'
+                    ? 'Hi {{ first_name }}! Your message here...'
+                    : 'Start typing your email content... Type {{ to insert variables.'
                 }
-                minHeight={formData.channel === "SMS" ? 100 : 300}
-                rows={formData.channel === "SMS" ? 4 : 12}
-                showCharacterCount={formData.channel === "SMS"}
-                maxCharacters={formData.channel === "SMS" ? 160 : undefined}
+                minHeight={formData.channel === 'SMS' ? 100 : 300}
+                rows={formData.channel === 'SMS' ? 4 : 12}
+                showCharacterCount={formData.channel === 'SMS'}
+                maxCharacters={formData.channel === 'SMS' ? 160 : undefined}
                 helperText={
-                  formData.channel === "SMS"
-                    ? "Keep SMS messages under 160 characters for best delivery"
-                    : "Type {{ to insert variables with autocomplete"
+                  formData.channel === 'SMS'
+                    ? 'Keep SMS messages under 160 characters for best delivery'
+                    : 'Type {{ to insert variables with autocomplete'
                 }
                 variableSchemas={variableSchemas}
                 contextType={formData.context_type}
@@ -644,60 +600,55 @@ The {{ site_name }} Team</p>`,
           </Box>
 
           {/* Variable Helper */}
-          <Box sx={{ borderRadius: 1, bgcolor: "background.paper", p: 3 }}>
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
             <TemplateVariableInserter
               variableSchemas={variableSchemas}
               contextType={formData.context_type}
               onVariableInsert={handleVariableInsert}
               onTemplateLoad={loadTemplate}
               templateStarters={getTemplateStarters()}
-              showFormattingTips={formData.channel === "EMAIL"}
+              showFormattingTips={formData.channel === 'EMAIL'}
             />
           </Box>
 
           {/* Live Preview - Auto-updates as you type */}
-          <Box sx={{ borderRadius: 1, bgcolor: "background.paper", p: 3 }}>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-              mb={2}
-            >
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
               <Box display="flex" alignItems="center" gap={1}>
                 <Typography variant="h6">Live Preview</Typography>
                 {isPreviewing && <CircularProgress size={16} />}
               </Box>
               <Typography variant="caption" color="text.secondary">
-                {isEditing ? "Server-rendered preview" : "Using sample data"}
+                {isEditing ? 'Server-rendered preview' : 'Using sample data'}
               </Typography>
             </Box>
 
-            {formData.channel === "EMAIL" && livePreview.subject && (
+            {formData.channel === 'EMAIL' && livePreview.subject && (
               <Box mb={2}>
                 <Typography variant="subtitle2" gutterBottom>
                   Subject:
                 </Typography>
-                <Paper variant="outlined" sx={{ p: 2, bgcolor: "grey.50" }}>
+                <Paper variant="outlined" sx={{ p: 2, bgcolor: 'grey.50' }}>
                   <Typography variant="body2">{livePreview.subject}</Typography>
                 </Paper>
               </Box>
             )}
 
             <Typography variant="subtitle2" gutterBottom>
-              {formData.channel === "SMS" ? "Message:" : "Body:"}
+              {formData.channel === 'SMS' ? 'Message:' : 'Body:'}
             </Typography>
             <Paper
               variant="outlined"
               sx={{
                 p: 3,
-                bgcolor: "background.default",
+                bgcolor: 'background.default',
                 minHeight: 100,
-                maxHeight: "400px",
-                overflow: "auto",
+                maxHeight: '400px',
+                overflow: 'auto',
               }}
             >
               {livePreview.body ? (
-                formData.channel === "EMAIL" ? (
+                formData.channel === 'EMAIL' ? (
                   // Render HTML exactly like Rendered Preview - no CSS overrides
                   <div
                     dangerouslySetInnerHTML={{
@@ -705,26 +656,19 @@ The {{ site_name }} Team</p>`,
                     }}
                   />
                 ) : (
-                  <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
+                  <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
                     {livePreview.body}
                   </Typography>
                 )
               ) : (
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  fontStyle="italic"
-                >
+                <Typography variant="body2" color="text.secondary" fontStyle="italic">
                   Start typing to see preview...
                 </Typography>
               )}
             </Paper>
 
-            {formData.channel === "SMS" && livePreview.body && (
-              <Alert
-                severity={livePreview.body.length > 160 ? "warning" : "info"}
-                sx={{ mt: 2 }}
-              >
+            {formData.channel === 'SMS' && livePreview.body && (
+              <Alert severity={livePreview.body.length > 160 ? 'warning' : 'info'} sx={{ mt: 2 }}>
                 <Typography variant="body2">
                   Character count: {livePreview.body.length}/160
                   {livePreview.body.length > 160 && (
@@ -737,12 +681,8 @@ The {{ site_name }} Team</p>`,
 
           {/* Send Test (only when editing existing template) */}
           {isEditing && template && (
-            <Box sx={{ borderRadius: 1, bgcolor: "background.paper", p: 3 }}>
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-              >
+            <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
+              <Box display="flex" justifyContent="space-between" alignItems="center">
                 <Typography variant="h6">Send Test</Typography>
                 {!showTestSend && (
                   <Button
@@ -751,34 +691,27 @@ The {{ site_name }} Team</p>`,
                     startIcon={<SendTestIcon />}
                     onClick={() => setShowTestSend(true)}
                   >
-                    Send Test {formData.channel === "EMAIL" ? "Email" : "SMS"}
+                    Send Test {formData.channel === 'EMAIL' ? 'Email' : 'SMS'}
                   </Button>
                 )}
               </Box>
               {showTestSend && (
                 <Stack spacing={2} sx={{ mt: 2 }}>
                   <Typography variant="body2" color="text.secondary">
-                    Send a real {formData.channel === "EMAIL" ? "email" : "SMS"}{" "}
-                    using this template with sample data to verify delivery and
-                    rendering.
+                    Send a real {formData.channel === 'EMAIL' ? 'email' : 'SMS'} using this template
+                    with sample data to verify delivery and rendering.
                   </Typography>
                   <Box display="flex" gap={2} alignItems="flex-start">
                     <TextField
-                      label={
-                        formData.channel === "EMAIL"
-                          ? "Recipient Email"
-                          : "Recipient Phone"
-                      }
+                      label={formData.channel === 'EMAIL' ? 'Recipient Email' : 'Recipient Phone'}
                       value={testRecipient}
                       onChange={(e) => setTestRecipient(e.target.value)}
                       placeholder={
-                        formData.channel === "EMAIL"
-                          ? "test@example.com"
-                          : "+1234567890"
+                        formData.channel === 'EMAIL' ? 'test@example.com' : '+1234567890'
                       }
                       size="small"
                       sx={{ flex: 1 }}
-                      type={formData.channel === "EMAIL" ? "email" : "tel"}
+                      type={formData.channel === 'EMAIL' ? 'email' : 'tel'}
                     />
                     <Button
                       variant="contained"
@@ -791,16 +724,16 @@ The {{ site_name }} Team</p>`,
                       }
                       onClick={handleSendTest}
                       disabled={!testRecipient.trim() || isSendingTest}
-                      sx={{ whiteSpace: "nowrap" }}
+                      sx={{ whiteSpace: 'nowrap' }}
                     >
-                      {isSendingTest ? "Sending..." : "Send Test"}
+                      {isSendingTest ? 'Sending...' : 'Send Test'}
                     </Button>
                     <Button
                       variant="text"
                       size="small"
                       onClick={() => {
                         setShowTestSend(false);
-                        setTestRecipient("");
+                        setTestRecipient('');
                       }}
                     >
                       Cancel
@@ -808,8 +741,8 @@ The {{ site_name }} Team</p>`,
                   </Box>
                   <Alert severity="info" sx={{ py: 0.5 }}>
                     <Typography variant="caption">
-                      Test sends use sample data for template variables and
-                      bypass preference checks.
+                      Test sends use sample data for template variables and bypass preference
+                      checks.
                     </Typography>
                   </Alert>
                 </Stack>
@@ -818,7 +751,7 @@ The {{ site_name }} Team</p>`,
           )}
 
           {/* Actions */}
-          <Box sx={{ borderRadius: 1, bgcolor: "background.paper", p: 3 }}>
+          <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
             <Box display="flex" gap={3} justifyContent="flex-end">
               <Button
                 variant="outlined"
@@ -839,9 +772,9 @@ The {{ site_name }} Team</p>`,
                 {isLoading ? (
                   <CircularProgress size={20} color="inherit" />
                 ) : isEditing ? (
-                  "Update Template"
+                  'Update Template'
                 ) : (
-                  "Create Template"
+                  'Create Template'
                 )}
               </Button>
             </Box>

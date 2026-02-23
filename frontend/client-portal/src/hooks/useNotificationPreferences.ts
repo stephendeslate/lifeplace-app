@@ -36,21 +36,14 @@ export const useNotificationPreferences = () => {
       mutationFn: (data: UpdateNotificationPreferenceData) =>
         notificationsApi.updatePreferences(data),
       onSuccess: (updatedPreferences) => {
-        showSuccess(
-          'Preferences Updated',
-          'Your notification preferences have been saved.'
-        );
+        showSuccess('Preferences Updated', 'Your notification preferences have been saved.');
 
         // Update preferences in cache
-        queryClient.setQueryData(
-          ['notification-preferences', 'my'],
-          updatedPreferences
-        );
+        queryClient.setQueryData(['notification-preferences', 'my'], updatedPreferences);
       },
       onError: (error: unknown) => {
         const err = error as { response?: { data?: { detail?: string } } };
-        const message =
-          err.response?.data?.detail || 'Failed to update preferences.';
+        const message = err.response?.data?.detail || 'Failed to update preferences.';
         showError('Update Failed', message);
       },
     });
@@ -63,19 +56,15 @@ export const useNotificationPreferences = () => {
       onSuccess: (defaultPreferences) => {
         showSuccess(
           'Preferences Reset',
-          'Your notification preferences have been reset to defaults.'
+          'Your notification preferences have been reset to defaults.',
         );
 
         // Update preferences in cache
-        queryClient.setQueryData(
-          ['notification-preferences', 'my'],
-          defaultPreferences
-        );
+        queryClient.setQueryData(['notification-preferences', 'my'], defaultPreferences);
       },
       onError: (error: unknown) => {
         const err = error as { response?: { data?: { detail?: string } } };
-        const message =
-          err.response?.data?.detail || 'Failed to reset preferences.';
+        const message = err.response?.data?.detail || 'Failed to reset preferences.';
         showError('Reset Failed', message);
       },
     });

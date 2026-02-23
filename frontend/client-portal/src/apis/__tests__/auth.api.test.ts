@@ -42,9 +42,9 @@ describe('authApi', () => {
       const error = new Error('Invalid credentials');
       mockApi.post.mockRejectedValueOnce(error);
 
-      await expect(
-        authApi.login({ email: 'test@example.com', password: 'wrong' })
-      ).rejects.toThrow('Invalid credentials');
+      await expect(authApi.login({ email: 'test@example.com', password: 'wrong' })).rejects.toThrow(
+        'Invalid credentials',
+      );
     });
   });
 
@@ -82,7 +82,7 @@ describe('authApi', () => {
           confirm_password: 'password123',
           first_name: 'Test',
           last_name: 'User',
-        })
+        }),
       ).rejects.toThrow('Email already exists');
     });
   });
@@ -185,7 +185,7 @@ describe('authApi', () => {
           current_password: 'wrong',
           new_password: 'newpassword1',
           confirm_password: 'newpassword1',
-        })
+        }),
       ).rejects.toThrow('Current password is incorrect');
     });
   });
@@ -260,7 +260,7 @@ describe('authApi', () => {
         authApi.confirmPasswordReset('token-123', {
           password: 'password1',
           confirm_password: 'password2',
-        })
+        }),
       ).rejects.toThrow('Passwords do not match');
     });
   });
@@ -277,15 +277,11 @@ describe('authApi', () => {
       const file = new File(['avatar'], 'avatar.jpg', { type: 'image/jpeg' });
       const result = await authApi.uploadAvatar(file);
 
-      expect(mockApi.post).toHaveBeenCalledWith(
-        '/users/me/avatar/',
-        expect.any(FormData),
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      expect(mockApi.post).toHaveBeenCalledWith('/users/me/avatar/', expect.any(FormData), {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       expect(result).toEqual(mockUser);
     });
 

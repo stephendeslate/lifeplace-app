@@ -4,26 +4,26 @@
 export const colorTokens = {
   // Primary Palette - Modern Blue-to-Purple Gradient System
   primary: {
-    50: '#f0f7ff',   // Light tint for backgrounds
-    100: '#e0efff',  // Cards and surfaces
-    200: '#baddff',  // Hover states
-    300: '#7cc1ff',  // Accent elements
-    400: '#36a5ff',  // Active states  
-    500: '#0087ff',  // Primary brand color
-    600: '#0066cc',  // Primary dark
-    700: '#0052a8',  // Deep interactive
-    800: '#003d7a',  // High contrast
-    900: '#002856',  // Deepest shade
+    50: '#f0f7ff', // Light tint for backgrounds
+    100: '#e0efff', // Cards and surfaces
+    200: '#baddff', // Hover states
+    300: '#7cc1ff', // Accent elements
+    400: '#36a5ff', // Active states
+    500: '#0087ff', // Primary brand color
+    600: '#0066cc', // Primary dark
+    700: '#0052a8', // Deep interactive
+    800: '#003d7a', // High contrast
+    900: '#002856', // Deepest shade
   },
 
   // Secondary Palette - Complementary Purple
   secondary: {
     50: '#faf5ff',
-    100: '#f3e8ff', 
+    100: '#f3e8ff',
     200: '#e9d5ff',
     300: '#d8b4fe',
     400: '#c084fc',
-    500: '#a855f7',  // Main secondary
+    500: '#a855f7', // Main secondary
     600: '#9333ea',
     700: '#7c2d12',
     800: '#581c87',
@@ -34,10 +34,10 @@ export const colorTokens = {
   success: {
     50: '#f0fdf4',
     100: '#dcfce7',
-    200: '#bbf7d0', 
+    200: '#bbf7d0',
     300: '#86efac',
     400: '#4ade80',
-    500: '#10b981',   // Main success
+    500: '#10b981', // Main success
     600: '#059669',
     700: '#047857',
     800: '#065f46',
@@ -49,9 +49,9 @@ export const colorTokens = {
     50: '#fffbeb',
     100: '#fef3c7',
     200: '#fde68a',
-    300: '#fcd34d', 
+    300: '#fcd34d',
     400: '#fbbf24',
-    500: '#f59e0b',   // Main warning
+    500: '#f59e0b', // Main warning
     600: '#d97706',
     700: '#b45309',
     800: '#92400e',
@@ -65,10 +65,10 @@ export const colorTokens = {
     200: '#fecaca',
     300: '#fca5a5',
     400: '#f87171',
-    500: '#ef4444',   // Main error
+    500: '#ef4444', // Main error
     600: '#dc2626',
     700: '#b91c1c',
-    800: '#991b1b', 
+    800: '#991b1b',
     900: '#7f1d1d',
     gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
   },
@@ -77,9 +77,9 @@ export const colorTokens = {
     50: '#f0f9ff',
     100: '#e0f2fe',
     200: '#bae6fd',
-    300: '#7dd3fc', 
+    300: '#7dd3fc',
     400: '#38bdf8',
-    500: '#0ea5e9',   // Main info
+    500: '#0ea5e9', // Main info
     600: '#0284c7',
     700: '#0369a1',
     800: '#075985',
@@ -89,31 +89,31 @@ export const colorTokens = {
 
   // Neutral Palette - Enhanced for modern interfaces
   neutral: {
-    50: '#fafafa',   // Lightest background
-    100: '#f5f5f5',  // Light background
-    200: '#e5e5e5',  // Border light
-    300: '#d4d4d4',  // Border
-    400: '#a3a3a3',  // Disabled text
-    500: '#737373',  // Secondary text
-    600: '#525252',  // Primary text light
-    700: '#404040',  // Primary text
-    800: '#262626',  // Headings
-    900: '#171717',  // High contrast
-    950: '#0a0a0a',  // Ultra dark for backgrounds
+    50: '#fafafa', // Lightest background
+    100: '#f5f5f5', // Light background
+    200: '#e5e5e5', // Border light
+    300: '#d4d4d4', // Border
+    400: '#a3a3a3', // Disabled text
+    500: '#737373', // Secondary text
+    600: '#525252', // Primary text light
+    700: '#404040', // Primary text
+    800: '#262626', // Headings
+    900: '#171717', // High contrast
+    950: '#0a0a0a', // Ultra dark for backgrounds
   },
 
   // Glassmorphism-specific colors
   glass: {
     // White glass variants
     light: 'rgba(255, 255, 255, 0.15)',
-    medium: 'rgba(255, 255, 255, 0.25)', 
+    medium: 'rgba(255, 255, 255, 0.25)',
     strong: 'rgba(255, 255, 255, 0.35)',
-    
+
     // Dark glass variants
     darkLight: 'rgba(0, 0, 0, 0.15)',
     darkMedium: 'rgba(0, 0, 0, 0.25)',
     darkStrong: 'rgba(0, 0, 0, 0.35)',
-    
+
     // Colored glass variants
     primaryGlass: 'rgba(0, 135, 255, 0.15)',
     successGlass: 'rgba(16, 185, 129, 0.15)',
@@ -137,13 +137,17 @@ export const colorTokens = {
     errorGradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
 
     // Subtle accent backgrounds
-    primarySubtle: 'linear-gradient(135deg, rgba(0, 135, 255, 0.05) 0%, rgba(0, 102, 204, 0.05) 100%)',
-    successSubtle: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%)',
+    primarySubtle:
+      'linear-gradient(135deg, rgba(0, 135, 255, 0.05) 0%, rgba(0, 102, 204, 0.05) 100%)',
+    successSubtle:
+      'linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(5, 150, 105, 0.05) 100%)',
 
     // Brand gradients for logo, avatars, and brand elements
     brandGradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    brandSubtle: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%)',
-    brandHover: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.08) 100%)',
+    brandSubtle:
+      'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%)',
+    brandHover:
+      'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.08) 100%)',
   },
 
   // Border colors for glassmorphic elements
@@ -159,87 +163,87 @@ export const colorTokens = {
 
   // Notification category colors for consistent styling across notification components
   notification: {
-    system: '#737373',     // neutral[500] - System notifications
-    event: '#0066cc',      // primary[600] - Event-related notifications
-    task: '#059669',       // success[600] - Task notifications
-    payment: '#d97706',    // warning[600] - Payment notifications
-    client: '#9333ea',     // secondary[600] - Client notifications
-    contract: '#dc2626',   // error[600] - Contract notifications
-    workflow: '#0284c7',   // info[600] - Workflow notifications
+    system: '#737373', // neutral[500] - System notifications
+    event: '#0066cc', // primary[600] - Event-related notifications
+    task: '#059669', // success[600] - Task notifications
+    payment: '#d97706', // warning[600] - Payment notifications
+    client: '#9333ea', // secondary[600] - Client notifications
+    contract: '#dc2626', // error[600] - Contract notifications
+    workflow: '#0284c7', // info[600] - Workflow notifications
     communication: '#404040', // neutral[700] - Communication notifications
-    marketing: '#ec4899',  // pink[500] - Marketing notifications
+    marketing: '#ec4899', // pink[500] - Marketing notifications
   },
 
   // Chart colors for analytics visualizations
   charts: {
     // Series colors for multi-series charts (ordered by visual distinction)
     series: [
-      '#0087ff',  // primary[500] - Primary data series
-      '#10b981',  // success[500] - Secondary data series
-      '#f59e0b',  // warning[500] - Tertiary data series
-      '#ef4444',  // error[500] - Fourth data series
-      '#a855f7',  // secondary[500] - Fifth data series
-      '#0ea5e9',  // info[500] - Sixth data series
+      '#0087ff', // primary[500] - Primary data series
+      '#10b981', // success[500] - Secondary data series
+      '#f59e0b', // warning[500] - Tertiary data series
+      '#ef4444', // error[500] - Fourth data series
+      '#a855f7', // secondary[500] - Fifth data series
+      '#0ea5e9', // info[500] - Sixth data series
     ],
     // Grid and axis colors
-    grid: '#e5e5e5',        // neutral[200] - Chart grid lines
-    axis: '#737373',        // neutral[500] - Axis labels
-    background: '#fafafa',  // neutral[50] - Chart background
-    tooltip: '#ffffff',     // White - Tooltip background
+    grid: '#e5e5e5', // neutral[200] - Chart grid lines
+    axis: '#737373', // neutral[500] - Axis labels
+    background: '#fafafa', // neutral[50] - Chart background
+    tooltip: '#ffffff', // White - Tooltip background
     tooltipBorder: '#e5e5e5', // neutral[200] - Tooltip border
   },
 
   // Event status colors for quotes, invoices, and status badges
   eventStatus: {
     draft: {
-      bg: '#f0f7ff',      // primary[50]
-      text: '#0066cc',    // primary[600]
-      border: '#baddff',  // primary[200]
+      bg: '#f0f7ff', // primary[50]
+      text: '#0066cc', // primary[600]
+      border: '#baddff', // primary[200]
     },
     sent: {
-      bg: '#f0f9ff',      // info[50]
-      text: '#0369a1',    // info[700]
-      border: '#bae6fd',  // info[200]
+      bg: '#f0f9ff', // info[50]
+      text: '#0369a1', // info[700]
+      border: '#bae6fd', // info[200]
     },
     accepted: {
-      bg: '#f0fdf4',      // success[50]
-      text: '#047857',    // success[700]
-      border: '#bbf7d0',  // success[200]
+      bg: '#f0fdf4', // success[50]
+      text: '#047857', // success[700]
+      border: '#bbf7d0', // success[200]
     },
     rejected: {
-      bg: '#fef2f2',      // error[50]
-      text: '#b91c1c',    // error[700]
-      border: '#fecaca',  // error[200]
+      bg: '#fef2f2', // error[50]
+      text: '#b91c1c', // error[700]
+      border: '#fecaca', // error[200]
     },
     expired: {
-      bg: '#fffbeb',      // warning[50]
-      text: '#b45309',    // warning[700]
-      border: '#fde68a',  // warning[200]
+      bg: '#fffbeb', // warning[50]
+      text: '#b45309', // warning[700]
+      border: '#fde68a', // warning[200]
     },
     converted: {
-      bg: '#faf5ff',      // secondary[50]
-      text: '#7c2d12',    // secondary[700]
-      border: '#e9d5ff',  // secondary[200]
+      bg: '#faf5ff', // secondary[50]
+      text: '#7c2d12', // secondary[700]
+      border: '#e9d5ff', // secondary[200]
     },
     pending: {
-      bg: '#fffbeb',      // warning[50]
-      text: '#d97706',    // warning[600]
-      border: '#fde68a',  // warning[200]
+      bg: '#fffbeb', // warning[50]
+      text: '#d97706', // warning[600]
+      border: '#fde68a', // warning[200]
     },
     paid: {
-      bg: '#f0fdf4',      // success[50]
-      text: '#059669',    // success[600]
-      border: '#bbf7d0',  // success[200]
+      bg: '#f0fdf4', // success[50]
+      text: '#059669', // success[600]
+      border: '#bbf7d0', // success[200]
     },
     cancelled: {
-      bg: '#f5f5f5',      // neutral[100]
-      text: '#525252',    // neutral[600]
-      border: '#d4d4d4',  // neutral[300]
+      bg: '#f5f5f5', // neutral[100]
+      text: '#525252', // neutral[600]
+      border: '#d4d4d4', // neutral[300]
     },
     overdue: {
-      bg: '#fef2f2',      // error[50]
-      text: '#dc2626',    // error[600]
-      border: '#fecaca',  // error[200]
+      bg: '#fef2f2', // error[50]
+      text: '#dc2626', // error[600]
+      border: '#fecaca', // error[200]
     },
   },
 } as const;

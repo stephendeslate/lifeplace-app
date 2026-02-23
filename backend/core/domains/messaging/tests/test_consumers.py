@@ -12,19 +12,17 @@ database_sync_to_async so they are visible to the consumer's
 separate database connections.
 """
 
-import json
-import functools
+from django.contrib.auth import get_user_model
+
 import pytest
 from asgiref.sync import async_to_sync
-from channels.testing import WebsocketCommunicator
-from channels.layers import get_channel_layer
 from channels.db import database_sync_to_async
-from django.contrib.auth import get_user_model
-from django.db import connections
+from channels.layers import get_channel_layer
+from channels.testing import WebsocketCommunicator
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from core.domains.messaging.consumers import MessagingConsumer, GlobalMessagingConsumer
-from core.domains.messaging.models import MessageThread, Message, MessageReadStatus
+from core.domains.messaging.consumers import GlobalMessagingConsumer, MessagingConsumer
+from core.domains.messaging.models import MessageReadStatus
 
 User = get_user_model()
 
@@ -32,6 +30,7 @@ User = get_user_model()
 # =============================================================================
 # ASYNC HELPER FUNCTIONS
 # =============================================================================
+
 
 @database_sync_to_async
 def get_jwt_token(user):
@@ -41,16 +40,18 @@ def get_jwt_token(user):
 
 
 @database_sync_to_async
-def create_user(role='CLIENT', **kwargs):
+def create_user(role="CLIENT", **kwargs):
     """Create a user asynchronously."""
     from core.factories.users import UserFactory
-    return UserFactory(role=role, is_staff=(role == 'ADMIN'), **kwargs)
+
+    return UserFactory(role=role, is_staff=(role == "ADMIN"), **kwargs)
 
 
 @database_sync_to_async
 def create_admin():
     """Create an admin user asynchronously."""
     from core.factories.users import UserFactory
+
     return UserFactory(admin=True)
 
 
@@ -58,6 +59,7 @@ def create_admin():
 def create_thread(client=None, **kwargs):
     """Create a message thread asynchronously."""
     from core.factories.messaging import MessageThreadFactory
+
     if client:
         return MessageThreadFactory(client=client, **kwargs)
     return MessageThreadFactory(**kwargs)
@@ -67,6 +69,7 @@ def create_thread(client=None, **kwargs):
 def create_message(thread, sender, **kwargs):
     """Create a message asynchronously."""
     from core.factories.messaging import MessageFactory
+
     return MessageFactory(thread=thread, sender=sender, **kwargs)
 
 
@@ -95,6 +98,7 @@ def run_consumer_test(async_test_fn):
 # MESSAGING CONSUMER TESTS - CONNECTION
 # =============================================================================
 
+
 @pytest.mark.django_db(transaction=True)
 class TestMessagingConsumerConnection:
     """Tests for MessagingConsumer WebSocket connection handling."""
@@ -103,15 +107,14 @@ class TestMessagingConsumerConnection:
         """User with valid token and thread access can connect."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             thread = await create_thread(client=client_user)
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={token}"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             connected, _ = await communicator.connect()
 
@@ -119,9 +122,9 @@ class TestMessagingConsumerConnection:
 
             # Should receive connection established message
             response = await communicator.receive_json_from()
-            assert response['type'] == 'connection_established'
-            assert response['thread_id'] == str(thread.id)
-            assert response['user_id'] == client_user.id
+            assert response["type"] == "connection_established"
+            assert response["thread_id"] == str(thread.id)
+            assert response["user_id"] == client_user.id
 
             await communicator.disconnect()
 
@@ -131,14 +134,11 @@ class TestMessagingConsumerConnection:
         """Connection without token is rejected."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             thread = await create_thread(client=client_user)
 
-            communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/"
-            )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator = WebsocketCommunicator(MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/")
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             connected, close_code = await communicator.connect()
 
@@ -151,14 +151,13 @@ class TestMessagingConsumerConnection:
         """Connection with invalid token is rejected."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             thread = await create_thread(client=client_user)
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token=invalid_token_here"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token=invalid_token_here"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             connected, close_code = await communicator.connect()
 
@@ -171,16 +170,15 @@ class TestMessagingConsumerConnection:
         """Client without thread access is rejected."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
-            other_client = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
+            other_client = await create_user(role="CLIENT")
             thread = await create_thread(client=other_client)  # Thread belongs to other client
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={token}"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             connected, close_code = await communicator.connect()
 
@@ -194,15 +192,14 @@ class TestMessagingConsumerConnection:
 
         async def _test():
             admin = await create_admin()
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             thread = await create_thread(client=client_user)
             token = await get_jwt_token(admin)
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={token}"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             connected, _ = await communicator.connect()
 
@@ -216,15 +213,14 @@ class TestMessagingConsumerConnection:
         """Connection to non-existent thread is rejected."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             token = await get_jwt_token(client_user)
-            fake_thread_id = '00000000-0000-0000-0000-000000000000'
+            fake_thread_id = "00000000-0000-0000-0000-000000000000"
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{fake_thread_id}/?token={token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{fake_thread_id}/?token={token}"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': fake_thread_id}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": fake_thread_id}}
 
             connected, close_code = await communicator.connect()
 
@@ -238,6 +234,7 @@ class TestMessagingConsumerConnection:
 # MESSAGING CONSUMER TESTS - MESSAGE HANDLING
 # =============================================================================
 
+
 @pytest.mark.django_db(transaction=True)
 class TestMessagingConsumerMessageHandling:
     """Tests for MessagingConsumer message handling."""
@@ -246,31 +243,27 @@ class TestMessagingConsumerMessageHandling:
         """Test sending a message through WebSocket."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             thread = await create_thread(client=client_user)
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={token}"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             await communicator.connect()
             # Consume connection message
             await communicator.receive_json_from()
 
             # Send a message
-            await communicator.send_json_to({
-                'type': 'send_message',
-                'content': 'Hello from WebSocket!'
-            })
+            await communicator.send_json_to({"type": "send_message", "content": "Hello from WebSocket!"})
 
             # Should receive new_message broadcast
             response = await communicator.receive_json_from()
-            assert response['type'] == 'new_message'
-            assert response['message']['content'] == 'Hello from WebSocket!'
-            assert response['is_own_message'] is True
+            assert response["type"] == "new_message"
+            assert response["message"]["content"] == "Hello from WebSocket!"
+            assert response["is_own_message"] is True
 
             # Verify message was saved
             message_count = await get_message_count(thread)
@@ -284,29 +277,30 @@ class TestMessagingConsumerMessageHandling:
         """Empty messages are rejected."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             thread = await create_thread(client=client_user)
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={token}"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             await communicator.connect()
             await communicator.receive_json_from()
 
             # Send empty message
-            await communicator.send_json_to({
-                'type': 'send_message',
-                'content': '   '  # Whitespace only
-            })
+            await communicator.send_json_to(
+                {
+                    "type": "send_message",
+                    "content": "   ",  # Whitespace only
+                }
+            )
 
             # Should receive error
             response = await communicator.receive_json_from()
-            assert response['type'] == 'error'
-            assert 'empty' in response['message'].lower()
+            assert response["type"] == "error"
+            assert "empty" in response["message"].lower()
 
             await communicator.disconnect()
 
@@ -316,30 +310,27 @@ class TestMessagingConsumerMessageHandling:
         """Client cannot create internal notes via WebSocket."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             thread = await create_thread(client=client_user)
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={token}"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             await communicator.connect()
             await communicator.receive_json_from()
 
             # Try to send internal note
-            await communicator.send_json_to({
-                'type': 'send_message',
-                'content': 'Trying internal note',
-                'is_internal_note': True
-            })
+            await communicator.send_json_to(
+                {"type": "send_message", "content": "Trying internal note", "is_internal_note": True}
+            )
 
             # Should receive error
             response = await communicator.receive_json_from()
-            assert response['type'] == 'error'
-            assert 'admin' in response['message'].lower() or 'internal' in response['message'].lower()
+            assert response["type"] == "error"
+            assert "admin" in response["message"].lower() or "internal" in response["message"].lower()
 
             await communicator.disconnect()
 
@@ -354,25 +345,22 @@ class TestMessagingConsumerMessageHandling:
             token = await get_jwt_token(admin)
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={token}"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             await communicator.connect()
             await communicator.receive_json_from()
 
             # Send internal note
-            await communicator.send_json_to({
-                'type': 'send_message',
-                'content': 'Admin internal note',
-                'is_internal_note': True
-            })
+            await communicator.send_json_to(
+                {"type": "send_message", "content": "Admin internal note", "is_internal_note": True}
+            )
 
             # Should receive new_message
             response = await communicator.receive_json_from()
-            assert response['type'] == 'new_message'
-            assert response['message']['is_internal_note'] is True
+            assert response["type"] == "new_message"
+            assert response["message"]["is_internal_note"] is True
 
             await communicator.disconnect()
 
@@ -382,26 +370,25 @@ class TestMessagingConsumerMessageHandling:
         """Invalid JSON returns error."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             thread = await create_thread(client=client_user)
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={token}"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             await communicator.connect()
             await communicator.receive_json_from()
 
             # Send invalid JSON
-            await communicator.send_to(text_data='not valid json{')
+            await communicator.send_to(text_data="not valid json{")
 
             # Should receive error
             response = await communicator.receive_json_from()
-            assert response['type'] == 'error'
-            assert 'json' in response['message'].lower()
+            assert response["type"] == "error"
+            assert "json" in response["message"].lower()
 
             await communicator.disconnect()
 
@@ -411,29 +398,25 @@ class TestMessagingConsumerMessageHandling:
         """Unknown message type returns error."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             thread = await create_thread(client=client_user)
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={token}"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             await communicator.connect()
             await communicator.receive_json_from()
 
             # Send unknown type
-            await communicator.send_json_to({
-                'type': 'unknown_type',
-                'data': 'test'
-            })
+            await communicator.send_json_to({"type": "unknown_type", "data": "test"})
 
             # Should receive error
             response = await communicator.receive_json_from()
-            assert response['type'] == 'error'
-            assert 'unknown' in response['message'].lower()
+            assert response["type"] == "error"
+            assert "unknown" in response["message"].lower()
 
             await communicator.disconnect()
 
@@ -443,25 +426,24 @@ class TestMessagingConsumerMessageHandling:
         """Test ping/pong for connection keep-alive."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             thread = await create_thread(client=client_user)
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={token}"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             await communicator.connect()
             await communicator.receive_json_from()
 
             # Send ping
-            await communicator.send_json_to({'type': 'ping'})
+            await communicator.send_json_to({"type": "ping"})
 
             # Should receive pong
             response = await communicator.receive_json_from()
-            assert response['type'] == 'pong'
+            assert response["type"] == "pong"
 
             await communicator.disconnect()
 
@@ -472,6 +454,7 @@ class TestMessagingConsumerMessageHandling:
 # MESSAGING CONSUMER TESTS - TYPING INDICATOR
 # =============================================================================
 
+
 @pytest.mark.django_db(transaction=True)
 class TestMessagingConsumerTypingIndicator:
     """Tests for MessagingConsumer typing indicator functionality."""
@@ -480,7 +463,7 @@ class TestMessagingConsumerTypingIndicator:
         """Typing indicator is broadcast to other users in thread."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             admin = await create_admin()
             thread = await create_thread(client=client_user)
 
@@ -489,33 +472,28 @@ class TestMessagingConsumerTypingIndicator:
 
             # Connect client
             client_communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={client_token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={client_token}"
             )
-            client_communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            client_communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
             await client_communicator.connect()
             await client_communicator.receive_json_from()
 
             # Connect admin
             admin_communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={admin_token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={admin_token}"
             )
-            admin_communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            admin_communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
             await admin_communicator.connect()
             await admin_communicator.receive_json_from()
 
             # Client sends typing indicator
-            await client_communicator.send_json_to({
-                'type': 'typing_indicator',
-                'is_typing': True
-            })
+            await client_communicator.send_json_to({"type": "typing_indicator", "is_typing": True})
 
             # Admin should receive typing indicator
             response = await admin_communicator.receive_json_from()
-            assert response['type'] == 'typing_indicator'
-            assert response['user_id'] == client_user.id
-            assert response['is_typing'] is True
+            assert response["type"] == "typing_indicator"
+            assert response["user_id"] == client_user.id
+            assert response["is_typing"] is True
 
             await client_communicator.disconnect()
             await admin_communicator.disconnect()
@@ -527,6 +505,7 @@ class TestMessagingConsumerTypingIndicator:
 # MESSAGING CONSUMER TESTS - MARK AS READ
 # =============================================================================
 
+
 @pytest.mark.django_db(transaction=True)
 class TestMessagingConsumerMarkAsRead:
     """Tests for MessagingConsumer mark as read functionality."""
@@ -535,33 +514,29 @@ class TestMessagingConsumerMarkAsRead:
         """Test marking a message as read via WebSocket."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             admin = await create_admin()
             thread = await create_thread(client=client_user)
-            message = await create_message(thread, admin, content='Test message')
+            message = await create_message(thread, admin, content="Test message")
 
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={token}"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             await communicator.connect()
             await communicator.receive_json_from()
 
             # Mark message as read
-            await communicator.send_json_to({
-                'type': 'mark_as_read',
-                'message_id': str(message.id)
-            })
+            await communicator.send_json_to({"type": "mark_as_read", "message_id": str(message.id)})
 
             # Should receive read receipt broadcast
             response = await communicator.receive_json_from()
-            assert response['type'] == 'message_read'
-            assert response['message_id'] == str(message.id)
-            assert response['user_id'] == client_user.id
+            assert response["type"] == "message_read"
+            assert response["message_id"] == str(message.id)
+            assert response["user_id"] == client_user.id
 
             # Verify read status was created
             read_exists = await get_read_status_exists(message, client_user)
@@ -575,28 +550,25 @@ class TestMessagingConsumerMarkAsRead:
         """Mark as read requires message_id."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             thread = await create_thread(client=client_user)
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={token}"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             await communicator.connect()
             await communicator.receive_json_from()
 
             # Mark as read without message_id
-            await communicator.send_json_to({
-                'type': 'mark_as_read'
-            })
+            await communicator.send_json_to({"type": "mark_as_read"})
 
             # Should receive error
             response = await communicator.receive_json_from()
-            assert response['type'] == 'error'
-            assert 'message_id' in response['message'].lower()
+            assert response["type"] == "error"
+            assert "message_id" in response["message"].lower()
 
             await communicator.disconnect()
 
@@ -607,6 +579,7 @@ class TestMessagingConsumerMarkAsRead:
 # MESSAGING CONSUMER TESTS - INTERNAL NOTE VISIBILITY
 # =============================================================================
 
+
 @pytest.mark.django_db(transaction=True)
 class TestMessagingConsumerInternalNotes:
     """Tests for internal note visibility in MessagingConsumer."""
@@ -615,7 +588,7 @@ class TestMessagingConsumerInternalNotes:
         """Client does not receive internal note broadcasts."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             admin = await create_admin()
             thread = await create_thread(client=client_user)
 
@@ -624,39 +597,35 @@ class TestMessagingConsumerInternalNotes:
 
             # Connect client
             client_communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={client_token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={client_token}"
             )
-            client_communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            client_communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
             await client_communicator.connect()
             await client_communicator.receive_json_from()
 
             # Connect admin
             admin_communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={admin_token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={admin_token}"
             )
-            admin_communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            admin_communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
             await admin_communicator.connect()
             await admin_communicator.receive_json_from()
 
             # Admin sends internal note
-            await admin_communicator.send_json_to({
-                'type': 'send_message',
-                'content': 'Internal admin note',
-                'is_internal_note': True
-            })
+            await admin_communicator.send_json_to(
+                {"type": "send_message", "content": "Internal admin note", "is_internal_note": True}
+            )
 
             # Admin should receive the message
             admin_response = await admin_communicator.receive_json_from()
-            assert admin_response['type'] == 'new_message'
-            assert admin_response['message']['is_internal_note'] is True
+            assert admin_response["type"] == "new_message"
+            assert admin_response["message"]["is_internal_note"] is True
 
             # Client should NOT receive it (will timeout)
             try:
                 await client_communicator.receive_json_from(timeout=0.5)
                 # If we get here, client received something they shouldn't
-                assert False, "Client received internal note when they shouldn't"
+                raise AssertionError("Client received internal note when they shouldn't")
             except Exception:
                 # Expected - client doesn't receive internal notes
                 pass
@@ -671,6 +640,7 @@ class TestMessagingConsumerInternalNotes:
 # GLOBAL MESSAGING CONSUMER TESTS
 # =============================================================================
 
+
 @pytest.mark.django_db(transaction=True)
 class TestGlobalMessagingConsumerConnection:
     """Tests for GlobalMessagingConsumer connection handling."""
@@ -679,12 +649,11 @@ class TestGlobalMessagingConsumerConnection:
         """User with valid token can connect to global consumer."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                GlobalMessagingConsumer.as_asgi(),
-                f"/ws/messaging/global/?token={token}"
+                GlobalMessagingConsumer.as_asgi(), f"/ws/messaging/global/?token={token}"
             )
 
             connected, _ = await communicator.connect()
@@ -693,8 +662,8 @@ class TestGlobalMessagingConsumerConnection:
 
             # Should receive connection established message
             response = await communicator.receive_json_from()
-            assert response['type'] == 'global_connection_established'
-            assert response['user_id'] == client_user.id
+            assert response["type"] == "global_connection_established"
+            assert response["user_id"] == client_user.id
 
             await communicator.disconnect()
 
@@ -704,10 +673,7 @@ class TestGlobalMessagingConsumerConnection:
         """Connection without token is rejected."""
 
         async def _test():
-            communicator = WebsocketCommunicator(
-                GlobalMessagingConsumer.as_asgi(),
-                "/ws/messaging/global/"
-            )
+            communicator = WebsocketCommunicator(GlobalMessagingConsumer.as_asgi(), "/ws/messaging/global/")
 
             connected, close_code = await communicator.connect()
 
@@ -721,8 +687,7 @@ class TestGlobalMessagingConsumerConnection:
 
         async def _test():
             communicator = WebsocketCommunicator(
-                GlobalMessagingConsumer.as_asgi(),
-                "/ws/messaging/global/?token=invalid_token"
+                GlobalMessagingConsumer.as_asgi(), "/ws/messaging/global/?token=invalid_token"
             )
 
             connected, close_code = await communicator.connect()
@@ -741,23 +706,22 @@ class TestGlobalMessagingConsumerMessageHandling:
         """Test ping/pong for connection keep-alive."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                GlobalMessagingConsumer.as_asgi(),
-                f"/ws/messaging/global/?token={token}"
+                GlobalMessagingConsumer.as_asgi(), f"/ws/messaging/global/?token={token}"
             )
 
             await communicator.connect()
             await communicator.receive_json_from()
 
             # Send ping
-            await communicator.send_json_to({'type': 'ping'})
+            await communicator.send_json_to({"type": "ping"})
 
             # Should receive pong
             response = await communicator.receive_json_from()
-            assert response['type'] == 'pong'
+            assert response["type"] == "pong"
 
             await communicator.disconnect()
 
@@ -767,27 +731,23 @@ class TestGlobalMessagingConsumerMessageHandling:
         """Unknown message type returns error."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                GlobalMessagingConsumer.as_asgi(),
-                f"/ws/messaging/global/?token={token}"
+                GlobalMessagingConsumer.as_asgi(), f"/ws/messaging/global/?token={token}"
             )
 
             await communicator.connect()
             await communicator.receive_json_from()
 
             # Send unknown type
-            await communicator.send_json_to({
-                'type': 'unknown_type',
-                'data': 'test'
-            })
+            await communicator.send_json_to({"type": "unknown_type", "data": "test"})
 
             # Should receive error
             response = await communicator.receive_json_from()
-            assert response['type'] == 'error'
-            assert 'unknown' in response['message'].lower()
+            assert response["type"] == "error"
+            assert "unknown" in response["message"].lower()
 
             await communicator.disconnect()
 
@@ -797,24 +757,23 @@ class TestGlobalMessagingConsumerMessageHandling:
         """Invalid JSON returns error."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                GlobalMessagingConsumer.as_asgi(),
-                f"/ws/messaging/global/?token={token}"
+                GlobalMessagingConsumer.as_asgi(), f"/ws/messaging/global/?token={token}"
             )
 
             await communicator.connect()
             await communicator.receive_json_from()
 
             # Send invalid JSON
-            await communicator.send_to(text_data='not valid json{')
+            await communicator.send_to(text_data="not valid json{")
 
             # Should receive error
             response = await communicator.receive_json_from()
-            assert response['type'] == 'error'
-            assert 'json' in response['message'].lower()
+            assert response["type"] == "error"
+            assert "json" in response["message"].lower()
 
             await communicator.disconnect()
 
@@ -825,6 +784,7 @@ class TestGlobalMessagingConsumerMessageHandling:
 # GLOBAL MESSAGING CONSUMER TESTS - GROUP MESSAGE HANDLERS
 # =============================================================================
 
+
 @pytest.mark.django_db(transaction=True)
 class TestGlobalMessagingConsumerGroupHandlers:
     """Tests for GlobalMessagingConsumer group message handlers."""
@@ -833,13 +793,12 @@ class TestGlobalMessagingConsumerGroupHandlers:
         """Test thread notification is forwarded to WebSocket."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             thread = await create_thread(client=client_user)
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                GlobalMessagingConsumer.as_asgi(),
-                f"/ws/messaging/global/?token={token}"
+                GlobalMessagingConsumer.as_asgi(), f"/ws/messaging/global/?token={token}"
             )
 
             await communicator.connect()
@@ -848,20 +807,20 @@ class TestGlobalMessagingConsumerGroupHandlers:
             # Simulate sending thread_notification to user's group
             channel_layer = get_channel_layer()
             await channel_layer.group_send(
-                f'messaging_user_{client_user.id}',
+                f"messaging_user_{client_user.id}",
                 {
-                    'type': 'thread_notification',
-                    'thread_id': str(thread.id),
-                    'notification_type': 'new_message',
-                    'data': {'preview': 'Test message preview'}
-                }
+                    "type": "thread_notification",
+                    "thread_id": str(thread.id),
+                    "notification_type": "new_message",
+                    "data": {"preview": "Test message preview"},
+                },
             )
 
             # Should receive thread notification
             response = await communicator.receive_json_from()
-            assert response['type'] == 'thread_notification'
-            assert response['thread_id'] == str(thread.id)
-            assert response['notification_type'] == 'new_message'
+            assert response["type"] == "thread_notification"
+            assert response["thread_id"] == str(thread.id)
+            assert response["notification_type"] == "new_message"
 
             await communicator.disconnect()
 
@@ -871,12 +830,11 @@ class TestGlobalMessagingConsumerGroupHandlers:
         """Test unread count update is forwarded to WebSocket."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                GlobalMessagingConsumer.as_asgi(),
-                f"/ws/messaging/global/?token={token}"
+                GlobalMessagingConsumer.as_asgi(), f"/ws/messaging/global/?token={token}"
             )
 
             await communicator.connect()
@@ -885,17 +843,13 @@ class TestGlobalMessagingConsumerGroupHandlers:
             # Simulate sending unread_count_update to user's group
             channel_layer = get_channel_layer()
             await channel_layer.group_send(
-                f'messaging_user_{client_user.id}',
-                {
-                    'type': 'unread_count_update',
-                    'unread_count': 5
-                }
+                f"messaging_user_{client_user.id}", {"type": "unread_count_update", "unread_count": 5}
             )
 
             # Should receive unread count update
             response = await communicator.receive_json_from()
-            assert response['type'] == 'unread_count_update'
-            assert response['unread_count'] == 5
+            assert response["type"] == "unread_count_update"
+            assert response["unread_count"] == 5
 
             await communicator.disconnect()
 
@@ -906,6 +860,7 @@ class TestGlobalMessagingConsumerGroupHandlers:
 # DISCONNECT TESTS
 # =============================================================================
 
+
 @pytest.mark.django_db(transaction=True)
 class TestConsumerDisconnect:
     """Tests for consumer disconnect handling."""
@@ -914,15 +869,14 @@ class TestConsumerDisconnect:
         """MessagingConsumer cleans up on disconnect."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             thread = await create_thread(client=client_user)
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                MessagingConsumer.as_asgi(),
-                f"/ws/messaging/thread/{thread.id}/?token={token}"
+                MessagingConsumer.as_asgi(), f"/ws/messaging/thread/{thread.id}/?token={token}"
             )
-            communicator.scope['url_route'] = {'kwargs': {'thread_id': str(thread.id)}}
+            communicator.scope["url_route"] = {"kwargs": {"thread_id": str(thread.id)}}
 
             await communicator.connect()
             await communicator.receive_json_from()
@@ -938,12 +892,11 @@ class TestConsumerDisconnect:
         """GlobalMessagingConsumer cleans up on disconnect."""
 
         async def _test():
-            client_user = await create_user(role='CLIENT')
+            client_user = await create_user(role="CLIENT")
             token = await get_jwt_token(client_user)
 
             communicator = WebsocketCommunicator(
-                GlobalMessagingConsumer.as_asgi(),
-                f"/ws/messaging/global/?token={token}"
+                GlobalMessagingConsumer.as_asgi(), f"/ws/messaging/global/?token={token}"
             )
 
             await communicator.connect()

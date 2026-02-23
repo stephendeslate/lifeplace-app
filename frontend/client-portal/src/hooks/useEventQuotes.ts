@@ -66,11 +66,13 @@ export const usePendingQuotes = () => {
   const { data: quotes, ...rest } = useQuotesByStatus('SENT');
 
   return {
-    data: quotes ? {
-      ...quotes,
-      results: quotes.results.filter(quote => QuotesApi.isQuoteActionable(quote))
-    } : quotes,
-    ...rest
+    data: quotes
+      ? {
+          ...quotes,
+          results: quotes.results.filter((quote) => QuotesApi.isQuoteActionable(quote)),
+        }
+      : quotes,
+    ...rest,
   };
 };
 
@@ -98,21 +100,27 @@ export const useAcceptQuote = () => {
     mutationFn: ({ quoteId, data }: { quoteId: number; data?: QuoteAcceptanceData }) =>
       QuotesApi.acceptQuote(quoteId, data),
     onSuccess: (acceptedQuote, variables) => {
-      showSuccess('Quote Accepted', 'Your quote has been accepted successfully! We will be in touch soon to proceed with your event.');
+      showSuccess(
+        'Quote Accepted',
+        'Your quote has been accepted successfully! We will be in touch soon to proceed with your event.',
+      );
 
       // Update the specific quote in cache
       queryClient.setQueryData(['quote', variables.quoteId], acceptedQuote);
 
       // Update the quote in any lists that contain it
-      queryClient.setQueryData(['quotes', 'event', acceptedQuote.event_details.id], (oldData: PaginatedQuoteResponse | undefined) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          results: oldData.results.map(quote =>
-            quote.id === variables.quoteId ? acceptedQuote : quote
-          ),
-        };
-      });
+      queryClient.setQueryData(
+        ['quotes', 'event', acceptedQuote.event_details.id],
+        (oldData: PaginatedQuoteResponse | undefined) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            results: oldData.results.map((quote) =>
+              quote.id === variables.quoteId ? acceptedQuote : quote,
+            ),
+          };
+        },
+      );
 
       // Invalidate related queries to refresh lists
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
@@ -144,21 +152,27 @@ export const useRejectQuote = () => {
     mutationFn: ({ quoteId, data }: { quoteId: number; data: QuoteRejectionData }) =>
       QuotesApi.rejectQuote(quoteId, data),
     onSuccess: (rejectedQuote, variables) => {
-      showSuccess('Quote Rejected', 'Your feedback has been submitted. We will review your concerns and get back to you.');
+      showSuccess(
+        'Quote Rejected',
+        'Your feedback has been submitted. We will review your concerns and get back to you.',
+      );
 
       // Update the specific quote in cache
       queryClient.setQueryData(['quote', variables.quoteId], rejectedQuote);
 
       // Update the quote in any lists that contain it
-      queryClient.setQueryData(['quotes', 'event', rejectedQuote.event_details.id], (oldData: PaginatedQuoteResponse | undefined) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          results: oldData.results.map(quote =>
-            quote.id === variables.quoteId ? rejectedQuote : quote
-          ),
-        };
-      });
+      queryClient.setQueryData(
+        ['quotes', 'event', rejectedQuote.event_details.id],
+        (oldData: PaginatedQuoteResponse | undefined) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            results: oldData.results.map((quote) =>
+              quote.id === variables.quoteId ? rejectedQuote : quote,
+            ),
+          };
+        },
+      );
 
       // Invalidate related queries to refresh lists
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
@@ -262,8 +276,9 @@ export const useInvalidateQuoteQueries = () => {
 
   return {
     invalidateAll: () => queryClient.invalidateQueries({ queryKey: ['quotes'] }),
-    invalidateQuote: (quoteId: number) => queryClient.invalidateQueries({ queryKey: ['quote', quoteId] }),
-    invalidateEventQuotes: (eventId: number) => queryClient.invalidateQueries({ queryKey: ['quotes', 'event', eventId] }),
+    invalidateQuote: (quoteId: number) =>
+      queryClient.invalidateQueries({ queryKey: ['quote', quoteId] }),
+    invalidateEventQuotes: (eventId: number) =>
+      queryClient.invalidateQueries({ queryKey: ['quotes', 'event', eventId] }),
   };
 };
-

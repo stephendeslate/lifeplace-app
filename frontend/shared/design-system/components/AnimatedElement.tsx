@@ -365,7 +365,7 @@ export const AnimatedElement: React.FC<AnimatedElementProps> = ({
       {
         threshold,
         rootMargin: '0px',
-      }
+      },
     );
 
     observer.observe(element);

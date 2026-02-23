@@ -11,40 +11,42 @@ export const breakpoints = tokens.spacing.breakpoints;
 export const mediaQueries = {
   up: (bp: Breakpoint) => `@media (min-width: ${breakpoints[bp]})`,
   down: (bp: Breakpoint) => {
-    const breakpointValues = Object.values(breakpoints).map(val => parseInt(val));
+    const breakpointValues = Object.values(breakpoints).map((val) => parseInt(val));
     const currentIndex = Object.keys(breakpoints).indexOf(bp);
     const maxWidth = currentIndex > 0 ? breakpointValues[currentIndex - 1] - 1 : 0;
     return `@media (max-width: ${maxWidth}px)`;
   },
-  between: (min: Breakpoint, max: Breakpoint) => 
+  between: (min: Breakpoint, max: Breakpoint) =>
     `@media (min-width: ${breakpoints[min]}) and (max-width: ${breakpoints[max]})`,
   only: (bp: Breakpoint) => {
     const keys = Object.keys(breakpoints) as Breakpoint[];
     const currentIndex = keys.indexOf(bp);
     const nextBreakpoint = keys[currentIndex + 1];
-    
+
     if (!nextBreakpoint) {
       return mediaQueries.up(bp);
     }
-    
+
     return mediaQueries.between(bp, nextBreakpoint);
   },
 } as const;
 
 // Responsive value type with proper constraint
-export type ResponsiveValue<T extends string | number> = {
-  xs?: T;
-  sm?: T;
-  md?: T;
-  lg?: T;
-  xl?: T;
-  xxl?: T;
-} | T;
+export type ResponsiveValue<T extends string | number> =
+  | {
+      xs?: T;
+      sm?: T;
+      md?: T;
+      lg?: T;
+      xl?: T;
+      xxl?: T;
+    }
+  | T;
 
 // Convert responsive values to CSS media query styles
 export const createResponsiveStyles = <T extends string | number>(
   property: string,
-  values: ResponsiveValue<T>
+  values: ResponsiveValue<T>,
 ): Record<string, string | number | Record<string, string | number>> => {
   if (typeof values !== 'object' || values === null) {
     return { [property]: values };
@@ -61,7 +63,7 @@ export const createResponsiveStyles = <T extends string | number>(
   }
 
   // Add media query styles for each breakpoint
-  breakpointKeys.forEach(bp => {
+  breakpointKeys.forEach((bp) => {
     const responsiveValues = values as Record<string, T>;
     const value = responsiveValues[bp];
     if (value !== undefined && bp !== 'xs') {
@@ -77,28 +79,22 @@ export const createResponsiveStyles = <T extends string | number>(
 // Common responsive patterns
 export const responsivePatterns = {
   // Responsive padding
-  padding: (values: ResponsiveValue<string>) => 
-    createResponsiveStyles('padding', values),
+  padding: (values: ResponsiveValue<string>) => createResponsiveStyles('padding', values),
 
   // Responsive margin
-  margin: (values: ResponsiveValue<string>) => 
-    createResponsiveStyles('margin', values),
+  margin: (values: ResponsiveValue<string>) => createResponsiveStyles('margin', values),
 
   // Responsive font size
-  fontSize: (values: ResponsiveValue<string>) => 
-    createResponsiveStyles('fontSize', values),
+  fontSize: (values: ResponsiveValue<string>) => createResponsiveStyles('fontSize', values),
 
   // Responsive width
-  width: (values: ResponsiveValue<string>) => 
-    createResponsiveStyles('width', values),
+  width: (values: ResponsiveValue<string>) => createResponsiveStyles('width', values),
 
   // Responsive height
-  height: (values: ResponsiveValue<string>) => 
-    createResponsiveStyles('height', values),
+  height: (values: ResponsiveValue<string>) => createResponsiveStyles('height', values),
 
   // Responsive display
-  display: (values: ResponsiveValue<string>) => 
-    createResponsiveStyles('display', values),
+  display: (values: ResponsiveValue<string>) => createResponsiveStyles('display', values),
 
   // Responsive flex direction
   flexDirection: (values: ResponsiveValue<'row' | 'column' | 'row-reverse' | 'column-reverse'>) =>
@@ -110,8 +106,8 @@ export const responsivePatterns = {
       const gridValues = Object.fromEntries(
         Object.entries(values).map(([key, value]) => [
           key,
-          typeof value === 'number' ? `repeat(${value}, 1fr)` : value
-        ])
+          typeof value === 'number' ? `repeat(${value}, 1fr)` : value,
+        ]),
       ) as ResponsiveValue<string>;
       return createResponsiveStyles('gridTemplateColumns', gridValues);
     }
@@ -138,7 +134,7 @@ export const layoutUtils = {
   // Responsive grid layout
   grid: (
     columns: ResponsiveValue<number> = { xs: 1, sm: 2, md: 3, lg: 4 },
-    gap: string = tokens.spacing.semantic.cardGap
+    gap: string = tokens.spacing.semantic.cardGap,
   ) => ({
     display: 'grid',
     gap,
@@ -148,7 +144,7 @@ export const layoutUtils = {
   // Responsive flex layout
   flex: (
     direction: ResponsiveValue<'row' | 'column'> = 'row',
-    gap: string = tokens.spacing.semantic.elementGap
+    gap: string = tokens.spacing.semantic.elementGap,
   ) => ({
     display: 'flex',
     gap,
@@ -177,13 +173,13 @@ export const layoutUtils = {
   },
 
   // Responsive aspect ratio
-  aspectRatio: (ratio: ResponsiveValue<string> = '16/9') => 
+  aspectRatio: (ratio: ResponsiveValue<string> = '16/9') =>
     createResponsiveStyles('aspectRatio', ratio),
 
   // Hide on specific breakpoints
   hideOn: (...breakpoints: Breakpoint[]) => {
     const styles: Record<string, unknown> = {};
-    breakpoints.forEach(bp => {
+    breakpoints.forEach((bp) => {
       styles[mediaQueries.only(bp)] = {
         display: 'none',
       };
@@ -194,10 +190,10 @@ export const layoutUtils = {
   // Show only on specific breakpoints
   showOnly: (...breakpoints: Breakpoint[]) => {
     const allBreakpoints = Object.keys(tokens.spacing.breakpoints) as Breakpoint[];
-    const hideBreakpoints = allBreakpoints.filter(bp => !breakpoints.includes(bp));
-    
+    const hideBreakpoints = allBreakpoints.filter((bp) => !breakpoints.includes(bp));
+
     const styles: Record<string, unknown> = {};
-    hideBreakpoints.forEach(bp => {
+    hideBreakpoints.forEach((bp) => {
       styles[mediaQueries.only(bp)] = {
         display: 'none',
       };
@@ -213,7 +209,7 @@ export const typographyResponsive = {
     minSize: string,
     maxSize: string,
     minViewport: string = '320px',
-    maxViewport: string = '1200px'
+    maxViewport: string = '1200px',
   ) => ({
     fontSize: `clamp(${minSize}, calc(${minSize} + (${parseFloat(maxSize)} - ${parseFloat(minSize)}) * ((100vw - ${minViewport}) / (${parseFloat(maxViewport)} - ${parseFloat(minViewport)}))), ${maxSize})`,
   }),
@@ -250,17 +246,17 @@ export const componentResponsive = {
   sidebarLayout: (
     sidebarWidth: string = tokens.spacing.container.sidebar,
     collapsedWidth: string = tokens.spacing.container.sidebarCollapsed,
-    breakpoint: Breakpoint = 'md'
+    breakpoint: Breakpoint = 'md',
   ) => ({
     display: 'flex',
-    
+
     '& .sidebar': {
       width: collapsedWidth,
       [mediaQueries.up(breakpoint)]: {
         width: sidebarWidth,
       },
     },
-    
+
     '& .main-content': {
       flex: 1,
       marginLeft: collapsedWidth,
@@ -275,23 +271,23 @@ export const componentResponsive = {
     display: 'flex',
     flexDirection: 'column',
     gap: tokens.spacing.components.form.fieldGap,
-    
+
     '& .form-row': {
       display: 'flex',
       flexDirection: 'column',
       gap: tokens.spacing.semantic.elementGap,
-      
+
       [mediaQueries.up('md')]: {
         flexDirection: 'row',
       },
     },
-    
+
     '& .form-actions': {
       display: 'flex',
       flexDirection: 'column',
       gap: tokens.spacing.semantic.elementGap,
       marginTop: tokens.spacing.components.form.sectionGap,
-      
+
       [mediaQueries.up('sm')]: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
@@ -303,12 +299,12 @@ export const componentResponsive = {
   modal: {
     width: '95vw',
     maxWidth: '90vw',
-    
+
     [mediaQueries.up('sm')]: {
       width: 'auto',
       maxWidth: tokens.spacing.container.modal,
     },
-    
+
     [mediaQueries.up('lg')]: {
       maxWidth: '800px',
     },
@@ -326,21 +322,21 @@ export const componentResponsive = {
         borderRadius: tokens.spacing.radius.lg,
         background: tokens.color.backgrounds.paper,
       },
-      
+
       '& tbody td': {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: `${tokens.spacing.semantic.xs} 0`,
         borderBottom: 'none',
-        
+
         '&::before': {
           content: 'attr(data-label)',
           fontWeight: 600,
           color: tokens.color.neutral[600],
         },
       },
-      
+
       '& thead': {
         display: 'none',
       },
@@ -366,7 +362,7 @@ export const getCurrentBreakpoint = (): Breakpoint => {
 
   const width = window.innerWidth;
   const breakpointEntries = Object.entries(breakpoints) as [Breakpoint, string][];
-  
+
   // Sort breakpoints by width (descending)
   const sortedBreakpoints = breakpointEntries
     .map(([key, value]) => ({ key, value: parseInt(value) }))
@@ -399,14 +395,13 @@ export const gridUtils = {
   }),
 
   // Responsive grid areas
-  areas: (areas: ResponsiveValue<string>) => 
-    createResponsiveStyles('gridTemplateAreas', areas),
+  areas: (areas: ResponsiveValue<string>) => createResponsiveStyles('gridTemplateAreas', areas),
 
   // Grid span utilities
   span: (columns: ResponsiveValue<number>) => {
     if (typeof columns === 'object' && columns !== null) {
       const spanValues = Object.fromEntries(
-        Object.entries(columns).map(([key, value]) => [key, `span ${value}`])
+        Object.entries(columns).map(([key, value]) => [key, `span ${value}`]),
       ) as ResponsiveValue<string>;
       return createResponsiveStyles('gridColumn', spanValues);
     }
@@ -417,24 +412,19 @@ export const gridUtils = {
 // Flexbox utilities
 export const flexUtils = {
   // Responsive flex basis
-  basis: (values: ResponsiveValue<string>) =>
-    createResponsiveStyles('flexBasis', values),
+  basis: (values: ResponsiveValue<string>) => createResponsiveStyles('flexBasis', values),
 
   // Responsive flex grow
-  grow: (values: ResponsiveValue<number>) =>
-    createResponsiveStyles('flexGrow', values),
+  grow: (values: ResponsiveValue<number>) => createResponsiveStyles('flexGrow', values),
 
   // Responsive flex shrink
-  shrink: (values: ResponsiveValue<number>) =>
-    createResponsiveStyles('flexShrink', values),
+  shrink: (values: ResponsiveValue<number>) => createResponsiveStyles('flexShrink', values),
 
   // Responsive alignment
-  align: (values: ResponsiveValue<string>) =>
-    createResponsiveStyles('alignItems', values),
+  align: (values: ResponsiveValue<string>) => createResponsiveStyles('alignItems', values),
 
   // Responsive justification
-  justify: (values: ResponsiveValue<string>) =>
-    createResponsiveStyles('justifyContent', values),
+  justify: (values: ResponsiveValue<string>) => createResponsiveStyles('justifyContent', values),
 };
 
 export default {

@@ -93,7 +93,11 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
     return icons[automationType as keyof typeof icons] || <TaskIcon fontSize="small" />;
   };
 
-  const getAutomationChip = (isAutomated: boolean, automationType?: string, stage?: WorkflowStage) => {
+  const getAutomationChip = (
+    isAutomated: boolean,
+    automationType?: string,
+    stage?: WorkflowStage,
+  ) => {
     if (!isAutomated) {
       return (
         <Chip
@@ -140,7 +144,6 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
     );
   };
 
-
   if (isLoading) {
     return (
       <Box p={3}>
@@ -159,11 +162,11 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
 
   if (stages.length === 0) {
     return (
-      <Box 
-        display="flex" 
-        flexDirection="column" 
-        alignItems="center" 
-        justifyContent="center" 
+      <Box
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
         py={6}
         textAlign="center"
       >
@@ -195,19 +198,14 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
           </TableHead>
           <TableBody>
             {sortedStages.map((stage) => (
-              <TableRow 
-                key={stage.id} 
+              <TableRow
+                key={stage.id}
                 hover
                 sx={{ cursor: 'pointer' }}
                 onClick={() => onEdit(stage)}
               >
                 <TableCell align="center">
-                  <Chip
-                    label={stage.order}
-                    size="small"
-                    variant="outlined"
-                    color="default"
-                  />
+                  <Chip label={stage.order} size="small" variant="outlined" color="default" />
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2" fontWeight="medium">
@@ -242,11 +240,7 @@ export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
       </TableContainer>
 
       {/* Action Menu */}
-      <Menu
-        anchorEl={menuAnchor}
-        open={Boolean(menuAnchor)}
-        onClose={handleMenuClose}
-      >
+      <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={handleMenuClose}>
         <MenuItem onClick={handleEdit}>
           <ListItemIcon>
             <EditIcon fontSize="small" />

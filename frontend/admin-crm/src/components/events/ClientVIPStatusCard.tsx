@@ -167,11 +167,7 @@ const AssignTierDialog: React.FC<AssignTierDialogProps> = ({
               label="Select Tier"
             >
               {tiers.map((tier) => (
-                <MenuItem
-                  key={tier.id}
-                  value={tier.id}
-                  disabled={tier.id === currentTierId}
-                >
+                <MenuItem key={tier.id} value={tier.id} disabled={tier.id === currentTierId}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Box
                       sx={{
@@ -282,9 +278,7 @@ const PointsDialog: React.FC<PointsDialogProps> = ({
             size="small"
             inputProps={isAward ? { min: 1 } : {}}
             helperText={
-              isAward
-                ? 'Enter a positive number'
-                : 'Enter positive to add, negative to subtract'
+              isAward ? 'Enter a positive number' : 'Enter positive to add, negative to subtract'
             }
           />
 

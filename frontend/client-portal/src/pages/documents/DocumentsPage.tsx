@@ -1,6 +1,6 @@
 // frontend/client-portal/src/pages/documents/DocumentsPage.tsx
 
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -16,7 +16,7 @@ import {
   Tooltip,
   Collapse,
   Button,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Refresh as RefreshIcon,
   Search as SearchIcon,
@@ -28,40 +28,40 @@ import {
   Receipt as ReceiptIcon,
   Photo as PhotoIcon,
   InsertDriveFile as OtherIcon,
-} from "@mui/icons-material";
-import { useDocumentTitle } from "../../hooks/useDocumentTitle";
-import { AnimatedElement } from "../../design-system/components/AnimatedElement";
-import { useDocuments } from "../../hooks/useDocuments";
-import { useEvents } from "../../hooks/useEvents";
-import { contractsApi } from "../../apis/contracts.api";
-import { eventsApi } from "../../apis/events.api";
-import { DocumentList, DocumentUploadDialog } from "../../components/documents";
-import { FileViewerDialog } from "../../components/common/FileViewerDialog";
+} from '@mui/icons-material';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import { useDocuments } from '../../hooks/useDocuments';
+import { useEvents } from '../../hooks/useEvents';
+import { contractsApi } from '../../apis/contracts.api';
+import { eventsApi } from '../../apis/events.api';
+import { DocumentList, DocumentUploadDialog } from '../../components/documents';
+import { FileViewerDialog } from '../../components/common/FileViewerDialog';
 import type {
   DocumentFilters,
   DocumentType,
   DocumentSortOption,
   DocumentItem,
-} from "../../types/documents.types";
-import { DOCUMENT_TYPE_CONFIGS } from "../../types/documents.types";
+} from '../../types/documents.types';
+import { DOCUMENT_TYPE_CONFIGS } from '../../types/documents.types';
 
 // Sort options
 const SORT_OPTIONS: { value: DocumentSortOption; label: string }[] = [
-  { value: "date", label: "Date (Newest First)" },
-  { value: "name", label: "Name (A-Z)" },
-  { value: "type", label: "Type" },
-  { value: "size", label: "Size (Largest First)" },
+  { value: 'date', label: 'Date (Newest First)' },
+  { value: 'name', label: 'Name (A-Z)' },
+  { value: 'type', label: 'Type' },
+  { value: 'size', label: 'Size (Largest First)' },
 ];
 
 export const DocumentsPage: React.FC = () => {
-  useDocumentTitle("Documents | LifePlace Alfonso");
+  useDocumentTitle('Documents | LifePlace Alfonso');
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Filter and sort state
   const [filters, setFilters] = useState<DocumentFilters>({ types: [] });
-  const [sortBy, setSortBy] = useState<DocumentSortOption>("date");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<DocumentSortOption>('date');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(!isMobile);
 
   // Upload dialog state
@@ -69,9 +69,7 @@ export const DocumentsPage: React.FC = () => {
 
   // View dialog state
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [viewingDocument, setViewingDocument] = useState<DocumentItem | null>(
-    null,
-  );
+  const [viewingDocument, setViewingDocument] = useState<DocumentItem | null>(null);
 
   // Get events for upload dialog
   const { useEventsList } = useEvents();
@@ -87,14 +85,7 @@ export const DocumentsPage: React.FC = () => {
   );
 
   // Get documents data
-  const {
-    documents,
-    eventOptions,
-    countsByType,
-    totalCount,
-    isLoading,
-    refetch,
-  } = useDocuments({
+  const { documents, eventOptions, countsByType, totalCount, isLoading, refetch } = useDocuments({
     filters: computedFilters,
     sortBy,
   });
@@ -117,19 +108,17 @@ export const DocumentsPage: React.FC = () => {
   // Clear all filters
   const clearFilters = () => {
     setFilters({ types: [] });
-    setSearchQuery("");
+    setSearchQuery('');
   };
 
   // Handle document download
   const handleDownload = async (document: DocumentItem) => {
-    if (document.type === "CONTRACT" && document.contractId) {
+    if (document.type === 'CONTRACT' && document.contractId) {
       // Use contracts API for contract downloads
       try {
-        const blob = await contractsApi.downloadContractPdf(
-          document.contractId,
-        );
+        const blob = await contractsApi.downloadContractPdf(document.contractId);
         const url = window.URL.createObjectURL(blob);
-        const a = window.document.createElement("a");
+        const a = window.document.createElement('a');
         a.href = url;
         a.download = `${document.name}.pdf`;
         window.document.body.appendChild(a);
@@ -137,12 +126,11 @@ export const DocumentsPage: React.FC = () => {
         window.URL.revokeObjectURL(url);
         window.document.body.removeChild(a);
       } catch (error) {
-        if (import.meta.env.DEV)
-          console.error("Error downloading contract:", error);
+        if (import.meta.env.DEV) console.error('Error downloading contract:', error);
       }
     } else if (document.downloadUrl) {
       // Regular file download
-      window.open(document.downloadUrl, "_blank");
+      window.open(document.downloadUrl, '_blank');
     }
   };
 
@@ -161,19 +149,17 @@ export const DocumentsPage: React.FC = () => {
   const getFileBlob = useCallback(
     async (fileId: number | string) => {
       if (!viewingDocument) {
-        throw new Error("No document selected");
+        throw new Error('No document selected');
       }
 
       // For contracts, use the contracts API
-      if (viewingDocument.type === "CONTRACT" && viewingDocument.contractId) {
+      if (viewingDocument.type === 'CONTRACT' && viewingDocument.contractId) {
         return contractsApi.downloadContractPdf(viewingDocument.contractId);
       }
 
       // For regular files, extract the numeric ID from "file-123" format
       const numericId =
-        typeof fileId === "string"
-          ? parseInt(fileId.replace("file-", ""), 10)
-          : fileId;
+        typeof fileId === 'string' ? parseInt(fileId.replace('file-', ''), 10) : fileId;
 
       return eventsApi.getDocumentBlob(viewingDocument.eventId, numericId);
     },
@@ -187,9 +173,7 @@ export const DocumentsPage: React.FC = () => {
 
   // Check if any filters are active
   const hasActiveFilters =
-    (filters.types?.length || 0) > 0 ||
-    filters.eventId !== undefined ||
-    searchQuery;
+    (filters.types?.length || 0) > 0 || filters.eventId !== undefined || searchQuery;
 
   // Type icons mapping
   const TYPE_ICONS: Record<DocumentType, React.ElementType> = {
@@ -213,25 +197,20 @@ export const DocumentsPage: React.FC = () => {
         <Box sx={{ py: 3, px: { xs: 2, md: 3 } }}>
           {/* Header */}
           <Stack
-            direction={{ xs: "column", sm: "row" }}
+            direction={{ xs: 'column', sm: 'row' }}
             justifyContent="space-between"
-            alignItems={{ xs: "flex-start", sm: "center" }}
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
             spacing={2}
             sx={{ mb: 3 }}
           >
             <Box>
-              <Typography
-                variant="h4"
-                component="h1"
-                gutterBottom
-                sx={{ fontWeight: 600 }}
-              >
+              <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 600 }}>
                 Documents
               </Typography>
               <Typography variant="body1" color="text.secondary">
                 {totalCount === 0
-                  ? "No documents yet"
-                  : `${totalCount} document${totalCount !== 1 ? "s" : ""} across your events`}
+                  ? 'No documents yet'
+                  : `${totalCount} document${totalCount !== 1 ? 's' : ''} across your events`}
               </Typography>
             </Box>
 
@@ -248,7 +227,7 @@ export const DocumentsPage: React.FC = () => {
                 <Tooltip title="Toggle filters">
                   <IconButton
                     onClick={() => setShowFilters(!showFilters)}
-                    color={showFilters ? "primary" : "default"}
+                    color={showFilters ? 'primary' : 'default'}
                   >
                     <FilterIcon />
                   </IconButton>
@@ -288,10 +267,7 @@ export const DocumentsPage: React.FC = () => {
                     ),
                     endAdornment: searchQuery ? (
                       <InputAdornment position="end">
-                        <IconButton
-                          size="small"
-                          onClick={() => setSearchQuery("")}
-                        >
+                        <IconButton size="small" onClick={() => setSearchQuery('')}>
                           <ClearIcon fontSize="small" />
                         </IconButton>
                       </InputAdornment>
@@ -305,52 +281,48 @@ export const DocumentsPage: React.FC = () => {
                   <Typography
                     variant="caption"
                     color="text.secondary"
-                    sx={{ mb: 1, display: "block" }}
+                    sx={{ mb: 1, display: 'block' }}
                   >
                     Filter by type
                   </Typography>
                   <Stack direction="row" spacing={1} flexWrap="wrap" gap={1}>
-                    {(Object.keys(DOCUMENT_TYPE_CONFIGS) as DocumentType[]).map(
-                      (type) => {
-                        const config = DOCUMENT_TYPE_CONFIGS[type];
-                        const Icon = TYPE_ICONS[type];
-                        const count = countsByType[type];
-                        const isActive = filters.types?.includes(type);
+                    {(Object.keys(DOCUMENT_TYPE_CONFIGS) as DocumentType[]).map((type) => {
+                      const config = DOCUMENT_TYPE_CONFIGS[type];
+                      const Icon = TYPE_ICONS[type];
+                      const count = countsByType[type];
+                      const isActive = filters.types?.includes(type);
 
-                        return (
-                          <Chip
-                            key={type}
-                            icon={<Icon sx={{ fontSize: "1rem !important" }} />}
-                            label={`${config.pluralLabel} (${count})`}
-                            onClick={() => handleTypeToggle(type)}
-                            variant={isActive ? "filled" : "outlined"}
-                            color={isActive ? "primary" : "default"}
-                            sx={{
-                              borderColor: isActive ? undefined : config.color,
-                              "& .MuiChip-icon": {
-                                color: isActive ? undefined : config.color,
-                              },
-                            }}
-                          />
-                        );
-                      },
-                    )}
+                      return (
+                        <Chip
+                          key={type}
+                          icon={<Icon sx={{ fontSize: '1rem !important' }} />}
+                          label={`${config.pluralLabel} (${count})`}
+                          onClick={() => handleTypeToggle(type)}
+                          variant={isActive ? 'filled' : 'outlined'}
+                          color={isActive ? 'primary' : 'default'}
+                          sx={{
+                            borderColor: isActive ? undefined : config.color,
+                            '& .MuiChip-icon': {
+                              color: isActive ? undefined : config.color,
+                            },
+                          }}
+                        />
+                      );
+                    })}
                   </Stack>
                 </Box>
 
                 {/* Event Filter and Sort */}
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                   {/* Event Filter */}
                   {eventOptions.length > 0 && (
                     <TextField
                       select
                       label="Filter by Event"
                       size="small"
-                      value={filters.eventId || ""}
+                      value={filters.eventId || ''}
                       onChange={(e) =>
-                        handleEventFilter(
-                          e.target.value ? Number(e.target.value) : undefined,
-                        )
+                        handleEventFilter(e.target.value ? Number(e.target.value) : undefined)
                       }
                       sx={{ minWidth: 200 }}
                     >
@@ -369,9 +341,7 @@ export const DocumentsPage: React.FC = () => {
                     label="Sort by"
                     size="small"
                     value={sortBy}
-                    onChange={(e) =>
-                      setSortBy(e.target.value as DocumentSortOption)
-                    }
+                    onChange={(e) => setSortBy(e.target.value as DocumentSortOption)}
                     sx={{ minWidth: 180 }}
                   >
                     {SORT_OPTIONS.map((option) => (
@@ -430,11 +400,7 @@ export const DocumentsPage: React.FC = () => {
                   }
                 : null
             }
-            onDownload={
-              viewingDocument
-                ? () => handleDownload(viewingDocument)
-                : undefined
-            }
+            onDownload={viewingDocument ? () => handleDownload(viewingDocument) : undefined}
             getFileBlob={getFileBlob}
           />
         </Box>

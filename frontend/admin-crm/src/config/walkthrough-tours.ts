@@ -1,13 +1,6 @@
 // frontend/admin-crm/src/config/walkthrough-tours.ts
 
-import {
-  Dashboard,
-  Event,
-  People,
-  Payment,
-  Settings,
-  Analytics,
-} from '@mui/icons-material';
+import { Dashboard, Event, People, Payment, Settings, Analytics } from '@mui/icons-material';
 import type { Tour, TourId } from '../types/walkthrough.types';
 
 /**
@@ -117,7 +110,7 @@ tourRegistry.set('dashboard', {
       id: 'dashboard-activity',
       title: 'Recent Activity',
       content:
-        'See what\'s happening in your business - new bookings, payments, client updates, and system notifications.',
+        "See what's happening in your business - new bookings, payments, client updates, and system notifications.",
       target: '[data-tour="dashboard-activity"]',
       placement: 'left',
       spotlightPadding: 8,
@@ -139,7 +132,7 @@ tourRegistry.set('events', {
       id: 'events-create',
       title: 'Create New Event',
       content:
-        'Click here to create a new event. You\'ll be guided through setting up all the details including date, client, venue, and pricing.',
+        "Click here to create a new event. You'll be guided through setting up all the details including date, client, venue, and pricing.",
       target: '[data-tour="events-create-button"]',
       placement: 'left',
       spotlightPadding: 8,
@@ -347,7 +340,7 @@ export const getAllTours = (): Tour[] => {
  * Get tours by category
  */
 export const getToursByCategory = (category: Tour['category']): Tour[] => {
-  return getAllTours().filter(tour => tour.category === category);
+  return getAllTours().filter((tour) => tour.category === category);
 };
 
 /**

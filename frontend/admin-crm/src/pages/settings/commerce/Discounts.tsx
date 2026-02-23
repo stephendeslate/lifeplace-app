@@ -3,9 +3,17 @@
 
 import React from 'react';
 import { LocalOffer as DiscountIcon } from '@mui/icons-material';
-import { PermissionAwareSettingsPage, type SettingsPageConfig, type SettingsTableColumn } from '../../../components/common/settings';
+import {
+  PermissionAwareSettingsPage,
+  type SettingsPageConfig,
+  type SettingsTableColumn,
+} from '../../../components/common/settings';
 import { useDiscounts } from '../../../hooks/useProducts';
-import type { Discount, CreateDiscountData, UpdateDiscountData } from '../../../types/products.types';
+import type {
+  Discount,
+  CreateDiscountData,
+  UpdateDiscountData,
+} from '../../../types/products.types';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
 
 // Table columns configuration
@@ -19,7 +27,7 @@ const columns: SettingsTableColumn<Discount>[] = [
   {
     key: 'code',
     label: 'Code',
-    render: (value) => value ? String(value) : '-',
+    render: (value) => (value ? String(value) : '-'),
   },
   {
     key: 'discount_type_display',
@@ -60,7 +68,7 @@ const columns: SettingsTableColumn<Discount>[] = [
   {
     key: 'valid_until',
     label: 'Expires',
-    render: (value) => value ? new Date(String(value)).toLocaleDateString() : 'No expiry',
+    render: (value) => (value ? new Date(String(value)).toLocaleDateString() : 'No expiry'),
   },
   {
     key: 'is_valid_now',
@@ -329,13 +337,16 @@ export const Discounts = () => {
     };
 
     return new Promise<void>((resolve, reject) => {
-      updateDiscount({
-        id: Number(id),
-        data: updateData
-      }, {
-        onSuccess: () => resolve(),
-        onError: reject,
-      });
+      updateDiscount(
+        {
+          id: Number(id),
+          data: updateData,
+        },
+        {
+          onSuccess: () => resolve(),
+          onError: reject,
+        },
+      );
     });
   };
 
@@ -355,8 +366,8 @@ export const Discounts = () => {
     // Convert DiscountDetail back to Discount format (extract IDs from objects)
     return {
       ...detail,
-      applicable_products: detail.applicable_products.map(p => p.id),
-      applicable_categories: detail.applicable_categories.map(c => c.id),
+      applicable_products: detail.applicable_products.map((p) => p.id),
+      applicable_categories: detail.applicable_categories.map((c) => c.id),
     };
   };
 

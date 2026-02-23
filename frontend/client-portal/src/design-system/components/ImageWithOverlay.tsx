@@ -65,9 +65,10 @@ export const ImageWithOverlay = ({
 
     // Apply custom opacity if provided
     if (overlayOpacity !== undefined && overlay !== 'gradient') {
-      const baseColor = overlay === 'light'
-        ? `rgba(250, 247, 242, ${overlayOpacity})`
-        : `rgba(46, 42, 40, ${overlayOpacity})`;
+      const baseColor =
+        overlay === 'light'
+          ? `rgba(250, 247, 242, ${overlayOpacity})`
+          : `rgba(46, 42, 40, ${overlayOpacity})`;
       return baseColor;
     }
 

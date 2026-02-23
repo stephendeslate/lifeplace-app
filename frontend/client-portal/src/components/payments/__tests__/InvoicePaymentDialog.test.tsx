@@ -18,7 +18,15 @@ const mockFinancialApi = vi.mocked(FinancialApi);
 
 // Mock the PaymentMethodSelector component
 vi.mock('../PaymentMethodSelector', () => ({
-  PaymentMethodSelector: ({ selectedMethod, onMethodSelect, disabled }: { selectedMethod: unknown; onMethodSelect: (method: unknown) => void; disabled: boolean }) => (
+  PaymentMethodSelector: ({
+    selectedMethod,
+    onMethodSelect,
+    disabled,
+  }: {
+    selectedMethod: unknown;
+    onMethodSelect: (method: unknown) => void;
+    disabled: boolean;
+  }) => (
     <div data-testid="payment-method-selector">
       <button
         onClick={() => onMethodSelect(mockPaymentMethod)}
@@ -27,9 +35,7 @@ vi.mock('../PaymentMethodSelector', () => ({
       >
         Select Payment Method
       </button>
-      {selectedMethod && (
-        <div data-testid="selected-method">{selectedMethod.nickname}</div>
-      )}
+      {selectedMethod && <div data-testid="selected-method">{selectedMethod.nickname}</div>}
     </div>
   ),
 }));
@@ -53,7 +59,7 @@ const mockInvoice: Invoice = {
   updated_at: '2025-09-21T00:00:00Z',
   line_items: [],
   taxes: [],
-  related_payments: []
+  related_payments: [],
 };
 
 const mockPaymentMethod: PaymentMethod = {
@@ -71,10 +77,10 @@ const mockPaymentMethod: PaymentMethod = {
     code: 'stripe',
     is_active: true,
     created_at: '2025-09-21T00:00:00Z',
-    updated_at: '2025-09-21T00:00:00Z'
+    updated_at: '2025-09-21T00:00:00Z',
   },
   created_at: '2025-09-21T00:00:00Z',
-  updated_at: '2025-09-21T00:00:00Z'
+  updated_at: '2025-09-21T00:00:00Z',
 };
 
 const mockPaymentResponse = {
@@ -85,18 +91,19 @@ const mockPaymentResponse = {
     payment_number: 'PAY-TEST-001',
     amount: '11200.00',
     currency: 'PHP',
-    status: 'COMPLETED'
+    status: 'COMPLETED',
   },
-  invoice: mockInvoice
+  invoice: mockInvoice,
 };
 
 // Test utilities
-const createQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: { retry: false },
-    mutations: { retry: false }
-  }
-});
+const createQueryClient = () =>
+  new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
 
 const theme = createTheme();
 
@@ -104,10 +111,8 @@ const renderWithProviders = (component: React.ReactElement) => {
   const queryClient = createQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider theme={theme}>
-        {component}
-      </ThemeProvider>
-    </QueryClientProvider>
+      <ThemeProvider theme={theme}>{component}</ThemeProvider>
+    </QueryClientProvider>,
   );
 };
 
@@ -118,12 +123,12 @@ describe('InvoicePaymentDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFinancialApi.calculateInvoicePaymentStatus.mockReturnValue({
-      amountRemaining: 11200.00,
+      amountRemaining: 11200.0,
       amountPaid: 0,
-      isPaid: false
+      isPaid: false,
     });
-    mockFinancialApi.formatAmount.mockImplementation((amount, _currency) =>
-      `₱${parseFloat(amount.toString()).toLocaleString()}`
+    mockFinancialApi.formatAmount.mockImplementation(
+      (amount, _currency) => `₱${parseFloat(amount.toString()).toLocaleString()}`,
     );
   });
 
@@ -131,7 +136,7 @@ describe('InvoicePaymentDialog', () => {
     open: true,
     invoice: mockInvoice,
     onClose: mockOnClose,
-    onPaymentSuccess: mockOnPaymentSuccess
+    onPaymentSuccess: mockOnPaymentSuccess,
   };
 
   it('renders the dialog when open', () => {
@@ -143,9 +148,7 @@ describe('InvoicePaymentDialog', () => {
   });
 
   it('does not render when closed', () => {
-    renderWithProviders(
-      <InvoicePaymentDialog {...defaultProps} open={false} />
-    );
+    renderWithProviders(<InvoicePaymentDialog {...defaultProps} open={false} />);
 
     expect(screen.queryByText('Pay Invoice')).not.toBeInTheDocument();
   });
@@ -196,7 +199,7 @@ describe('InvoicePaymentDialog', () => {
       expect(mockFinancialApi.payInvoice).toHaveBeenCalledWith(1, {
         payment_type: 'FULL',
         payment_method: 1,
-        notes: 'Full payment for invoice INV-TEST-001'
+        notes: 'Full payment for invoice INV-TEST-001',
       });
     });
 
@@ -236,9 +239,7 @@ describe('InvoicePaymentDialog', () => {
   });
 
   it('shows success message after payment completion', () => {
-    renderWithProviders(
-      <InvoicePaymentDialog {...defaultProps} />
-    );
+    renderWithProviders(<InvoicePaymentDialog {...defaultProps} />);
 
     // Simulate success state by manually triggering it
     // This would normally be triggered by payment success
@@ -249,8 +250,8 @@ describe('InvoicePaymentDialog', () => {
     const user = userEvent.setup();
 
     // Mock a delayed payment response
-    mockFinancialApi.payInvoice.mockImplementation(() =>
-      new Promise(resolve => setTimeout(() => resolve(mockPaymentResponse), 1000))
+    mockFinancialApi.payInvoice.mockImplementation(
+      () => new Promise((resolve) => setTimeout(() => resolve(mockPaymentResponse), 1000)),
     );
 
     renderWithProviders(<InvoicePaymentDialog {...defaultProps} />);
@@ -274,8 +275,8 @@ describe('InvoicePaymentDialog', () => {
   it('shows info message when invoice is already paid', () => {
     mockFinancialApi.calculateInvoicePaymentStatus.mockReturnValue({
       amountRemaining: 0,
-      amountPaid: 11200.00,
-      isPaid: true
+      amountPaid: 11200.0,
+      isPaid: true,
     });
 
     renderWithProviders(<InvoicePaymentDialog {...defaultProps} />);

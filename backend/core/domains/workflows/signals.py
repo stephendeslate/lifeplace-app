@@ -1,9 +1,10 @@
 # backend/core/domains/workflows/signals.py
+from django.db.models.signals import post_init, post_save
+from django.dispatch import receiver
+
 from core.domains.events.models import Event
 from core.domains.sales.models import EventQuote
 from core.domains.workflows.engine import WorkflowEngine
-from django.db.models.signals import post_init, post_save
-from django.dispatch import receiver
 
 
 @receiver(post_save, sender=Event)
@@ -14,20 +15,20 @@ def handle_event_changes(sender, instance, created, **kwargs):
         WorkflowEngine.assign_initial_workflow(instance)
     else:
         # Get the old status if available
-        old_status = getattr(instance, '_previous_status', None)
-        
+        old_status = getattr(instance, "_previous_status", None)
+
         # If status changed, notify the workflow engine
         if old_status and instance.status != old_status:
             WorkflowEngine.progress_workflow(
-                instance, 
-                trigger_type='STATUS_CHANGE',
-                data={'old_status': old_status, 'new_status': instance.status}
+                instance, trigger_type="STATUS_CHANGE", data={"old_status": old_status, "new_status": instance.status}
             )
+
 
 @receiver(post_init, sender=Event)
 def store_initial_status(sender, instance, **kwargs):
     """Store the initial status of an event for change detection"""
     instance._previous_status = instance.status
+
 
 @receiver(post_save, sender=EventQuote)
 def handle_quote_changes(sender, instance, created, **kwargs):
@@ -37,19 +38,11 @@ def handle_quote_changes(sender, instance, created, **kwargs):
         event = instance.event
 
         # If quote was sent to client
-        if instance.status == 'SENT':
+        if instance.status == "SENT":
             # Progress workflow based on quote being sent
-            WorkflowEngine.progress_workflow(
-                event,
-                trigger_type='QUOTE_SENT',
-                data={'quote_id': instance.id}
-            )
+            WorkflowEngine.progress_workflow(event, trigger_type="QUOTE_SENT", data={"quote_id": instance.id})
 
         # If quote was accepted
-        elif instance.status == 'ACCEPTED':
+        elif instance.status == "ACCEPTED":
             # Progress workflow based on quote acceptance
-            WorkflowEngine.progress_workflow(
-                event,
-                trigger_type='QUOTE_ACCEPTED',
-                data={'quote_id': instance.id}
-            )
+            WorkflowEngine.progress_workflow(event, trigger_type="QUOTE_ACCEPTED", data={"quote_id": instance.id})

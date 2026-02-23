@@ -1,13 +1,13 @@
 // pages/home/components/SocialProofSection.tsx
 
-import React from "react";
-import { Box, Typography } from "@mui/material";
-import { Star, CheckCircle, People, Favorite } from "@mui/icons-material";
-import { Section } from "../../../design-system/components/Section";
-import { Container } from "../../../design-system/components/Container";
-import { GlassCard } from "../../../design-system/components/GlassCard";
-import { AnimatedElement } from "../../../design-system/components/AnimatedElement";
-import { tokens } from "../../../design-system/tokens";
+import React from 'react';
+import { Box, Typography } from '@mui/material';
+import { Star, CheckCircle, People, Favorite } from '@mui/icons-material';
+import { Section } from '../../../design-system/components/Section';
+import { Container } from '../../../design-system/components/Container';
+import { GlassCard } from '../../../design-system/components/GlassCard';
+import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import { tokens } from '../../../design-system/tokens';
 
 interface Testimonial {
   id: string;
@@ -24,13 +24,11 @@ const TestimonialCard: React.FC<{
 }> = ({ testimonial, delay = 0 }) => (
   <AnimatedElement animation="fadeIn" delay={delay}>
     <GlassCard variant="light" intensity="medium" hover={true}>
-      <Box
-        sx={{ minHeight: "200px", display: "flex", flexDirection: "column" }}
-      >
+      <Box sx={{ minHeight: '200px', display: 'flex', flexDirection: 'column' }}>
         {/* Star Rating */}
         <Box
           sx={{
-            display: "flex",
+            display: 'flex',
             gap: tokens.spacing.space[0.5],
             mb: tokens.spacing.space[2],
           }}
@@ -54,7 +52,7 @@ const TestimonialCard: React.FC<{
           sx={{
             ...tokens.typography.styles.quote,
             fontSize: tokens.typography.sizes.md,
-            fontStyle: "italic",
+            fontStyle: 'italic',
             color: tokens.color.base.forest[800],
             mb: tokens.spacing.space[3],
             flex: 1,
@@ -93,31 +91,31 @@ const TestimonialCard: React.FC<{
 export const SocialProofSection: React.FC = () => {
   const testimonials: Testimonial[] = [
     {
-      id: "1",
+      id: '1',
       quote:
-        "LifePlace made our wedding day absolutely perfect! The venue was stunning, and the team went above and beyond to ensure everything ran smoothly.",
-      author: "Maria & Carlos Santos",
-      role: "Wedding Celebration",
+        'LifePlace made our wedding day absolutely perfect! The venue was stunning, and the team went above and beyond to ensure everything ran smoothly.',
+      author: 'Maria & Carlos Santos',
+      role: 'Wedding Celebration',
       rating: 5,
-      event: "June 2025",
+      event: 'June 2025',
     },
     {
-      id: "2",
+      id: '2',
       quote:
-        "Outstanding venue and exceptional service. Our corporate retreat was a huge success thanks to the professional team and beautiful facilities.",
-      author: "Elena Reyes",
-      role: "Corporate Event Coordinator",
+        'Outstanding venue and exceptional service. Our corporate retreat was a huge success thanks to the professional team and beautiful facilities.',
+      author: 'Elena Reyes',
+      role: 'Corporate Event Coordinator',
       rating: 5,
-      event: "Team Building Retreat",
+      event: 'Team Building Retreat',
     },
     {
-      id: "3",
+      id: '3',
       quote:
         "We've hosted three events here and each time has exceeded our expectations. The attention to detail and genuine care for our guests is remarkable.",
-      author: "The Mendoza Family",
-      role: "Repeat Client",
+      author: 'The Mendoza Family',
+      role: 'Repeat Client',
       rating: 5,
-      event: "Family Celebrations",
+      event: 'Family Celebrations',
     },
   ];
 
@@ -128,7 +126,7 @@ export const SocialProofSection: React.FC = () => {
         <AnimatedElement animation="fadeIn" delay={0}>
           <Box
             sx={{
-              textAlign: "center",
+              textAlign: 'center',
               mb: { xs: tokens.spacing.space[6], md: tokens.spacing.space[8] },
             }}
           >
@@ -151,12 +149,11 @@ export const SocialProofSection: React.FC = () => {
               sx={{
                 ...tokens.typography.styles.bodyLarge,
                 color: tokens.color.base.neutral[700],
-                maxWidth: "700px",
-                mx: "auto",
+                maxWidth: '700px',
+                mx: 'auto',
               }}
             >
-              Join the many satisfied clients who have celebrated life's special
-              moments with us
+              Join the many satisfied clients who have celebrated life's special moments with us
             </Typography>
           </Box>
         </AnimatedElement>
@@ -173,7 +170,7 @@ export const SocialProofSection: React.FC = () => {
                   md: tokens.typography.responsive.h3.desktop.fontSize,
                 },
                 color: tokens.color.base.forest[800],
-                textAlign: "center",
+                textAlign: 'center',
                 mb: {
                   xs: tokens.spacing.space[4],
                   md: tokens.spacing.space[6],
@@ -186,20 +183,17 @@ export const SocialProofSection: React.FC = () => {
 
           <Box
             sx={{
-              display: "grid",
+              display: 'grid',
               gridTemplateColumns: {
-                xs: "1fr",
-                md: "repeat(3, 1fr)",
+                xs: '1fr',
+                md: 'repeat(3, 1fr)',
               },
               gap: { xs: 2, md: 3 },
             }}
           >
             {testimonials.map((testimonial, index) => (
               <Box key={testimonial.id}>
-                <TestimonialCard
-                  testimonial={testimonial}
-                  delay={300 + index * 100}
-                />
+                <TestimonialCard testimonial={testimonial} delay={300 + index * 100} />
               </Box>
             ))}
           </Box>
@@ -210,23 +204,23 @@ export const SocialProofSection: React.FC = () => {
           <Box
             sx={{
               mt: { xs: tokens.spacing.space[6], md: tokens.spacing.space[8] },
-              textAlign: "center",
+              textAlign: 'center',
             }}
           >
             <Box
               sx={{
-                display: "flex",
-                flexWrap: "wrap",
+                display: 'flex',
+                flexWrap: 'wrap',
                 gap: tokens.spacing.space[2],
-                justifyContent: "center",
-                alignItems: "center",
+                justifyContent: 'center',
+                alignItems: 'center',
               }}
             >
               <GlassCard variant="light" intensity="subtle" hover={false}>
                 <Box
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: tokens.spacing.space[1],
                   }}
                 >
@@ -251,8 +245,8 @@ export const SocialProofSection: React.FC = () => {
               <GlassCard variant="light" intensity="subtle" hover={false}>
                 <Box
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: tokens.spacing.space[1],
                   }}
                 >
@@ -277,8 +271,8 @@ export const SocialProofSection: React.FC = () => {
               <GlassCard variant="light" intensity="subtle" hover={false}>
                 <Box
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
+                    display: 'flex',
+                    alignItems: 'center',
                     gap: tokens.spacing.space[1],
                   }}
                 >

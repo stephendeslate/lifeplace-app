@@ -1,11 +1,11 @@
 // frontend/client-portal/src/App.test.tsx
-import { render } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
-import { BrowserRouter } from "react-router-dom";
-import { AppRouter } from "./App";
+import { render } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { BrowserRouter } from 'react-router-dom';
+import { AppRouter } from './App';
 
 // Mock auth context — AppRouter calls useAuth()
-vi.mock("./contexts/AuthContext", () => ({
+vi.mock('./contexts/AuthContext', () => ({
   useAuth: () => ({
     isAuthenticated: false,
     isLoading: false,
@@ -15,7 +15,7 @@ vi.mock("./contexts/AuthContext", () => ({
 }));
 
 // Mock toast context — AppRouter calls useToastActions()
-vi.mock("./contexts/ToastContext", () => ({
+vi.mock('./contexts/ToastContext', () => ({
   useToastActions: () => ({
     showInfo: vi.fn(),
     showSuccess: vi.fn(),
@@ -24,8 +24,8 @@ vi.mock("./contexts/ToastContext", () => ({
   }),
 }));
 
-describe("App Component", () => {
-  it("should render without crashing", () => {
+describe('App Component', () => {
+  it('should render without crashing', () => {
     render(
       <BrowserRouter>
         <AppRouter />

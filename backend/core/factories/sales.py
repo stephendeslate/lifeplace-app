@@ -12,11 +12,13 @@ Based on actual models in core/domains/sales/models.py:
 - QuoteReminder (scheduled reminders)
 """
 
-import factory
-from factory.django import DjangoModelFactory
-from django.utils import timezone
 from datetime import timedelta
 from decimal import Decimal
+
+from django.utils import timezone
+
+import factory
+from factory.django import DjangoModelFactory
 
 
 class QuoteTemplateFactory(DjangoModelFactory):
@@ -27,12 +29,12 @@ class QuoteTemplateFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'sales.QuoteTemplate'
+        model = "sales.QuoteTemplate"
 
-    name = factory.Sequence(lambda n: f'Quote Template {n}')
-    introduction = factory.Faker('paragraph')
-    event_type = factory.SubFactory('core.factories.events.EventTypeFactory')
-    terms_and_conditions = factory.Faker('paragraph')
+    name = factory.Sequence(lambda n: f"Quote Template {n}")
+    introduction = factory.Faker("paragraph")
+    event_type = factory.SubFactory("core.factories.events.EventTypeFactory")
+    terms_and_conditions = factory.Faker("paragraph")
     is_active = True
     default_validity_days = 30
     has_multiple_options = False
@@ -40,17 +42,11 @@ class QuoteTemplateFactory(DjangoModelFactory):
     class Params:
         """Traits for template configurations."""
 
-        inactive = factory.Trait(
-            is_active=False
-        )
+        inactive = factory.Trait(is_active=False)
 
-        with_multiple_options = factory.Trait(
-            has_multiple_options=True
-        )
+        with_multiple_options = factory.Trait(has_multiple_options=True)
 
-        without_event_type = factory.Trait(
-            event_type=None
-        )
+        without_event_type = factory.Trait(event_type=None)
 
 
 class EventQuoteFactory(DjangoModelFactory):
@@ -62,22 +58,22 @@ class EventQuoteFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'sales.EventQuote'
+        model = "sales.EventQuote"
 
-    event = factory.SubFactory('core.factories.events.EventFactory')
+    event = factory.SubFactory("core.factories.events.EventFactory")
     template = factory.SubFactory(QuoteTemplateFactory)
     version = 1
-    status = 'DRAFT'
-    subtotal = Decimal('5000.00')
-    tax_amount = Decimal('600.00')
-    service_charge_amount = Decimal('0.00')
-    discount_amount = Decimal('0.00')
-    total_amount = Decimal('5600.00')
-    notes = ''
-    terms_and_conditions = factory.Faker('paragraph')
-    client_message = ''
-    signature_data = ''
-    created_by = factory.SubFactory('core.factories.users.UserFactory', admin=True)
+    status = "DRAFT"
+    subtotal = Decimal("5000.00")
+    tax_amount = Decimal("600.00")
+    service_charge_amount = Decimal("0.00")
+    discount_amount = Decimal("0.00")
+    total_amount = Decimal("5600.00")
+    notes = ""
+    terms_and_conditions = factory.Faker("paragraph")
+    client_message = ""
+    signature_data = ""
+    created_by = factory.SubFactory("core.factories.users.UserFactory", admin=True)
 
     @factory.lazy_attribute
     def valid_until(self):
@@ -87,44 +83,29 @@ class EventQuoteFactory(DjangoModelFactory):
     class Params:
         """Traits for quote states."""
 
-        draft = factory.Trait(
-            status='DRAFT'
-        )
+        draft = factory.Trait(status="DRAFT")
 
-        sent = factory.Trait(
-            status='SENT',
-            sent_at=factory.LazyFunction(timezone.now)
-        )
+        sent = factory.Trait(status="SENT", sent_at=factory.LazyFunction(timezone.now))
 
         accepted = factory.Trait(
-            status='ACCEPTED',
-            sent_at=factory.LazyFunction(
-                lambda: timezone.now() - timedelta(days=3)
-            ),
+            status="ACCEPTED",
+            sent_at=factory.LazyFunction(lambda: timezone.now() - timedelta(days=3)),
             accepted_at=factory.LazyFunction(timezone.now),
-            signature_data='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA'
+            signature_data="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA",
         )
 
         rejected = factory.Trait(
-            status='REJECTED',
-            sent_at=factory.LazyFunction(
-                lambda: timezone.now() - timedelta(days=3)
-            ),
+            status="REJECTED",
+            sent_at=factory.LazyFunction(lambda: timezone.now() - timedelta(days=3)),
             rejected_at=factory.LazyFunction(timezone.now),
-            rejection_reason='Price too high'
+            rejection_reason="Price too high",
         )
 
         expired = factory.Trait(
-            status='EXPIRED',
-            valid_until=factory.LazyFunction(
-                lambda: (timezone.now() - timedelta(days=7)).date()
-            )
+            status="EXPIRED", valid_until=factory.LazyFunction((timezone.now() - timedelta(days=7)).date)
         )
 
-        with_discount = factory.Trait(
-            discount_amount=Decimal('500.00'),
-            total_amount=Decimal('5100.00')
-        )
+        with_discount = factory.Trait(discount_amount=Decimal("500.00"), total_amount=Decimal("5100.00"))
 
 
 class QuoteTemplateProductFactory(DjangoModelFactory):
@@ -135,19 +116,17 @@ class QuoteTemplateProductFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'sales.QuoteTemplateProduct'
+        model = "sales.QuoteTemplateProduct"
 
     template = factory.SubFactory(QuoteTemplateFactory)
-    product = factory.SubFactory('core.factories.products.ProductOptionFactory')
+    product = factory.SubFactory("core.factories.products.ProductOptionFactory")
     quantity = 1
     is_required = False
 
     class Params:
         """Traits for template product configurations."""
 
-        required = factory.Trait(
-            is_required=True
-        )
+        required = factory.Trait(is_required=True)
 
 
 class QuoteLineItemFactory(DjangoModelFactory):
@@ -158,36 +137,34 @@ class QuoteLineItemFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'sales.QuoteLineItem'
+        model = "sales.QuoteLineItem"
 
     quote = factory.SubFactory(EventQuoteFactory)
-    description = factory.Faker('sentence')
+    description = factory.Faker("sentence")
     quantity = 1
-    unit_price = Decimal('5000.00')
-    tax_rate = Decimal('12.00')
-    total = Decimal('5000.00')
+    unit_price = Decimal("5000.00")
+    tax_rate = Decimal("12.00")
+    total = Decimal("5000.00")
     product = None
-    notes = ''
-    item_type = 'PACKAGE'
+    notes = ""
+    item_type = "PACKAGE"
     base_unit_price = None
     excess_hours = None
     excess_hour_price = None
-    excess_cost = Decimal('0.00')
+    excess_cost = Decimal("0.00")
     venue_hours_breakdown = None
 
     class Params:
         """Traits for line item types."""
 
-        addon = factory.Trait(
-            item_type='ADDON'
-        )
+        addon = factory.Trait(item_type="ADDON")
 
         with_excess_hours = factory.Trait(
             excess_hours=2,
-            excess_hour_price=Decimal('500.00'),
-            excess_cost=Decimal('1000.00'),
-            base_unit_price=Decimal('4000.00'),
-            unit_price=Decimal('5000.00')
+            excess_hour_price=Decimal("500.00"),
+            excess_cost=Decimal("1000.00"),
+            base_unit_price=Decimal("4000.00"),
+            unit_price=Decimal("5000.00"),
         )
 
 
@@ -199,20 +176,18 @@ class QuoteOptionFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'sales.QuoteOption'
+        model = "sales.QuoteOption"
 
     quote = factory.SubFactory(EventQuoteFactory, has_multiple_options=True)
-    name = factory.Sequence(lambda n: f'Option {n}')
-    description = factory.Faker('sentence')
-    total_price = Decimal('5000.00')
+    name = factory.Sequence(lambda n: f"Option {n}")
+    description = factory.Faker("sentence")
+    total_price = Decimal("5000.00")
     is_selected = False
 
     class Params:
         """Traits for option states."""
 
-        selected = factory.Trait(
-            is_selected=True
-        )
+        selected = factory.Trait(is_selected=True)
 
 
 class QuoteOptionItemFactory(DjangoModelFactory):
@@ -223,13 +198,13 @@ class QuoteOptionItemFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'sales.QuoteOptionItem'
+        model = "sales.QuoteOptionItem"
 
     option = factory.SubFactory(QuoteOptionFactory)
-    description = factory.Faker('sentence')
+    description = factory.Faker("sentence")
     quantity = 1
-    unit_price = Decimal('2500.00')
-    total = Decimal('2500.00')
+    unit_price = Decimal("2500.00")
+    total = Decimal("2500.00")
     product = None
 
 
@@ -241,40 +216,25 @@ class QuoteActivityFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'sales.QuoteActivity'
+        model = "sales.QuoteActivity"
 
     quote = factory.SubFactory(EventQuoteFactory)
-    action = 'CREATED'
-    action_by = factory.SubFactory('core.factories.users.UserFactory')
-    notes = ''
+    action = "CREATED"
+    action_by = factory.SubFactory("core.factories.users.UserFactory")
+    notes = ""
 
     class Params:
         """Traits for activity types."""
 
-        created = factory.Trait(
-            action='CREATED',
-            notes='Quote created'
-        )
+        created = factory.Trait(action="CREATED", notes="Quote created")
 
-        sent = factory.Trait(
-            action='SENT',
-            notes='Quote sent to client'
-        )
+        sent = factory.Trait(action="SENT", notes="Quote sent to client")
 
-        viewed = factory.Trait(
-            action='VIEWED',
-            notes='Quote viewed by client'
-        )
+        viewed = factory.Trait(action="VIEWED", notes="Quote viewed by client")
 
-        accepted = factory.Trait(
-            action='ACCEPTED',
-            notes='Quote accepted by client'
-        )
+        accepted = factory.Trait(action="ACCEPTED", notes="Quote accepted by client")
 
-        rejected = factory.Trait(
-            action='REJECTED',
-            notes='Quote rejected by client'
-        )
+        rejected = factory.Trait(action="REJECTED", notes="Quote rejected by client")
 
 
 class QuoteReminderFactory(DjangoModelFactory):
@@ -285,12 +245,12 @@ class QuoteReminderFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'sales.QuoteReminder'
+        model = "sales.QuoteReminder"
 
     quote = factory.SubFactory(EventQuoteFactory, sent=True)
     is_sent = False
     sent_at = None
-    message = 'Follow up on quote'
+    message = "Follow up on quote"
 
     @factory.lazy_attribute
     def scheduled_date(self):
@@ -300,14 +260,8 @@ class QuoteReminderFactory(DjangoModelFactory):
     class Params:
         """Traits for reminder states."""
 
-        sent = factory.Trait(
-            is_sent=True,
-            sent_at=factory.LazyFunction(timezone.now)
-        )
+        sent = factory.Trait(is_sent=True, sent_at=factory.LazyFunction(timezone.now))
 
         overdue = factory.Trait(
-            scheduled_date=factory.LazyFunction(
-                lambda: timezone.now() - timedelta(days=1)
-            ),
-            is_sent=False
+            scheduled_date=factory.LazyFunction(lambda: timezone.now() - timedelta(days=1)), is_sent=False
         )

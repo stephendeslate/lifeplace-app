@@ -92,8 +92,8 @@ export const useBookingSteps = (flowConfig?: { steps?: Array<{ step_type: string
 
   // Filter steps based on flow configuration
   if (flowConfig?.steps) {
-    return standardSteps.filter(step =>
-      flowConfig.steps?.some((configStep) => configStep.step_type === step.id.toUpperCase())
+    return standardSteps.filter((step) =>
+      flowConfig.steps?.some((configStep) => configStep.step_type === step.id.toUpperCase()),
     );
   }
 

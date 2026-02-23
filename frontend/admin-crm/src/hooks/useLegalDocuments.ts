@@ -36,7 +36,10 @@ export const useLegalDocuments = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['legalDocuments'] });
       queryClient.invalidateQueries({ queryKey: ['legalDocument', data.document_type] });
-      showSuccess('Document Updated', `${data.document_type_display} has been updated successfully.`);
+      showSuccess(
+        'Document Updated',
+        `${data.document_type_display} has been updated successfully.`,
+      );
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update document';

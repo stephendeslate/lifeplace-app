@@ -12,9 +12,9 @@ interface ProtectedRouteProps {
   redirectTo?: string;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  redirectTo = '/login' 
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  redirectTo = '/login',
 }) => {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
@@ -22,9 +22,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Show loading state while auth is being determined
   if (isLoading) {
     return (
-      <GradientBackground 
-        gradient="mist" 
-        sx={{ 
+      <GradientBackground
+        gradient="mist"
+        sx={{
           minHeight: '100vh',
           display: 'flex',
           alignItems: 'center',
@@ -41,15 +41,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
               textAlign: 'center',
             }}
           >
-            <CircularProgress 
-              size={40} 
-              sx={{ 
+            <CircularProgress
+              size={40}
+              sx={{
                 color: 'primary.main',
-              }} 
+              }}
             />
-            <Typography 
-              variant="h6" 
-              sx={{ 
+            <Typography
+              variant="h6"
+              sx={{
                 color: 'primary.main',
                 fontWeight: 500,
               }}

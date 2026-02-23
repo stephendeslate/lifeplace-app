@@ -34,26 +34,23 @@ import {
 } from '@mui/icons-material';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useLayout } from '../../../contexts/LayoutContext';
-import { 
-  useBookingFlows, 
+import {
+  useBookingFlows,
   useBookingFlowSteps,
-  useBookingFlowStepConfiguration 
+  useBookingFlowStepConfiguration,
 } from '../../../hooks/useBookingFlows';
-import { 
-  BookingFlowFormDialog,
-  BookingFlowPreview 
-} from '../../../components/bookingflows/flows';
-import { 
+import { BookingFlowFormDialog, BookingFlowPreview } from '../../../components/bookingflows/flows';
+import {
   BookingFlowStepFormDialog,
   StepConfigurationPanel,
-  ImprovedStepReorderList 
+  ImprovedStepReorderList,
 } from '../../../components/bookingflows/steps';
 import BookingFlowSteps from './BookingFlowSteps';
-import type { 
+import type {
   BookingFlowStep,
   CreateBookingFlowStepData,
   UpdateBookingFlowStepData,
-  UpdateBookingFlowData 
+  UpdateBookingFlowData,
 } from '../../../types/bookingflows.types';
 
 // Modern Design System imports
@@ -63,16 +60,15 @@ import {
   ModernEmptyState,
   ModernPageHeader,
   ModernPageLoadingSkeleton,
-  createRefreshAction
+  createRefreshAction,
 } from '../../../components/common/ModernDesignSystem';
 import { ModernDialog, createDeleteActions } from '../../../components/common';
 import { ErrorDisplay } from '../../../components/common/ErrorDisplay';
-import { 
-  getEventTypeDisplayName, 
+import {
+  getEventTypeDisplayName,
   getEventTypeChipColor,
-  getEventTypeChipStyles
+  getEventTypeChipStyles,
 } from '../../../utils/bookingFlowUtils';
-
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -114,12 +110,12 @@ export const BookingFlowDetails: React.FC = () => {
   const flowId = parseInt(id || '0');
 
   // FIXED: Use evolved hooks with proper error handling
-  const { 
-    useBookingFlow, 
-    updateFlow, 
-    deleteFlow, 
-    duplicateFlow, 
-    isUpdatingFlow, 
+  const {
+    useBookingFlow,
+    updateFlow,
+    deleteFlow,
+    duplicateFlow,
+    isUpdatingFlow,
     isDeletingFlow,
     isDuplicatingFlow,
     updateError,
@@ -127,9 +123,9 @@ export const BookingFlowDetails: React.FC = () => {
     duplicateError,
   } = useBookingFlows();
 
-  const { 
-    data: flow, 
-    isLoading: isLoadingFlow, 
+  const {
+    data: flow,
+    isLoading: isLoadingFlow,
     error: flowError,
     refetch: refetchFlow,
   } = useBookingFlow(flowId);
@@ -147,17 +143,15 @@ export const BookingFlowDetails: React.FC = () => {
     reorderStepsError,
   } = useBookingFlowSteps();
 
-  const { 
-    data: steps = [], 
+  const {
+    data: steps = [],
     isLoading: _isLoadingSteps,
     error: _stepsError,
-    refetch: refetchSteps 
+    refetch: refetchSteps,
   } = useFlowSteps(flowId);
 
   // FIXED: Add step configuration hook
-  const {
-    updateConfigurationError,
-  } = useBookingFlowStepConfiguration();
+  const { updateConfigurationError } = useBookingFlowStepConfiguration();
 
   useEffect(() => {
     if (flow) {
@@ -202,18 +196,21 @@ export const BookingFlowDetails: React.FC = () => {
 
   const handleDuplicateFlow = () => {
     if (flow) {
-      duplicateFlow({ 
-        id: flow.id, 
-        data: { 
-          name: `${flow.name} (Copy)`,
-          copy_steps: true,
-          copy_configuration: true 
-        } 
-      }, {
-        onSuccess: (newFlow) => {
-          navigate(`/settings/booking/booking-flow/${newFlow.id}`);
-        }
-      });
+      duplicateFlow(
+        {
+          id: flow.id,
+          data: {
+            name: `${flow.name} (Copy)`,
+            copy_steps: true,
+            copy_configuration: true,
+          },
+        },
+        {
+          onSuccess: (newFlow) => {
+            navigate(`/settings/booking/booking-flow/${newFlow.id}`);
+          },
+        },
+      );
     }
     handleMenuClose();
   };
@@ -229,7 +226,7 @@ export const BookingFlowDetails: React.FC = () => {
       deleteFlow(flow.id, {
         onSuccess: () => {
           navigate('/settings/booking/booking-flow');
-        }
+        },
       });
     }
   };
@@ -265,12 +262,15 @@ export const BookingFlowDetails: React.FC = () => {
 
   const handleUpdateFlow = (data: UpdateBookingFlowData) => {
     if (flow) {
-      updateFlow({ id: flow.id, data }, {
-        onSuccess: () => {
-          handleEditDialogClose();
-          refetchFlow();
-        }
-      });
+      updateFlow(
+        { id: flow.id, data },
+        {
+          onSuccess: () => {
+            handleEditDialogClose();
+            refetchFlow();
+          },
+        },
+      );
     }
   };
 
@@ -282,7 +282,7 @@ export const BookingFlowDetails: React.FC = () => {
         activeElement.blur();
       }
     }
-    
+
     setEditDialogOpen(false);
 
     setTimeout(() => {
@@ -299,7 +299,6 @@ export const BookingFlowDetails: React.FC = () => {
     }, 100);
   };
 
-
   const handleStepDialogClose = () => {
     const activeElement = document.activeElement as HTMLElement;
     if (activeElement && activeElement.blur && activeElement !== document.body) {
@@ -308,7 +307,7 @@ export const BookingFlowDetails: React.FC = () => {
         activeElement.blur();
       }
     }
-    
+
     setStepDialogOpen(false);
     setEditingStep(null);
 
@@ -328,34 +327,38 @@ export const BookingFlowDetails: React.FC = () => {
 
   const handleStepSubmit = (data: CreateBookingFlowStepData | UpdateBookingFlowStepData) => {
     if (editingStep) {
-      updateStep({
-        id: editingStep.id,
-        data: data as UpdateBookingFlowStepData
-      }, {
-        onSuccess: () => {
-          handleStepDialogClose();
-          refetchSteps();
-        }
-      });
+      updateStep(
+        {
+          id: editingStep.id,
+          data: data as UpdateBookingFlowStepData,
+        },
+        {
+          onSuccess: () => {
+            handleStepDialogClose();
+            refetchSteps();
+          },
+        },
+      );
     } else {
       // Calculate next order based on existing steps (max order + 1)
       const maxOrder = steps.reduce((max, step) => Math.max(max, step.order ?? 0), 0);
       const nextOrder = maxOrder + 1;
 
-      createStep({
-        ...data as CreateBookingFlowStepData,
-        booking_flow: flowId,
-        order: nextOrder
-      }, {
-        onSuccess: () => {
-          handleStepDialogClose();
-          refetchSteps();
-        }
-      });
+      createStep(
+        {
+          ...(data as CreateBookingFlowStepData),
+          booking_flow: flowId,
+          order: nextOrder,
+        },
+        {
+          onSuccess: () => {
+            handleStepDialogClose();
+            refetchSteps();
+          },
+        },
+      );
     }
   };
-
-
 
   // FIXED: Add step configuration update handler
   const handleStepConfigurationUpdate = (updatedStep: BookingFlowStep) => {
@@ -366,9 +369,7 @@ export const BookingFlowDetails: React.FC = () => {
   const getTabLabel = (label: string, count?: number) => (
     <Box display="flex" alignItems="center" gap={1}>
       {label}
-      {count !== undefined && (
-        <Chip label={count} size="small" color="primary" />
-      )}
+      {count !== undefined && <Chip label={count} size="small" color="primary" />}
     </Box>
   );
 
@@ -378,15 +379,11 @@ export const BookingFlowDetails: React.FC = () => {
     return (
       <Box>
         <Alert severity="error" sx={{ mb: 2 }}>
-          {flowError ? 
-            `Failed to load booking flow: ${flowError instanceof Error ? flowError.message : 'Unknown error'}` :
-            'Invalid booking flow ID'
-          }
+          {flowError
+            ? `Failed to load booking flow: ${flowError instanceof Error ? flowError.message : 'Unknown error'}`
+            : 'Invalid booking flow ID'}
         </Alert>
-        <Button
-          startIcon={<BackIcon />}
-          onClick={() => navigate('/settings/booking/booking-flow')}
-        >
+        <Button startIcon={<BackIcon />} onClick={() => navigate('/settings/booking/booking-flow')}>
           Back to Booking Flows
         </Button>
       </Box>
@@ -401,12 +398,10 @@ export const BookingFlowDetails: React.FC = () => {
     return (
       <Box>
         <Alert severity="error" sx={{ mb: 2 }}>
-          Booking flow not found. It may have been deleted or you may not have permission to view it.
+          Booking flow not found. It may have been deleted or you may not have permission to view
+          it.
         </Alert>
-        <Button
-          startIcon={<BackIcon />}
-          onClick={() => navigate('/settings/booking/booking-flow')}
-        >
+        <Button startIcon={<BackIcon />} onClick={() => navigate('/settings/booking/booking-flow')}>
           Back to Booking Flows
         </Button>
       </Box>
@@ -416,7 +411,7 @@ export const BookingFlowDetails: React.FC = () => {
   return (
     <ModernSettingsLayout maxWidth="xl">
       {/* Enhanced Error Display */}
-      <ErrorDisplay 
+      <ErrorDisplay
         errors={{
           ...(updateError ? { update: updateError } : {}),
           ...(deleteError ? { delete: deleteError } : {}),
@@ -439,28 +434,28 @@ export const BookingFlowDetails: React.FC = () => {
         status={{
           label: flow.is_test_mode ? 'Test Mode' : flow.is_active ? 'Active' : 'Inactive',
           color: flow.is_test_mode ? 'warning' : flow.is_active ? 'success' : 'secondary',
-          variant: flow.is_active ? 'filled' : 'outlined'
+          variant: flow.is_active ? 'filled' : 'outlined',
         }}
         stats={[
           {
             label: 'Steps Enabled',
-            value: `${flow.enabled_steps_count}/${flow.total_steps}`
+            value: `${flow.enabled_steps_count}/${flow.total_steps}`,
           },
           {
             label: 'Event Type',
-            value: getEventTypeDisplayName(flow)
+            value: getEventTypeDisplayName(flow),
           },
           {
             label: 'Last Updated',
-            value: new Date(flow.updated_at).toLocaleDateString()
-          }
+            value: new Date(flow.updated_at).toLocaleDateString(),
+          },
         ]}
         primaryAction={{
           icon: <PlayIcon />,
           label: 'Preview',
           onClick: handlePreviewFlow,
           disabled: isDeletingFlow,
-          color: 'primary'
+          color: 'primary',
         }}
         secondaryActions={[
           createRefreshAction(() => {
@@ -479,11 +474,11 @@ export const BookingFlowDetails: React.FC = () => {
             label: 'Settings',
             variant: 'icon',
             onClick: handleMenuButtonClick,
-            tooltip: 'Open settings'
-          }
+            tooltip: 'Open settings',
+          },
         ]}
       />
-      
+
       {/* Configuration Breadcrumb */}
       {selectedStepForConfig && activeTab === 2 && (
         <Box mb={3}>
@@ -524,25 +519,23 @@ export const BookingFlowDetails: React.FC = () => {
           </ListItemIcon>
           <ListItemText>Edit Flow Details</ListItemText>
         </MenuItem>
-        
+
         <MenuItem onClick={handlePreviewFlow}>
           <ListItemIcon>
             <ViewIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText>Full Preview</ListItemText>
         </MenuItem>
-        
+
         <MenuItem onClick={handleDuplicateFlow} disabled={isDuplicatingFlow}>
           <ListItemIcon>
             <DuplicateIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText>
-            {isDuplicatingFlow ? 'Duplicating...' : 'Duplicate Flow'}
-          </ListItemText>
+          <ListItemText>{isDuplicatingFlow ? 'Duplicating...' : 'Duplicate Flow'}</ListItemText>
         </MenuItem>
-        
+
         <Divider />
-        
+
         <MenuItem onClick={handleDeleteFlow} sx={{ color: 'error.main' }} disabled={isDeletingFlow}>
           <ListItemIcon>
             <DeleteIcon fontSize="small" color="error" />
@@ -565,33 +558,24 @@ export const BookingFlowDetails: React.FC = () => {
             },
           }}
         >
-          <Tab 
-            icon={<SettingsIcon />} 
-            label="Overview"
+          <Tab icon={<SettingsIcon />} label="Overview" iconPosition="start" />
+          <Tab
+            icon={<StepsIcon />}
+            label={getTabLabel('Steps', steps.length)}
             iconPosition="start"
           />
-          <Tab 
-            icon={<StepsIcon />} 
-            label={getTabLabel("Steps", steps.length)}
-            iconPosition="start"
-          />
-          <Tab 
-            icon={<SettingsIcon />} 
-            label={selectedStepForConfig ? `Configure: ${selectedStepForConfig.step_type_display}` : "Configuration"}
+          <Tab
+            icon={<SettingsIcon />}
+            label={
+              selectedStepForConfig
+                ? `Configure: ${selectedStepForConfig.step_type_display}`
+                : 'Configuration'
+            }
             iconPosition="start"
             disabled={!selectedStepForConfig}
           />
-          <Tab 
-            icon={<PreviewIcon />} 
-            label="Preview"
-            iconPosition="start"
-          />
-          <Tab 
-            icon={<AnalyticsIcon />} 
-            label="Analytics"
-            iconPosition="start"
-            disabled
-          />
+          <Tab icon={<PreviewIcon />} label="Preview" iconPosition="start" />
+          <Tab icon={<AnalyticsIcon />} label="Analytics" iconPosition="start" disabled />
         </Tabs>
       </Box>
 
@@ -599,8 +583,8 @@ export const BookingFlowDetails: React.FC = () => {
       <TabPanel value={activeTab} index={0}>
         <Stack spacing={4}>
           {/* Flow Metrics Grid */}
-          <Box 
-            display="grid" 
+          <Box
+            display="grid"
             gridTemplateColumns={{ xs: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }}
             gap={3}
           >
@@ -611,7 +595,7 @@ export const BookingFlowDetails: React.FC = () => {
               color={flow.is_active ? 'success' : 'warning'}
               icon={<SettingsIcon />}
             />
-            
+
             <ModernMetricCard
               title="Steps Progress"
               value={`${flow.enabled_steps_count}/${flow.total_steps}`}
@@ -619,7 +603,7 @@ export const BookingFlowDetails: React.FC = () => {
               color="primary"
               icon={<StepsIcon />}
             />
-            
+
             <ModernMetricCard
               title="Guest Booking"
               value={flow.allow_guest_booking ? 'Allowed' : 'Restricted'}
@@ -627,7 +611,7 @@ export const BookingFlowDetails: React.FC = () => {
               color={flow.allow_guest_booking ? 'success' : 'warning'}
               icon={<SettingsIcon />}
             />
-            
+
             <ModernMetricCard
               title="Auto Approval"
               value={flow.auto_approve_bookings ? 'Enabled' : 'Manual'}
@@ -639,7 +623,9 @@ export const BookingFlowDetails: React.FC = () => {
 
           {/* Flow Information */}
           <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-            <Typography variant="h6" fontWeight="600" sx={{ mb: 3 }}>Flow Information</Typography>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 3 }}>
+              Flow Information
+            </Typography>
             <Stack spacing={3}>
               <Box>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -649,7 +635,7 @@ export const BookingFlowDetails: React.FC = () => {
                   {flow.name}
                 </Typography>
               </Box>
-              
+
               {flow.description && (
                 <Box>
                   <Typography variant="subtitle2" color="text.secondary" gutterBottom>
@@ -660,7 +646,7 @@ export const BookingFlowDetails: React.FC = () => {
                   </Typography>
                 </Box>
               )}
-              
+
               <Box>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                   Event Type
@@ -678,30 +664,38 @@ export const BookingFlowDetails: React.FC = () => {
 
           {/* Configuration Summary */}
           <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-            <Typography variant="h6" fontWeight="600" sx={{ mb: 3 }}>Configuration Summary</Typography>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 3 }}>
+              Configuration Summary
+            </Typography>
             <Stack spacing={2.5}>
               <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Typography variant="body2" fontWeight="500">Booking Window:</Typography>
+                <Typography variant="body2" fontWeight="500">
+                  Booking Window:
+                </Typography>
                 <Typography variant="body2" fontWeight="600" color="primary.main">
                   {flow.min_advance_booking_days} - {flow.max_advance_booking_days} days
                 </Typography>
               </Box>
-              
+
               <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Typography variant="body2" fontWeight="500">Discounts:</Typography>
-                <Chip 
-                  label={flow.allow_discounts ? 'Enabled' : 'Disabled'} 
-                  size="small" 
+                <Typography variant="body2" fontWeight="500">
+                  Discounts:
+                </Typography>
+                <Chip
+                  label={flow.allow_discounts ? 'Enabled' : 'Disabled'}
+                  size="small"
                   color={flow.allow_discounts ? 'success' : 'default'}
                   variant={flow.allow_discounts ? 'filled' : 'outlined'}
                 />
               </Box>
 
               <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Typography variant="body2" fontWeight="500">Payment Processing:</Typography>
-                <Chip 
-                  label={flow.require_immediate_payment ? 'Immediate' : 'Deferred'} 
-                  size="small" 
+                <Typography variant="body2" fontWeight="500">
+                  Payment Processing:
+                </Typography>
+                <Chip
+                  label={flow.require_immediate_payment ? 'Immediate' : 'Deferred'}
+                  size="small"
                   color={flow.require_immediate_payment ? 'success' : 'warning'}
                   variant="outlined"
                 />
@@ -709,13 +703,10 @@ export const BookingFlowDetails: React.FC = () => {
 
               {flow.default_payment_gateway && (
                 <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="body2" fontWeight="500">Payment Gateway:</Typography>
-                  <Chip 
-                    label="Configured" 
-                    size="small" 
-                    color="success"
-                    variant="filled"
-                  />
+                  <Typography variant="body2" fontWeight="500">
+                    Payment Gateway:
+                  </Typography>
+                  <Chip label="Configured" size="small" color="success" variant="filled" />
                 </Box>
               )}
             </Stack>
@@ -759,11 +750,11 @@ export const BookingFlowDetails: React.FC = () => {
               label: 'Go to Steps',
               onClick: () => setActiveTab(1),
               icon: <StepsIcon />,
-              color: 'primary'
+              color: 'primary',
             }}
             tip={{
-              text: "Each step can be customized with unique settings, conditional logic, and validation rules to match your business needs.",
-              type: 'info'
+              text: 'Each step can be customized with unique settings, conditional logic, and validation rules to match your business needs.',
+              type: 'info',
             }}
             size="medium"
             color="secondary"
@@ -772,13 +763,7 @@ export const BookingFlowDetails: React.FC = () => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={3}>
-        {flow && (
-          <BookingFlowPreview
-            flow={flow}
-            compact={false}
-            showMobileView={false}
-          />
-        )}
+        {flow && <BookingFlowPreview flow={flow} compact={false} showMobileView={false} />}
       </TabPanel>
 
       <TabPanel value={activeTab} index={4}>
@@ -787,8 +772,8 @@ export const BookingFlowDetails: React.FC = () => {
           title="Analytics Coming Soon"
           description="Advanced analytics dashboard will show booking flow performance, conversion rates, step completion metrics, and detailed user behavior insights."
           tip={{
-            text: "Analytics will include conversion funnels, A/B testing capabilities, user journey mapping, and performance optimization recommendations.",
-            type: 'pro'
+            text: 'Analytics will include conversion funnels, A/B testing capabilities, user journey mapping, and performance optimization recommendations.',
+            type: 'pro',
           }}
           size="large"
           color="primary"
@@ -877,11 +862,12 @@ export const BookingFlowDetails: React.FC = () => {
       >
         <Stack spacing={3}>
           <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-            Drag and drop steps to change their order in the booking flow. The order affects how clients progress through your booking process.
+            Drag and drop steps to change their order in the booking flow. The order affects how
+            clients progress through your booking process.
           </Typography>
-          
+
           <Box>
-            <ImprovedStepReorderList 
+            <ImprovedStepReorderList
               flowId={Number(id)}
               steps={steps}
               onReorderComplete={() => {

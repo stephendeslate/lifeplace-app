@@ -53,19 +53,22 @@ export interface DraggableListRef {
   reset: () => void;
 }
 
-function DraggableListInner<T extends DraggableItem>({
-  items,
-  onReorder,
-  renderItem,
-  keyExtractor = (item) => String(item.id),
-  showSaveButton = true,
-  hideInternalSaveButton = false,
-  enableKeyboardReorder = true,
-  emptyMessage = 'No items to reorder',
-  isDragDisabled = () => false,
-  containerProps = {},
-  onHasChangesChange,
-}: DraggableListProps<T>, ref: React.Ref<DraggableListRef>) {
+function DraggableListInner<T extends DraggableItem>(
+  {
+    items,
+    onReorder,
+    renderItem,
+    keyExtractor = (item) => String(item.id),
+    showSaveButton = true,
+    hideInternalSaveButton = false,
+    enableKeyboardReorder = true,
+    emptyMessage = 'No items to reorder',
+    isDragDisabled = () => false,
+    containerProps = {},
+    onHasChangesChange,
+  }: DraggableListProps<T>,
+  ref: React.Ref<DraggableListRef>,
+) {
   const [orderedItems, setOrderedItems] = useState<T[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -126,26 +129,29 @@ function DraggableListInner<T extends DraggableItem>({
     }
   };
 
-  const handleSave = useCallback(async (itemsToSave?: T[]) => {
-    const finalItems = itemsToSave || orderedItems;
+  const handleSave = useCallback(
+    async (itemsToSave?: T[]) => {
+      const finalItems = itemsToSave || orderedItems;
 
-    // Update order properties
-    const reorderedWithNewOrder = finalItems.map((item, index) => ({
-      ...item,
-      order: index + 1,
-    }));
+      // Update order properties
+      const reorderedWithNewOrder = finalItems.map((item, index) => ({
+        ...item,
+        order: index + 1,
+      }));
 
-    setIsSaving(true);
-    try {
-      await onReorder(reorderedWithNewOrder);
-      setHasChanges(false);
-      onHasChangesChange?.(false);
-    } catch (error) {
-      console.error('Failed to save order:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [orderedItems, onReorder, onHasChangesChange]);
+      setIsSaving(true);
+      try {
+        await onReorder(reorderedWithNewOrder);
+        setHasChanges(false);
+        onHasChangesChange?.(false);
+      } catch (error) {
+        console.error('Failed to save order:', error);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [orderedItems, onReorder, onHasChangesChange],
+  );
 
   const handleReset = useCallback(() => {
     const sorted = [...items].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -155,12 +161,16 @@ function DraggableListInner<T extends DraggableItem>({
   }, [items, onHasChangesChange]);
 
   // Expose methods via ref (not hasChanges - use callback instead)
-  useImperativeHandle(ref, () => ({
-    save: async () => {
-      await handleSave();
-    },
-    reset: handleReset,
-  }), [handleSave, handleReset]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      save: async () => {
+        await handleSave();
+      },
+      reset: handleReset,
+    }),
+    [handleSave, handleReset],
+  );
 
   if (orderedItems.length === 0) {
     return (
@@ -234,16 +244,11 @@ function DraggableListInner<T extends DraggableItem>({
               {orderedItems.map((item, index) => {
                 const key = keyExtractor(item);
                 const isDisabled = isDragDisabled(item);
-                const originalIndex = items.findIndex(i => keyExtractor(i) === key);
+                const originalIndex = items.findIndex((i) => keyExtractor(i) === key);
                 const hasOrderChanged = originalIndex !== index;
 
                 return (
-                  <Draggable 
-                    key={key} 
-                    draggableId={key} 
-                    index={index}
-                    isDragDisabled={isDisabled}
-                  >
+                  <Draggable key={key} draggableId={key} index={index} isDragDisabled={isDisabled}>
                     {(provided: DraggableProvided, snapshot) => (
                       <Paper
                         ref={provided.innerRef}
@@ -253,14 +258,14 @@ function DraggableListInner<T extends DraggableItem>({
                           opacity: isDisabled ? 0.5 : 1,
                           border: 1,
                           borderColor: hasOrderChanged ? 'warning.main' : 'divider',
-                          backgroundColor: snapshot.isDragging 
-                            ? 'primary.50' 
-                            : hasOrderChanged 
-                            ? 'warning.50' 
-                            : 'background.paper',
+                          backgroundColor: snapshot.isDragging
+                            ? 'primary.50'
+                            : hasOrderChanged
+                              ? 'warning.50'
+                              : 'background.paper',
                           boxShadow: snapshot.isDragging ? 4 : 0,
                           cursor: snapshot.isDragging ? 'grabbing' : 'grab',
-                          transform: snapshot.isDragging 
+                          transform: snapshot.isDragging
                             ? `${provided.draggableProps.style?.transform} rotate(2deg)`
                             : provided.draggableProps.style?.transform,
                           transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
@@ -282,7 +287,7 @@ function DraggableListInner<T extends DraggableItem>({
                             }}
                           >
                             <Tooltip title={isDisabled ? 'Reordering disabled' : 'Drag to reorder'}>
-                              <DragIcon 
+                              <DragIcon
                                 color={isDisabled ? 'disabled' : 'action'}
                                 sx={{
                                   '&:active': {
@@ -307,11 +312,7 @@ function DraggableListInner<T extends DraggableItem>({
                                   {originalIndex + 1}
                                 </Typography>
                                 <Typography color="warning.main">→</Typography>
-                                <Typography
-                                  variant="h6"
-                                  color="warning.main"
-                                  fontWeight="bold"
-                                >
+                                <Typography variant="h6" color="warning.main" fontWeight="bold">
                                   {index + 1}
                                 </Typography>
                               </>
@@ -323,9 +324,7 @@ function DraggableListInner<T extends DraggableItem>({
                           </Box>
 
                           {/* Item content */}
-                          <Box flex={1}>
-                            {renderItem(item, index)}
-                          </Box>
+                          <Box flex={1}>{renderItem(item, index)}</Box>
 
                           {/* Keyboard navigation buttons */}
                           {enableKeyboardReorder && !isDisabled && (
@@ -372,7 +371,13 @@ function DraggableListInner<T extends DraggableItem>({
       {orderedItems.length > 3 && (
         <Box mt={2} p={2} bgcolor="grey.50" borderRadius={1}>
           <Typography variant="caption" color="text.secondary">
-            Order: {orderedItems.map((item, idx) => `${idx + 1}. ${(item as {name?: string; title?: string}).name || (item as {name?: string; title?: string}).title || 'Item'}`).join(' → ')}
+            Order:{' '}
+            {orderedItems
+              .map(
+                (item, idx) =>
+                  `${idx + 1}. ${(item as { name?: string; title?: string }).name || (item as { name?: string; title?: string }).title || 'Item'}`,
+              )
+              .join(' → ')}
           </Typography>
         </Box>
       )}
@@ -382,5 +387,5 @@ function DraggableListInner<T extends DraggableItem>({
 
 // Export the component with forwardRef
 export const DraggableList = forwardRef(DraggableListInner) as <T extends DraggableItem>(
-  props: DraggableListProps<T> & { ref?: React.Ref<DraggableListRef> }
+  props: DraggableListProps<T> & { ref?: React.Ref<DraggableListRef> },
 ) => React.ReactElement;

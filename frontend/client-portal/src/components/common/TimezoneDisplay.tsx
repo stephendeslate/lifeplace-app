@@ -8,7 +8,7 @@ import {
   getSimplePhilippinesTime,
   getTimezoneNotice,
   BUSINESS_TIMEZONE_DISPLAY,
-  BUSINESS_TIMEZONE_FULL
+  BUSINESS_TIMEZONE_FULL,
 } from '../../utils/timezone';
 
 interface TimezoneDisplayProps {
@@ -24,7 +24,7 @@ interface TimezoneDisplayProps {
 export const TimezoneDisplay: React.FC<TimezoneDisplayProps> = ({
   date,
   variant = 'inline',
-  context = 'general'
+  context = 'general',
 }) => {
   const philippinesTime = getSimplePhilippinesTime(date);
   const notice = getTimezoneNotice(context);
@@ -37,8 +37,8 @@ export const TimezoneDisplay: React.FC<TimezoneDisplayProps> = ({
         sx={{
           mb: 2,
           '& .MuiAlert-message': {
-            width: '100%'
-          }
+            width: '100%',
+          },
         }}
       >
         <Typography variant="body2" fontWeight="medium">
@@ -59,7 +59,7 @@ export const TimezoneDisplay: React.FC<TimezoneDisplayProps> = ({
           bgcolor: 'primary.50',
           borderRadius: 2,
           border: '1px solid',
-          borderColor: 'primary.200'
+          borderColor: 'primary.200',
         }}
       >
         <Stack spacing={1.5}>
@@ -75,11 +75,11 @@ export const TimezoneDisplay: React.FC<TimezoneDisplayProps> = ({
               variant="outlined"
             />
           </Stack>
-          
+
           <Typography variant="body1" fontWeight="medium">
             {philippinesTime}
           </Typography>
-          
+
           <Stack direction="row" alignItems="center" spacing={0.5}>
             <Info fontSize="small" color="action" />
             <Typography variant="caption" color="text.secondary">
@@ -95,9 +95,7 @@ export const TimezoneDisplay: React.FC<TimezoneDisplayProps> = ({
   return (
     <Stack direction="row" alignItems="center" spacing={1}>
       <AccessTime fontSize="small" color="action" />
-      <Typography variant="body1">
-        {formatPhilippinesTime(date)}
-      </Typography>
+      <Typography variant="body1">{formatPhilippinesTime(date)}</Typography>
       <Tooltip title={`${BUSINESS_TIMEZONE_FULL} (UTC+8)`}>
         <Chip
           label={BUSINESS_TIMEZONE_DISPLAY}
@@ -133,8 +131,8 @@ export const TimezoneNoticeBanner: React.FC<{
         zIndex: 1000,
         borderRadius: 0,
         '& .MuiAlert-message': {
-          width: '100%'
-        }
+          width: '100%',
+        },
       }}
     >
       <Typography variant="body2" fontWeight="medium">
@@ -158,7 +156,7 @@ export const TimezoneBadge: React.FC = () => {
         sx={{
           height: 24,
           fontSize: '0.75rem',
-          fontWeight: 600
+          fontWeight: 600,
         }}
       />
     </Tooltip>

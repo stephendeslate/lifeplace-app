@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
-import { screen, waitFor } from "@testing-library/react";
-import { renderWithProviders } from "../../test/utils/render";
-import { TasksPage } from "./TasksPage";
+import { describe, it, expect } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import { renderWithProviders } from '../../test/utils/render';
+import { TasksPage } from './TasksPage';
 
-describe("TasksPage", () => {
-  it("renders without crashing", async () => {
+describe('TasksPage', () => {
+  it('renders without crashing', async () => {
     renderWithProviders(<TasksPage />);
     await waitFor(
       () => {
@@ -14,7 +14,7 @@ describe("TasksPage", () => {
     );
   });
 
-  it("renders Tasks heading", async () => {
+  it('renders Tasks heading', async () => {
     renderWithProviders(<TasksPage />);
     await waitFor(
       () => {
@@ -24,7 +24,7 @@ describe("TasksPage", () => {
     );
   });
 
-  it("renders tab navigation", async () => {
+  it('renders tab navigation', async () => {
     renderWithProviders(<TasksPage />);
     await waitFor(
       () => {
@@ -35,15 +35,15 @@ describe("TasksPage", () => {
     );
   });
 
-  it("renders All Tasks tab", async () => {
+  it('renders All Tasks tab', async () => {
     renderWithProviders(<TasksPage />);
     await waitFor(
       () => {
         // Tab for all tasks or a specific domain
         const allTab =
-          screen.queryByRole("tab", { name: /all/i }) ||
-          screen.queryByRole("tab", { name: /quotes/i }) ||
-          screen.queryByRole("tab", { name: /contracts/i });
+          screen.queryByRole('tab', { name: /all/i }) ||
+          screen.queryByRole('tab', { name: /quotes/i }) ||
+          screen.queryByRole('tab', { name: /contracts/i });
         expect(allTab).toBeInTheDocument();
       },
       { timeout: 5000 },

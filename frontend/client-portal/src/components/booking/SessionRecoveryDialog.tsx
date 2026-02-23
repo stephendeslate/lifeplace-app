@@ -54,18 +54,18 @@ export const SessionRecoveryDialog: React.FC<SessionRecoveryDialogProps> = ({
   const formatStepName = (step: string) => {
     return step
       .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
   };
 
   const getLastUpdatedDisplay = () => {
     if (!recoveryInfo.lastUpdated) return 'Unknown';
-    
+
     try {
       const lastUpdate = new Date(recoveryInfo.lastUpdated);
       const now = new Date();
       const diffInMinutes = (now.getTime() - lastUpdate.getTime()) / (1000 * 60);
-      
+
       if (diffInMinutes < 1) {
         return 'Just now';
       } else if (diffInMinutes < 60) {
@@ -85,7 +85,7 @@ export const SessionRecoveryDialog: React.FC<SessionRecoveryDialogProps> = ({
       maxWidth="sm"
       fullWidth
       PaperProps={{
-        sx: { borderRadius: 2 }
+        sx: { borderRadius: 2 },
       }}
     >
       <DialogTitle>
@@ -99,14 +99,15 @@ export const SessionRecoveryDialog: React.FC<SessionRecoveryDialogProps> = ({
 
       <DialogContent>
         <Alert severity="info" sx={{ mb: 3 }}>
-          We found an incomplete booking from your previous visit. Would you like to continue where you left off?
+          We found an incomplete booking from your previous visit. Would you like to continue where
+          you left off?
         </Alert>
 
         <Box sx={{ mb: 3 }}>
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
             Booking Progress
           </Typography>
-          
+
           <Box sx={{ mb: 2 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
               <Typography variant="body2" color="text.secondary">
@@ -133,7 +134,7 @@ export const SessionRecoveryDialog: React.FC<SessionRecoveryDialogProps> = ({
                 size="small"
               />
             )}
-            
+
             {recoveryInfo.totalSteps && (
               <Chip
                 label={`${recoveryInfo.totalSteps} steps total`}
@@ -151,14 +152,14 @@ export const SessionRecoveryDialog: React.FC<SessionRecoveryDialogProps> = ({
           <Typography variant="subtitle1" fontWeight={600} gutterBottom>
             Session Details
           </Typography>
-          
+
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
             <TimeIcon fontSize="small" color="action" />
             <Typography variant="body2" color="text.secondary">
               Last updated: {getLastUpdatedDisplay()}
             </Typography>
           </Box>
-          
+
           {recoveryInfo.lastUpdated && (
             <Typography variant="caption" color="text.disabled">
               {format(new Date(recoveryInfo.lastUpdated), 'PPpp')}
@@ -169,7 +170,8 @@ export const SessionRecoveryDialog: React.FC<SessionRecoveryDialogProps> = ({
         <Box sx={{ mt: 3 }}>
           <Alert severity="warning" variant="outlined">
             <Typography variant="body2">
-              <strong>Note:</strong> If you don't restore this session, your progress will be lost and you'll need to start over.
+              <strong>Note:</strong> If you don't restore this session, your progress will be lost
+              and you'll need to start over.
             </Typography>
           </Alert>
         </Box>
@@ -185,7 +187,7 @@ export const SessionRecoveryDialog: React.FC<SessionRecoveryDialogProps> = ({
         >
           Start Over
         </Button>
-        
+
         <Button
           onClick={onRestore}
           startIcon={<RestoreIcon />}

@@ -55,13 +55,8 @@ function TabPanel(props: TabPanelProps) {
 
 export const CompanySettings: React.FC = () => {
   const { setBreadcrumbs } = useLayout();
-  const {
-    companySettings,
-    isLoading,
-    isUpdating,
-    error,
-    updateCompanySettings,
-  } = useCompanySettings();
+  const { companySettings, isLoading, isUpdating, error, updateCompanySettings } =
+    useCompanySettings();
 
   const [tabValue, setTabValue] = useState(0);
   const [formData, setFormData] = useState<CompanySettingsUpdateData>({});
@@ -125,59 +120,58 @@ export const CompanySettings: React.FC = () => {
     }
   }, [companySettings]);
 
-  const handleInputChange = (field: keyof CompanySettingsUpdateData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-    setHasChanges(true);
-  };
-
-  const handleFileChange = (field: 'logo' | 'logo_dark' | 'favicon') => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        return;
-      }
-
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const preview = reader.result as string;
-        if (field === 'logo') setLogoPreview(preview);
-        else if (field === 'logo_dark') setLogoDarkPreview(preview);
-        else if (field === 'favicon') setFaviconPreview(preview);
-      };
-      reader.readAsDataURL(file);
-
-      // Update form data
-      setFormData(prev => ({
+  const handleInputChange =
+    (field: keyof CompanySettingsUpdateData) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
         ...prev,
-        [field]: file,
+        [field]: value,
       }));
-      // Clear removed state when new file is uploaded
-      setRemovedFiles(prev => ({ ...prev, [field]: false }));
       setHasChanges(true);
-    }
-  };
+    };
+
+  const handleFileChange =
+    (field: 'logo' | 'logo_dark' | 'favicon') => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+          return;
+        }
+
+        // Create preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const preview = reader.result as string;
+          if (field === 'logo') setLogoPreview(preview);
+          else if (field === 'logo_dark') setLogoDarkPreview(preview);
+          else if (field === 'favicon') setFaviconPreview(preview);
+        };
+        reader.readAsDataURL(file);
+
+        // Update form data
+        setFormData((prev) => ({
+          ...prev,
+          [field]: file,
+        }));
+        // Clear removed state when new file is uploaded
+        setRemovedFiles((prev) => ({ ...prev, [field]: false }));
+        setHasChanges(true);
+      }
+    };
 
   const handleRemoveFile = (field: 'logo' | 'logo_dark' | 'favicon') => {
     if (field === 'logo') setLogoPreview(null);
     else if (field === 'logo_dark') setLogoDarkPreview(null);
     else if (field === 'favicon') setFaviconPreview(null);
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       [field]: null,
     }));
     // Mark file as removed to update UI immediately
-    setRemovedFiles(prev => ({ ...prev, [field]: true }));
+    setRemovedFiles((prev) => ({ ...prev, [field]: true }));
     setHasChanges(true);
   };
 
@@ -267,8 +261,12 @@ export const CompanySettings: React.FC = () => {
         {/* General Tab */}
         <TabPanel value={tabValue} index={0}>
           <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>Company Information</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Basic information about your company</Typography>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>
+              Company Information
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Basic information about your company
+            </Typography>
             <Stack spacing={3}>
               <TextField
                 fullWidth
@@ -339,11 +337,16 @@ export const CompanySettings: React.FC = () => {
         <TabPanel value={tabValue} index={1}>
           {/* Logo Upload Section */}
           <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>Company Logos</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Upload your company logos for PDFs and documents</Typography>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>
+              Company Logos
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Upload your company logos for PDFs and documents
+            </Typography>
             <Stack spacing={3}>
               <Typography variant="body2" color="text.secondary">
-                Upload your company logos. These will appear on quotes, contracts, invoices, and other generated documents.
+                Upload your company logos. These will appear on quotes, contracts, invoices, and
+                other generated documents.
               </Typography>
 
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 3 }}>
@@ -414,7 +417,11 @@ export const CompanySettings: React.FC = () => {
                       </>
                     )}
                   </Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 1, display: 'block' }}
+                  >
                     Used on light backgrounds (PNG or SVG recommended)
                   </Typography>
                 </Box>
@@ -487,7 +494,11 @@ export const CompanySettings: React.FC = () => {
                       </>
                     )}
                   </Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 1, display: 'block' }}
+                  >
                     Used on dark backgrounds (white or light-colored logo)
                   </Typography>
                 </Box>
@@ -559,7 +570,11 @@ export const CompanySettings: React.FC = () => {
                       </>
                     )}
                   </Box>
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 1, display: 'block' }}
+                  >
                     Browser tab icon (32x32px recommended)
                   </Typography>
                 </Box>
@@ -569,16 +584,23 @@ export const CompanySettings: React.FC = () => {
 
           {/* Brand Colors Section */}
           <Box sx={{ mt: 3, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>Brand Colors</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Configure colors used in PDFs and documents</Typography>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>
+              Brand Colors
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Configure colors used in PDFs and documents
+            </Typography>
             <Stack spacing={3}>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                These colors are used for generating PDFs (quotes, contracts, receipts) and other branded documents.
+                These colors are used for generating PDFs (quotes, contracts, receipts) and other
+                branded documents.
               </Typography>
 
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Primary Color</Typography>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Primary Color
+                  </Typography>
                   <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     <Box
                       sx={{
@@ -610,7 +632,9 @@ export const CompanySettings: React.FC = () => {
                 </Box>
 
                 <Box sx={{ flex: 1 }}>
-                  <Typography variant="subtitle2" sx={{ mb: 1 }}>Secondary Color</Typography>
+                  <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                    Secondary Color
+                  </Typography>
                   <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
                     <Box
                       sx={{
@@ -636,7 +660,9 @@ export const CompanySettings: React.FC = () => {
               </Box>
 
               <Box sx={{ flex: 1 }}>
-                <Typography variant="subtitle2" sx={{ mb: 1 }}>Accent Color</Typography>
+                <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                  Accent Color
+                </Typography>
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', maxWidth: '50%' }}>
                   <Box
                     sx={{
@@ -661,57 +687,66 @@ export const CompanySettings: React.FC = () => {
               </Box>
 
               <Alert severity="info" sx={{ mt: 2 }}>
-                Color values should be in hex format (e.g., #2c5aa0). These colors are used in PDF generation for quotes, contracts, and other documents.
+                Color values should be in hex format (e.g., #2c5aa0). These colors are used in PDF
+                generation for quotes, contracts, and other documents.
               </Alert>
             </Stack>
           </Box>
 
           <Box sx={{ mt: 3, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>Social Media</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Your company's social media presence</Typography>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>
+              Social Media
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Your company's social media presence
+            </Typography>
             <Stack spacing={3}>
-                <TextField
-                  fullWidth
-                  label="Facebook URL"
-                  value={formData.facebook_url || ''}
-                  onChange={handleInputChange('facebook_url')}
-                  disabled={isUpdating}
-                  placeholder="https://facebook.com/yourcompany"
-                  sx={textFieldSx}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Facebook sx={{ color: '#1877F2' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
+              <TextField
+                fullWidth
+                label="Facebook URL"
+                value={formData.facebook_url || ''}
+                onChange={handleInputChange('facebook_url')}
+                disabled={isUpdating}
+                placeholder="https://facebook.com/yourcompany"
+                sx={textFieldSx}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Facebook sx={{ color: '#1877F2' }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
 
-                <TextField
-                  fullWidth
-                  label="Instagram URL"
-                  value={formData.instagram_url || ''}
-                  onChange={handleInputChange('instagram_url')}
-                  disabled={isUpdating}
-                  placeholder="https://instagram.com/yourcompany"
-                  sx={textFieldSx}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Instagram sx={{ color: '#E4405F' }} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Stack>
+              <TextField
+                fullWidth
+                label="Instagram URL"
+                value={formData.instagram_url || ''}
+                onChange={handleInputChange('instagram_url')}
+                disabled={isUpdating}
+                placeholder="https://instagram.com/yourcompany"
+                sx={textFieldSx}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Instagram sx={{ color: '#E4405F' }} />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+            </Stack>
           </Box>
         </TabPanel>
 
         {/* Contact Tab */}
         <TabPanel value={tabValue} index={2}>
           <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>Contact Information</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>How clients can reach your company</Typography>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>
+              Contact Information
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              How clients can reach your company
+            </Typography>
             <Stack spacing={3}>
               <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                 <TextField
@@ -784,80 +819,88 @@ export const CompanySettings: React.FC = () => {
           </Box>
 
           <Box sx={{ mt: 3, borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>Business Address</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Your company's physical location</Typography>
-              <Stack spacing={3}>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>
+              Business Address
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Your company's physical location
+            </Typography>
+            <Stack spacing={3}>
+              <TextField
+                fullWidth
+                label="Address Line 1"
+                value={formData.address_line1 || ''}
+                onChange={handleInputChange('address_line1')}
+                disabled={isUpdating}
+                sx={textFieldSx}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LocationOn color="secondary" />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+
+              <TextField
+                fullWidth
+                label="Address Line 2"
+                value={formData.address_line2 || ''}
+                onChange={handleInputChange('address_line2')}
+                disabled={isUpdating}
+                sx={textFieldSx}
+              />
+
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                 <TextField
                   fullWidth
-                  label="Address Line 1"
-                  value={formData.address_line1 || ''}
-                  onChange={handleInputChange('address_line1')}
+                  label="City"
+                  value={formData.city || ''}
+                  onChange={handleInputChange('city')}
                   disabled={isUpdating}
                   sx={textFieldSx}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LocationOn color="secondary" />
-                      </InputAdornment>
-                    ),
-                  }}
                 />
-
                 <TextField
                   fullWidth
-                  label="Address Line 2"
-                  value={formData.address_line2 || ''}
-                  onChange={handleInputChange('address_line2')}
+                  label="Province/State"
+                  value={formData.province || ''}
+                  onChange={handleInputChange('province')}
                   disabled={isUpdating}
                   sx={textFieldSx}
                 />
+              </Box>
 
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-                  <TextField
-                    fullWidth
-                    label="City"
-                    value={formData.city || ''}
-                    onChange={handleInputChange('city')}
-                    disabled={isUpdating}
-                    sx={textFieldSx}
-                  />
-                  <TextField
-                    fullWidth
-                    label="Province/State"
-                    value={formData.province || ''}
-                    onChange={handleInputChange('province')}
-                    disabled={isUpdating}
-                    sx={textFieldSx}
-                  />
-                </Box>
-
-                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
-                  <TextField
-                    fullWidth
-                    label="Postal Code"
-                    value={formData.postal_code || ''}
-                    onChange={handleInputChange('postal_code')}
-                    disabled={isUpdating}
-                    sx={textFieldSx}
-                  />
-                  <TextField
-                    fullWidth
-                    label="Country"
-                    value={formData.country || ''}
-                    onChange={handleInputChange('country')}
-                    disabled={isUpdating}
-                    sx={textFieldSx}
-                  />
-                </Box>
-              </Stack>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                <TextField
+                  fullWidth
+                  label="Postal Code"
+                  value={formData.postal_code || ''}
+                  onChange={handleInputChange('postal_code')}
+                  disabled={isUpdating}
+                  sx={textFieldSx}
+                />
+                <TextField
+                  fullWidth
+                  label="Country"
+                  value={formData.country || ''}
+                  onChange={handleInputChange('country')}
+                  disabled={isUpdating}
+                  sx={textFieldSx}
+                />
+              </Box>
+            </Stack>
           </Box>
         </TabPanel>
 
         {/* Banking Tab */}
         <TabPanel value={tabValue} index={3}>
           <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>Bank Account Details</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Bank information displayed on invoices and payment instructions</Typography>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>
+              Bank Account Details
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Bank information displayed on invoices and payment instructions
+            </Typography>
             <Stack spacing={3}>
               <TextField
                 fullWidth
@@ -915,7 +958,8 @@ export const CompanySettings: React.FC = () => {
               />
 
               <Alert severity="warning">
-                Bank details are sensitive information. They will be displayed on invoices for clients to make payments.
+                Bank details are sensitive information. They will be displayed on invoices for
+                clients to make payments.
               </Alert>
             </Stack>
           </Box>
@@ -924,8 +968,12 @@ export const CompanySettings: React.FC = () => {
         {/* Documents Tab */}
         <TabPanel value={tabValue} index={4}>
           <Box sx={{ borderRadius: 1, bgcolor: 'background.paper', p: 3 }}>
-            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>PDF & Document Settings</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>Configure text that appears on generated PDFs</Typography>
+            <Typography variant="h6" fontWeight="600" sx={{ mb: 1 }}>
+              PDF & Document Settings
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Configure text that appears on generated PDFs
+            </Typography>
             <Stack spacing={3}>
               <TextField
                 fullWidth

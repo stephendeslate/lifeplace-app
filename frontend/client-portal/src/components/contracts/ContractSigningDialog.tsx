@@ -57,16 +57,16 @@ const calculateSignatureConfidence = (signatureData: string): number => {
 
     const img = new Image();
     img.src = signatureData;
-    
+
     // Basic complexity analysis
     const base64Part = signatureData.split(',')[1] || '';
-    
+
     // Score based on data size (more strokes = higher confidence)
     let confidence = Math.min(base64Part.length / 10000, 1.0);
-    
+
     // Adjust for minimum threshold
     confidence = Math.max(confidence, 0.1);
-    
+
     return Math.round(confidence * 10000) / 10000; // Round to 4 decimal places
   } catch {
     return 0.5; // Default confidence if analysis fails
@@ -119,7 +119,7 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
 
-  const currentStepIndex = SIGNING_STEPS.findIndex(step => step.key === currentStep);
+  const currentStepIndex = SIGNING_STEPS.findIndex((step) => step.key === currentStep);
 
   // Reset state when dialog opens/closes
   React.useEffect(() => {
@@ -154,7 +154,6 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
       setCurrentStep(SIGNING_STEPS[prevStepIndex].key);
     }
   }, [currentStepIndex]);
-
 
   const handleSubmitSignature = useCallback(async () => {
     if (!contract || !signatureData) return;
@@ -223,7 +222,9 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
         return legalDisclosureAccepted;
       case 'signature_capture': {
         const hasSignatureData = !!signatureData;
-        const isSignatureValid = signatureData ? contractUtils.validateSignature(signatureData) : false;
+        const isSignatureValid = signatureData
+          ? contractUtils.validateSignature(signatureData)
+          : false;
         const hasName = !!signerName.trim();
         const hasEmail = !!signerEmail.trim();
         const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signerEmail);
@@ -234,7 +235,14 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
       default:
         return false;
     }
-  }, [currentStep, legalDisclosureAccepted, signatureData, signerName, signerEmail, signatureIntentConfirmed]);
+  }, [
+    currentStep,
+    legalDisclosureAccepted,
+    signatureData,
+    signerName,
+    signerEmail,
+    signatureIntentConfirmed,
+  ]);
 
   const renderStepContent = () => {
     if (!contract) return null;
@@ -265,12 +273,15 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
             <Typography variant="h6" sx={{ mb: 2 }}>
               Electronic Signature Disclosure
             </Typography>
-            
+
             <Alert severity="info" sx={{ mb: 3 }}>
-              By proceeding with electronic signature, you understand and agree to the following terms.
+              By proceeding with electronic signature, you understand and agree to the following
+              terms.
             </Alert>
 
-            <Box sx={{ p: 2, border: `1px solid ${theme.palette.divider}`, borderRadius: 1, mb: 3 }}>
+            <Box
+              sx={{ p: 2, border: `1px solid ${theme.palette.divider}`, borderRadius: 1, mb: 3 }}
+            >
               <Typography variant="body2" sx={{ mb: 2 }}>
                 <strong>Electronic Signature Consent:</strong>
               </Typography>
@@ -353,7 +364,7 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
 
                 // Clear any signature-related errors when signature is provided
                 if (data) {
-                  setErrors(prev => prev.filter(error => !error.includes('signature')));
+                  setErrors((prev) => prev.filter((error) => !error.includes('signature')));
                 }
               }}
               width={isMobile ? 300 : 500}
@@ -374,7 +385,8 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
 
             <Alert severity="success" sx={{ mb: 3 }}>
               <Typography variant="body2">
-                You are about to electronically sign the contract for <strong>{contract.event.title}</strong>
+                You are about to electronically sign the contract for{' '}
+                <strong>{contract.event.title}</strong>
               </Typography>
             </Alert>
 
@@ -385,9 +397,7 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
               <Typography variant="body2">Name: {signerName}</Typography>
               {signerTitle && <Typography variant="body2">Title: {signerTitle}</Typography>}
               <Typography variant="body2">Email: {signerEmail}</Typography>
-              <Typography variant="body2">
-                Date: {new Date().toLocaleDateString()}
-              </Typography>
+              <Typography variant="body2">Date: {new Date().toLocaleDateString()}</Typography>
             </Box>
 
             {signatureData && (
@@ -418,7 +428,7 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
               }
               label={
                 <Typography variant="body2">
-                  I confirm my intent to sign this contract electronically and agree that this 
+                  I confirm my intent to sign this contract electronically and agree that this
                   electronic signature is legally binding
                 </Typography>
               }
@@ -456,8 +466,8 @@ export const ContractSigningDialog: React.FC<ContractSigningDialogProps> = ({
 
       <DialogContent dividers>
         {/* Progress Stepper */}
-        <Stepper 
-          activeStep={currentStepIndex} 
+        <Stepper
+          activeStep={currentStepIndex}
           sx={{ mb: 3 }}
           orientation={isMobile ? 'vertical' : 'horizontal'}
         >

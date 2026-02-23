@@ -7,7 +7,14 @@ import { styled } from '@mui/material/styles';
 import { designTokens } from '../tokens/base';
 import { extendedColors } from './Button';
 
-export type IconButtonVariant = 'default' | 'sage' | 'terracotta' | 'gold' | 'success' | 'warning' | 'error';
+export type IconButtonVariant =
+  | 'default'
+  | 'sage'
+  | 'terracotta'
+  | 'gold'
+  | 'success'
+  | 'warning'
+  | 'error';
 export type IconButtonSize = 'small' | 'medium' | 'large';
 
 export interface IconButtonProps {
@@ -275,7 +282,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       type = 'button',
       ...props
     },
-    ref
+    ref,
   ) => {
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
       if (disabled) {
@@ -303,7 +310,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         {icon}
       </StyledIconButton>
     );
-  }
+  },
 );
 
 IconButton.displayName = 'IconButton';

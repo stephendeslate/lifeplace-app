@@ -29,12 +29,14 @@ describe('FacilitiesGrid', () => {
       expect(screen.getByText('Chapel - Suitable for church weddings')).toBeInTheDocument();
       expect(screen.getByText('4 total - Each accommodates 6-10 people')).toBeInTheDocument();
       expect(
-        screen.getByText('Multipurpose hall - Capacity: 100-200 people (depending on setup)')
+        screen.getByText('Multipurpose hall - Capacity: 100-200 people (depending on setup)'),
       ).toBeInTheDocument();
       expect(screen.getByText('For larger gatherings')).toBeInTheDocument();
       expect(screen.getByText('Outdoor event space')).toBeInTheDocument();
       expect(
-        screen.getByText('(newly opened) - Hostel - Accommodates 150-300 people for overnight stays')
+        screen.getByText(
+          '(newly opened) - Hostel - Accommodates 150-300 people for overnight stays',
+        ),
       ).toBeInTheDocument();
     });
 
@@ -66,10 +68,10 @@ describe('FacilitiesGrid', () => {
         'The Pavilion',
         'Open-Field',
         'Angelic Field',
-        'Havila'
+        'Havila',
       ];
 
-      facilityNames.forEach(name => {
+      facilityNames.forEach((name) => {
         expect(screen.getByText(name)).toBeInTheDocument();
       });
     });
@@ -172,10 +174,10 @@ describe('FacilitiesGrid', () => {
         'The Pavilion',
         'Open-Field',
         'Angelic Field',
-        'Havila'
+        'Havila',
       ];
 
-      facilityNames.forEach(name => {
+      facilityNames.forEach((name) => {
         expect(screen.getByText(name)).toBeInTheDocument();
       });
     });
@@ -189,13 +191,19 @@ describe('FacilitiesGrid', () => {
       const facilities = [
         { name: 'Sanctuary', description: 'Chapel - Suitable for church weddings' },
         { name: 'Cabanas', description: '4 total - Each accommodates 6-10 people' },
-        { name: 'The Pavilion', description: 'Multipurpose hall - Capacity: 100-200 people (depending on setup)' },
+        {
+          name: 'The Pavilion',
+          description: 'Multipurpose hall - Capacity: 100-200 people (depending on setup)',
+        },
         { name: 'Open-Field', description: 'For larger gatherings' },
         { name: 'Angelic Field', description: 'Outdoor event space' },
-        { name: 'Havila', description: '(newly opened) - Hostel - Accommodates 150-300 people for overnight stays' },
+        {
+          name: 'Havila',
+          description: '(newly opened) - Hostel - Accommodates 150-300 people for overnight stays',
+        },
       ];
 
-      facilities.forEach(facility => {
+      facilities.forEach((facility) => {
         expect(screen.getByText(facility.name)).toBeInTheDocument();
         expect(screen.getByText(facility.description)).toBeInTheDocument();
       });
@@ -211,10 +219,10 @@ describe('FacilitiesGrid', () => {
         'The Pavilion',
         'Open-Field',
         'Angelic Field',
-        'Havila'
+        'Havila',
       ];
 
-      facilityNames.forEach(name => {
+      facilityNames.forEach((name) => {
         expect(screen.getByText(name)).toBeInTheDocument();
       });
     });
@@ -228,13 +236,19 @@ describe('FacilitiesGrid', () => {
       const facilities = [
         { name: 'Sanctuary', description: 'Chapel - Suitable for church weddings' },
         { name: 'Cabanas', description: '4 total - Each accommodates 6-10 people' },
-        { name: 'The Pavilion', description: 'Multipurpose hall - Capacity: 100-200 people (depending on setup)' },
+        {
+          name: 'The Pavilion',
+          description: 'Multipurpose hall - Capacity: 100-200 people (depending on setup)',
+        },
         { name: 'Open-Field', description: 'For larger gatherings' },
         { name: 'Angelic Field', description: 'Outdoor event space' },
-        { name: 'Havila', description: '(newly opened) - Hostel - Accommodates 150-300 people for overnight stays' },
+        {
+          name: 'Havila',
+          description: '(newly opened) - Hostel - Accommodates 150-300 people for overnight stays',
+        },
       ];
 
-      facilities.forEach(facility => {
+      facilities.forEach((facility) => {
         expect(screen.getByText(facility.name)).toBeInTheDocument();
         expect(screen.getByText(facility.description)).toBeInTheDocument();
       });

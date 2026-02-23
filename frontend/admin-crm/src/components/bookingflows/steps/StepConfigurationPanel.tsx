@@ -87,10 +87,10 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
   } = useStepConfiguration(step.id);
 
   // Only fetch payment terms configuration for payment_info steps
-  const {
-    data: paymentTermsConfig,
-    refetch: refetchPaymentTerms,
-  } = usePaymentTermsConfiguration(step.id, { enabled: step.step_type === 'payment_info' });
+  const { data: paymentTermsConfig, refetch: refetchPaymentTerms } = usePaymentTermsConfiguration(
+    step.id,
+    { enabled: step.step_type === 'payment_info' },
+  );
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -100,12 +100,12 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
     try {
       await updateConfiguration({
         stepId: step.id,
-        data
+        data,
       });
-      
+
       // Refetch to get latest config
       refetchConfig();
-      
+
       // Call parent callback if provided
       if (onUpdate) {
         // Create updated step object for parent callback
@@ -125,51 +125,60 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
 
   const renderStepSpecificConfiguration = (): React.ReactNode => {
     // Block access to removed step types
-    if (step.step_type as string === 'availability_check') {
+    if ((step.step_type as string) === 'availability_check') {
       return (
         <Alert severity="error" sx={{ mb: 2 }}>
-          Availability check step type is no longer supported. Please use the date_time step with availability checking enabled instead.
+          Availability check step type is no longer supported. Please use the date_time step with
+          availability checking enabled instead.
         </Alert>
       );
     }
 
     switch (step.step_type) {
       case 'introduction':
-        return (
-          <IntroductionStepConfig
-            step={step}
-            onConfigurationChange={() => refetchConfig()}
-          />
-        );
+        return <IntroductionStepConfig step={step} onConfigurationChange={() => refetchConfig()} />;
 
       case 'venue_selection':
         return (
-          <VenueSelectionStepConfig
-            step={step}
-            onConfigurationChange={() => refetchConfig()}
-          />
+          <VenueSelectionStepConfig step={step} onConfigurationChange={() => refetchConfig()} />
         );
 
       case 'date_time':
         return (
           <DateTimeStepConfig
             step={step}
-            config={currentConfig as import('../../../types/bookingflows.types').DateTimeStepConfiguration | null | undefined}
-            onUpdate={(updatedStep: BookingFlowStep) => handleConfigurationUpdate(updatedStep.configuration_data as unknown as Record<string, unknown>)}
+            config={
+              currentConfig as
+                | import('../../../types/bookingflows.types').DateTimeStepConfiguration
+                | null
+                | undefined
+            }
+            onUpdate={(updatedStep: BookingFlowStep) =>
+              handleConfigurationUpdate(
+                updatedStep.configuration_data as unknown as Record<string, unknown>,
+              )
+            }
             isLoading={isUpdatingConfiguration}
           />
         );
-      
+
       case 'questionnaire':
         return (
           <QuestionnaireStepConfig
             step={step}
-            config={currentConfig as import('../../../types/bookingflows.types').QuestionnaireStepConfiguration | null | undefined}
-            onUpdate={(data: Partial<QuestionnaireStepConfiguration>) => handleConfigurationUpdate(data as unknown as Record<string, unknown>)}
+            config={
+              currentConfig as
+                | import('../../../types/bookingflows.types').QuestionnaireStepConfiguration
+                | null
+                | undefined
+            }
+            onUpdate={(data: Partial<QuestionnaireStepConfiguration>) =>
+              handleConfigurationUpdate(data as unknown as Record<string, unknown>)
+            }
             isLoading={isUpdatingConfiguration}
           />
         );
-      
+
       case 'package_selection':
         return (
           <PackageSelectionStepConfig
@@ -178,16 +187,18 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             isLoading={isUpdatingConfiguration}
           />
         );
-      
+
       case 'addon_selection':
         return (
           <AddonSelectionStepConfig
             step={step}
-            onUpdate={(data: Partial<AddonSelectionStepConfiguration>) => handleConfigurationUpdate(data as unknown as Record<string, unknown>)}
+            onUpdate={(data: Partial<AddonSelectionStepConfiguration>) =>
+              handleConfigurationUpdate(data as unknown as Record<string, unknown>)
+            }
             isLoading={isUpdatingConfiguration}
           />
         );
-      
+
       case 'pricing_summary':
         return (
           <PricingSummaryStepConfig
@@ -197,24 +208,36 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             isLoading={isUpdatingConfiguration}
           />
         );
-      
+
       case 'contact_info':
         return (
           <ContactInfoStepConfig
             step={step}
-            config={currentConfig as import('../../../types/bookingflows.types').ContactInfoStepConfiguration | null | undefined}
+            config={
+              currentConfig as
+                | import('../../../types/bookingflows.types').ContactInfoStepConfiguration
+                | null
+                | undefined
+            }
             onUpdate={onUpdate || (() => {})}
             isLoading={isUpdatingConfiguration}
           />
         );
-      
+
       case 'payment_info':
         return (
           <PaymentInfoStepConfig
             step={step}
-            config={currentConfig as import('../../../types/bookingflows.types').PaymentInfoStepConfiguration | null | undefined}
+            config={
+              currentConfig as
+                | import('../../../types/bookingflows.types').PaymentInfoStepConfiguration
+                | null
+                | undefined
+            }
             paymentTermsConfig={paymentTermsConfig as PaymentTermsConfiguration | null | undefined}
-            onUpdate={(data: Partial<PaymentInfoStepConfiguration>) => handleConfigurationUpdate(data as unknown as Record<string, unknown>)}
+            onUpdate={(data: Partial<PaymentInfoStepConfiguration>) =>
+              handleConfigurationUpdate(data as unknown as Record<string, unknown>)
+            }
             onUpdatePaymentTerms={(data: Partial<PaymentTermsConfiguration>) => {
               updatePaymentTerms({ stepId: step.id, data });
               refetchPaymentTerms();
@@ -227,16 +250,23 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         return (
           <ConfirmationStepConfig
             step={step}
-            config={currentConfig as import('../../../types/bookingflows.types').ConfirmationStepConfiguration | null | undefined}
+            config={
+              currentConfig as
+                | import('../../../types/bookingflows.types').ConfirmationStepConfiguration
+                | null
+                | undefined
+            }
             onUpdate={onUpdate || (() => {})}
             isLoading={isUpdatingConfiguration}
           />
         );
-      
+
       // Remove event_details case since it doesn't exist in the evolved types
-      
+
       default:
-        return <GenericConfigForm step={step} config={currentConfig as Record<string, unknown> | null} />;
+        return (
+          <GenericConfigForm step={step} config={currentConfig as Record<string, unknown> | null} />
+        );
     }
   };
 
@@ -257,16 +287,13 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         <Alert
           severity="error"
           action={
-            <IconButton
-              color="inherit"
-              size="small"
-              onClick={() => refetchConfig()}
-            >
+            <IconButton color="inherit" size="small" onClick={() => refetchConfig()}>
               <RefreshIcon />
             </IconButton>
           }
         >
-          Failed to load step configuration: {configError instanceof Error ? configError.message : String(configError)}
+          Failed to load step configuration:{' '}
+          {configError instanceof Error ? configError.message : String(configError)}
         </Alert>
       </Box>
     );
@@ -297,7 +324,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             variant="outlined"
           />
         </Box>
-        
+
         <Box display="flex" gap={1}>
           <Tooltip title="Copy configuration from another step">
             <span>
@@ -306,13 +333,9 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
               </IconButton>
             </span>
           </Tooltip>
-          
+
           <Tooltip title="Refresh configuration">
-            <IconButton 
-              size="small"
-              onClick={() => refetchConfig()}
-              disabled={isLoadingConfig}
-            >
+            <IconButton size="small" onClick={() => refetchConfig()} disabled={isLoadingConfig}>
               <RefreshIcon />
             </IconButton>
           </Tooltip>
@@ -321,22 +344,16 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
 
       {updateConfigurationError ? (
         <Alert severity="error" sx={{ mb: 2 }}>
-          Failed to update configuration: {updateConfigurationError instanceof Error ? updateConfigurationError.message : String(updateConfigurationError)}
+          Failed to update configuration:{' '}
+          {updateConfigurationError instanceof Error
+            ? updateConfigurationError.message
+            : String(updateConfigurationError)}
         </Alert>
       ) : null}
 
       <Tabs value={activeTab} onChange={handleTabChange} sx={{ mb: 2 }}>
-        <Tab 
-          icon={<ConfigIcon />} 
-          label="Configuration" 
-          iconPosition="start"
-        />
-        <Tab 
-          icon={<PreviewIcon />} 
-          label="Preview" 
-          iconPosition="start"
-          disabled
-        />
+        <Tab icon={<ConfigIcon />} label="Configuration" iconPosition="start" />
+        <Tab icon={<PreviewIcon />} label="Preview" iconPosition="start" disabled />
       </Tabs>
 
       <Divider sx={{ mb: 2 }} />
@@ -353,16 +370,20 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
 };
 
 // Generic configuration form for unsupported step types
-const GenericConfigForm: React.FC<{ step: BookingFlowStep; config: unknown }> = ({ step, config }) => (
+const GenericConfigForm: React.FC<{ step: BookingFlowStep; config: unknown }> = ({
+  step,
+  config,
+}) => (
   <Box>
     <Alert severity="info" sx={{ mb: 2 }}>
       Configuration for "{step.step_type_display}" step type is not yet implemented.
     </Alert>
-    
+
     <Typography variant="body2" color="text.secondary">
-      This step will use default settings and behavior. Custom configuration will be available in a future update.
+      This step will use default settings and behavior. Custom configuration will be available in a
+      future update.
     </Typography>
-    
+
     {config ? (
       <Box sx={{ mt: 2 }}>
         <Typography variant="subtitle2" gutterBottom>
@@ -375,7 +396,7 @@ const GenericConfigForm: React.FC<{ step: BookingFlowStep; config: unknown }> = 
             bgcolor: 'grey.50',
             border: 1,
             borderColor: 'divider',
-            overflow: 'auto'
+            overflow: 'auto',
           }}
         >
           <pre style={{ margin: 0, fontSize: '0.875rem' }}>

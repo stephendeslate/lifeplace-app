@@ -56,7 +56,10 @@ export const paymentsApi = {
     return response.data;
   },
 
-  updatePaymentGateway: async (id: number, data: UpdatePaymentGatewayData): Promise<PaymentGateway> => {
+  updatePaymentGateway: async (
+    id: number,
+    data: UpdatePaymentGatewayData,
+  ): Promise<PaymentGateway> => {
     const response = await api.put<PaymentGateway>(`/payments/gateways/${id}/`, data);
     return response.data;
   },
@@ -68,9 +71,11 @@ export const paymentsApi = {
   /**
    * Gateway Health Status
    */
-  getGatewayHealth: async (): Promise<Record<number, import('../types/payments.types').GatewayHealth>> => {
+  getGatewayHealth: async (): Promise<
+    Record<number, import('../types/payments.types').GatewayHealth>
+  > => {
     const response = await api.get<Record<number, import('../types/payments.types').GatewayHealth>>(
-      '/payments/gateways/health/'
+      '/payments/gateways/health/',
     );
     return response.data;
   },
@@ -111,14 +116,18 @@ export const paymentsApi = {
   },
 
   getPaymentMethodsForUser: async (userId: number): Promise<PaymentMethod[]> => {
-    const response = await api.get<PaymentMethod[]>(`/payments/payment-methods/for_user/?user_id=${userId}`);
+    const response = await api.get<PaymentMethod[]>(
+      `/payments/payment-methods/for_user/?user_id=${userId}`,
+    );
     return response.data;
   },
 
   /**
    * Payments with pagination
    */
-  getPayments: async (filters?: PaymentFilters & PaginationParams): Promise<PaginatedResponse<Payment>> => {
+  getPayments: async (
+    filters?: PaymentFilters & PaginationParams,
+  ): Promise<PaginatedResponse<Payment>> => {
     const params = new URLSearchParams();
     if (filters?.event) params.append('event', filters.event.toString());
     if (filters?.status) params.append('status', filters.status);
@@ -132,7 +141,9 @@ export const paymentsApi = {
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.page_size) params.append('page_size', filters.page_size.toString());
 
-    const response = await api.get<PaginatedResponse<Payment>>(`/payments/payments/?${params.toString()}`);
+    const response = await api.get<PaginatedResponse<Payment>>(
+      `/payments/payments/?${params.toString()}`,
+    );
     return response.data;
   },
 
@@ -204,7 +215,9 @@ export const paymentsApi = {
   /**
    * Payment Installments
    */
-  getPaymentInstallments: async (filters?: PaymentInstallmentFilters): Promise<PaymentInstallment[]> => {
+  getPaymentInstallments: async (
+    filters?: PaymentInstallmentFilters,
+  ): Promise<PaymentInstallment[]> => {
     const params = new URLSearchParams();
     if (filters?.payment_plan) params.append('payment_plan', filters.payment_plan.toString());
     if (filters?.status) params.append('status', filters.status);
@@ -221,7 +234,10 @@ export const paymentsApi = {
     return response.data;
   },
 
-  createPaymentFromInstallment: async (id: number, data: CreatePaymentInstallmentData): Promise<Payment> => {
+  createPaymentFromInstallment: async (
+    id: number,
+    data: CreatePaymentInstallmentData,
+  ): Promise<Payment> => {
     const response = await api.post<Payment>(`/payments/installments/${id}/create_payment/`, data);
     return response.data;
   },
@@ -263,7 +279,9 @@ export const paymentsApi = {
   /**
    * Payment Transactions
    */
-  getPaymentTransactions: async (filters?: PaymentTransactionFilters): Promise<PaymentTransaction[]> => {
+  getPaymentTransactions: async (
+    filters?: PaymentTransactionFilters,
+  ): Promise<PaymentTransaction[]> => {
     const params = new URLSearchParams();
     if (filters?.payment) params.append('payment', filters.payment.toString());
     if (filters?.gateway) params.append('gateway', filters.gateway.toString());
@@ -282,11 +300,14 @@ export const paymentsApi = {
   /**
    * Payment Notifications
    */
-  getPaymentNotifications: async (filters?: PaymentNotificationFilters): Promise<PaymentNotification[]> => {
+  getPaymentNotifications: async (
+    filters?: PaymentNotificationFilters,
+  ): Promise<PaymentNotification[]> => {
     const params = new URLSearchParams();
     if (filters?.payment) params.append('payment', filters.payment.toString());
     if (filters?.notification_type) params.append('notification_type', filters.notification_type);
-    if (filters?.is_successful !== undefined) params.append('is_successful', filters.is_successful.toString());
+    if (filters?.is_successful !== undefined)
+      params.append('is_successful', filters.is_successful.toString());
 
     const response = await api.get(`/payments/notifications/?${params.toString()}`);
     const data = response.data as PaginatedResponse<PaymentNotification> | PaymentNotification[];
@@ -321,13 +342,17 @@ export const paymentsApi = {
     return response.data;
   },
 
-  getInvoicesForClient: async (clientId: number) : Promise<Invoice[]> =>  {
-    const response = await api.get<PaginatedResponse<Invoice>>(`/payments/invoices/?client_id=${clientId}`);
+  getInvoicesForClient: async (clientId: number): Promise<Invoice[]> => {
+    const response = await api.get<PaginatedResponse<Invoice>>(
+      `/payments/invoices/?client_id=${clientId}`,
+    );
     return response.data.results;
   },
 
   sendInvoice: async (invoiceId: number): Promise<{ detail: string; status: string }> => {
-    const response = await api.post<{ detail: string; status: string }>(`/payments/invoices/${invoiceId}/send_invoice/`);
+    const response = await api.post<{ detail: string; status: string }>(
+      `/payments/invoices/${invoiceId}/send_invoice/`,
+    );
     return response.data;
   },
 
@@ -347,12 +372,18 @@ export const paymentsApi = {
     return response.data[0];
   },
 
-  updatePaymentSettings: async (id: number, data: UpdatePaymentSettingsData): Promise<PaymentSettings> => {
+  updatePaymentSettings: async (
+    id: number,
+    data: UpdatePaymentSettingsData,
+  ): Promise<PaymentSettings> => {
     const response = await api.put<PaymentSettings>(`/payments/settings/${id}/`, data);
     return response.data;
   },
 
-  partialUpdatePaymentSettings: async (id: number, data: UpdatePaymentSettingsData): Promise<PaymentSettings> => {
+  partialUpdatePaymentSettings: async (
+    id: number,
+    data: UpdatePaymentSettingsData,
+  ): Promise<PaymentSettings> => {
     const response = await api.patch<PaymentSettings>(`/payments/settings/${id}/`, data);
     return response.data;
   },

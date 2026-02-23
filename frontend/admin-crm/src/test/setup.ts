@@ -1,9 +1,9 @@
 // frontend/admin-crm/src/test/setup.ts
 
-import "@testing-library/jest-dom";
-import { vi, beforeAll, afterAll, afterEach } from "vitest";
-import { cleanup } from "@testing-library/react";
-import { server } from "./mocks/server";
+import '@testing-library/jest-dom';
+import { vi, beforeAll, afterAll, afterEach } from 'vitest';
+import { cleanup } from '@testing-library/react';
+import { server } from './mocks/server';
 import {
   resetClientsStore,
   resetEventsStore,
@@ -29,14 +29,14 @@ import {
   resetSupportStore,
   resetSalesStore,
   resetVendorsStore,
-} from "./mocks/handlers";
+} from './mocks/handlers';
 
 // ============================================
 // Environment Mocks
 // ============================================
 
 // Mock window.matchMedia (required for MUI responsive components)
-Object.defineProperty(window, "matchMedia", {
+Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: vi.fn().mockImplementation((query: string) => ({
     matches: false,
@@ -67,13 +67,13 @@ window.scrollTo = vi.fn();
 
 // Mock window.location
 const locationMock = {
-  pathname: "/",
-  href: "http://localhost/",
+  pathname: '/',
+  href: 'http://localhost/',
   assign: vi.fn(),
   replace: vi.fn(),
   reload: vi.fn(),
 };
-Object.defineProperty(window, "location", {
+Object.defineProperty(window, 'location', {
   value: locationMock,
   writable: true,
 });
@@ -93,9 +93,7 @@ const localStorageMock = {
     delete localStorageStore[key];
   }),
   clear: vi.fn(() => {
-    Object.keys(localStorageStore).forEach(
-      (key) => delete localStorageStore[key],
-    );
+    Object.keys(localStorageStore).forEach((key) => delete localStorageStore[key]);
   }),
   get length() {
     return Object.keys(localStorageStore).length;
@@ -103,7 +101,7 @@ const localStorageMock = {
   key: vi.fn((index: number) => Object.keys(localStorageStore)[index] ?? null),
 };
 
-Object.defineProperty(window, "localStorage", {
+Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
   writable: true,
 });
@@ -120,10 +118,7 @@ const originalError = console.error;
 beforeAll(() => {
   console.error = (...args: unknown[]) => {
     // Suppress React act() warnings in tests
-    if (
-      typeof args[0] === "string" &&
-      args[0].includes("Warning: An update to")
-    ) {
+    if (typeof args[0] === 'string' && args[0].includes('Warning: An update to')) {
       return;
     }
     originalError.call(console, ...args);
@@ -141,7 +136,7 @@ afterAll(() => {
 // Start MSW server before all tests
 beforeAll(() => {
   server.listen({
-    onUnhandledRequest: "warn", // Warn about unhandled requests
+    onUnhandledRequest: 'warn', // Warn about unhandled requests
   });
 });
 

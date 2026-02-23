@@ -12,17 +12,14 @@ import {
   alpha,
   Divider,
 } from '@mui/material';
+import { Lock as SecurityIcon, CreditCard as CardIcon } from '@mui/icons-material';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import {
-  Lock as SecurityIcon,
-  CreditCard as CardIcon,
-} from '@mui/icons-material';
-import {
-  Elements,
-  CardElement,
-  useStripe,
-  useElements,
-} from '@stripe/react-stripe-js';
-import { loadStripe, type Stripe, type StripeCardElement, type StripeCardElementChangeEvent } from '@stripe/stripe-js';
+  loadStripe,
+  type Stripe,
+  type StripeCardElement,
+  type StripeCardElementChangeEvent,
+} from '@stripe/stripe-js';
 import { GlassCard } from '../../design-system';
 import FinancialApi from '../../apis/financial.api';
 import type {
@@ -37,11 +34,7 @@ import type {
   Payment,
   Invoice,
 } from '../../types/unified-payment-flow.types';
-import {
-  isBookingMode,
-  isSaveMode,
-  isInvoiceMode,
-} from '../../types/unified-payment-flow.types';
+import { isBookingMode, isSaveMode, isInvoiceMode } from '../../types/unified-payment-flow.types';
 
 // ===========================
 // Mode Configuration Helpers
@@ -181,25 +174,30 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
           // CRITICAL FIX: Add debouncing to prevent rapid successive API calls
           const response = await FinancialApi.createInvoicePaymentIntent(
             config.invoice_id,
-            'stripe'
+            'stripe',
           );
           setClientSecret(response.client_secret);
 
           if (debugMode) {
-            console.log('UnifiedStripePaymentFlow - Payment intent created for invoice:', config.invoice_id);
+            console.log(
+              'UnifiedStripePaymentFlow - Payment intent created for invoice:',
+              config.invoice_id,
+            );
           }
         } else if (isBookingMode(config)) {
           // For booking mode, we might create payment intent if required
           // For now, we'll handle this in the payment processing step
           // This could be extended to create payment intent upfront if needed
           if (debugMode) {
-            console.log('UnifiedStripePaymentFlow - Booking mode initialized, will create payment method');
+            console.log(
+              'UnifiedStripePaymentFlow - Booking mode initialized, will create payment method',
+            );
           }
           setClientSecret('booking-mode'); // Placeholder to indicate ready
         }
-
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to initialize payment';
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to initialize payment';
         setIntentError(errorMessage);
 
         if (debugMode) {
@@ -227,24 +225,29 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
   }, [config, configMode, configInvoiceId, debugMode]);
 
   // Handle card element changes
-  const handleCardChange = useCallback((event: StripeCardElementChangeEvent) => {
-    setCardState({
-      complete: event.complete,
-      empty: event.empty,
-      error: event.error ? {
-        code: event.error.code,
-        message: event.error.message,
-        type: event.error.type,
-      } : undefined,
-      brand: event.brand,
-      last4: event.complete ? undefined : undefined, // Will be available after successful processing
-    });
+  const handleCardChange = useCallback(
+    (event: StripeCardElementChangeEvent) => {
+      setCardState({
+        complete: event.complete,
+        empty: event.empty,
+        error: event.error
+          ? {
+              code: event.error.code,
+              message: event.error.message,
+              type: event.error.type,
+            }
+          : undefined,
+        brand: event.brand,
+        last4: event.complete ? undefined : undefined, // Will be available after successful processing
+      });
 
-    // Clear error when user starts typing
-    if (event.complete && error) {
-      setError(null);
-    }
-  }, [error]);
+      // Clear error when user starts typing
+      if (event.complete && error) {
+        setError(null);
+      }
+    },
+    [error],
+  );
 
   // Main payment processing function
   const handlePaymentSubmit = async (event: React.FormEvent) => {
@@ -284,7 +287,6 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
       } else if (isBookingMode(config)) {
         await processBookingMode(stripe, cardElement, config, isAuthenticated);
       }
-
     } catch (error) {
       if (debugMode) {
         console.error('UnifiedStripePaymentFlow - Payment processing failed:', error);
@@ -300,21 +302,18 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
   const processSaveMode = async (
     stripe: Stripe,
     cardElement: StripeCardElement,
-    config: SaveModeConfig
+    config: SaveModeConfig,
   ) => {
     if (!clientSecret || clientSecret === 'booking-mode') {
       throw new Error('Setup intent not initialized');
     }
 
     try {
-      const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(
-        clientSecret,
-        {
-          payment_method: {
-            card: cardElement,
-          },
-        }
-      );
+      const { error: stripeError, setupIntent } = await stripe.confirmCardSetup(clientSecret, {
+        payment_method: {
+          card: cardElement,
+        },
+      });
 
       if (stripeError) {
         const errorResult: PaymentFlowError = {
@@ -349,7 +348,10 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
 
         // Handle both string and object responses from Stripe
         let paymentMethodId: string;
-        let paymentMethodObj: { id: string; card?: { last4: string; brand: string; exp_month: number; exp_year: number } } | null = null;
+        let paymentMethodObj: {
+          id: string;
+          card?: { last4: string; brand: string; exp_month: number; exp_year: number };
+        } | null = null;
 
         if (typeof paymentMethodRaw === 'string') {
           // Payment method is just the ID string
@@ -362,7 +364,10 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
           paymentMethodId = paymentMethodRaw.id;
           paymentMethodObj = paymentMethodRaw;
           if (debugMode) {
-            console.log('UnifiedStripePaymentFlow - Payment method is object, ID:', paymentMethodId);
+            console.log(
+              'UnifiedStripePaymentFlow - Payment method is object, ID:',
+              paymentMethodId,
+            );
           }
         } else {
           throw new Error('Invalid payment method format from Stripe');
@@ -394,7 +399,9 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
           }
         } else {
           if (debugMode) {
-            console.warn('UnifiedStripePaymentFlow - Warning: No expanded card object available (payment method was string)');
+            console.warn(
+              'UnifiedStripePaymentFlow - Warning: No expanded card object available (payment method was string)',
+            );
           }
         }
 
@@ -416,7 +423,9 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
 
         // Validate that we have essential data before sending to backend
         if (!paymentMethodId) {
-          throw new Error('Missing Stripe payment method ID - payment method setup may have failed');
+          throw new Error(
+            'Missing Stripe payment method ID - payment method setup may have failed',
+          );
         }
 
         if (!methodData.last_four && !paymentMethodId) {
@@ -424,7 +433,10 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
         }
 
         if (debugMode) {
-          console.log('UnifiedStripePaymentFlow - Validation passed, payment method ID:', paymentMethodId);
+          console.log(
+            'UnifiedStripePaymentFlow - Validation passed, payment method ID:',
+            paymentMethodId,
+          );
         }
 
         const savedPaymentMethod = await FinancialApi.createPaymentMethod(methodData);
@@ -448,7 +460,6 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
       } else {
         throw new Error('Card setup was not completed');
       }
-
     } catch (error) {
       let errorMessage = 'An unexpected error occurred during card setup';
 
@@ -457,7 +468,8 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
 
         // Check if this is an API error about last four digits
         if (error.message.includes('Last four digits required')) {
-          errorMessage = 'Payment method validation failed. Please try again with a different card or contact support.';
+          errorMessage =
+            'Payment method validation failed. Please try again with a different card or contact support.';
         } else if (error.message.includes('stripe_payment_method_id')) {
           errorMessage = 'Payment method setup failed. Please try again.';
         }
@@ -480,21 +492,18 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
   const processInvoiceMode = async (
     stripe: Stripe,
     cardElement: StripeCardElement,
-    config: InvoiceModeConfig
+    config: InvoiceModeConfig,
   ) => {
     if (!clientSecret || clientSecret === 'booking-mode') {
       throw new Error('Payment intent not initialized');
     }
 
     try {
-      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
-        clientSecret,
-        {
-          payment_method: {
-            card: cardElement,
-          },
-        }
-      );
+      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+        },
+      });
 
       if (stripeError) {
         const errorResult: PaymentFlowError = {
@@ -528,7 +537,12 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
             };
 
             if (paymentMethod && typeof paymentMethod === 'object' && 'card' in paymentMethod) {
-              const card = paymentMethod.card as { last4: string; brand: string; exp_month: number; exp_year: number };
+              const card = paymentMethod.card as {
+                last4: string;
+                brand: string;
+                exp_month: number;
+                exp_year: number;
+              };
               cardDetails = {
                 last_four: card.last4 || '',
                 brand: card.brand || '',
@@ -540,7 +554,8 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
             // Create payment method record in backend
             const methodData = {
               type: 'CREDIT_CARD' as const,
-              stripe_payment_method_id: typeof paymentMethod === 'string' ? paymentMethod : paymentMethod.id,
+              stripe_payment_method_id:
+                typeof paymentMethod === 'string' ? paymentMethod : paymentMethod.id,
               last_four: cardDetails.last_four,
               card_brand: cardDetails.brand,
               exp_month: cardDetails.exp_month,
@@ -551,7 +566,10 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
             savedPaymentMethod = await FinancialApi.createPaymentMethod(methodData);
 
             if (debugMode) {
-              console.log('UnifiedStripePaymentFlow - Payment method saved during invoice payment:', savedPaymentMethod);
+              console.log(
+                'UnifiedStripePaymentFlow - Payment method saved during invoice payment:',
+                savedPaymentMethod,
+              );
             }
           } catch (saveError) {
             // Log the error but don't fail the payment
@@ -566,9 +584,10 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
         const result: PaymentFlowResult = {
           mode: 'invoice',
           success: true,
-          message: config.save_payment_method && savedPaymentMethod
-            ? 'Invoice payment completed successfully and card saved for future use'
-            : 'Invoice payment completed successfully',
+          message:
+            config.save_payment_method && savedPaymentMethod
+              ? 'Invoice payment completed successfully and card saved for future use'
+              : 'Invoice payment completed successfully',
           invoiceResult: {
             payment: {
               id: 0, // Will be populated by backend
@@ -597,9 +616,9 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
       } else {
         throw new Error('Payment was not completed');
       }
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during payment';
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unexpected error occurred during payment';
       const errorResult: PaymentFlowError = {
         type: 'unknown',
         message: errorMessage,
@@ -614,7 +633,7 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
     stripe: Stripe,
     cardElement: StripeCardElement,
     config: BookingModeConfig,
-    isAuthenticated: boolean
+    isAuthenticated: boolean,
   ) => {
     try {
       // For booking mode, we create a payment method and optionally process payment
@@ -660,7 +679,9 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
 
       if (shouldSaveToDb) {
         if (debugMode) {
-          console.log('UnifiedStripePaymentFlow - Saving payment method to database (authenticated user)');
+          console.log(
+            'UnifiedStripePaymentFlow - Saving payment method to database (authenticated user)',
+          );
         }
 
         const methodData = {
@@ -675,7 +696,9 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
 
         savedPaymentMethod = await FinancialApi.createPaymentMethod(methodData);
       } else if (debugMode) {
-        console.log('UnifiedStripePaymentFlow - Skipping database save (guest user or save not requested)');
+        console.log(
+          'UnifiedStripePaymentFlow - Skipping database save (guest user or save not requested)',
+        );
       }
 
       // For booking mode, we might need to create and confirm a payment intent
@@ -704,9 +727,9 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
       }
 
       onSuccess(result);
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred during booking';
+      const errorMessage =
+        error instanceof Error ? error.message : 'An unexpected error occurred during booking';
       const errorResult: PaymentFlowError = {
         type: 'unknown',
         message: errorMessage,
@@ -755,9 +778,7 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
   if (intentError) {
     return (
       <Alert severity="error" sx={{ my: 2 }}>
-        <Typography variant="body2">
-          {intentError}
-        </Typography>
+        <Typography variant="body2">{intentError}</Typography>
       </Alert>
     );
   }
@@ -775,10 +796,7 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
                 {modeConfig.title}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {amountText
-                  ? `${modeConfig.description} - ${amountText}`
-                  : modeConfig.description
-                }
+                {amountText ? `${modeConfig.description} - ${amountText}` : modeConfig.description}
               </Typography>
             </Box>
           </Stack>
@@ -801,10 +819,7 @@ const PaymentFlowInner: React.FC<PaymentFlowInnerProps> = ({
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   Card Information
                 </Typography>
-                <CardElement
-                  options={cardElementStyles}
-                  onChange={handleCardChange}
-                />
+                <CardElement options={cardElementStyles} onChange={handleCardChange} />
               </Box>
 
               {/* Card State Feedback */}
@@ -904,7 +919,9 @@ export const UnifiedStripePaymentFlow: React.FC<UnifiedStripePaymentFlowProps> =
 }) => {
   // Memoize the publishable key to prevent recreating stripe promise
   const publishableKey = useMemo(() => {
-    return gateway.public_config?.publishable_key as string || import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+    return (
+      (gateway.public_config?.publishable_key as string) || import.meta.env.VITE_STRIPE_PUBLIC_KEY
+    );
   }, [gateway.public_config?.publishable_key]);
 
   // Memoize the Stripe promise to prevent recreation

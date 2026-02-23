@@ -1,22 +1,9 @@
 // design-system/visualizations/EventAvailabilityCalendar.tsx
 
 import React, { useState, useMemo } from 'react';
-import { 
-  Box, 
-  Typography, 
-  IconButton, 
-  Tooltip,
-  useTheme,
-  useMediaQuery
-} from '@mui/material';
+import { Box, Typography, IconButton, Tooltip, useTheme, useMediaQuery } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { 
-  ChevronLeft, 
-  ChevronRight,
-  CheckCircle,
-  Cancel,
-  Schedule
-} from '@mui/icons-material';
+import { ChevronLeft, ChevronRight, CheckCircle, Cancel, Schedule } from '@mui/icons-material';
 import {
   format,
   startOfMonth,
@@ -124,7 +111,17 @@ const StyledDayHeader = styled(Box)(({ theme }) => ({
 
 const StyledDay = styled(Box, {
   shouldForwardProp: (prop) =>
-    !['isAvailable', 'hasEvents', 'isSelected', 'isToday', 'isCurrentMonth', 'isBookable', 'isInRange', 'isRangeEnd', 'isOutOfRange'].includes(prop as string),
+    ![
+      'isAvailable',
+      'hasEvents',
+      'isSelected',
+      'isToday',
+      'isCurrentMonth',
+      'isBookable',
+      'isInRange',
+      'isRangeEnd',
+      'isOutOfRange',
+    ].includes(prop as string),
 })<{
   isAvailable?: boolean;
   hasEvents?: boolean;
@@ -135,86 +132,92 @@ const StyledDay = styled(Box, {
   isInRange?: boolean;
   isRangeEnd?: boolean;
   isOutOfRange?: boolean;
-}>(({ theme, isAvailable = false,
-  hasEvents = false,
-  isSelected = false,
-  isToday = false,
-  isCurrentMonth = true,
-  isBookable = true,
-  isInRange = false,
-  isRangeEnd = false,
-  isOutOfRange = false,
-}) => ({
-  position: 'relative',
-  aspectRatio: '1',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  justifyContent: 'center',
-  padding: tokens.spacing.space[1],
-  cursor: isBookable && isCurrentMonth && !isOutOfRange ? 'pointer' : 'not-allowed',
-  transition: tokens.animation.transition.all,
-  borderRadius: tokens.spacing.radius.md,
-  border: '2px solid transparent',
-  minWidth: 0, // Allow shrinking in grid
-  overflow: 'hidden',
-  background: (() => {
-    if (!isCurrentMonth) return 'transparent';
-    if (isOutOfRange) return tokens.color.base.sage[100];
-    if (hasEvents && !isAvailable) return tokens.color.semantic.error.subtle;
-    if (hasEvents && isAvailable) return tokens.color.semantic.warning.subtle;
-    if (isAvailable) return tokens.color.semantic.success.subtle;
-    return tokens.color.base.sage[50];
-  })(),
-  [theme.breakpoints.down('sm')]: {
-    padding: '2px',
-    borderWidth: '1px',
-    borderRadius: tokens.spacing.radius.sm,
-  },
-
-  // Range selection styling
-  ...(isInRange && {
-    background: `${tokens.color.base.forest[50]} !important`,
-    borderRadius: 0,
-  }),
-
-  ...(isRangeEnd && {
-    border: `2px solid ${tokens.color.base.forest[600]}`,
-    background: `${tokens.color.base.forest[100]} !important`,
-    boxShadow: tokens.shadow.elevation.md,
+}>(
+  ({
+    theme,
+    isAvailable = false,
+    hasEvents = false,
+    isSelected = false,
+    isToday = false,
+    isCurrentMonth = true,
+    isBookable = true,
+    isInRange = false,
+    isRangeEnd = false,
+    isOutOfRange = false,
+  }) => ({
+    position: 'relative',
+    aspectRatio: '1',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: tokens.spacing.space[1],
+    cursor: isBookable && isCurrentMonth && !isOutOfRange ? 'pointer' : 'not-allowed',
+    transition: tokens.animation.transition.all,
     borderRadius: tokens.spacing.radius.md,
-  }),
-
-  ...(isSelected && {
-    border: `2px solid ${tokens.color.base.forest[600]}`,
-    background: `${tokens.color.base.forest[100]} !important`,
-    boxShadow: tokens.shadow.elevation.md,
-    borderRadius: tokens.spacing.radius.md,
-  }),
-
-  ...(isToday && !isSelected && !isRangeEnd && {
-    border: `2px solid ${tokens.color.base.gold[500]}`,
-    boxShadow: tokens.shadow.glow.gold,
-  }),
-
-  ...(!isCurrentMonth && {
-    opacity: 0.4,
-  }),
-
-  ...(isOutOfRange && {
-    opacity: 0.5,
-  }),
-
-  ...(isBookable && isCurrentMonth && !isOutOfRange && {
-    '&:hover': {
-      transform: 'scale(1.05)',
-      boxShadow: tokens.shadow.elevation.lg,
-      background: isAvailable
-        ? tokens.color.base.forest[50]
-        : tokens.color.base.sage[100],
+    border: '2px solid transparent',
+    minWidth: 0, // Allow shrinking in grid
+    overflow: 'hidden',
+    background: (() => {
+      if (!isCurrentMonth) return 'transparent';
+      if (isOutOfRange) return tokens.color.base.sage[100];
+      if (hasEvents && !isAvailable) return tokens.color.semantic.error.subtle;
+      if (hasEvents && isAvailable) return tokens.color.semantic.warning.subtle;
+      if (isAvailable) return tokens.color.semantic.success.subtle;
+      return tokens.color.base.sage[50];
+    })(),
+    [theme.breakpoints.down('sm')]: {
+      padding: '2px',
+      borderWidth: '1px',
+      borderRadius: tokens.spacing.radius.sm,
     },
+
+    // Range selection styling
+    ...(isInRange && {
+      background: `${tokens.color.base.forest[50]} !important`,
+      borderRadius: 0,
+    }),
+
+    ...(isRangeEnd && {
+      border: `2px solid ${tokens.color.base.forest[600]}`,
+      background: `${tokens.color.base.forest[100]} !important`,
+      boxShadow: tokens.shadow.elevation.md,
+      borderRadius: tokens.spacing.radius.md,
+    }),
+
+    ...(isSelected && {
+      border: `2px solid ${tokens.color.base.forest[600]}`,
+      background: `${tokens.color.base.forest[100]} !important`,
+      boxShadow: tokens.shadow.elevation.md,
+      borderRadius: tokens.spacing.radius.md,
+    }),
+
+    ...(isToday &&
+      !isSelected &&
+      !isRangeEnd && {
+        border: `2px solid ${tokens.color.base.gold[500]}`,
+        boxShadow: tokens.shadow.glow.gold,
+      }),
+
+    ...(!isCurrentMonth && {
+      opacity: 0.4,
+    }),
+
+    ...(isOutOfRange && {
+      opacity: 0.5,
+    }),
+
+    ...(isBookable &&
+      isCurrentMonth &&
+      !isOutOfRange && {
+        '&:hover': {
+          transform: 'scale(1.05)',
+          boxShadow: tokens.shadow.elevation.lg,
+          background: isAvailable ? tokens.color.base.forest[50] : tokens.color.base.sage[100],
+        },
+      }),
   }),
-}));
+);
 
 const StyledEventIndicator = styled(Box)(() => ({
   position: 'absolute',
@@ -260,38 +263,38 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
   const [currentMonth, setCurrentMonth] = useState(new Date());
   // Track if we're selecting the end date in range mode
   const [isSelectingEndDate, setIsSelectingEndDate] = useState(false);
-  
+
   // Calculate availability for each day
   const monthAvailability = useMemo(() => {
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
     const monthDays = eachDayOfInterval({ start, end });
 
-    return monthDays.map(date => {
+    return monthDays.map((date) => {
       // Filter events by comparing date portions only
       // API returns datetimes already in Philippines timezone format (e.g., "2025-10-30T14:00:00")
-      const dayEvents = events.filter(event => {
+      const dayEvents = events.filter((event) => {
         // Extract just the date portion (YYYY-MM-DD) from the event's start_date
         const eventDateStr = event.start_date.split('T')[0];
         const calendarDateStr = format(date, 'yyyy-MM-dd');
         // Compare date strings directly
         return eventDateStr === calendarDateStr;
       });
-      
+
       // Check booking constraints from backend business rules
       const today = new Date();
       const daysDiff = Math.ceil((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-      
+
       const isPastDate = isBefore(date, startOfDay(today));
       const tooSoon = daysDiff < minAdvanceBookingDays;
       const tooFar = daysDiff > maxAdvanceBookingDays;
       // Block date if ANY CONFIRMED event exists (business requirement)
-      const hasConfirmedEvent = dayEvents.some(e => e.status === 'CONFIRMED');
+      const hasConfirmedEvent = dayEvents.some((e) => e.status === 'CONFIRMED');
       const fullyBooked = hasConfirmedEvent;
-      
+
       let isBookable = true;
       let reason = '';
-      
+
       if (isPastDate) {
         isBookable = false;
         reason = 'Past date';
@@ -305,7 +308,7 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
         isBookable = false;
         reason = 'Fully booked';
       }
-      
+
       return {
         date,
         isAvailable: !fullyBooked && !isPastDate && !tooSoon && !tooFar,
@@ -315,26 +318,26 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
       };
     });
   }, [currentMonth, events, minAdvanceBookingDays, maxAdvanceBookingDays]);
-  
+
   const days = useMemo(() => {
     const start = startOfMonth(currentMonth);
     const end = endOfMonth(currentMonth);
     const monthDays = eachDayOfInterval({ start, end });
-    
+
     // Add padding days for calendar grid
     const startPadding = getDay(start);
     const endPadding = 6 - getDay(end);
-    
-    const paddingStart = Array(startPadding).fill(null).map((_, i) => 
-      new Date(start.getFullYear(), start.getMonth(), -startPadding + i + 1)
-    );
-    const paddingEnd = Array(endPadding).fill(null).map((_, i) => 
-      new Date(end.getFullYear(), end.getMonth() + 1, i + 1)
-    );
-    
+
+    const paddingStart = Array(startPadding)
+      .fill(null)
+      .map((_, i) => new Date(start.getFullYear(), start.getMonth(), -startPadding + i + 1));
+    const paddingEnd = Array(endPadding)
+      .fill(null)
+      .map((_, i) => new Date(end.getFullYear(), end.getMonth() + 1, i + 1));
+
     return [...paddingStart, ...monthDays, ...paddingEnd];
   }, [currentMonth]);
-  
+
   const handlePrevMonth = () => {
     const newMonth = subMonths(currentMonth, 1);
     setCurrentMonth(newMonth);
@@ -350,7 +353,7 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
       onMonthChange(newMonth);
     }
   };
-  
+
   // Helper functions for range selection
   const isDateInRange = (date: Date): boolean => {
     if (!isRangeMode || !selectedDate || !selectedEndDate) return false;
@@ -425,17 +428,19 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
       }
     }
   };
-  
+
   const getSlotForDate = (date: Date): AvailabilitySlot => {
-    return monthAvailability.find(slot => isSameDay(slot.date, date)) || {
-      date,
-      isAvailable: false,
-      hasEvents: [],
-      isBookable: false,
-      reason: 'No data',
-    };
+    return (
+      monthAvailability.find((slot) => isSameDay(slot.date, date)) || {
+        date,
+        isAvailable: false,
+        hasEvents: [],
+        isBookable: false,
+        reason: 'No data',
+      }
+    );
   };
-  
+
   const getStatusIcon = (slot: AvailabilitySlot) => {
     if (!slot.isBookable) {
       return <Cancel sx={{ fontSize: 12, color: tokens.color.semantic.error.main }} />;
@@ -448,7 +453,7 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
     }
     return null;
   };
-  
+
   return (
     <StyledCalendarContainer>
       <GlassCard
@@ -466,27 +471,25 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
           <IconButton onClick={handlePrevMonth} size="small">
             <ChevronLeft />
           </IconButton>
-          
+
           <Typography variant="h6" fontWeight={600} color={tokens.color.base.forest[700]}>
             {format(currentMonth, 'MMMM yyyy')}
           </Typography>
-          
+
           <IconButton onClick={handleNextMonth} size="small">
             <ChevronRight />
           </IconButton>
         </StyledCalendarHeader>
-        
+
         {/* Day Headers */}
         {!compact && (
           <StyledCalendarGrid>
-            {dayNames.map(day => (
-              <StyledDayHeader key={day}>
-                {isMobile ? day.charAt(0) : day}
-              </StyledDayHeader>
+            {dayNames.map((day) => (
+              <StyledDayHeader key={day}>{isMobile ? day.charAt(0) : day}</StyledDayHeader>
             ))}
           </StyledCalendarGrid>
         )}
-        
+
         {/* Calendar Days */}
         <StyledCalendarGrid>
           {days.map((date, index) => {
@@ -530,7 +533,9 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
                         {getTooltipText()}
                       </Typography>
                     </Box>
-                  ) : ''
+                  ) : (
+                    ''
+                  )
                 }
                 placement="top"
                 arrow
@@ -557,15 +562,13 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
 
                   {isCurrentMonth && getStatusIcon(slot)}
 
-                  {isCurrentMonth && slot.hasEvents.length > 0 && (
-                    <StyledEventIndicator />
-                  )}
+                  {isCurrentMonth && slot.hasEvents.length > 0 && <StyledEventIndicator />}
                 </StyledDay>
               </Tooltip>
             );
           })}
         </StyledCalendarGrid>
-        
+
         {/* Legend */}
         <StyledLegend>
           <Box display="flex" alignItems="center" gap={0.5}>
@@ -582,9 +585,9 @@ export const EventAvailabilityCalendar: React.FC<EventAvailabilityCalendarProps>
           </Box>
           {isToday(new Date()) && (
             <Box display="flex" alignItems="center" gap={0.5}>
-              <Box 
-                width={16} 
-                height={16} 
+              <Box
+                width={16}
+                height={16}
                 border={`2px solid ${tokens.color.base.gold[500]}`}
                 borderRadius={1}
               />

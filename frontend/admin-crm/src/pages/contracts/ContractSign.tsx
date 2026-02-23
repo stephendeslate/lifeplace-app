@@ -2,15 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {
-  Box,
-  Typography,
-  Button,
-  Alert,
-  Chip,
-  Stack,
-  CircularProgress,
-} from '@mui/material';
+import { Box, Typography, Button, Alert, Chip, Stack, CircularProgress } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
   Description as ContractIcon,
@@ -25,7 +17,11 @@ export const ContractSign: React.FC = () => {
   const navigate = useNavigate();
   const { setBreadcrumbs } = useLayout();
 
-  const { data: contract, isLoading, error } = useEventContract(contractId ? parseInt(contractId) : 0);
+  const {
+    data: contract,
+    isLoading,
+    error,
+  } = useEventContract(contractId ? parseInt(contractId) : 0);
   const [signingDialogOpen, setSigningDialogOpen] = React.useState(false);
 
   // Set breadcrumbs via layout context
@@ -33,7 +29,10 @@ export const ContractSign: React.FC = () => {
     if (contract) {
       setBreadcrumbs([
         { label: 'Events', path: '/events' },
-        { label: contract.event_details?.name || 'Event', path: contract.event_details?.id ? `/events/${contract.event_details.id}` : '/events' },
+        {
+          label: contract.event_details?.name || 'Event',
+          path: contract.event_details?.id ? `/events/${contract.event_details.id}` : '/events',
+        },
         { label: `Contract #${contract.id}`, path: `/contracts/${contract.id}` },
         { label: 'Sign' },
       ]);
@@ -86,9 +85,7 @@ export const ContractSign: React.FC = () => {
   if (error) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="error">
-          Failed to load contract. Please try again later.
-        </Alert>
+        <Alert severity="error">Failed to load contract. Please try again later.</Alert>
       </Box>
     );
   }
@@ -97,9 +94,7 @@ export const ContractSign: React.FC = () => {
   if (!contract) {
     return (
       <Box sx={{ p: 3 }}>
-        <Alert severity="warning">
-          Contract not found.
-        </Alert>
+        <Alert severity="warning">Contract not found.</Alert>
       </Box>
     );
   }
@@ -146,11 +141,7 @@ export const ContractSign: React.FC = () => {
             </Box>
           </Box>
           <Stack direction="row" spacing={2}>
-            <Button
-              variant="outlined"
-              startIcon={<ArrowBackIcon />}
-              onClick={handleBackToContract}
-            >
+            <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleBackToContract}>
               Back to Contract
             </Button>
             {canSign && (
@@ -195,12 +186,7 @@ export const ContractSign: React.FC = () => {
             >
               <ContractIcon sx={{ fontSize: 40, color: 'primary.main' }} />
             </Box>
-            <Typography
-              variant="h5"
-              fontWeight={700}
-              color="primary.main"
-              gutterBottom
-            >
+            <Typography variant="h5" fontWeight={700} color="primary.main" gutterBottom>
               Ready to Sign
             </Typography>
             <Typography
@@ -222,17 +208,15 @@ export const ContractSign: React.FC = () => {
           </Box>
         ) : (
           <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Alert
-              severity="info"
-              sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}
-            >
+            <Alert severity="info" sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}>
               This contract is not available for signing at this time.
             </Alert>
             <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
               Current status: <strong>{contract.status}</strong>
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Contracts can only be signed when they have been sent to the client and are awaiting signatures.
+              Contracts can only be signed when they have been sent to the client and are awaiting
+              signatures.
             </Typography>
           </Box>
         )}

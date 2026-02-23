@@ -28,7 +28,10 @@ export const useAuthOperations = () => {
   const loginMutation = useMutation({
     mutationFn: (credentials: LoginCredentials) => authApi.login(credentials),
     onSuccess: (data) => {
-      showSuccess('Welcome!', `Successfully logged in as ${data.user.first_name || data.user.email}`);
+      showSuccess(
+        'Welcome!',
+        `Successfully logged in as ${data.user.first_name || data.user.email}`,
+      );
       // Invalidate and refetch user data
       queryClient.invalidateQueries({ queryKey: ['currentUser'] });
     },

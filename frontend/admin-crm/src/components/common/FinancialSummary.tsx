@@ -1,15 +1,7 @@
 // frontend/admin-crm/src/components/common/FinancialSummary.tsx
 
 import React from 'react';
-import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  Stack,
-  LinearProgress,
-  Alert,
-} from '@mui/material';
+import { Box, Card, CardContent, Typography, Stack, LinearProgress, Alert } from '@mui/material';
 import {
   AttachMoney as MoneyIcon,
   TrendingUp as TrendingUpIcon,
@@ -66,21 +58,27 @@ const formatFinancialAmount = (amount: number, currency = 'PHP') => {
 
 const getStatusColor = (status?: string): 'success' | 'error' | 'warning' | 'info' | 'default' => {
   switch (status) {
-    case 'positive': return 'success';
-    case 'negative': return 'error';
-    case 'warning': return 'warning';
-    case 'neutral': return 'info';
-    default: return 'default';
+    case 'positive':
+      return 'success';
+    case 'negative':
+      return 'error';
+    case 'warning':
+      return 'warning';
+    case 'neutral':
+      return 'info';
+    default:
+      return 'default';
   }
 };
 
-const MetricCard: React.FC<{ 
-  metric: FinancialMetric; 
+const MetricCard: React.FC<{
+  metric: FinancialMetric;
   compactMode?: boolean;
   currency?: string;
 }> = ({ metric, currency = 'PHP' }) => {
-  const displayValue = metric.formatted || formatFinancialAmount(metric.value, metric.currency || currency);
-  
+  const displayValue =
+    metric.formatted || formatFinancialAmount(metric.value, metric.currency || currency);
+
   return (
     <Card variant="outlined" sx={{ height: '100%' }}>
       <CardContent sx={{ pb: 2 }}>
@@ -88,15 +86,9 @@ const MetricCard: React.FC<{
           <Box display="flex" justifyContent="space-between" alignItems="start">
             <Box display="flex" alignItems="center" gap={1}>
               {metric.icon && (
-                <Box sx={{ color: `${getStatusColor(metric.status)}.main` }}>
-                  {metric.icon}
-                </Box>
+                <Box sx={{ color: `${getStatusColor(metric.status)}.main` }}>{metric.icon}</Box>
               )}
-              <Typography 
-                variant="body2" 
-                color="text.secondary"
-                fontWeight="medium"
-              >
+              <Typography variant="body2" color="text.secondary" fontWeight="medium">
                 {metric.label}
               </Typography>
             </Box>
@@ -107,15 +99,18 @@ const MetricCard: React.FC<{
                 ) : (
                   <TrendingDownIcon fontSize="small" color="error" />
                 )}
-                <Typography variant="caption" color={metric.trend.direction === 'up' ? 'success.main' : 'error.main'}>
+                <Typography
+                  variant="caption"
+                  color={metric.trend.direction === 'up' ? 'success.main' : 'error.main'}
+                >
                   {metric.trend.percentage}%
                 </Typography>
               </Box>
             )}
           </Box>
-          
-          <Typography 
-            variant="h5" 
+
+          <Typography
+            variant="h5"
             fontWeight="bold"
             color={`${getStatusColor(metric.status)}.main`}
           >
@@ -127,8 +122,8 @@ const MetricCard: React.FC<{
   );
 };
 
-const PaymentBreakdownCard: React.FC<{ 
-  breakdown: PaymentBreakdown; 
+const PaymentBreakdownCard: React.FC<{
+  breakdown: PaymentBreakdown;
   compactMode?: boolean;
   currency?: string;
 }> = ({ breakdown, currency = 'PHP' }) => {
@@ -246,16 +241,15 @@ const PaymentBreakdownCard: React.FC<{
           {breakdown.overdue > 0 && (
             <Alert severity="warning" sx={{ mt: 1 }}>
               <Typography variant="body2">
-                {formatFinancialAmount(breakdown.overdue, breakdown.currency || currency)} is overdue and requires immediate attention.
+                {formatFinancialAmount(breakdown.overdue, breakdown.currency || currency)} is
+                overdue and requires immediate attention.
               </Typography>
             </Alert>
           )}
 
           {paidPercentage === 100 && (
             <Alert severity="success" sx={{ mt: 1 }}>
-              <Typography variant="body2">
-                All payments have been completed! 🎉
-              </Typography>
+              <Typography variant="body2">All payments have been completed! 🎉</Typography>
             </Alert>
           )}
         </Stack>
@@ -265,7 +259,7 @@ const PaymentBreakdownCard: React.FC<{
 };
 
 export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
-  title = "Financial Summary",
+  title = 'Financial Summary',
   metrics = [],
   paymentBreakdown,
   compactMode = false,
@@ -301,31 +295,26 @@ export const FinancialSummary: React.FC<FinancialSummaryProps> = ({
 
       {/* Metrics Grid */}
       {metrics.length > 0 && (
-        <Box 
-          display="grid" 
-          gridTemplateColumns={{ 
-            xs: '1fr', 
-            sm: 'repeat(2, 1fr)', 
-            md: metrics.length <= 2 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)' 
+        <Box
+          display="grid"
+          gridTemplateColumns={{
+            xs: '1fr',
+            sm: 'repeat(2, 1fr)',
+            md: metrics.length <= 2 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
           }}
           gap={2}
         >
           {metrics.map((metric, index) => (
-            <MetricCard 
-              key={index}
-              metric={metric} 
-              compactMode={compactMode} 
-              currency={currency}
-            />
+            <MetricCard key={index} metric={metric} compactMode={compactMode} currency={currency} />
           ))}
         </Box>
       )}
 
       {/* Payment Breakdown */}
       {paymentBreakdown && (
-        <PaymentBreakdownCard 
-          breakdown={paymentBreakdown} 
-          compactMode={compactMode} 
+        <PaymentBreakdownCard
+          breakdown={paymentBreakdown}
+          compactMode={compactMode}
           currency={currency}
         />
       )}
@@ -356,7 +345,7 @@ export const calculateEventFinancials = (event: EventFinancialData): FinancialMe
   const currentTotal = parseFloat(String(event.current_total_amount || event.total_price || '0'));
   const totalPaid = parseFloat(String(event.total_amount_paid || '0'));
   const totalDue = parseFloat(String(event.total_amount_due || '0'));
-  
+
   return [
     {
       label: 'Event Value',
@@ -385,9 +374,12 @@ export const calculateClientFinancials = (events: EventFinancialData[]): Financi
     const eventValue = parseFloat(String(event.current_total_amount || event.total_price || '0'));
     return sum + eventValue;
   }, 0);
-  const totalPaid = events.reduce((sum, event) => sum + parseFloat(String(event.total_amount_paid || '0')), 0);
+  const totalPaid = events.reduce(
+    (sum, event) => sum + parseFloat(String(event.total_amount_paid || '0')),
+    0,
+  );
   const averageEventValue = events.length > 0 ? totalRevenue / events.length : 0;
-  
+
   return [
     {
       label: 'Total Revenue',

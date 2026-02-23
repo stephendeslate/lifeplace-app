@@ -1,6 +1,6 @@
 // frontend/client-portal/src/pages/payments/FinancialPortal.tsx
 
-import React, { useState } from "react";
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -27,7 +27,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-} from "@mui/material";
+} from '@mui/material';
 import {
   Payment as PaymentIcon,
   Receipt as ReceiptIcon,
@@ -45,32 +45,32 @@ import {
   Close as CloseIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-} from "@mui/icons-material";
-import { useDocumentTitle } from "../../hooks/useDocumentTitle";
-import { formatPhilippinesTime } from "../../utils/timezone";
-import { GlassCard } from "../../design-system/components/GlassCard";
-import { AnimatedElement } from "../../design-system/components/AnimatedElement";
+} from '@mui/icons-material';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
+import { formatPhilippinesTime } from '../../utils/timezone';
+import { GlassCard } from '../../design-system/components/GlassCard';
+import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import {
   useFinancialOverview,
   useDownloadPaymentReceipt,
   useDownloadInvoicePdf,
   usePaymentMethods,
-} from "../../hooks/useFinancial";
-import { useInvoicePayments } from "../../hooks/useInvoicePayments";
-import { useCurrencySettings } from "../../hooks/useCurrency";
-import FinancialApi from "../../apis/financial.api";
+} from '../../hooks/useFinancial';
+import { useInvoicePayments } from '../../hooks/useInvoicePayments';
+import { useCurrencySettings } from '../../hooks/useCurrency';
+import FinancialApi from '../../apis/financial.api';
 import type {
   Payment,
   Invoice,
   InvoicePaymentResponse,
   PaymentMethod,
-} from "../../types/financial.types";
-import { PaymentViewer } from "../../components/payments/PaymentViewer";
-import { InvoiceViewer } from "../../components/payments/InvoiceViewer";
-import { InvoicePaymentDialog } from "../../components/payments/InvoicePaymentDialog";
-import PaymentMethodEditDialog from "../../components/payments/PaymentMethodEditDialog";
-import PaymentMethodDeleteDialog from "../../components/payments/PaymentMethodDeleteDialog";
-import AddPaymentMethodDialog from "../../components/payments/AddPaymentMethodDialog";
+} from '../../types/financial.types';
+import { PaymentViewer } from '../../components/payments/PaymentViewer';
+import { InvoiceViewer } from '../../components/payments/InvoiceViewer';
+import { InvoicePaymentDialog } from '../../components/payments/InvoicePaymentDialog';
+import PaymentMethodEditDialog from '../../components/payments/PaymentMethodEditDialog';
+import PaymentMethodDeleteDialog from '../../components/payments/PaymentMethodDeleteDialog';
+import AddPaymentMethodDialog from '../../components/payments/AddPaymentMethodDialog';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -92,22 +92,19 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
 };
 
 const FinancialPortal: React.FC = () => {
-  useDocumentTitle("Payments | LifePlace Alfonso");
+  useDocumentTitle('Payments | LifePlace Alfonso');
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [activeTab, setActiveTab] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] =
-    useState<Invoice | null>(null);
+  const [selectedInvoiceForPayment, setSelectedInvoiceForPayment] = useState<Invoice | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [invoiceDialogOpen, setInvoiceDialogOpen] = useState(false);
-  const [invoicePaymentDialogOpen, setInvoicePaymentDialogOpen] =
-    useState(false);
+  const [invoicePaymentDialogOpen, setInvoicePaymentDialogOpen] = useState(false);
 
   // Payment method dialog states
-  const [selectedPaymentMethod, setSelectedPaymentMethod] =
-    useState<PaymentMethod | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [editPaymentMethodOpen, setEditPaymentMethodOpen] = useState(false);
   const [deletePaymentMethodOpen, setDeletePaymentMethodOpen] = useState(false);
   const [addPaymentMethodOpen, setAddPaymentMethodOpen] = useState(false);
@@ -116,8 +113,7 @@ const FinancialPortal: React.FC = () => {
   const { formatAmount } = useCurrencySettings();
 
   // Fetch financial data
-  const { payments, invoices, summary, isLoading, error, refetch } =
-    useFinancialOverview();
+  const { payments, invoices, summary, isLoading, error, refetch } = useFinancialOverview();
 
   // Mutations
   const downloadReceiptMutation = useDownloadPaymentReceipt();
@@ -150,13 +146,13 @@ const FinancialPortal: React.FC = () => {
 
   const getPaymentStatusIcon = (status: string) => {
     switch (status.toUpperCase()) {
-      case "PAID":
-      case "COMPLETED":
+      case 'PAID':
+      case 'COMPLETED':
         return <CheckCircleIcon />;
-      case "PENDING":
+      case 'PENDING':
         return <ScheduleIcon />;
-      case "OVERDUE":
-      case "FAILED":
+      case 'OVERDUE':
+      case 'FAILED':
         return <ErrorIcon />;
       default:
         return <ScheduleIcon />;
@@ -165,12 +161,12 @@ const FinancialPortal: React.FC = () => {
 
   const getPaymentMethodIcon = (method: string) => {
     switch (method) {
-      case "CREDIT_CARD":
+      case 'CREDIT_CARD':
         return <CreditCardIcon />;
-      case "BANK_TRANSFER":
+      case 'BANK_TRANSFER':
         return <AccountBalanceIcon />;
-      case "CHECK":
-      case "CASH":
+      case 'CHECK':
+      case 'CASH':
         return <ReceiptIcon />;
       default:
         return <PaymentIcon />;
@@ -256,8 +252,8 @@ const FinancialPortal: React.FC = () => {
   if (error) {
     return (
       <>
-        <Box sx={{ p: 4, textAlign: "center" }}>
-          <ErrorIcon sx={{ fontSize: 64, color: "error.main", mb: 2 }} />
+        <Box sx={{ p: 4, textAlign: 'center' }}>
+          <ErrorIcon sx={{ fontSize: 64, color: 'error.main', mb: 2 }} />
           <Typography variant="h6" gutterBottom>
             Error Loading Financial Data
           </Typography>
@@ -277,12 +273,9 @@ const FinancialPortal: React.FC = () => {
     );
   }
 
-  const getTotalPaid = () =>
-    summary?.total_paid ? parseFloat(summary.total_paid) : 0;
-  const getTotalPending = () =>
-    summary?.total_pending ? parseFloat(summary.total_pending) : 0;
-  const getTotalOverdue = () =>
-    summary?.total_overdue ? parseFloat(summary.total_overdue) : 0;
+  const getTotalPaid = () => (summary?.total_paid ? parseFloat(summary.total_paid) : 0);
+  const getTotalPending = () => (summary?.total_pending ? parseFloat(summary.total_pending) : 0);
+  const getTotalOverdue = () => (summary?.total_overdue ? parseFloat(summary.total_overdue) : 0);
 
   return (
     <>
@@ -290,10 +283,7 @@ const FinancialPortal: React.FC = () => {
         {/* Header */}
         <AnimatedElement animation="slideDown" delay={100}>
           <Box sx={{ mb: 4 }}>
-            <Typography
-              variant="h4"
-              sx={{ fontWeight: 600, mb: 1, color: "primary.main" }}
-            >
+            <Typography variant="h4" sx={{ fontWeight: 600, mb: 1, color: 'primary.main' }}>
               Payments & Invoices
             </Typography>
             <Typography variant="body1" color="text.secondary">
@@ -313,8 +303,8 @@ const FinancialPortal: React.FC = () => {
         <AnimatedElement animation="slideUp" delay={200}>
           <Box
             sx={{
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
+              display: 'flex',
+              flexDirection: { xs: 'column', sm: 'row' },
               gap: 3,
               mb: 4,
             }}
@@ -326,20 +316,16 @@ const FinancialPortal: React.FC = () => {
               sx={{
                 flex: 1,
                 p: 3,
-                border: `1px solid ${alpha("#fff", 0.1)}`,
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  transform: "translateY(-4px)",
-                  boxShadow: "0 12px 40px rgba(0,0,0,0.1)",
+                border: `1px solid ${alpha('#fff', 0.1)}`,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.1)',
                 },
               }}
             >
               <Stack spacing={2}>
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="space-between"
-                >
+                <Box display="flex" alignItems="center" justifyContent="space-between">
                   <Avatar
                     sx={{
                       backgroundColor: alpha(theme.palette.success.main, 0.15),
@@ -361,10 +347,7 @@ const FinancialPortal: React.FC = () => {
                   <Typography variant="body2" color="text.secondary">
                     Total Paid
                   </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: theme.palette.success.main }}
-                  >
+                  <Typography variant="caption" sx={{ color: theme.palette.success.main }}>
                     {summary?.completed_count || 0} payments completed
                   </Typography>
                 </Box>
@@ -378,20 +361,16 @@ const FinancialPortal: React.FC = () => {
               sx={{
                 flex: 1,
                 p: 3,
-                border: `1px solid ${alpha("#fff", 0.1)}`,
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  transform: "translateY(-4px)",
-                  boxShadow: "0 12px 40px rgba(0,0,0,0.1)",
+                border: `1px solid ${alpha('#fff', 0.1)}`,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.1)',
                 },
               }}
             >
               <Stack spacing={2}>
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="space-between"
-                >
+                <Box display="flex" alignItems="center" justifyContent="space-between">
                   <Avatar
                     sx={{
                       backgroundColor: alpha(theme.palette.warning.main, 0.15),
@@ -413,10 +392,7 @@ const FinancialPortal: React.FC = () => {
                   <Typography variant="body2" color="text.secondary">
                     Pending Payments
                   </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: theme.palette.warning.main }}
-                  >
+                  <Typography variant="caption" sx={{ color: theme.palette.warning.main }}>
                     {summary?.pending_count || 0} payments pending
                   </Typography>
                 </Box>
@@ -430,20 +406,16 @@ const FinancialPortal: React.FC = () => {
               sx={{
                 flex: 1,
                 p: 3,
-                border: `1px solid ${alpha("#fff", 0.1)}`,
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  transform: "translateY(-4px)",
-                  boxShadow: "0 12px 40px rgba(0,0,0,0.1)",
+                border: `1px solid ${alpha('#fff', 0.1)}`,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.1)',
                 },
               }}
             >
               <Stack spacing={2}>
-                <Box
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="space-between"
-                >
+                <Box display="flex" alignItems="center" justifyContent="space-between">
                   <Avatar
                     sx={{
                       backgroundColor: alpha(theme.palette.error.main, 0.15),
@@ -458,17 +430,13 @@ const FinancialPortal: React.FC = () => {
                     onClick={() => refetch()}
                     disabled={isLoading}
                     sx={{
-                      backgroundColor: alpha("#fff", 0.1),
-                      "&:hover": {
-                        backgroundColor: alpha("#fff", 0.2),
+                      backgroundColor: alpha('#fff', 0.1),
+                      '&:hover': {
+                        backgroundColor: alpha('#fff', 0.2),
                       },
                     }}
                   >
-                    {isLoading ? (
-                      <CircularProgress size={16} />
-                    ) : (
-                      <RefreshIcon fontSize="small" />
-                    )}
+                    {isLoading ? <CircularProgress size={16} /> : <RefreshIcon fontSize="small" />}
                   </IconButton>
                 </Box>
                 <Box>
@@ -481,10 +449,7 @@ const FinancialPortal: React.FC = () => {
                   <Typography variant="body2" color="text.secondary">
                     Overdue Amount
                   </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{ color: theme.palette.error.main }}
-                  >
+                  <Typography variant="caption" sx={{ color: theme.palette.error.main }}>
                     Overdue invoices
                   </Typography>
                 </Box>
@@ -499,16 +464,16 @@ const FinancialPortal: React.FC = () => {
             variant="light"
             intensity="medium"
             sx={{
-              border: `1px solid ${alpha("#fff", 0.1)}`,
-              overflow: "hidden",
+              border: `1px solid ${alpha('#fff', 0.1)}`,
+              overflow: 'hidden',
             }}
           >
             <Box
               sx={{
                 borderBottom: 1,
                 borderColor: alpha(theme.palette.divider, 0.3),
-                backgroundColor: alpha("#fff", 0.05),
-                backdropFilter: "blur(10px)",
+                backgroundColor: alpha('#fff', 0.05),
+                backdropFilter: 'blur(10px)',
               }}
             >
               <Tabs
@@ -517,16 +482,16 @@ const FinancialPortal: React.FC = () => {
                 aria-label="financial tabs"
                 sx={{
                   px: 3,
-                  "& .MuiTab-root": {
+                  '& .MuiTab-root': {
                     color: alpha(theme.palette.text.primary, 0.7),
-                    "&.Mui-selected": {
+                    '&.Mui-selected': {
                       color: theme.palette.primary.main,
                     },
                   },
-                  "& .MuiTabs-indicator": {
+                  '& .MuiTabs-indicator': {
                     backgroundColor: theme.palette.primary.main,
                     height: 3,
-                    borderRadius: "3px 3px 0 0",
+                    borderRadius: '3px 3px 0 0',
                   },
                 }}
               >
@@ -557,12 +522,7 @@ const FinancialPortal: React.FC = () => {
             {/* Payment History Tab */}
             <TabPanel value={activeTab} index={1}>
               <Box sx={{ p: 3 }}>
-                <Box
-                  display="flex"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  mb={3}
-                >
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     Recent Payments
                   </Typography>
@@ -571,11 +531,11 @@ const FinancialPortal: React.FC = () => {
                     startIcon={<DownloadIcon />}
                     size="small"
                     sx={{
-                      backgroundColor: alpha("#fff", 0.1),
-                      backdropFilter: "blur(10px)",
-                      border: `1px solid ${alpha("#fff", 0.2)}`,
-                      "&:hover": {
-                        backgroundColor: alpha("#fff", 0.15),
+                      backgroundColor: alpha('#fff', 0.1),
+                      backdropFilter: 'blur(10px)',
+                      border: `1px solid ${alpha('#fff', 0.2)}`,
+                      '&:hover': {
+                        backgroundColor: alpha('#fff', 0.15),
                       },
                     }}
                   >
@@ -589,26 +549,20 @@ const FinancialPortal: React.FC = () => {
                     intensity="subtle"
                     sx={{
                       p: 8,
-                      textAlign: "center",
-                      border: `1px solid ${alpha("#fff", 0.1)}`,
+                      textAlign: 'center',
+                      border: `1px solid ${alpha('#fff', 0.1)}`,
                     }}
                   >
-                    <PaymentIcon
-                      sx={{ fontSize: 64, color: "grey.400", mb: 2 }}
-                    />
-                    <Typography
-                      variant="h5"
-                      sx={{ fontWeight: 600, mb: 2, color: "primary.main" }}
-                    >
+                    <PaymentIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
                       No Payment History
                     </Typography>
                     <Typography
                       variant="body1"
                       color="text.secondary"
-                      sx={{ mb: 4, maxWidth: 600, mx: "auto" }}
+                      sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}
                     >
-                      Your payment history will appear here once you make
-                      payments.
+                      Your payment history will appear here once you make payments.
                     </Typography>
                   </GlassCard>
                 ) : (
@@ -616,172 +570,117 @@ const FinancialPortal: React.FC = () => {
                     {isMobile ? (
                       /* Mobile: Card layout for payments */
                       <Stack spacing={1.5}>
-                        {(Array.isArray(payments) ? payments : []).map(
-                          (payment) => (
-                            <GlassCard
-                              key={payment.id}
-                              variant="light"
-                              intensity="subtle"
-                              sx={{
-                                p: 2,
-                                border: `1px solid ${alpha("#fff", 0.1)}`,
-                              }}
+                        {(Array.isArray(payments) ? payments : []).map((payment) => (
+                          <GlassCard
+                            key={payment.id}
+                            variant="light"
+                            intensity="subtle"
+                            sx={{
+                              p: 2,
+                              border: `1px solid ${alpha('#fff', 0.1)}`,
+                            }}
+                          >
+                            {/* Top row: description + status chip */}
+                            <Box
+                              display="flex"
+                              justifyContent="space-between"
+                              alignItems="flex-start"
+                              gap={1}
+                              mb={1}
                             >
-                              {/* Top row: description + status chip */}
-                              <Box
-                                display="flex"
-                                justifyContent="space-between"
-                                alignItems="flex-start"
-                                gap={1}
-                                mb={1}
-                              >
-                                <Box sx={{ minWidth: 0, flex: 1 }}>
-                                  <Typography
-                                    variant="body2"
-                                    fontWeight="medium"
-                                    noWrap
-                                  >
-                                    {payment.description ||
-                                      payment.payment_number}
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
-                                    {payment.payment_number}
-                                  </Typography>
-                                </Box>
-                                <Chip
-                                  icon={getPaymentStatusIcon(payment.status)}
-                                  label={payment.status_display}
-                                  size="small"
-                                  color={getPaymentStatusColor(payment.status)}
-                                  variant="outlined"
-                                  sx={{ flexShrink: 0, fontSize: "0.7rem" }}
-                                />
-                              </Box>
-
-                              {/* Amount */}
-                              <Typography
-                                variant="h6"
-                                sx={{ fontWeight: 600, mb: 1 }}
-                              >
-                                {FinancialApi.formatAmount(
-                                  payment.amount,
-                                  payment.currency,
-                                )}
-                              </Typography>
-
-                              {/* Info row: method + date */}
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                alignItems="center"
-                                justifyContent="space-between"
-                                flexWrap="wrap"
-                                useFlexGap
-                                sx={{ mb: 1.5 }}
-                              >
-                                <Box
-                                  display="flex"
-                                  alignItems="center"
-                                  gap={0.5}
-                                >
-                                  {payment.payment_method_details ? (
-                                    <>
-                                      {getPaymentMethodIcon(
-                                        payment.payment_method_details.type,
-                                      )}
-                                      <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                      >
-                                        {
-                                          payment.payment_method_details
-                                            .type_display
-                                        }
-                                      </Typography>
-                                    </>
-                                  ) : payment.inferred_payment_method ? (
-                                    <>
-                                      {getPaymentMethodIcon(
-                                        payment.inferred_payment_method.type,
-                                      )}
-                                      <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                      >
-                                        {
-                                          payment.inferred_payment_method
-                                            .type_display
-                                        }
-                                      </Typography>
-                                    </>
-                                  ) : (
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                    >
-                                      {payment.is_manual
-                                        ? "Manual Payment"
-                                        : "Not specified"}
-                                    </Typography>
-                                  )}
-                                </Box>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {payment.paid_on
-                                    ? new Date(
-                                        payment.paid_on,
-                                      ).toLocaleDateString()
-                                    : new Date(
-                                        payment.due_date,
-                                      ).toLocaleDateString()}
+                              <Box sx={{ minWidth: 0, flex: 1 }}>
+                                <Typography variant="body2" fontWeight="medium" noWrap>
+                                  {payment.description || payment.payment_number}
                                 </Typography>
-                              </Stack>
+                                <Typography variant="caption" color="text.secondary">
+                                  {payment.payment_number}
+                                </Typography>
+                              </Box>
+                              <Chip
+                                icon={getPaymentStatusIcon(payment.status)}
+                                label={payment.status_display}
+                                size="small"
+                                color={getPaymentStatusColor(payment.status)}
+                                variant="outlined"
+                                sx={{ flexShrink: 0, fontSize: '0.7rem' }}
+                              />
+                            </Box>
 
-                              {/* Action buttons */}
-                              <Stack
-                                direction="row"
-                                spacing={1}
-                                flexWrap="wrap"
-                                useFlexGap
+                            {/* Amount */}
+                            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                              {FinancialApi.formatAmount(payment.amount, payment.currency)}
+                            </Typography>
+
+                            {/* Info row: method + date */}
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                              justifyContent="space-between"
+                              flexWrap="wrap"
+                              useFlexGap
+                              sx={{ mb: 1.5 }}
+                            >
+                              <Box display="flex" alignItems="center" gap={0.5}>
+                                {payment.payment_method_details ? (
+                                  <>
+                                    {getPaymentMethodIcon(payment.payment_method_details.type)}
+                                    <Typography variant="caption" color="text.secondary">
+                                      {payment.payment_method_details.type_display}
+                                    </Typography>
+                                  </>
+                                ) : payment.inferred_payment_method ? (
+                                  <>
+                                    {getPaymentMethodIcon(payment.inferred_payment_method.type)}
+                                    <Typography variant="caption" color="text.secondary">
+                                      {payment.inferred_payment_method.type_display}
+                                    </Typography>
+                                  </>
+                                ) : (
+                                  <Typography variant="caption" color="text.secondary">
+                                    {payment.is_manual ? 'Manual Payment' : 'Not specified'}
+                                  </Typography>
+                                )}
+                              </Box>
+                              <Typography variant="caption" color="text.secondary">
+                                {payment.paid_on
+                                  ? new Date(payment.paid_on).toLocaleDateString()
+                                  : new Date(payment.due_date).toLocaleDateString()}
+                              </Typography>
+                            </Stack>
+
+                            {/* Action buttons */}
+                            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<ViewIcon />}
+                                onClick={() => handleViewPayment(payment)}
+                                sx={{ fontSize: '0.75rem' }}
                               >
+                                View
+                              </Button>
+                              {payment.receipt_number && (
                                 <Button
                                   size="small"
                                   variant="outlined"
-                                  startIcon={<ViewIcon />}
-                                  onClick={() => handleViewPayment(payment)}
-                                  sx={{ fontSize: "0.75rem" }}
+                                  startIcon={
+                                    downloadReceiptMutation.isPending ? (
+                                      <CircularProgress size={14} />
+                                    ) : (
+                                      <DownloadIcon />
+                                    )
+                                  }
+                                  onClick={() => handleDownloadReceipt(payment.id)}
+                                  disabled={downloadReceiptMutation.isPending}
+                                  sx={{ fontSize: '0.75rem' }}
                                 >
-                                  View
+                                  Receipt
                                 </Button>
-                                {payment.receipt_number && (
-                                  <Button
-                                    size="small"
-                                    variant="outlined"
-                                    startIcon={
-                                      downloadReceiptMutation.isPending ? (
-                                        <CircularProgress size={14} />
-                                      ) : (
-                                        <DownloadIcon />
-                                      )
-                                    }
-                                    onClick={() =>
-                                      handleDownloadReceipt(payment.id)
-                                    }
-                                    disabled={downloadReceiptMutation.isPending}
-                                    sx={{ fontSize: "0.75rem" }}
-                                  >
-                                    Receipt
-                                  </Button>
-                                )}
-                              </Stack>
-                            </GlassCard>
-                          ),
-                        )}
+                              )}
+                            </Stack>
+                          </GlassCard>
+                        ))}
                       </Stack>
                     ) : (
                       /* Desktop: Table layout for payments */
@@ -789,11 +688,11 @@ const FinancialPortal: React.FC = () => {
                         variant="light"
                         intensity="subtle"
                         sx={{
-                          border: `1px solid ${alpha("#fff", 0.1)}`,
-                          overflow: "hidden",
+                          border: `1px solid ${alpha('#fff', 0.1)}`,
+                          overflow: 'hidden',
                         }}
                       >
-                        <TableContainer sx={{ backgroundColor: "transparent" }}>
+                        <TableContainer sx={{ backgroundColor: 'transparent' }}>
                           <Table>
                             <TableHead>
                               <TableRow>
@@ -806,161 +705,106 @@ const FinancialPortal: React.FC = () => {
                               </TableRow>
                             </TableHead>
                             <TableBody>
-                              {(Array.isArray(payments) ? payments : []).map(
-                                (payment) => (
-                                  <TableRow key={payment.id} hover>
-                                    <TableCell>
-                                      <Box
-                                        display="flex"
-                                        alignItems="center"
-                                        gap={1}
-                                      >
-                                        <Box>
-                                          <Typography
-                                            variant="body2"
-                                            fontWeight="medium"
-                                          >
-                                            {payment.description ||
-                                              payment.payment_number}
-                                          </Typography>
+                              {(Array.isArray(payments) ? payments : []).map((payment) => (
+                                <TableRow key={payment.id} hover>
+                                  <TableCell>
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                      <Box>
+                                        <Typography variant="body2" fontWeight="medium">
+                                          {payment.description || payment.payment_number}
+                                        </Typography>
+                                        <Typography variant="caption" color="text.secondary">
+                                          {payment.payment_number}
+                                        </Typography>
+                                        {payment.event_details && (
                                           <Typography
                                             variant="caption"
-                                            color="text.secondary"
+                                            display="block"
+                                            sx={{ color: 'primary.main' }}
                                           >
-                                            {payment.payment_number}
+                                            Event #{payment.event_details.id}
                                           </Typography>
-                                          {payment.event_details && (
-                                            <Typography
-                                              variant="caption"
-                                              display="block"
-                                              sx={{ color: "primary.main" }}
-                                            >
-                                              Event #{payment.event_details.id}
-                                            </Typography>
+                                        )}
+                                      </Box>
+                                    </Box>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                      {FinancialApi.formatAmount(payment.amount, payment.currency)}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                      {payment.payment_method_details ? (
+                                        <>
+                                          {getPaymentMethodIcon(
+                                            payment.payment_method_details.type,
                                           )}
-                                        </Box>
-                                      </Box>
-                                    </TableCell>
-                                    <TableCell>
-                                      <Typography
-                                        variant="body2"
-                                        sx={{ fontWeight: 600 }}
-                                      >
-                                        {FinancialApi.formatAmount(
-                                          payment.amount,
-                                          payment.currency,
-                                        )}
-                                      </Typography>
-                                    </TableCell>
-                                    <TableCell>
-                                      <Box
-                                        display="flex"
-                                        alignItems="center"
-                                        gap={1}
-                                      >
-                                        {payment.payment_method_details ? (
-                                          <>
-                                            {getPaymentMethodIcon(
-                                              payment.payment_method_details
-                                                .type,
-                                            )}
-                                            <Typography variant="body2">
-                                              {
-                                                payment.payment_method_details
-                                                  .type_display
-                                              }
-                                            </Typography>
-                                          </>
-                                        ) : payment.inferred_payment_method ? (
-                                          <>
-                                            {getPaymentMethodIcon(
-                                              payment.inferred_payment_method
-                                                .type,
-                                            )}
-                                            <Typography variant="body2">
-                                              {
-                                                payment.inferred_payment_method
-                                                  .type_display
-                                              }
-                                            </Typography>
-                                          </>
-                                        ) : (
-                                          <Typography
-                                            variant="body2"
-                                            color="text.secondary"
-                                          >
-                                            {payment.is_manual
-                                              ? "Manual Payment"
-                                              : "Not specified"}
+                                          <Typography variant="body2">
+                                            {payment.payment_method_details.type_display}
                                           </Typography>
-                                        )}
-                                      </Box>
-                                    </TableCell>
-                                    <TableCell>
-                                      <Chip
-                                        icon={getPaymentStatusIcon(
-                                          payment.status,
-                                        )}
-                                        label={payment.status_display}
-                                        size="small"
-                                        color={getPaymentStatusColor(
-                                          payment.status,
-                                        )}
-                                        variant="outlined"
-                                      />
-                                    </TableCell>
-                                    <TableCell>
-                                      <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                      >
-                                        {payment.paid_on
-                                          ? new Date(
-                                              payment.paid_on,
-                                            ).toLocaleDateString()
-                                          : new Date(
-                                              payment.due_date,
-                                            ).toLocaleDateString()}
-                                      </Typography>
-                                    </TableCell>
-                                    <TableCell>
-                                      <Stack direction="row" spacing={1}>
-                                        <Tooltip title="View Details">
+                                        </>
+                                      ) : payment.inferred_payment_method ? (
+                                        <>
+                                          {getPaymentMethodIcon(
+                                            payment.inferred_payment_method.type,
+                                          )}
+                                          <Typography variant="body2">
+                                            {payment.inferred_payment_method.type_display}
+                                          </Typography>
+                                        </>
+                                      ) : (
+                                        <Typography variant="body2" color="text.secondary">
+                                          {payment.is_manual ? 'Manual Payment' : 'Not specified'}
+                                        </Typography>
+                                      )}
+                                    </Box>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Chip
+                                      icon={getPaymentStatusIcon(payment.status)}
+                                      label={payment.status_display}
+                                      size="small"
+                                      color={getPaymentStatusColor(payment.status)}
+                                      variant="outlined"
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <Typography variant="body2" color="text.secondary">
+                                      {payment.paid_on
+                                        ? new Date(payment.paid_on).toLocaleDateString()
+                                        : new Date(payment.due_date).toLocaleDateString()}
+                                    </Typography>
+                                  </TableCell>
+                                  <TableCell>
+                                    <Stack direction="row" spacing={1}>
+                                      <Tooltip title="View Details">
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => handleViewPayment(payment)}
+                                        >
+                                          <ViewIcon fontSize="small" />
+                                        </IconButton>
+                                      </Tooltip>
+                                      {payment.receipt_number && (
+                                        <Tooltip title="Download Receipt">
                                           <IconButton
                                             size="small"
-                                            onClick={() =>
-                                              handleViewPayment(payment)
-                                            }
+                                            onClick={() => handleDownloadReceipt(payment.id)}
+                                            disabled={downloadReceiptMutation.isPending}
                                           >
-                                            <ViewIcon fontSize="small" />
+                                            {downloadReceiptMutation.isPending ? (
+                                              <CircularProgress size={14} />
+                                            ) : (
+                                              <DownloadIcon fontSize="small" />
+                                            )}
                                           </IconButton>
                                         </Tooltip>
-                                        {payment.receipt_number && (
-                                          <Tooltip title="Download Receipt">
-                                            <IconButton
-                                              size="small"
-                                              onClick={() =>
-                                                handleDownloadReceipt(
-                                                  payment.id,
-                                                )
-                                              }
-                                              disabled={
-                                                downloadReceiptMutation.isPending
-                                              }
-                                            >
-                                              {downloadReceiptMutation.isPending ? (
-                                                <CircularProgress size={14} />
-                                              ) : (
-                                                <DownloadIcon fontSize="small" />
-                                              )}
-                                            </IconButton>
-                                          </Tooltip>
-                                        )}
-                                      </Stack>
-                                    </TableCell>
-                                  </TableRow>
-                                ),
-                              )}
+                                      )}
+                                    </Stack>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
                             </TableBody>
                           </Table>
                         </TableContainer>
@@ -974,12 +818,7 @@ const FinancialPortal: React.FC = () => {
             {/* Invoices Tab */}
             <TabPanel value={activeTab} index={0}>
               <Box sx={{ p: 3 }}>
-                <Box
-                  display="flex"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  mb={3}
-                >
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     Invoice History
                   </Typography>
@@ -988,11 +827,11 @@ const FinancialPortal: React.FC = () => {
                     startIcon={<DownloadIcon />}
                     size="small"
                     sx={{
-                      backgroundColor: alpha("#fff", 0.1),
-                      backdropFilter: "blur(10px)",
-                      border: `1px solid ${alpha("#fff", 0.2)}`,
-                      "&:hover": {
-                        backgroundColor: alpha("#fff", 0.15),
+                      backgroundColor: alpha('#fff', 0.1),
+                      backdropFilter: 'blur(10px)',
+                      border: `1px solid ${alpha('#fff', 0.2)}`,
+                      '&:hover': {
+                        backgroundColor: alpha('#fff', 0.15),
                       },
                     }}
                   >
@@ -1006,430 +845,328 @@ const FinancialPortal: React.FC = () => {
                     intensity="subtle"
                     sx={{
                       p: 8,
-                      textAlign: "center",
-                      border: `1px solid ${alpha("#fff", 0.1)}`,
+                      textAlign: 'center',
+                      border: `1px solid ${alpha('#fff', 0.1)}`,
                     }}
                   >
-                    <ReceiptIcon
-                      sx={{ fontSize: 64, color: "grey.400", mb: 2 }}
-                    />
-                    <Typography
-                      variant="h5"
-                      sx={{ fontWeight: 600, mb: 2, color: "primary.main" }}
-                    >
+                    <ReceiptIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
                       No Invoices
                     </Typography>
                     <Typography
                       variant="body1"
                       color="text.secondary"
-                      sx={{ mb: 4, maxWidth: 600, mx: "auto" }}
+                      sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}
                     >
-                      Your invoices will appear here once they are generated for
-                      your events.
+                      Your invoices will appear here once they are generated for your events.
                     </Typography>
                   </GlassCard>
                 ) : (
                   <Stack spacing={3}>
-                    {(Array.isArray(invoices) ? invoices : []).map(
-                      (invoice, index) => (
-                        <AnimatedElement
-                          key={invoice.id}
-                          animation="slideUp"
-                          delay={400 + index * 150}
+                    {(Array.isArray(invoices) ? invoices : []).map((invoice, index) => (
+                      <AnimatedElement
+                        key={invoice.id}
+                        animation="slideUp"
+                        delay={400 + index * 150}
+                      >
+                        <GlassCard
+                          variant="light"
+                          intensity="subtle"
+                          hover={true}
+                          sx={{
+                            p: 3,
+                            border: `1px solid ${alpha('#fff', 0.1)}`,
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                              transform: 'translateY(-2px)',
+                              boxShadow: '0 8px 25px rgba(0,0,0,0.1)',
+                            },
+                          }}
                         >
-                          <GlassCard
-                            variant="light"
-                            intensity="subtle"
-                            hover={true}
-                            sx={{
-                              p: 3,
-                              border: `1px solid ${alpha("#fff", 0.1)}`,
-                              transition: "all 0.3s ease",
-                              "&:hover": {
-                                transform: "translateY(-2px)",
-                                boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
-                              },
-                            }}
+                          <Box
+                            display="flex"
+                            justifyContent="space-between"
+                            alignItems="flex-start"
+                            mb={3}
                           >
-                            <Box
-                              display="flex"
-                              justifyContent="space-between"
-                              alignItems="flex-start"
-                              mb={3}
-                            >
-                              <Box>
-                                <Typography
-                                  variant="h6"
-                                  sx={{ fontWeight: 600, mb: 1 }}
-                                >
-                                  {invoice.invoice_id}
-                                </Typography>
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                  gutterBottom
-                                >
-                                  {invoice.event_details
-                                    ? `Event #${invoice.event_details.id}`
-                                    : "Invoice"}
-                                </Typography>
-                                {invoice.event_details && (
-                                  <Chip
-                                    label={`Event #${invoice.event_details.id}`}
-                                    size="small"
-                                    color="primary"
-                                    variant="outlined"
+                            <Box>
+                              <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                                {invoice.invoice_id}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary" gutterBottom>
+                                {invoice.event_details
+                                  ? `Event #${invoice.event_details.id}`
+                                  : 'Invoice'}
+                              </Typography>
+                              {invoice.event_details && (
+                                <Chip
+                                  label={`Event #${invoice.event_details.id}`}
+                                  size="small"
+                                  color="primary"
+                                  variant="outlined"
+                                  sx={{
+                                    backgroundColor: alpha('#fff', 0.1),
+                                    backdropFilter: 'blur(5px)',
+                                    border: `1px solid ${alpha('#fff', 0.2)}`,
+                                  }}
+                                />
+                              )}
+                            </Box>
+                            <Box textAlign="right">
+                              {/* Tax Breakdown */}
+                              {parseFloat(invoice.tax_amount || '0') > 0 && (
+                                <Stack spacing={0.5} sx={{ mb: 1 }}>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Subtotal:{' '}
+                                    {FinancialApi.formatAmount(invoice.subtotal, invoice.currency)}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Tax:{' '}
+                                    {FinancialApi.formatAmount(
+                                      invoice.tax_amount,
+                                      invoice.currency,
+                                    )}
+                                  </Typography>
+                                  <Divider
                                     sx={{
-                                      backgroundColor: alpha("#fff", 0.1),
-                                      backdropFilter: "blur(5px)",
-                                      border: `1px solid ${alpha("#fff", 0.2)}`,
+                                      my: 0.5,
+                                      borderColor: alpha('#fff', 0.2),
                                     }}
                                   />
-                                )}
-                              </Box>
-                              <Box textAlign="right">
-                                {/* Tax Breakdown */}
-                                {parseFloat(invoice.tax_amount || "0") > 0 && (
-                                  <Stack spacing={0.5} sx={{ mb: 1 }}>
-                                    <Typography
-                                      variant="body2"
-                                      color="text.secondary"
-                                    >
-                                      Subtotal:{" "}
-                                      {FinancialApi.formatAmount(
-                                        invoice.subtotal,
-                                        invoice.currency,
-                                      )}
-                                    </Typography>
-                                    <Typography
-                                      variant="body2"
-                                      color="text.secondary"
-                                    >
-                                      Tax:{" "}
-                                      {FinancialApi.formatAmount(
-                                        invoice.tax_amount,
-                                        invoice.currency,
-                                      )}
-                                    </Typography>
-                                    <Divider
+                                </Stack>
+                              )}
+                              <Typography
+                                variant="h5"
+                                sx={{
+                                  fontWeight: 600,
+                                  color: 'primary.main',
+                                }}
+                              >
+                                Total:{' '}
+                                {FinancialApi.formatAmount(invoice.total_amount, invoice.currency)}
+                              </Typography>
+                              {(() => {
+                                const displayStatus = getInvoiceDisplayStatus(invoice);
+                                return (
+                                  <Tooltip title={displayStatus.description} arrow>
+                                    <Chip
+                                      label={displayStatus.label}
+                                      size="small"
+                                      color={displayStatus.color}
+                                      variant={invoice.is_fully_paid ? 'filled' : 'outlined'}
+                                      icon={
+                                        isInvoiceOverdue(invoice) ? (
+                                          <WarningIcon />
+                                        ) : invoice.is_fully_paid ? (
+                                          <CheckCircleIcon />
+                                        ) : undefined
+                                      }
                                       sx={{
-                                        my: 0.5,
-                                        borderColor: alpha("#fff", 0.2),
+                                        mt: 1,
+                                        ...(invoice.is_fully_paid
+                                          ? {}
+                                          : {
+                                              backgroundColor: alpha('#fff', 0.1),
+                                              backdropFilter: 'blur(5px)',
+                                              border: `1px solid ${alpha('#fff', 0.2)}`,
+                                            }),
                                       }}
                                     />
-                                  </Stack>
-                                )}
-                                <Typography
-                                  variant="h5"
-                                  sx={{
-                                    fontWeight: 600,
-                                    color: "primary.main",
-                                  }}
-                                >
-                                  Total:{" "}
-                                  {FinancialApi.formatAmount(
-                                    invoice.total_amount,
-                                    invoice.currency,
-                                  )}
-                                </Typography>
-                                {(() => {
-                                  const displayStatus =
-                                    getInvoiceDisplayStatus(invoice);
-                                  return (
-                                    <Tooltip
-                                      title={displayStatus.description}
-                                      arrow
-                                    >
-                                      <Chip
-                                        label={displayStatus.label}
-                                        size="small"
-                                        color={displayStatus.color}
-                                        variant={
-                                          invoice.is_fully_paid
-                                            ? "filled"
-                                            : "outlined"
-                                        }
-                                        icon={
-                                          isInvoiceOverdue(invoice) ? (
-                                            <WarningIcon />
-                                          ) : invoice.is_fully_paid ? (
-                                            <CheckCircleIcon />
-                                          ) : undefined
-                                        }
-                                        sx={{
-                                          mt: 1,
-                                          ...(invoice.is_fully_paid
-                                            ? {}
-                                            : {
-                                                backgroundColor: alpha(
-                                                  "#fff",
-                                                  0.1,
-                                                ),
-                                                backdropFilter: "blur(5px)",
-                                                border: `1px solid ${alpha("#fff", 0.2)}`,
-                                              }),
-                                        }}
-                                      />
-                                    </Tooltip>
-                                  );
-                                })()}
-                              </Box>
+                                  </Tooltip>
+                                );
+                              })()}
                             </Box>
+                          </Box>
 
-                            <Divider
-                              sx={{ my: 2, borderColor: alpha("#fff", 0.1) }}
-                            />
+                          <Divider sx={{ my: 2, borderColor: alpha('#fff', 0.1) }} />
 
-                            <Box
-                              display="flex"
-                              flexDirection={{ xs: "column", sm: "row" }}
-                              justifyContent="space-between"
-                              alignItems={{ xs: "stretch", sm: "center" }}
-                              gap={{ xs: 2, sm: 0 }}
-                              mb={2}
-                            >
-                              <Box>
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  Issue Date:{" "}
-                                  {new Date(
-                                    invoice.issue_date,
-                                  ).toLocaleDateString()}
-                                </Typography>
-                                <Typography
-                                  variant="body2"
-                                  color={
-                                    isInvoiceOverdue(invoice)
-                                      ? "error.main"
-                                      : "text.secondary"
-                                  }
-                                >
-                                  Due Date:{" "}
-                                  {new Date(
-                                    invoice.due_date,
-                                  ).toLocaleDateString()}
-                                  {isInvoiceOverdue(invoice) && (
-                                    <span
-                                      style={{ fontWeight: 600, marginLeft: 8 }}
-                                    >
-                                      (Overdue by{" "}
-                                      {Math.abs(getDaysUntilDue(invoice))} days)
-                                    </span>
-                                  )}
-                                  {!isInvoiceOverdue(invoice) &&
-                                    !invoice.is_fully_paid &&
-                                    getDaysUntilDue(invoice) <= 7 &&
-                                    getDaysUntilDue(invoice) > 0 && (
-                                      <span
-                                        style={{
-                                          color: theme.palette.warning.main,
-                                          fontWeight: 600,
-                                          marginLeft: 8,
-                                        }}
-                                      >
-                                        (Due in {getDaysUntilDue(invoice)} days)
-                                      </span>
-                                    )}
-                                  {invoice.is_fully_paid && (
+                          <Box
+                            display="flex"
+                            flexDirection={{ xs: 'column', sm: 'row' }}
+                            justifyContent="space-between"
+                            alignItems={{ xs: 'stretch', sm: 'center' }}
+                            gap={{ xs: 2, sm: 0 }}
+                            mb={2}
+                          >
+                            <Box>
+                              <Typography variant="body2" color="text.secondary">
+                                Issue Date: {new Date(invoice.issue_date).toLocaleDateString()}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color={isInvoiceOverdue(invoice) ? 'error.main' : 'text.secondary'}
+                              >
+                                Due Date: {new Date(invoice.due_date).toLocaleDateString()}
+                                {isInvoiceOverdue(invoice) && (
+                                  <span style={{ fontWeight: 600, marginLeft: 8 }}>
+                                    (Overdue by {Math.abs(getDaysUntilDue(invoice))} days)
+                                  </span>
+                                )}
+                                {!isInvoiceOverdue(invoice) &&
+                                  !invoice.is_fully_paid &&
+                                  getDaysUntilDue(invoice) <= 7 &&
+                                  getDaysUntilDue(invoice) > 0 && (
                                     <span
                                       style={{
-                                        color: theme.palette.success.main,
+                                        color: theme.palette.warning.main,
                                         fontWeight: 600,
                                         marginLeft: 8,
                                       }}
                                     >
-                                      — Paid
+                                      (Due in {getDaysUntilDue(invoice)} days)
                                     </span>
                                   )}
-                                </Typography>
-                              </Box>
-                              <Stack
-                                direction={{ xs: "column", sm: "row" }}
-                                spacing={1}
-                                sx={{
-                                  width: { xs: "100%", sm: "auto" },
-                                  alignItems: { xs: "stretch", sm: "center" },
-                                }}
-                              >
-                                {canPayInvoice(invoice) && (
-                                  <Tooltip title="Pay Invoice">
-                                    <Button
-                                      variant="contained"
-                                      color={
-                                        isInvoiceOverdue(invoice)
-                                          ? "error"
-                                          : "primary"
-                                      }
-                                      size="small"
-                                      onClick={() => handlePayInvoice(invoice)}
-                                      startIcon={<PayIcon />}
-                                      sx={{ minWidth: 100 }}
-                                    >
-                                      Pay Now
-                                    </Button>
-                                  </Tooltip>
+                                {invoice.is_fully_paid && (
+                                  <span
+                                    style={{
+                                      color: theme.palette.success.main,
+                                      fontWeight: 600,
+                                      marginLeft: 8,
+                                    }}
+                                  >
+                                    — Paid
+                                  </span>
                                 )}
-                                <Tooltip title="View Invoice">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleViewInvoice(invoice)}
-                                    sx={{
-                                      backgroundColor: alpha("#fff", 0.1),
-                                      "&:hover": {
-                                        backgroundColor: alpha("#fff", 0.2),
-                                      },
-                                    }}
-                                  >
-                                    <ViewIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
-                                <Tooltip title="Download PDF">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() =>
-                                      handleDownloadInvoice(invoice.id)
-                                    }
-                                    disabled={downloadInvoiceMutation.isPending}
-                                    sx={{
-                                      backgroundColor: alpha("#fff", 0.1),
-                                      "&:hover": {
-                                        backgroundColor: alpha("#fff", 0.2),
-                                      },
-                                    }}
-                                  >
-                                    {downloadInvoiceMutation.isPending ? (
-                                      <CircularProgress size={14} />
-                                    ) : (
-                                      <DownloadIcon fontSize="small" />
-                                    )}
-                                  </IconButton>
-                                </Tooltip>
-                              </Stack>
+                              </Typography>
                             </Box>
-
-                            {/* Payment Progress Bar */}
-                            {(() => {
-                              const paymentStatus =
-                                getInvoicePaymentStatus(invoice);
-                              const progressPercentage =
-                                paymentStatus.amountPaid > 0
-                                  ? (paymentStatus.amountPaid /
-                                      parseFloat(invoice.total_amount)) *
-                                    100
-                                  : 0;
-
-                              return progressPercentage > 0 &&
-                                progressPercentage < 100 ? (
-                                <Box sx={{ mb: 2 }}>
-                                  <Box
-                                    display="flex"
-                                    justifyContent="space-between"
-                                    mb={1}
+                            <Stack
+                              direction={{ xs: 'column', sm: 'row' }}
+                              spacing={1}
+                              sx={{
+                                width: { xs: '100%', sm: 'auto' },
+                                alignItems: { xs: 'stretch', sm: 'center' },
+                              }}
+                            >
+                              {canPayInvoice(invoice) && (
+                                <Tooltip title="Pay Invoice">
+                                  <Button
+                                    variant="contained"
+                                    color={isInvoiceOverdue(invoice) ? 'error' : 'primary'}
+                                    size="small"
+                                    onClick={() => handlePayInvoice(invoice)}
+                                    startIcon={<PayIcon />}
+                                    sx={{ minWidth: 100 }}
                                   >
-                                    <Typography
-                                      variant="body2"
-                                      color="text.secondary"
-                                    >
-                                      Payment Progress
-                                    </Typography>
-                                    <Typography
-                                      variant="body2"
-                                      color="primary.main"
-                                    >
-                                      {progressPercentage.toFixed(1)}%
-                                    </Typography>
-                                  </Box>
-                                  <LinearProgress
-                                    variant="determinate"
-                                    value={progressPercentage}
-                                    sx={{
-                                      height: 6,
-                                      borderRadius: 3,
-                                      backgroundColor: alpha("#fff", 0.1),
-                                    }}
-                                  />
-                                  <Box
-                                    display="flex"
-                                    justifyContent="space-between"
-                                    mt={0.5}
-                                  >
-                                    <Typography
-                                      variant="caption"
-                                      color="success.main"
-                                    >
-                                      Paid:{" "}
-                                      {FinancialApi.formatAmount(
-                                        paymentStatus.amountPaid,
-                                        invoice.currency,
-                                      )}
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                    >
-                                      Remaining:{" "}
-                                      {FinancialApi.formatAmount(
-                                        paymentStatus.amountRemaining,
-                                        invoice.currency,
-                                      )}
-                                    </Typography>
-                                  </Box>
-                                </Box>
-                              ) : null;
-                            })()}
-
-                            {/* Invoice Items Preview */}
-                            {invoice.line_items.length > 0 && (
-                              <Box>
-                                <Typography
-                                  variant="subtitle2"
-                                  sx={{ fontWeight: 600, mb: 1 }}
+                                    Pay Now
+                                  </Button>
+                                </Tooltip>
+                              )}
+                              <Tooltip title="View Invoice">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleViewInvoice(invoice)}
+                                  sx={{
+                                    backgroundColor: alpha('#fff', 0.1),
+                                    '&:hover': {
+                                      backgroundColor: alpha('#fff', 0.2),
+                                    },
+                                  }}
                                 >
-                                  Items ({invoice.line_items.length})
-                                </Typography>
-                                {invoice.line_items
-                                  .slice(0, 2)
-                                  .map((item, itemIndex) => (
-                                    <Box
-                                      key={itemIndex}
-                                      display="flex"
-                                      justifyContent="space-between"
-                                      alignItems="center"
-                                      sx={{ py: 0.5 }}
-                                    >
-                                      <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                      >
-                                        {item.description} ({item.quantity}x)
-                                      </Typography>
-                                      <Typography
-                                        variant="body2"
-                                        sx={{ fontWeight: 500 }}
-                                      >
-                                        {FinancialApi.formatAmount(
-                                          item.total,
-                                          invoice.currency,
-                                        )}
-                                      </Typography>
-                                    </Box>
-                                  ))}
-                                {invoice.line_items.length > 2 && (
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
-                                    +{invoice.line_items.length - 2} more items
+                                  <ViewIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Download PDF">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDownloadInvoice(invoice.id)}
+                                  disabled={downloadInvoiceMutation.isPending}
+                                  sx={{
+                                    backgroundColor: alpha('#fff', 0.1),
+                                    '&:hover': {
+                                      backgroundColor: alpha('#fff', 0.2),
+                                    },
+                                  }}
+                                >
+                                  {downloadInvoiceMutation.isPending ? (
+                                    <CircularProgress size={14} />
+                                  ) : (
+                                    <DownloadIcon fontSize="small" />
+                                  )}
+                                </IconButton>
+                              </Tooltip>
+                            </Stack>
+                          </Box>
+
+                          {/* Payment Progress Bar */}
+                          {(() => {
+                            const paymentStatus = getInvoicePaymentStatus(invoice);
+                            const progressPercentage =
+                              paymentStatus.amountPaid > 0
+                                ? (paymentStatus.amountPaid / parseFloat(invoice.total_amount)) *
+                                  100
+                                : 0;
+
+                            return progressPercentage > 0 && progressPercentage < 100 ? (
+                              <Box sx={{ mb: 2 }}>
+                                <Box display="flex" justifyContent="space-between" mb={1}>
+                                  <Typography variant="body2" color="text.secondary">
+                                    Payment Progress
                                   </Typography>
-                                )}
+                                  <Typography variant="body2" color="primary.main">
+                                    {progressPercentage.toFixed(1)}%
+                                  </Typography>
+                                </Box>
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={progressPercentage}
+                                  sx={{
+                                    height: 6,
+                                    borderRadius: 3,
+                                    backgroundColor: alpha('#fff', 0.1),
+                                  }}
+                                />
+                                <Box display="flex" justifyContent="space-between" mt={0.5}>
+                                  <Typography variant="caption" color="success.main">
+                                    Paid:{' '}
+                                    {FinancialApi.formatAmount(
+                                      paymentStatus.amountPaid,
+                                      invoice.currency,
+                                    )}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    Remaining:{' '}
+                                    {FinancialApi.formatAmount(
+                                      paymentStatus.amountRemaining,
+                                      invoice.currency,
+                                    )}
+                                  </Typography>
+                                </Box>
                               </Box>
-                            )}
-                          </GlassCard>
-                        </AnimatedElement>
-                      ),
-                    )}
+                            ) : null;
+                          })()}
+
+                          {/* Invoice Items Preview */}
+                          {invoice.line_items.length > 0 && (
+                            <Box>
+                              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                                Items ({invoice.line_items.length})
+                              </Typography>
+                              {invoice.line_items.slice(0, 2).map((item, itemIndex) => (
+                                <Box
+                                  key={itemIndex}
+                                  display="flex"
+                                  justifyContent="space-between"
+                                  alignItems="center"
+                                  sx={{ py: 0.5 }}
+                                >
+                                  <Typography variant="body2" color="text.secondary">
+                                    {item.description} ({item.quantity}x)
+                                  </Typography>
+                                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                    {FinancialApi.formatAmount(item.total, invoice.currency)}
+                                  </Typography>
+                                </Box>
+                              ))}
+                              {invoice.line_items.length > 2 && (
+                                <Typography variant="caption" color="text.secondary">
+                                  +{invoice.line_items.length - 2} more items
+                                </Typography>
+                              )}
+                            </Box>
+                          )}
+                        </GlassCard>
+                      </AnimatedElement>
+                    ))}
                   </Stack>
                 )}
               </Box>
@@ -1438,12 +1175,7 @@ const FinancialPortal: React.FC = () => {
             {/* Payment Methods Tab */}
             <TabPanel value={activeTab} index={2}>
               <Box sx={{ p: 3 }}>
-                <Box
-                  display="flex"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  mb={3}
-                >
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
                   <Typography variant="h6" sx={{ fontWeight: 600 }}>
                     Saved Payment Methods
                   </Typography>
@@ -1453,11 +1185,11 @@ const FinancialPortal: React.FC = () => {
                     size="small"
                     onClick={handleAddPaymentMethodOpen}
                     sx={{
-                      backgroundColor: alpha("#fff", 0.1),
-                      backdropFilter: "blur(10px)",
-                      border: `1px solid ${alpha("#fff", 0.2)}`,
-                      "&:hover": {
-                        backgroundColor: alpha("#fff", 0.15),
+                      backgroundColor: alpha('#fff', 0.1),
+                      backdropFilter: 'blur(10px)',
+                      border: `1px solid ${alpha('#fff', 0.2)}`,
+                      '&:hover': {
+                        backgroundColor: alpha('#fff', 0.15),
                       },
                     }}
                   >
@@ -1471,48 +1203,39 @@ const FinancialPortal: React.FC = () => {
                     intensity="subtle"
                     sx={{
                       p: 4,
-                      textAlign: "center",
-                      border: `1px solid ${alpha("#fff", 0.1)}`,
+                      textAlign: 'center',
+                      border: `1px solid ${alpha('#fff', 0.1)}`,
                     }}
                   >
-                    <ErrorIcon
-                      sx={{ fontSize: 48, color: "error.main", mb: 2 }}
-                    />
+                    <ErrorIcon sx={{ fontSize: 48, color: 'error.main', mb: 2 }} />
                     <Typography variant="h6" gutterBottom>
                       Error Loading Payment Methods
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Unable to load your saved payment methods. Please try
-                      again later.
+                      Unable to load your saved payment methods. Please try again later.
                     </Typography>
                   </GlassCard>
-                ) : !Array.isArray(paymentMethods) ||
-                  paymentMethods.length === 0 ? (
+                ) : !Array.isArray(paymentMethods) || paymentMethods.length === 0 ? (
                   <GlassCard
                     variant="light"
                     intensity="subtle"
                     sx={{
                       p: 8,
-                      textAlign: "center",
-                      border: `1px solid ${alpha("#fff", 0.1)}`,
+                      textAlign: 'center',
+                      border: `1px solid ${alpha('#fff', 0.1)}`,
                     }}
                   >
-                    <CreditCardIcon
-                      sx={{ fontSize: 64, color: "grey.400", mb: 2 }}
-                    />
-                    <Typography
-                      variant="h5"
-                      sx={{ fontWeight: 600, mb: 2, color: "primary.main" }}
-                    >
+                    <CreditCardIcon sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+                    <Typography variant="h5" sx={{ fontWeight: 600, mb: 2, color: 'primary.main' }}>
                       No Payment Methods
                     </Typography>
                     <Typography
                       variant="body1"
                       color="text.secondary"
-                      sx={{ mb: 4, maxWidth: 600, mx: "auto" }}
+                      sx={{ mb: 4, maxWidth: 600, mx: 'auto' }}
                     >
-                      You haven't saved any payment methods yet. Add a payment
-                      method to make future transactions faster and easier.
+                      You haven't saved any payment methods yet. Add a payment method to make future
+                      transactions faster and easier.
                     </Typography>
                     <Button
                       variant="contained"
@@ -1521,7 +1244,7 @@ const FinancialPortal: React.FC = () => {
                       onClick={handleAddPaymentMethodOpen}
                       sx={{
                         backgroundColor: theme.palette.primary.main,
-                        "&:hover": {
+                        '&:hover': {
                           backgroundColor: theme.palette.primary.dark,
                         },
                       }}
@@ -1534,26 +1257,18 @@ const FinancialPortal: React.FC = () => {
                     {isMobile ? (
                       /* Mobile: Card layout for payment methods */
                       <Stack spacing={1.5}>
-                        {(Array.isArray(paymentMethods)
-                          ? paymentMethods
-                          : []
-                        ).map((method) => (
+                        {(Array.isArray(paymentMethods) ? paymentMethods : []).map((method) => (
                           <GlassCard
                             key={method.id}
                             variant="light"
                             intensity="subtle"
                             sx={{
                               p: 2,
-                              border: `1px solid ${alpha("#fff", 0.1)}`,
+                              border: `1px solid ${alpha('#fff', 0.1)}`,
                             }}
                           >
                             {/* Top row: icon + name + default chip */}
-                            <Box
-                              display="flex"
-                              alignItems="center"
-                              gap={1.5}
-                              mb={1}
-                            >
+                            <Box display="flex" alignItems="center" gap={1.5} mb={1}>
                               {getPaymentMethodIcon(method.type)}
                               <Box sx={{ flex: 1, minWidth: 0 }}>
                                 <Typography variant="body2" fontWeight="medium">
@@ -1568,12 +1283,9 @@ const FinancialPortal: React.FC = () => {
                                   variant="outlined"
                                   sx={{
                                     height: 20,
-                                    fontSize: "0.7rem",
+                                    fontSize: '0.7rem',
                                     flexShrink: 0,
-                                    backgroundColor: alpha(
-                                      theme.palette.primary.main,
-                                      0.1,
-                                    ),
+                                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
                                   }}
                                 />
                               )}
@@ -1581,53 +1293,29 @@ const FinancialPortal: React.FC = () => {
 
                             {/* Info: type, details, expiry, created */}
                             <Stack spacing={0.5} sx={{ mb: 1.5 }}>
-                              <Box
-                                display="flex"
-                                justifyContent="space-between"
-                              >
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
+                              <Box display="flex" justifyContent="space-between">
+                                <Typography variant="caption" color="text.secondary">
                                   Type
                                 </Typography>
-                                <Typography variant="caption">
-                                  {method.type_display}
-                                </Typography>
+                                <Typography variant="caption">{method.type_display}</Typography>
                               </Box>
-                              <Box
-                                display="flex"
-                                justifyContent="space-between"
-                              >
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
+                              <Box display="flex" justifyContent="space-between">
+                                <Typography variant="caption" color="text.secondary">
                                   Details
                                 </Typography>
                                 <Typography variant="caption">
-                                  {method.last_four
-                                    ? `•••• ${method.last_four}`
-                                    : "No details"}
+                                  {method.last_four ? `•••• ${method.last_four}` : 'No details'}
                                 </Typography>
                               </Box>
                               {method.expiry_date && (
-                                <Box
-                                  display="flex"
-                                  justifyContent="space-between"
-                                >
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
+                                <Box display="flex" justifyContent="space-between">
+                                  <Typography variant="caption" color="text.secondary">
                                     Expires
                                   </Typography>
                                   <Typography variant="caption">
-                                    {new Date(
-                                      method.expiry_date,
-                                    ).toLocaleDateString("en-US", {
-                                      month: "2-digit",
-                                      year: "2-digit",
+                                    {new Date(method.expiry_date).toLocaleDateString('en-US', {
+                                      month: '2-digit',
+                                      year: '2-digit',
                                     })}
                                   </Typography>
                                 </Box>
@@ -1637,35 +1325,24 @@ const FinancialPortal: React.FC = () => {
                                 justifyContent="space-between"
                                 alignItems="center"
                               >
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
+                                <Typography variant="caption" color="text.secondary">
                                   Created
                                 </Typography>
                                 <Typography variant="caption">
-                                  {formatPhilippinesTime(
-                                    method.created_at,
-                                    false,
-                                    "MMM d, yyyy",
-                                  )}
+                                  {formatPhilippinesTime(method.created_at, false, 'MMM d, yyyy')}
                                 </Typography>
                               </Box>
                             </Stack>
 
                             {/* Action buttons */}
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              justifyContent="flex-end"
-                            >
+                            <Stack direction="row" spacing={1} justifyContent="flex-end">
                               <IconButton
                                 size="small"
                                 onClick={() => handleEditPaymentMethod(method)}
                                 sx={{
-                                  backgroundColor: alpha("#fff", 0.1),
-                                  "&:hover": {
-                                    backgroundColor: alpha("#fff", 0.2),
+                                  backgroundColor: alpha('#fff', 0.1),
+                                  '&:hover': {
+                                    backgroundColor: alpha('#fff', 0.2),
                                   },
                                 }}
                               >
@@ -1674,19 +1351,11 @@ const FinancialPortal: React.FC = () => {
                               <IconButton
                                 size="small"
                                 color="error"
-                                onClick={() =>
-                                  handleDeletePaymentMethod(method)
-                                }
+                                onClick={() => handleDeletePaymentMethod(method)}
                                 sx={{
-                                  backgroundColor: alpha(
-                                    theme.palette.error.main,
-                                    0.1,
-                                  ),
-                                  "&:hover": {
-                                    backgroundColor: alpha(
-                                      theme.palette.error.main,
-                                      0.2,
-                                    ),
+                                  backgroundColor: alpha(theme.palette.error.main, 0.1),
+                                  '&:hover': {
+                                    backgroundColor: alpha(theme.palette.error.main, 0.2),
                                   },
                                 }}
                               >
@@ -1702,11 +1371,11 @@ const FinancialPortal: React.FC = () => {
                         variant="light"
                         intensity="subtle"
                         sx={{
-                          border: `1px solid ${alpha("#fff", 0.1)}`,
-                          overflow: "hidden",
+                          border: `1px solid ${alpha('#fff', 0.1)}`,
+                          overflow: 'hidden',
                         }}
                       >
-                        <TableContainer sx={{ backgroundColor: "transparent" }}>
+                        <TableContainer sx={{ backgroundColor: 'transparent' }}>
                           <Table>
                             <TableHead>
                               <TableRow>
@@ -1719,144 +1388,118 @@ const FinancialPortal: React.FC = () => {
                               </TableRow>
                             </TableHead>
                             <TableBody>
-                              {(Array.isArray(paymentMethods)
-                                ? paymentMethods
-                                : []
-                              ).map((method) => (
-                                <TableRow key={method.id} hover>
-                                  <TableCell>
-                                    <Box
-                                      display="flex"
-                                      alignItems="center"
-                                      gap={2}
-                                    >
-                                      {getPaymentMethodIcon(method.type)}
-                                      <Box>
-                                        <Typography
-                                          variant="body2"
-                                          fontWeight="medium"
-                                        >
-                                          {method.nickname ||
-                                            method.type_display}
-                                        </Typography>
-                                        {method.is_default && (
-                                          <Chip
-                                            label="Default"
-                                            size="small"
-                                            color="primary"
-                                            variant="outlined"
-                                            sx={{
-                                              mt: 0.5,
-                                              height: 20,
-                                              fontSize: "0.7rem",
-                                              backgroundColor: alpha(
-                                                theme.palette.primary.main,
-                                                0.1,
-                                              ),
-                                            }}
-                                          />
-                                        )}
+                              {(Array.isArray(paymentMethods) ? paymentMethods : []).map(
+                                (method) => (
+                                  <TableRow key={method.id} hover>
+                                    <TableCell>
+                                      <Box display="flex" alignItems="center" gap={2}>
+                                        {getPaymentMethodIcon(method.type)}
+                                        <Box>
+                                          <Typography variant="body2" fontWeight="medium">
+                                            {method.nickname || method.type_display}
+                                          </Typography>
+                                          {method.is_default && (
+                                            <Chip
+                                              label="Default"
+                                              size="small"
+                                              color="primary"
+                                              variant="outlined"
+                                              sx={{
+                                                mt: 0.5,
+                                                height: 20,
+                                                fontSize: '0.7rem',
+                                                backgroundColor: alpha(
+                                                  theme.palette.primary.main,
+                                                  0.1,
+                                                ),
+                                              }}
+                                            />
+                                          )}
+                                        </Box>
                                       </Box>
-                                    </Box>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography variant="body2">
-                                      {method.type_display}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography
-                                      variant="body2"
-                                      color="text.secondary"
-                                    >
-                                      {method.last_four
-                                        ? `•••• ${method.last_four}`
-                                        : "No details"}
-                                    </Typography>
-                                    {method.expiry_date && (
-                                      <Typography
-                                        variant="caption"
-                                        display="block"
-                                        color="text.secondary"
-                                      >
-                                        Expires:{" "}
-                                        {new Date(
-                                          method.expiry_date,
-                                        ).toLocaleDateString("en-US", {
-                                          month: "2-digit",
-                                          year: "2-digit",
-                                        })}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Typography variant="body2">{method.type_display}</Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Typography variant="body2" color="text.secondary">
+                                        {method.last_four
+                                          ? `•••• ${method.last_four}`
+                                          : 'No details'}
                                       </Typography>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Chip
-                                      label="Active"
-                                      size="small"
-                                      color="success"
-                                      variant="outlined"
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <Typography
-                                      variant="body2"
-                                      color="text.secondary"
-                                    >
-                                      {formatPhilippinesTime(
-                                        method.created_at,
-                                        false,
-                                        "MMM d, yyyy",
+                                      {method.expiry_date && (
+                                        <Typography
+                                          variant="caption"
+                                          display="block"
+                                          color="text.secondary"
+                                        >
+                                          Expires:{' '}
+                                          {new Date(method.expiry_date).toLocaleDateString(
+                                            'en-US',
+                                            {
+                                              month: '2-digit',
+                                              year: '2-digit',
+                                            },
+                                          )}
+                                        </Typography>
                                       )}
-                                    </Typography>
-                                  </TableCell>
-                                  <TableCell>
-                                    <Stack direction="row" spacing={1}>
-                                      <Tooltip title="Edit Method">
-                                        <IconButton
-                                          size="small"
-                                          onClick={() =>
-                                            handleEditPaymentMethod(method)
-                                          }
-                                          sx={{
-                                            backgroundColor: alpha("#fff", 0.1),
-                                            "&:hover": {
-                                              backgroundColor: alpha(
-                                                "#fff",
-                                                0.2,
-                                              ),
-                                            },
-                                          }}
-                                        >
-                                          <EditIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                      <Tooltip title="Delete Method">
-                                        <IconButton
-                                          size="small"
-                                          color="error"
-                                          onClick={() =>
-                                            handleDeletePaymentMethod(method)
-                                          }
-                                          sx={{
-                                            backgroundColor: alpha(
-                                              theme.palette.error.main,
-                                              0.1,
-                                            ),
-                                            "&:hover": {
-                                              backgroundColor: alpha(
-                                                theme.palette.error.main,
-                                                0.2,
-                                              ),
-                                            },
-                                          }}
-                                        >
-                                          <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                      </Tooltip>
-                                    </Stack>
-                                  </TableCell>
-                                </TableRow>
-                              ))}
+                                    </TableCell>
+                                    <TableCell>
+                                      <Chip
+                                        label="Active"
+                                        size="small"
+                                        color="success"
+                                        variant="outlined"
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      <Typography variant="body2" color="text.secondary">
+                                        {formatPhilippinesTime(
+                                          method.created_at,
+                                          false,
+                                          'MMM d, yyyy',
+                                        )}
+                                      </Typography>
+                                    </TableCell>
+                                    <TableCell>
+                                      <Stack direction="row" spacing={1}>
+                                        <Tooltip title="Edit Method">
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => handleEditPaymentMethod(method)}
+                                            sx={{
+                                              backgroundColor: alpha('#fff', 0.1),
+                                              '&:hover': {
+                                                backgroundColor: alpha('#fff', 0.2),
+                                              },
+                                            }}
+                                          >
+                                            <EditIcon fontSize="small" />
+                                          </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Delete Method">
+                                          <IconButton
+                                            size="small"
+                                            color="error"
+                                            onClick={() => handleDeletePaymentMethod(method)}
+                                            sx={{
+                                              backgroundColor: alpha(theme.palette.error.main, 0.1),
+                                              '&:hover': {
+                                                backgroundColor: alpha(
+                                                  theme.palette.error.main,
+                                                  0.2,
+                                                ),
+                                              },
+                                            }}
+                                          >
+                                            <DeleteIcon fontSize="small" />
+                                          </IconButton>
+                                        </Tooltip>
+                                      </Stack>
+                                    </TableCell>
+                                  </TableRow>
+                                ),
+                              )}
                             </TableBody>
                           </Table>
                         </TableContainer>
@@ -1866,8 +1509,8 @@ const FinancialPortal: React.FC = () => {
                     {paymentMethodsLoading && (
                       <Box
                         sx={{
-                          display: "flex",
-                          justifyContent: "center",
+                          display: 'flex',
+                          justifyContent: 'center',
                           p: 2,
                         }}
                       >
@@ -1882,27 +1525,18 @@ const FinancialPortal: React.FC = () => {
         </AnimatedElement>
 
         {/* Payment Viewer Dialog */}
-        <Dialog
-          open={paymentDialogOpen}
-          onClose={handleClosePaymentDialog}
-          maxWidth="md"
-          fullWidth
-        >
+        <Dialog open={paymentDialogOpen} onClose={handleClosePaymentDialog} maxWidth="md" fullWidth>
           <DialogTitle>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-            >
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
                 Payment Details
               </Typography>
               <IconButton
                 onClick={handleClosePaymentDialog}
                 sx={{
-                  color: "text.secondary",
-                  "&:hover": {
-                    backgroundColor: alpha("#fff", 0.1),
+                  color: 'text.secondary',
+                  '&:hover': {
+                    backgroundColor: alpha('#fff', 0.1),
                   },
                 }}
               >
@@ -1926,27 +1560,18 @@ const FinancialPortal: React.FC = () => {
         </Dialog>
 
         {/* Invoice Viewer Dialog */}
-        <Dialog
-          open={invoiceDialogOpen}
-          onClose={handleCloseInvoiceDialog}
-          maxWidth="lg"
-          fullWidth
-        >
+        <Dialog open={invoiceDialogOpen} onClose={handleCloseInvoiceDialog} maxWidth="lg" fullWidth>
           <DialogTitle>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-            >
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
                 Invoice Details
               </Typography>
               <IconButton
                 onClick={handleCloseInvoiceDialog}
                 sx={{
-                  color: "text.secondary",
-                  "&:hover": {
-                    backgroundColor: alpha("#fff", 0.1),
+                  color: 'text.secondary',
+                  '&:hover': {
+                    backgroundColor: alpha('#fff', 0.1),
                   },
                 }}
               >
@@ -1989,9 +1614,7 @@ const FinancialPortal: React.FC = () => {
           paymentMethod={selectedPaymentMethod}
           onClose={handleCloseDeletePaymentMethod}
           onSuccess={handlePaymentMethodSuccess}
-          isOnlyMethod={
-            Array.isArray(paymentMethods) && paymentMethods.length === 1
-          }
+          isOnlyMethod={Array.isArray(paymentMethods) && paymentMethods.length === 1}
         />
 
         {/* Add Payment Method Dialog */}

@@ -33,11 +33,7 @@ const SwimlaneHeaderComponent: React.FC<NodeProps> = ({ data }) => {
           mb: 1.5,
         }}
       />
-      <Typography
-        variant="subtitle1"
-        fontWeight="bold"
-        sx={{ color, textAlign: 'center' }}
-      >
+      <Typography variant="subtitle1" fontWeight="bold" sx={{ color, textAlign: 'center' }}>
         {label}
       </Typography>
       <Chip

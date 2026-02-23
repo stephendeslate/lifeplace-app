@@ -1,13 +1,14 @@
 # backend/core/domains/payments/services/payment_orchestrator.py
 
 import logging
-from decimal import Decimal
-from datetime import date, timedelta
-from typing import Dict, List, Optional, Union, Any
 from dataclasses import dataclass
+from datetime import date, timedelta
+from decimal import Decimal
+from typing import Any
+
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
-from django.core.exceptions import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -20,27 +21,28 @@ class PaymentRequest:
     This standardizes all payment creation requests across the system,
     replacing the inconsistent data structures used by different creation paths.
     """
+
     # Core payment data
     event_id: int
     amount: Decimal
-    currency: str = 'PHP'
+    currency: str = "PHP"
     due_date: date = None
-    description: str = ''
-    notes: str = ''
+    description: str = ""
+    notes: str = ""
 
     # Payment context
-    payment_type: str = 'STANDARD'  # STANDARD, DEPOSIT, INVOICE
-    created_by: str = 'system'
-    metadata: Dict[str, Any] = None
+    payment_type: str = "STANDARD"  # STANDARD, DEPOSIT, INVOICE
+    created_by: str = "system"
+    metadata: dict[str, Any] = None
 
     # Related objects
-    quote_id: Optional[int] = None
-    invoice_id: Optional[int] = None
-    payment_method_id: Optional[int] = None
+    quote_id: int | None = None
+    invoice_id: int | None = None
+    payment_method_id: int | None = None
 
     # Payment processing options
     auto_process: bool = False
-    gateway_code: str = 'stripe'
+    gateway_code: str = "stripe"
     save_payment_method: bool = False
 
     # Special handling flags
@@ -70,48 +72,53 @@ class PaymentResponse:
 
     Provides consistent response structure across all payment creation methods.
     """
+
     success: bool
-    payment_id: Optional[int] = None
-    payment_number: Optional[str] = None
-    payment_status: Optional[str] = None
-    message: str = ''
+    payment_id: int | None = None
+    payment_number: str | None = None
+    payment_status: str | None = None
+    message: str = ""
 
     # Gateway-specific data
-    gateway_data: Optional[Dict[str, Any]] = None
+    gateway_data: dict[str, Any] | None = None
 
     # Additional context
     requires_action: bool = False
-    next_action: Optional[Dict[str, Any]] = None
+    next_action: dict[str, Any] | None = None
 
     # Error details (when success=False)
-    error_code: Optional[str] = None
-    error_details: Optional[Dict[str, Any]] = None
+    error_code: str | None = None
+    error_details: dict[str, Any] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert response to dictionary for API serialization"""
         result = {
-            'success': self.success,
-            'message': self.message,
+            "success": self.success,
+            "message": self.message,
         }
 
         if self.success:
-            result.update({
-                'payment_id': self.payment_id,
-                'payment_number': self.payment_number,
-                'payment_status': self.payment_status,
-                'requires_action': self.requires_action,
-            })
+            result.update(
+                {
+                    "payment_id": self.payment_id,
+                    "payment_number": self.payment_number,
+                    "payment_status": self.payment_status,
+                    "requires_action": self.requires_action,
+                }
+            )
 
             if self.gateway_data:
-                result['gateway_data'] = self.gateway_data
+                result["gateway_data"] = self.gateway_data
 
             if self.next_action:
-                result['next_action'] = self.next_action
+                result["next_action"] = self.next_action
         else:
-            result.update({
-                'error_code': self.error_code,
-                'error_details': self.error_details or {},
-            })
+            result.update(
+                {
+                    "error_code": self.error_code,
+                    "error_details": self.error_details or {},
+                }
+            )
 
         return result
 
@@ -187,13 +194,10 @@ class PaymentOrchestrator:
                     payment_id=payment.id,
                     payment_number=payment.payment_number,
                     payment_status=payment.status,
-                    message=f"Payment {payment.payment_number} created successfully"
+                    message=f"Payment {payment.payment_number} created successfully",
                 )
 
-                logger.info(
-                    f"Payment created successfully: {payment.payment_number} "
-                    f"with status {payment.status}"
-                )
+                logger.info(f"Payment created successfully: {payment.payment_number} with status {payment.status}")
 
                 return response
 
@@ -201,27 +205,24 @@ class PaymentOrchestrator:
             logger.error(
                 f"Payment creation failed: {e}",
                 extra={
-                    'event_id': request.event_id,
-                    'amount': str(request.amount),
-                    'payment_type': request.payment_type,
+                    "event_id": request.event_id,
+                    "amount": str(request.amount),
+                    "payment_type": request.payment_type,
                 },
-                exc_info=True
+                exc_info=True,
             )
 
             return PaymentResponse(
                 success=False,
                 message="Payment creation failed",
-                error_code='CREATION_FAILED',
-                error_details={
-                    'error': str(e),
-                    'event_id': request.event_id,
-                    'payment_type': request.payment_type
-                }
+                error_code="CREATION_FAILED",
+                error_details={"error": str(e), "event_id": request.event_id, "payment_type": request.payment_type},
             )
 
     @classmethod
-    def process_existing_payment(cls, payment_id: int, gateway_code: str = 'stripe',
-                               payment_data: Dict = None, user=None) -> PaymentResponse:
+    def process_existing_payment(
+        cls, payment_id: int, gateway_code: str = "stripe", payment_data: dict = None, user=None
+    ) -> PaymentResponse:
         """
         Process an existing payment through gateway.
 
@@ -230,7 +231,7 @@ class PaymentOrchestrator:
         """
         try:
             from ..models import Payment
-            from .payment_state_machine import PaymentStateMachine, PaymentState
+            from .payment_state_machine import PaymentState, PaymentStateMachine
 
             with transaction.atomic():
                 payment = Payment.objects.select_for_update().get(id=payment_id)
@@ -242,36 +243,30 @@ class PaymentOrchestrator:
                     return PaymentResponse(
                         success=False,
                         message=f"Payment cannot be processed in {payment.status} state",
-                        error_code='INVALID_STATE'
+                        error_code="INVALID_STATE",
                     )
 
                 # Transition to PROCESSING state
                 payment.transition_to_state(
-                    'PROCESSING',
-                    f'Payment processing started via {gateway_code}',
-                    f'{gateway_code}_gateway'
+                    "PROCESSING", f"Payment processing started via {gateway_code}", f"{gateway_code}_gateway"
                 )
 
                 # Process through gateway
-                gateway_result = cls._process_through_gateway(
-                    payment, gateway_code, payment_data or {}, user
-                )
+                gateway_result = cls._process_through_gateway(payment, gateway_code, payment_data or {}, user)
 
                 return gateway_result
 
         except Payment.DoesNotExist:
             return PaymentResponse(
-                success=False,
-                message=f"Payment with ID {payment_id} not found",
-                error_code='PAYMENT_NOT_FOUND'
+                success=False, message=f"Payment with ID {payment_id} not found", error_code="PAYMENT_NOT_FOUND"
             )
         except Exception as e:
             logger.error(f"Payment processing failed: {e}", exc_info=True)
             return PaymentResponse(
                 success=False,
                 message="Payment processing failed",
-                error_code='PROCESSING_FAILED',
-                error_details={'error': str(e)}
+                error_code="PROCESSING_FAILED",
+                error_details={"error": str(e)},
             )
 
     @classmethod
@@ -283,39 +278,31 @@ class PaymentOrchestrator:
             with transaction.atomic():
                 payment = Payment.objects.select_for_update().get(id=payment_id)
 
-                if not payment.can_transition_to('CANCELLED'):
+                if not payment.can_transition_to("CANCELLED"):
                     return PaymentResponse(
                         success=False,
                         message=f"Payment cannot be cancelled from {payment.status} state",
-                        error_code='INVALID_STATE'
+                        error_code="INVALID_STATE",
                     )
 
-                payment.transition_to_state(
-                    'CANCELLED',
-                    reason,
-                    user.email if user else 'system'
-                )
+                payment.transition_to_state("CANCELLED", reason, user.email if user else "system")
 
                 return PaymentResponse(
                     success=True,
                     payment_id=payment.id,
                     payment_number=payment.payment_number,
                     payment_status=payment.status,
-                    message=f"Payment {payment.payment_number} cancelled successfully"
+                    message=f"Payment {payment.payment_number} cancelled successfully",
                 )
 
         except Payment.DoesNotExist:
             return PaymentResponse(
-                success=False,
-                message=f"Payment with ID {payment_id} not found",
-                error_code='PAYMENT_NOT_FOUND'
+                success=False, message=f"Payment with ID {payment_id} not found", error_code="PAYMENT_NOT_FOUND"
             )
         except Exception as e:
             logger.error(f"Payment cancellation failed: {e}", exc_info=True)
             return PaymentResponse(
-                success=False,
-                message="Payment cancellation failed",
-                error_code='CANCELLATION_FAILED'
+                success=False, message="Payment cancellation failed", error_code="CANCELLATION_FAILED"
             )
 
     @classmethod
@@ -324,93 +311,78 @@ class PaymentOrchestrator:
         try:
             # Validate event exists
             from core.domains.events.models import Event
+
             try:
                 event = Event.objects.get(id=request.event_id)
             except Event.DoesNotExist:
                 return PaymentResponse(
-                    success=False,
-                    message=f"Event with ID {request.event_id} not found",
-                    error_code='EVENT_NOT_FOUND'
+                    success=False, message=f"Event with ID {request.event_id} not found", error_code="EVENT_NOT_FOUND"
                 )
 
             # Validate amount
             if request.amount <= 0:
                 return PaymentResponse(
-                    success=False,
-                    message="Payment amount must be greater than zero",
-                    error_code='INVALID_AMOUNT'
+                    success=False, message="Payment amount must be greater than zero", error_code="INVALID_AMOUNT"
                 )
 
             # Validate currency
-            supported_currencies = ['PHP', 'USD', 'EUR', 'SGD', 'HKD']
+            supported_currencies = ["PHP", "USD", "EUR", "SGD", "HKD"]
             if request.currency not in supported_currencies:
                 return PaymentResponse(
-                    success=False,
-                    message=f"Unsupported currency: {request.currency}",
-                    error_code='INVALID_CURRENCY'
+                    success=False, message=f"Unsupported currency: {request.currency}", error_code="INVALID_CURRENCY"
                 )
 
             # Validate due date
             if request.due_date < timezone.now().date():
                 return PaymentResponse(
-                    success=False,
-                    message="Due date cannot be in the past",
-                    error_code='INVALID_DUE_DATE'
+                    success=False, message="Due date cannot be in the past", error_code="INVALID_DUE_DATE"
                 )
 
             # Validate quote if specified
             if request.quote_id:
                 from core.domains.sales.models import EventQuote
-                if not EventQuote.objects.filter(
-                    id=request.quote_id,
-                    event=event
-                ).exists():
+
+                if not EventQuote.objects.filter(id=request.quote_id, event=event).exists():
                     return PaymentResponse(
-                        success=False,
-                        message="Invalid quote for this event",
-                        error_code='INVALID_QUOTE'
+                        success=False, message="Invalid quote for this event", error_code="INVALID_QUOTE"
                     )
 
             # Validate invoice if specified
             if request.invoice_id:
                 from ..models import Invoice
-                if not Invoice.objects.filter(
-                    id=request.invoice_id,
-                    event=event
-                ).exists():
+
+                if not Invoice.objects.filter(id=request.invoice_id, event=event).exists():
                     return PaymentResponse(
-                        success=False,
-                        message="Invalid invoice for this event",
-                        error_code='INVALID_INVOICE'
+                        success=False, message="Invalid invoice for this event", error_code="INVALID_INVOICE"
                     )
 
                 # OVER-PAYMENT PREVENTION: Check payment amount doesn't exceed remaining balance
                 invoice = Invoice.objects.get(id=request.invoice_id)
-                remaining_balance = invoice.remaining_amount if hasattr(invoice, 'remaining_amount') else invoice.total_amount
+                remaining_balance = (
+                    invoice.remaining_amount if hasattr(invoice, "remaining_amount") else invoice.total_amount
+                )
                 if request.amount > remaining_balance:
                     return PaymentResponse(
                         success=False,
-                        message=f"Payment amount exceeds invoice remaining balance",
-                        error_code='EXCEEDS_BALANCE',
+                        message="Payment amount exceeds invoice remaining balance",
+                        error_code="EXCEEDS_BALANCE",
                         error_details={
-                            'requested_amount': str(request.amount),
-                            'remaining_balance': str(remaining_balance),
-                            'total_amount': str(invoice.total_amount),
-                            'paid_amount': str(invoice.paid_amount)
-                        }
+                            "requested_amount": str(request.amount),
+                            "remaining_balance": str(remaining_balance),
+                            "total_amount": str(invoice.total_amount),
+                            "paid_amount": str(invoice.paid_amount),
+                        },
                     )
 
             # Validate payment method if specified
             if request.payment_method_id:
                 from ..models import PaymentMethod
-                if not PaymentMethod.objects.filter(
-                    id=request.payment_method_id,
-                    user=event.client
-                ).exists():
+
+                if not PaymentMethod.objects.filter(id=request.payment_method_id, user=event.client).exists():
                     return PaymentResponse(
                         success=False,
                         message="Invalid payment method for this client",
-                        error_code='INVALID_PAYMENT_METHOD'
+                        error_code="INVALID_PAYMENT_METHOD",
                     )
 
             return PaymentResponse(success=True, message="Validation passed")
@@ -420,16 +392,17 @@ class PaymentOrchestrator:
             return PaymentResponse(
                 success=False,
                 message="Payment validation failed",
-                error_code='VALIDATION_ERROR',
-                error_details={'error': str(e)}
+                error_code="VALIDATION_ERROR",
+                error_details={"error": str(e)},
             )
 
     @classmethod
-    def _create_payment_record(cls, request: PaymentRequest, user) -> 'Payment':
+    def _create_payment_record(cls, request: PaymentRequest, user) -> "Payment":
         """Create the payment record with proper state initialization"""
-        from ..models import Payment, PaymentMethod, Invoice
         from core.domains.events.models import Event
         from core.domains.sales.models import EventQuote
+
+        from ..models import Invoice, Payment, PaymentMethod
 
         # Get related objects
         event = Event.objects.get(id=request.event_id)
@@ -451,7 +424,7 @@ class PaymentOrchestrator:
             event=event,
             amount=request.amount,
             currency=request.currency,
-            status='CREATED',  # Always start in CREATED state
+            status="CREATED",  # Always start in CREATED state
             due_date=request.due_date,
             payment_method=payment_method,
             description=request.description,
@@ -465,17 +438,17 @@ class PaymentOrchestrator:
         # Add metadata
         if request.metadata:
             payment.notes += f" | Metadata: {request.metadata}"
-            payment.save(update_fields=['notes'])
+            payment.save(update_fields=["notes"])
 
         logger.info(f"Created payment record: {payment.payment_number}")
         return payment
 
     @classmethod
-    def _apply_business_rules(cls, payment: 'Payment', request: PaymentRequest, user):
+    def _apply_business_rules(cls, payment: "Payment", request: PaymentRequest, user):
         """Apply business rules based on payment type and context"""
         try:
             # Handle deposit payments
-            if request.is_deposit or request.payment_type == 'DEPOSIT':
+            if request.is_deposit or request.payment_type == "DEPOSIT":
                 cls._handle_deposit_payment(payment, request, user)
 
             # Auto-create payment plan if requested
@@ -491,17 +464,17 @@ class PaymentOrchestrator:
             raise
 
     @classmethod
-    def _handle_deposit_payment(cls, payment: 'Payment', request: PaymentRequest, user):
+    def _handle_deposit_payment(cls, payment: "Payment", request: PaymentRequest, user):
         """Handle deposit payment specific logic"""
         # Mark as deposit in description if not already mentioned
-        if 'deposit' not in payment.description.lower():
-            payment.description = f"Deposit payment - {payment.description}".strip(' -')
-            payment.save(update_fields=['description'])
+        if "deposit" not in payment.description.lower():
+            payment.description = f"Deposit payment - {payment.description}".strip(" -")
+            payment.save(update_fields=["description"])
 
         logger.info(f"Applied deposit payment rules to {payment.payment_number}")
 
     @classmethod
-    def _handle_invoice_payment(cls, payment: 'Payment', request: PaymentRequest, user):
+    def _handle_invoice_payment(cls, payment: "Payment", request: PaymentRequest, user):
         """Handle invoice payment specific logic"""
         from ..models import Invoice
 
@@ -516,9 +489,7 @@ class PaymentOrchestrator:
                         f"(payment type: {request.payment_type})"
                     )
                 else:
-                    logger.warning(
-                        f"Payment amount {payment.amount} exceeds invoice total {invoice.total_amount}"
-                    )
+                    logger.warning(f"Payment amount {payment.amount} exceeds invoice total {invoice.total_amount}")
 
             logger.info(f"Linked payment {payment.payment_number} to invoice {invoice.invoice_id}")
 
@@ -527,7 +498,7 @@ class PaymentOrchestrator:
             raise ValidationError(f"Invoice {request.invoice_id} not found")
 
     @classmethod
-    def _create_payment_plan(cls, payment: 'Payment', request: PaymentRequest, user):
+    def _create_payment_plan(cls, payment: "Payment", request: PaymentRequest, user):
         """Create payment plan for the event"""
         try:
             # This will be implemented when we extract payment plans
@@ -539,81 +510,75 @@ class PaymentOrchestrator:
             # Don't fail the payment creation if payment plan creation fails
 
     @classmethod
-    def _process_payment(cls, payment: 'Payment', request: PaymentRequest, user) -> PaymentResponse:
+    def _process_payment(cls, payment: "Payment", request: PaymentRequest, user) -> PaymentResponse:
         """Process payment through gateway if auto_process is enabled"""
         try:
             if request.is_manual:
                 # Manual payment - transition through proper states
                 payment.transition_to_state(
-                    'PENDING',
-                    'Manual payment ready for processing',
-                    user.email if user else 'system'
+                    "PENDING", "Manual payment ready for processing", user.email if user else "system"
                 )
 
-                payment.transition_to_state(
-                    'COMPLETED',
-                    'Manual payment processed',
-                    user.email if user else 'system'
-                )
+                payment.transition_to_state("COMPLETED", "Manual payment processed", user.email if user else "system")
 
                 return PaymentResponse(success=True, message="Manual payment processed")
 
             else:
                 # Process through gateway
-                return cls._process_through_gateway(payment, request.gateway_code, {
-                    'payment_method_id': request.payment_method_id,
-                    'save_payment_method': request.save_payment_method,
-                    'metadata': request.metadata
-                }, user)
+                return cls._process_through_gateway(
+                    payment,
+                    request.gateway_code,
+                    {
+                        "payment_method_id": request.payment_method_id,
+                        "save_payment_method": request.save_payment_method,
+                        "metadata": request.metadata,
+                    },
+                    user,
+                )
 
         except Exception as e:
             logger.error(f"Payment processing failed: {e}", exc_info=True)
             return PaymentResponse(
                 success=False,
                 message="Payment processing failed",
-                error_code='PROCESSING_FAILED',
-                error_details={'error': str(e)}
+                error_code="PROCESSING_FAILED",
+                error_details={"error": str(e)},
             )
 
     @classmethod
-    def _process_through_gateway(cls, payment: 'Payment', gateway_code: str,
-                               gateway_data: Dict, user) -> PaymentResponse:
+    def _process_through_gateway(
+        cls, payment: "Payment", gateway_code: str, gateway_data: dict, user
+    ) -> PaymentResponse:
         """Process payment through specified gateway"""
         try:
             from .gateway_service import PaymentGatewayService
 
             # Transition to PROCESSING state
-            payment.transition_to_state(
-                'PROCESSING',
-                f'Processing through {gateway_code}',
-                f'{gateway_code}_gateway'
-            )
+            payment.transition_to_state("PROCESSING", f"Processing through {gateway_code}", f"{gateway_code}_gateway")
 
             # Process through gateway service
-            transaction_result = PaymentGatewayService.process_payment(
-                payment.id, gateway_data, user
-            )
+            transaction_result = PaymentGatewayService.process_payment(payment.id, gateway_data, user)
 
             # Handle gateway response
-            if transaction_result.status == 'COMPLETED':
+            if transaction_result.status == "COMPLETED":
                 return PaymentResponse(
                     success=True,
                     payment_id=payment.id,
                     payment_number=payment.payment_number,
-                    payment_status='COMPLETED',
+                    payment_status="COMPLETED",
                     message="Payment processed successfully",
-                    gateway_data={'transaction_id': transaction_result.transaction_id}
+                    gateway_data={"transaction_id": transaction_result.transaction_id},
                 )
 
-            elif transaction_result.status == 'PENDING':
+            elif transaction_result.status == "PENDING":
                 return PaymentResponse(
                     success=True,
                     payment_id=payment.id,
                     payment_number=payment.payment_number,
-                    payment_status='PROCESSING',
+                    payment_status="PROCESSING",
                     requires_action=True,
                     message="Payment requires additional action",
-                    gateway_data=transaction_result.response_data
+                    gateway_data=transaction_result.response_data,
                 )
 
             else:
@@ -621,10 +586,10 @@ class PaymentOrchestrator:
                     success=False,
                     payment_id=payment.id,
                     payment_number=payment.payment_number,
-                    payment_status='FAILED',
+                    payment_status="FAILED",
                     message=transaction_result.error_message or "Payment processing failed",
-                    error_code='GATEWAY_FAILED',
-                    error_details=transaction_result.response_data
+                    error_code="GATEWAY_FAILED",
+                    error_details=transaction_result.response_data,
                 )
 
         except Exception as e:
@@ -632,26 +597,22 @@ class PaymentOrchestrator:
 
             # Transition payment to FAILED state
             try:
-                payment.transition_to_state(
-                    'FAILED',
-                    f'Gateway processing failed: {str(e)}',
-                    f'{gateway_code}_error'
-                )
+                payment.transition_to_state("FAILED", f"Gateway processing failed: {e!s}", f"{gateway_code}_error")
             except Exception as state_error:
                 # SECURITY FIX: Log state transition failures instead of silently ignoring
                 logger.error(
                     f"Failed to transition payment {payment.id} to FAILED state: {state_error}",
                     exc_info=True,
                     extra={
-                        'payment_id': payment.id,
-                        'original_error': str(e),
-                        'state_transition_error': str(state_error)
-                    }
+                        "payment_id": payment.id,
+                        "original_error": str(e),
+                        "state_transition_error": str(state_error),
+                    },
                 )
 
             return PaymentResponse(
                 success=False,
                 message="Gateway processing failed",
-                error_code='GATEWAY_ERROR',
-                error_details={'error': str(e)}
+                error_code="GATEWAY_ERROR",
+                error_details={"error": str(e)},
             )

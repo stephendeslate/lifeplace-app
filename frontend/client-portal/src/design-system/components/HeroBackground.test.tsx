@@ -9,7 +9,7 @@ describe('HeroBackground', () => {
     render(
       <HeroBackground>
         <div data-testid="test-content">Test Content</div>
-      </HeroBackground>
+      </HeroBackground>,
     );
 
     expect(screen.getByTestId('test-content')).toBeInTheDocument();
@@ -19,7 +19,7 @@ describe('HeroBackground', () => {
     const { container } = render(
       <HeroBackground>
         <div>Content</div>
-      </HeroBackground>
+      </HeroBackground>,
     );
 
     const background = container.firstChild as HTMLElement;
@@ -42,7 +42,7 @@ describe('HeroBackground', () => {
       const { container } = render(
         <HeroBackground gradient={gradient}>
           <div>Content</div>
-        </HeroBackground>
+        </HeroBackground>,
       );
 
       expect(container.firstChild).toBeInTheDocument();
@@ -55,21 +55,21 @@ describe('HeroBackground', () => {
     const { container: container1 } = render(
       <HeroBackground gradient={'forest' as 'warmSage'}>
         <div>Content</div>
-      </HeroBackground>
+      </HeroBackground>,
     );
     expect(container1.firstChild).toBeInTheDocument();
 
     const { container: container2 } = render(
       <HeroBackground gradient={'earth' as 'earthToSky'}>
         <div>Content</div>
-      </HeroBackground>
+      </HeroBackground>,
     );
     expect(container2.firstChild).toBeInTheDocument();
 
     const { container: container3 } = render(
       <HeroBackground gradient={'sunset' as 'sunsetGlow'}>
         <div>Content</div>
-      </HeroBackground>
+      </HeroBackground>,
     );
     expect(container3.firstChild).toBeInTheDocument();
   });
@@ -78,7 +78,7 @@ describe('HeroBackground', () => {
     const { container } = render(
       <HeroBackground video="/test-video.mp4">
         <div>Content</div>
-      </HeroBackground>
+      </HeroBackground>,
     );
 
     const video = container.querySelector('video');
@@ -95,7 +95,7 @@ describe('HeroBackground', () => {
     const { container } = render(
       <HeroBackground image="/test-image.jpg">
         <div>Content</div>
-      </HeroBackground>
+      </HeroBackground>,
     );
 
     // Check that the component renders (image background is set via styled component)
@@ -106,7 +106,7 @@ describe('HeroBackground', () => {
     const { container } = render(
       <HeroBackground video="/test-video.mp4" image="/test-image.jpg">
         <div>Content</div>
-      </HeroBackground>
+      </HeroBackground>,
     );
 
     const video = container.querySelector('video');
@@ -117,7 +117,7 @@ describe('HeroBackground', () => {
     const { container } = render(
       <HeroBackground animated>
         <div>Content</div>
-      </HeroBackground>
+      </HeroBackground>,
     );
 
     expect(container.firstChild).toBeInTheDocument();
@@ -127,7 +127,7 @@ describe('HeroBackground', () => {
     const { container } = render(
       <HeroBackground minHeight="80vh">
         <div>Content</div>
-      </HeroBackground>
+      </HeroBackground>,
     );
 
     expect(container.firstChild).toBeInTheDocument();
@@ -137,7 +137,7 @@ describe('HeroBackground', () => {
     const { container } = render(
       <HeroBackground minHeight={{ xs: '60vh', md: '80vh', lg: '100vh' }}>
         <div>Content</div>
-      </HeroBackground>
+      </HeroBackground>,
     );
 
     expect(container.firstChild).toBeInTheDocument();
@@ -150,7 +150,7 @@ describe('HeroBackground', () => {
       const { container } = render(
         <HeroBackground overlay={overlay}>
           <div>Content</div>
-        </HeroBackground>
+        </HeroBackground>,
       );
 
       expect(container.firstChild).toBeInTheDocument();
@@ -161,7 +161,7 @@ describe('HeroBackground', () => {
     const { container } = render(
       <HeroBackground sx={{ border: '1px solid red' }}>
         <div>Content</div>
-      </HeroBackground>
+      </HeroBackground>,
     );
 
     expect(container.firstChild).toBeInTheDocument();

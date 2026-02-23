@@ -47,7 +47,7 @@ interface EventTypeFeature {
 const getEventTypeFeatures = (eventType: EventType): EventTypeFeature[] => {
   // Return features based on actual event type data
   const features: EventTypeFeature[] = [];
-  
+
   // Add capacity if available in event type data
   if (eventType.description) {
     features.push({
@@ -56,7 +56,7 @@ const getEventTypeFeatures = (eventType: EventType): EventTypeFeature[] => {
       description: eventType.description,
     });
   }
-  
+
   // Add basic venue feature
   features.push({
     icon: <LocationIcon fontSize="small" />,
@@ -74,9 +74,7 @@ const getEventTypeColor = (eventType: EventType) => {
   return eventType.color || DEFAULT_COLOR;
 };
 
-export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
-  onSelectEventType,
-}) => {
+export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({ onSelectEventType }) => {
   const theme = useTheme();
   const [eventTypes, setEventTypes] = useState<EventType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,19 +157,19 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
             >
               <InfoIcon sx={{ fontSize: 32 }} />
             </Avatar>
-            
+
             <Typography variant="h5" sx={{ fontWeight: 600, mb: 2 }}>
               Unable to Load Event Types
             </Typography>
-            
+
             <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
               {error}
             </Typography>
-            
+
             <Typography variant="body2" color="text.secondary">
               Please contact us directly for assistance:
             </Typography>
-            
+
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 2 }}>
               <Button
                 variant="outlined"
@@ -222,7 +220,8 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
               No Event Types Available
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              We're currently updating our event offerings. Please check back later or contact us directly.
+              We're currently updating our event offerings. Please check back later or contact us
+              directly.
             </Typography>
           </GlassCard>
         </AnimatedElement>
@@ -243,20 +242,20 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
         {/* Header */}
         <AnimatedElement animation="slideDown" delay={100}>
           <Box sx={{ textAlign: 'center', mb: 6 }}>
-            <Typography 
-              variant="h2" 
-              sx={{ 
-                fontWeight: 700, 
-                mb: 2, 
+            <Typography
+              variant="h2"
+              sx={{
+                fontWeight: 700,
+                mb: 2,
                 color: 'primary.main',
                 textShadow: '0 2px 10px rgba(0,0,0,0.1)',
               }}
             >
               Choose Your Event Type
             </Typography>
-            <Typography 
-              variant="h5" 
-              color="text.secondary" 
+            <Typography
+              variant="h5"
+              color="text.secondary"
               sx={{ maxWidth: 600, mx: 'auto', lineHeight: 1.6 }}
             >
               Select the perfect event type for your special occasion at LifePlace Alfonso
@@ -265,22 +264,24 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
         </AnimatedElement>
 
         {/* Event Type Cards */}
-        <Box sx={{ 
-          display: 'grid', 
-          gap: 4, 
-          gridTemplateColumns: { 
-            xs: '1fr', 
-            md: 'repeat(2, 1fr)',
-            lg: eventTypes.length >= 3 ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)'
-          },
-          maxWidth: 1200,
-          mx: 'auto',
-          mb: 6
-        }}>
+        <Box
+          sx={{
+            display: 'grid',
+            gap: 4,
+            gridTemplateColumns: {
+              xs: '1fr',
+              md: 'repeat(2, 1fr)',
+              lg: eventTypes.length >= 3 ? 'repeat(3, 1fr)' : 'repeat(2, 1fr)',
+            },
+            maxWidth: 1200,
+            mx: 'auto',
+            mb: 6,
+          }}
+        >
           {eventTypes.map((eventType, index) => {
             const eventColor = getEventTypeColor(eventType);
             const features = getEventTypeFeatures(eventType);
-            
+
             return (
               <AnimatedElement key={eventType.id} animation="slideUp" delay={200 + index * 100}>
                 <GlassCard
@@ -330,12 +331,12 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                       >
                         <EventIcon sx={{ fontSize: 32 }} />
                       </Avatar>
-                      
+
                       <Box sx={{ flex: 1 }}>
                         <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>
                           {eventType.name}
                         </Typography>
-                        
+
                         {eventType.is_active && (
                           <Chip
                             label="Available"
@@ -352,12 +353,13 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                     </Box>
 
                     {/* Description */}
-                    <Typography 
-                      variant="body1" 
-                      color="text.secondary" 
+                    <Typography
+                      variant="body1"
+                      color="text.secondary"
                       sx={{ mb: 3, lineHeight: 1.6, minHeight: 48 }}
                     >
-                      {eventType.description || `Perfect for ${eventType.name.toLowerCase()} celebrations with elegant venue settings and comprehensive service packages.`}
+                      {eventType.description ||
+                        `Perfect for ${eventType.name.toLowerCase()} celebrations with elegant venue settings and comprehensive service packages.`}
                     </Typography>
 
                     {/* Features */}
@@ -387,17 +389,22 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                     </Box>
 
                     {/* Price Range */}
-                    {(
-                      <Box sx={{ 
-                        p: 2, 
-                        backgroundColor: alpha(eventColor, 0.05),
-                        borderRadius: 2,
-                        border: `1px solid ${alpha(eventColor, 0.1)}`,
-                        mb: 3
-                      }}>
+                    {
+                      <Box
+                        sx={{
+                          p: 2,
+                          backgroundColor: alpha(eventColor, 0.05),
+                          borderRadius: 2,
+                          border: `1px solid ${alpha(eventColor, 0.1)}`,
+                          mb: 3,
+                        }}
+                      >
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
                           <PriceIcon sx={{ color: eventColor, fontSize: 20 }} />
-                          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: eventColor }}>
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ fontWeight: 600, color: eventColor }}
+                          >
                             Starting Price
                           </Typography>
                         </Box>
@@ -408,7 +415,7 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                           *Final pricing based on selections
                         </Typography>
                       </Box>
-                    )}
+                    }
 
                     {/* Action Button */}
                     <Button
@@ -462,7 +469,8 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
               Need Help Choosing?
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Our event specialists are here to help you find the perfect event type for your special occasion.
+              Our event specialists are here to help you find the perfect event type for your
+              special occasion.
             </Typography>
             <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
               <Button
@@ -487,7 +495,7 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                   border: `1px solid ${alpha('#fff', 0.2)}`,
                 }}
               >
-              info@lifeplacealfonso.com
+                info@lifeplacealfonso.com
               </Button>
             </Box>
           </GlassCard>
@@ -532,7 +540,14 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                       borderBottom: `1px solid ${alpha('#fff', 0.1)}`,
                     }}
                   >
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        mb: 3,
+                      }}
+                    >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                         <Avatar
                           sx={{
@@ -544,12 +559,12 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                         >
                           <EventIcon sx={{ fontSize: 40 }} />
                         </Avatar>
-                        
+
                         <Box>
                           <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
                             {selectedEventType.name}
                           </Typography>
-                          
+
                           {selectedEventType.is_active && (
                             <Chip
                               label="Available"
@@ -564,7 +579,7 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                           )}
                         </Box>
                       </Box>
-                      
+
                       <IconButton
                         onClick={handleCloseDialog}
                         sx={{
@@ -577,9 +592,8 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                     </Box>
 
                     <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
-                      {selectedEventType.description || 
-                        `Create unforgettable memories with our ${selectedEventType.name.toLowerCase()} package. Our experienced team will ensure every detail is perfect for your special day.`
-                      }
+                      {selectedEventType.description ||
+                        `Create unforgettable memories with our ${selectedEventType.name.toLowerCase()} package. Our experienced team will ensure every detail is perfect for your special day.`}
                     </Typography>
                   </Box>
 
@@ -588,9 +602,16 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                     <Typography variant="h6" sx={{ fontWeight: 600, mb: 3 }}>
                       What's Included
                     </Typography>
-                    
+
                     {/* Features Grid */}
-                    <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 3, mb: 4 }}>
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+                        gap: 3,
+                        mb: 4,
+                      }}
+                    >
                       {getEventTypeFeatures(selectedEventType).map((feature, idx) => (
                         <Box key={idx} sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                           <Avatar
@@ -616,17 +637,25 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                     </Box>
 
                     {/* Additional Features */}
-                    <Box sx={{ 
-                      p: 3, 
-                      backgroundColor: alpha('#fff', 0.1),
-                      borderRadius: 2,
-                      border: `1px solid ${alpha('#fff', 0.2)}`,
-                      mb: 4
-                    }}>
+                    <Box
+                      sx={{
+                        p: 3,
+                        backgroundColor: alpha('#fff', 0.1),
+                        borderRadius: 2,
+                        border: `1px solid ${alpha('#fff', 0.2)}`,
+                        mb: 4,
+                      }}
+                    >
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                         Premium Amenities
                       </Typography>
-                      <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1 }}>
+                      <Box
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                          gap: 1,
+                        }}
+                      >
                         {[
                           'Professional event coordination',
                           'Setup and cleanup services',
@@ -635,7 +664,11 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                           'Parking facilities',
                           'Security and safety measures',
                         ].map((amenity, idx) => (
-                          <Typography key={idx} variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography
+                            key={idx}
+                            variant="body2"
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                          >
                             <Box
                               sx={{
                                 width: 6,
@@ -651,26 +684,35 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                     </Box>
 
                     {/* Pricing */}
-                    {(
-                      <Box sx={{ 
-                        p: 3, 
-                        backgroundColor: alpha(getEventTypeColor(selectedEventType), 0.05),
-                        borderRadius: 2,
-                        border: `1px solid ${alpha(getEventTypeColor(selectedEventType), 0.1)}`,
-                        mb: 4,
-                        textAlign: 'center'
-                      }}>
+                    {
+                      <Box
+                        sx={{
+                          p: 3,
+                          backgroundColor: alpha(getEventTypeColor(selectedEventType), 0.05),
+                          borderRadius: 2,
+                          border: `1px solid ${alpha(getEventTypeColor(selectedEventType), 0.1)}`,
+                          mb: 4,
+                          textAlign: 'center',
+                        }}
+                      >
                         <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
                           Starting at
                         </Typography>
-                        <Typography variant="h3" sx={{ fontWeight: 700, color: getEventTypeColor(selectedEventType), mb: 1 }}>
+                        <Typography
+                          variant="h3"
+                          sx={{
+                            fontWeight: 700,
+                            color: getEventTypeColor(selectedEventType),
+                            mb: 1,
+                          }}
+                        >
                           Starting from ₱15,000
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
                           Final pricing will be calculated based on your specific selections
                         </Typography>
                       </Box>
-                    )}
+                    }
 
                     {/* Action Buttons */}
                     <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
@@ -685,12 +727,18 @@ export const EventTypeSelection: React.FC<EventTypeSelectionProps> = ({
                       >
                         Back to Selection
                       </Button>
-                      
+
                       <Button
                         variant="contained"
                         onClick={() => handleSelectEventType(selectedEventType)}
                         disabled={isSelecting}
-                        endIcon={isSelecting ? <CircularProgress size={20} color="inherit" /> : <ArrowForwardIcon />}
+                        endIcon={
+                          isSelecting ? (
+                            <CircularProgress size={20} color="inherit" />
+                          ) : (
+                            <ArrowForwardIcon />
+                          )
+                        }
                         sx={{
                           minWidth: 160,
                           backgroundColor: alpha(getEventTypeColor(selectedEventType), 0.9),

@@ -24,34 +24,36 @@ const mockUser = {
       city: 'Test City',
       state: 'TS',
       postal_code: '12345',
-      country: 'US'
+      country: 'US',
     },
     emergency_contact: {
       name: 'Emergency Contact',
       phone: '+0987654321',
-      relationship: 'Friend'
+      relationship: 'Friend',
     },
     preferences: {
       email_notifications: true,
       sms_notifications: true,
       marketing_communications: false,
       language: 'en',
-      timezone: 'America/New_York'
+      timezone: 'America/New_York',
     },
     created_at: '2024-01-01T00:00:00Z',
-    updated_at: '2024-01-01T00:00:00Z'
+    updated_at: '2024-01-01T00:00:00Z',
   },
-  token: 'mock-token'
+  token: 'mock-token',
 };
 
 // Mock auth API
 vi.mock('../apis/auth.api', () => ({
   authApi: {
     getCurrentUser: vi.fn(() => Promise.resolve(mockUser)),
-    refreshToken: vi.fn(() => Promise.resolve({
-      access: 'new-access-token',
-    })),
-  }
+    refreshToken: vi.fn(() =>
+      Promise.resolve({
+        access: 'new-access-token',
+      }),
+    ),
+  },
 }));
 
 // Mock storage
@@ -69,7 +71,7 @@ vi.mock('../utils/storage', () => ({
     setPreferences: vi.fn(),
     getThemeMode: vi.fn(() => 'system'),
     setThemeMode: vi.fn(),
-  }
+  },
 }));
 
 interface AllTheProvidersProps {
@@ -78,24 +80,24 @@ interface AllTheProvidersProps {
 }
 
 const AllTheProviders: React.FC<AllTheProvidersProps> = ({ children, queryClient }) => {
-  const testQueryClient = queryClient || new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        gcTime: 0,
+  const testQueryClient =
+    queryClient ||
+    new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+          gcTime: 0,
+        },
+        mutations: {
+          retry: false,
+        },
       },
-      mutations: {
-        retry: false,
-      },
-    },
-  });
+    });
 
   return (
     <QueryClientProvider client={testQueryClient}>
       <AuthProvider>
-        <ContractsProvider>
-          {children}
-        </ContractsProvider>
+        <ContractsProvider>{children}</ContractsProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
@@ -107,13 +109,11 @@ interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
 
 const customRender = (
   ui: React.ReactElement,
-  { queryClient, ...options }: CustomRenderOptions = {}
+  { queryClient, ...options }: CustomRenderOptions = {},
 ) => {
   return rtlRender(ui, {
     wrapper: ({ children }) => (
-      <AllTheProviders queryClient={queryClient}>
-        {children}
-      </AllTheProviders>
+      <AllTheProviders queryClient={queryClient}>{children}</AllTheProviders>
     ),
     ...options,
   });
@@ -135,9 +135,7 @@ const AuthOnlyProviders: React.FC<{ children: React.ReactNode }> = ({ children }
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        {children}
-      </AuthProvider>
+      <AuthProvider>{children}</AuthProvider>
     </QueryClientProvider>
   );
 };

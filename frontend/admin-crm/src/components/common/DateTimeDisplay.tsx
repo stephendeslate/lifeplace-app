@@ -7,7 +7,7 @@ import {
   formatPhilippinesTime,
   formatDualTimezone,
   getUserTimezone,
-  BUSINESS_TIMEZONE
+  BUSINESS_TIMEZONE,
 } from '../../utils/timezone';
 
 interface DateTimeDisplayProps {
@@ -59,7 +59,13 @@ export const DateTimeDisplay: React.FC<DateTimeDisplayProps> = ({
     if (userTz === BUSINESS_TIMEZONE) {
       const formatted = formatPhilippinesTime(date, showTimezone, format);
       return (
-        <Typography variant={variant} component={component} color={color} fontWeight={fontWeight} sx={sx}>
+        <Typography
+          variant={variant}
+          component={component}
+          color={color}
+          fontWeight={fontWeight}
+          sx={sx}
+        >
           {formatted}
         </Typography>
       );
@@ -145,6 +151,8 @@ export const DateTimeFull: React.FC<Omit<DateTimeDisplayProps, 'format'>> = (pro
  * Example: <DateShort date={event.start_date} />
  * Output: "03/15/2026"
  */
-export const DateShort: React.FC<Omit<DateTimeDisplayProps, 'format' | 'showTimezone'>> = (props) => {
+export const DateShort: React.FC<Omit<DateTimeDisplayProps, 'format' | 'showTimezone'>> = (
+  props,
+) => {
   return <DateTimeDisplay {...props} format="MM/dd/yyyy" showTimezone={false} />;
 };

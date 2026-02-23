@@ -311,7 +311,7 @@ describe('Authentication Flow Integration Tests', () => {
     it('shows loading state during login', async () => {
       const user = userEvent.setup();
       vi.mocked(authApi.login).mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 100))
+        () => new Promise((resolve) => setTimeout(resolve, 100)),
       );
 
       render(<TestApp />);
@@ -465,9 +465,7 @@ describe('Authentication Flow Integration Tests', () => {
 
     it('handles password reset request failure', async () => {
       const user = userEvent.setup();
-      vi.mocked(authApi.requestPasswordReset).mockRejectedValue(
-        new Error('Email not found')
-      );
+      vi.mocked(authApi.requestPasswordReset).mockRejectedValue(new Error('Email not found'));
 
       render(<TestApp initialRoute="/forgot-password" />);
 
@@ -537,7 +535,14 @@ describe('Authentication Flow Integration Tests', () => {
     it('submits login form with credentials', async () => {
       const user = userEvent.setup();
       vi.mocked(authApi.login).mockResolvedValue({
-        user: { id: '1', email: 'test@example.com', first_name: 'Test', last_name: 'User', is_active: true, date_joined: '2024-01-01' },
+        user: {
+          id: '1',
+          email: 'test@example.com',
+          first_name: 'Test',
+          last_name: 'User',
+          is_active: true,
+          date_joined: '2024-01-01',
+        },
         tokens: { access: 'token', refresh: 'refresh' },
       });
 

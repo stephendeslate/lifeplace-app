@@ -23,35 +23,37 @@ export const mediaQuery = {
     const bpValue = parseInt(breakpoints[breakpoint].replace('px', ''), 10);
     return `@media (max-width: ${bpValue - 1}px)`;
   },
-  between: (min: Breakpoint, max: Breakpoint) => 
+  between: (min: Breakpoint, max: Breakpoint) =>
     `@media (min-width: ${breakpoints[min]}) and (max-width: ${parseInt(breakpoints[max].replace('px', ''), 10) - 1}px)`,
   only: (breakpoint: Breakpoint) => {
     const breakpointKeys = Object.keys(breakpoints) as Breakpoint[];
     const currentIndex = breakpointKeys.indexOf(breakpoint);
     const nextBreakpoint = breakpointKeys[currentIndex + 1];
-    
+
     if (!nextBreakpoint) {
       return mediaQuery.up(breakpoint);
     }
-    
+
     return mediaQuery.between(breakpoint, nextBreakpoint);
   },
 } as const;
 
 // Responsive value types with proper constraint
-export type ResponsiveValue<T extends string | number> = T | {
-  xs?: T;
-  sm?: T;
-  md?: T;
-  lg?: T;
-  xl?: T;
-};
+export type ResponsiveValue<T extends string | number> =
+  | T
+  | {
+      xs?: T;
+      sm?: T;
+      md?: T;
+      lg?: T;
+      xl?: T;
+    };
 
 // Helper to create responsive CSS properties
 export const createResponsiveValue = <T extends string | number>(
   value: ResponsiveValue<T>,
   property: string,
-  transform?: (val: T) => string | number
+  transform?: (val: T) => string | number,
 ): Record<string, string | number | Record<string, unknown>> => {
   if (typeof value !== 'object' || value === null) {
     const finalValue = transform ? transform(value as T) : (value as T);
@@ -59,27 +61,27 @@ export const createResponsiveValue = <T extends string | number>(
   }
 
   const styles: Record<string, string | number | Record<string, unknown>> = {};
-  
+
   // Base value (xs is default)
-  const responsiveValue = value as { xs?: T; sm?: T; md?: T; lg?: T; xl?: T; };
+  const responsiveValue = value as { xs?: T; sm?: T; md?: T; lg?: T; xl?: T };
   if (responsiveValue.xs !== undefined) {
     const finalValue = transform ? transform(responsiveValue.xs) : responsiveValue.xs;
     styles[property] = finalValue;
   }
-  
+
   // Apply breakpoint-specific values
   Object.entries(responsiveValue).forEach(([breakpoint, val]) => {
     if (breakpoint !== 'xs' && val !== undefined && breakpoint in breakpoints) {
       const mediaQueryKey = mediaQuery.up(breakpoint as Breakpoint);
       const finalValue = transform ? transform(val) : val;
-      
+
       if (!styles[mediaQueryKey]) {
         styles[mediaQueryKey] = {} as Record<string, unknown>;
       }
       (styles[mediaQueryKey] as Record<string, unknown>)[property] = finalValue;
     }
   });
-  
+
   return styles;
 };
 
@@ -156,7 +158,7 @@ export const flex = {
 // Typography scaling utilities
 export const createResponsiveTypography = (
   baseSize: keyof typeof designTokens.typography.fontSize,
-  scales?: { [K in Breakpoint]?: keyof typeof designTokens.typography.fontSize }
+  scales?: { [K in Breakpoint]?: keyof typeof designTokens.typography.fontSize },
 ) => {
   const styles = {
     fontSize: designTokens.typography.fontSize[baseSize],
@@ -180,16 +182,21 @@ export const createResponsiveTypography = (
 export const spacing = {
   // Consistent spacing scale
   ...designTokens.spacing.space,
-  
+
   // Semantic spacing helpers
   component: designTokens.spacing.space[4],
   section: designTokens.spacing.space[8],
   page: designTokens.spacing.space[12],
-  
+
   // Responsive spacing
-  responsive: (base: keyof typeof designTokens.spacing.space, multiplier: ResponsiveValue<number> = 1) => 
-    createResponsiveValue(multiplier, 'padding', (mult) => 
-      `calc(${designTokens.spacing.space[base]} * ${mult})`
+  responsive: (
+    base: keyof typeof designTokens.spacing.space,
+    multiplier: ResponsiveValue<number> = 1,
+  ) =>
+    createResponsiveValue(
+      multiplier,
+      'padding',
+      (mult) => `calc(${designTokens.spacing.space[base]} * ${mult})`,
     ),
 };
 
@@ -228,21 +235,27 @@ export const createThemeResponsive = (theme: Theme) => ({
   down: theme.breakpoints.down,
   between: theme.breakpoints.between,
   only: theme.breakpoints.only,
-  
+
   // Responsive spacing using theme spacing function
   space: (base: number, multipliers?: ResponsiveValue<number>) => {
     if (typeof multipliers !== 'object' || multipliers === null) {
       return theme.spacing(base * ((multipliers as number) || 1));
     }
-    
+
     const styles: Record<string, string | Record<string, string>> = {};
-    
+
     // Base value
-    const responsiveMultipliers = multipliers as { xs?: number; sm?: number; md?: number; lg?: number; xl?: number; };
+    const responsiveMultipliers = multipliers as {
+      xs?: number;
+      sm?: number;
+      md?: number;
+      lg?: number;
+      xl?: number;
+    };
     if (responsiveMultipliers.xs !== undefined) {
       styles.padding = theme.spacing(base * responsiveMultipliers.xs);
     }
-    
+
     // Responsive values
     Object.entries(responsiveMultipliers).forEach(([breakpoint, mult]) => {
       if (breakpoint !== 'xs' && mult !== undefined) {
@@ -255,7 +268,7 @@ export const createThemeResponsive = (theme: Theme) => ({
         }
       }
     });
-    
+
     return styles;
   },
 });
@@ -263,16 +276,23 @@ export const createThemeResponsive = (theme: Theme) => ({
 // Hook for responsive values (to be used in React components)
 export const useResponsiveValue = <T extends string | number>(
   value: ResponsiveValue<T>,
-  defaultValue: T
+  defaultValue: T,
 ): T => {
   // This would typically use useMediaQuery hooks in a React component
   // For now, return the default or base value
   if (typeof value !== 'object' || value === null) {
     return value as T;
   }
-  
-  const responsiveValue = value as { xs?: T; sm?: T; md?: T; lg?: T; xl?: T; };
-  return responsiveValue.xs ?? responsiveValue.sm ?? responsiveValue.md ?? responsiveValue.lg ?? responsiveValue.xl ?? defaultValue;
+
+  const responsiveValue = value as { xs?: T; sm?: T; md?: T; lg?: T; xl?: T };
+  return (
+    responsiveValue.xs ??
+    responsiveValue.sm ??
+    responsiveValue.md ??
+    responsiveValue.lg ??
+    responsiveValue.xl ??
+    defaultValue
+  );
 };
 
 export default {

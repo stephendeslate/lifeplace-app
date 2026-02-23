@@ -5,11 +5,11 @@ import { Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import type { BoxProps } from '@mui/material';
 
-export type AnimationType = 
-  | 'fadeIn' 
-  | 'slideUp' 
-  | 'slideDown' 
-  | 'slideLeft' 
+export type AnimationType =
+  | 'fadeIn'
+  | 'slideUp'
+  | 'slideDown'
+  | 'slideLeft'
   | 'slideRight'
   | 'scaleUp'
   | 'scaleDown'
@@ -27,14 +27,14 @@ interface AnimatedElementProps extends BoxProps {
 }
 
 const StyledAnimatedElement = styled(Box, {
-  shouldForwardProp: (prop) => 
+  shouldForwardProp: (prop) =>
     !['animation', 'delay', 'duration', 'repeat', 'isVisible'].includes(prop as string),
-})<AnimatedElementProps & { isVisible: boolean }>(({ 
-  animation = 'fadeIn', 
-  delay = 0, 
+})<AnimatedElementProps & { isVisible: boolean }>(({
+  animation = 'fadeIn',
+  delay = 0,
   duration = 500,
   repeat = false,
-  isVisible 
+  isVisible,
 }) => {
   const getAnimation = () => {
     switch (animation) {
@@ -61,13 +61,20 @@ const StyledAnimatedElement = styled(Box, {
 
   const getInitialTransform = (type: AnimationType) => {
     switch (type) {
-      case 'slideUp': return 'translateY(20px)';
-      case 'slideDown': return 'translateY(-20px)';
-      case 'slideLeft': return 'translateX(20px)';
-      case 'slideRight': return 'translateX(-20px)';
-      case 'scaleUp': return 'scale(0.95)';
-      case 'scaleDown': return 'scale(1.05)';
-      default: return 'none';
+      case 'slideUp':
+        return 'translateY(20px)';
+      case 'slideDown':
+        return 'translateY(-20px)';
+      case 'slideLeft':
+        return 'translateX(20px)';
+      case 'slideRight':
+        return 'translateX(-20px)';
+      case 'scaleUp':
+        return 'scale(0.95)';
+      case 'scaleDown':
+        return 'scale(1.05)';
+      default:
+        return 'none';
     }
   };
 
@@ -91,11 +98,11 @@ const StyledAnimatedElement = styled(Box, {
   };
 });
 
-export const AnimatedElement: React.FC<AnimatedElementProps> = ({ 
-  children, 
+export const AnimatedElement: React.FC<AnimatedElementProps> = ({
+  children,
   threshold = 0.1,
   animation,
-  ...props 
+  ...props
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
@@ -121,7 +128,7 @@ export const AnimatedElement: React.FC<AnimatedElementProps> = ({
           }
         });
       },
-      { threshold }
+      { threshold },
     );
 
     if (elementRef.current) {
@@ -137,12 +144,7 @@ export const AnimatedElement: React.FC<AnimatedElementProps> = ({
   }, [threshold, props.repeat, animation]);
 
   return (
-    <StyledAnimatedElement 
-      ref={elementRef} 
-      isVisible={isVisible}
-      animation={animation}
-      {...props}
-    >
+    <StyledAnimatedElement ref={elementRef} isVisible={isVisible} animation={animation} {...props}>
       {children}
     </StyledAnimatedElement>
   );

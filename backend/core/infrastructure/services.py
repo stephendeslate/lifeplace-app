@@ -3,9 +3,9 @@
 DORA Metrics Service.
 Calculates the four DORA metrics from Deployment records.
 """
+
 import logging
 from datetime import timedelta
-from decimal import Decimal
 
 from django.db.models import Avg, Count, Q
 from django.utils import timezone
@@ -24,51 +24,51 @@ class DORAMetricsService:
 
     # DORA classification thresholds (2023 State of DevOps Report)
     FREQUENCY_THRESHOLDS = {
-        'elite': 1.0,       # Multiple deploys per day (>=1/day)
-        'high': 1/7,         # Between once per day and once per week
-        'medium': 1/30,      # Between once per week and once per month
+        "elite": 1.0,  # Multiple deploys per day (>=1/day)
+        "high": 1 / 7,  # Between once per day and once per week
+        "medium": 1 / 30,  # Between once per week and once per month
     }
 
     LEAD_TIME_THRESHOLDS = {
-        'elite': 24 * 3600,         # Less than one day
-        'high': 7 * 24 * 3600,      # Between one day and one week
-        'medium': 30 * 24 * 3600,   # Between one week and one month
+        "elite": 24 * 3600,  # Less than one day
+        "high": 7 * 24 * 3600,  # Between one day and one week
+        "medium": 30 * 24 * 3600,  # Between one week and one month
     }
 
     CFR_THRESHOLDS = {
-        'elite': 5,    # 0-5%
-        'high': 10,    # 5-10%
-        'medium': 15,  # 10-15%
+        "elite": 5,  # 0-5%
+        "high": 10,  # 5-10%
+        "medium": 15,  # 10-15%
     }
 
     MTTR_THRESHOLDS = {
-        'elite': 3600,          # Less than one hour
-        'high': 24 * 3600,      # Less than one day
-        'medium': 7 * 24 * 3600,  # Less than one week
+        "elite": 3600,  # Less than one hour
+        "high": 24 * 3600,  # Less than one day
+        "medium": 7 * 24 * 3600,  # Less than one week
     }
 
     @staticmethod
     def _classify(value, thresholds, lower_is_better=True):
         """Classify a metric value into Elite/High/Medium/Low."""
         if value is None:
-            return 'N/A'
+            return "N/A"
         if lower_is_better:
-            if value <= thresholds['elite']:
-                return 'Elite'
-            elif value <= thresholds['high']:
-                return 'High'
-            elif value <= thresholds['medium']:
-                return 'Medium'
-            return 'Low'
+            if value <= thresholds["elite"]:
+                return "Elite"
+            elif value <= thresholds["high"]:
+                return "High"
+            elif value <= thresholds["medium"]:
+                return "Medium"
+            return "Low"
         else:
             # Higher is better (e.g., deployment frequency)
-            if value >= thresholds['elite']:
-                return 'Elite'
-            elif value >= thresholds['high']:
-                return 'High'
-            elif value >= thresholds['medium']:
-                return 'Medium'
-            return 'Low'
+            if value >= thresholds["elite"]:
+                return "Elite"
+            elif value >= thresholds["high"]:
+                return "High"
+            elif value >= thresholds["medium"]:
+                return "Medium"
+            return "Low"
 
     @staticmethod
     def deployment_frequency(days=30, service=None):
@@ -83,8 +83,8 @@ class DORAMetricsService:
         cutoff = timezone.now() - timedelta(days=days)
         qs = Deployment.objects.filter(
             created_at__gte=cutoff,
-            status='SUCCESS',
-            environment='production',
+            status="SUCCESS",
+            environment="production",
         )
         if service:
             qs = qs.filter(service=service)
@@ -99,11 +99,11 @@ class DORAMetricsService:
         )
 
         return {
-            'total_deploys': count,
-            'days': days,
-            'daily_average': round(daily_avg, 2),
-            'weekly_average': round(daily_avg * 7, 2),
-            'classification': classification,
+            "total_deploys": count,
+            "days": days,
+            "daily_average": round(daily_avg, 2),
+            "weekly_average": round(daily_avg * 7, 2),
+            "classification": classification,
         }
 
     @staticmethod
@@ -119,26 +119,26 @@ class DORAMetricsService:
         cutoff = timezone.now() - timedelta(days=days)
         qs = Deployment.objects.filter(
             created_at__gte=cutoff,
-            status='SUCCESS',
-            environment='production',
+            status="SUCCESS",
+            environment="production",
             lead_time_seconds__isnull=False,
         )
         if service:
             qs = qs.filter(service=service)
 
         stats = qs.aggregate(
-            avg_seconds=Avg('lead_time_seconds'),
-            count=Count('id'),
+            avg_seconds=Avg("lead_time_seconds"),
+            count=Count("id"),
         )
 
-        avg_seconds = stats['avg_seconds']
+        avg_seconds = stats["avg_seconds"]
         if avg_seconds is not None:
             avg_seconds = int(avg_seconds)
 
         # Get min/max manually for more detail
-        if stats['count'] > 0:
-            min_val = qs.order_by('lead_time_seconds').first().lead_time_seconds
-            max_val = qs.order_by('-lead_time_seconds').first().lead_time_seconds
+        if stats["count"] > 0:
+            min_val = qs.order_by("lead_time_seconds").first().lead_time_seconds
+            max_val = qs.order_by("-lead_time_seconds").first().lead_time_seconds
         else:
             min_val = None
             max_val = None
@@ -150,13 +150,13 @@ class DORAMetricsService:
         )
 
         return {
-            'avg_seconds': avg_seconds,
-            'avg_human': DORAMetricsService._humanize_seconds(avg_seconds),
-            'min_seconds': min_val,
-            'max_seconds': max_val,
-            'sample_size': stats['count'],
-            'days': days,
-            'classification': classification,
+            "avg_seconds": avg_seconds,
+            "avg_human": DORAMetricsService._humanize_seconds(avg_seconds),
+            "min_seconds": min_val,
+            "max_seconds": max_val,
+            "sample_size": stats["count"],
+            "days": days,
+            "classification": classification,
         }
 
     @staticmethod
@@ -172,15 +172,13 @@ class DORAMetricsService:
         cutoff = timezone.now() - timedelta(days=days)
         qs = Deployment.objects.filter(
             created_at__gte=cutoff,
-            environment='production',
+            environment="production",
         )
         if service:
             qs = qs.filter(service=service)
 
         total = qs.count()
-        failures = qs.filter(
-            Q(caused_incident=True) | Q(status='FAILURE')
-        ).count()
+        failures = qs.filter(Q(caused_incident=True) | Q(status="FAILURE")).count()
 
         rate = (failures / total * 100) if total > 0 else 0
 
@@ -191,11 +189,11 @@ class DORAMetricsService:
         )
 
         return {
-            'total_deploys': total,
-            'failed_deploys': failures,
-            'rate_pct': round(rate, 2),
-            'days': days,
-            'classification': classification,
+            "total_deploys": total,
+            "failed_deploys": failures,
+            "rate_pct": round(rate, 2),
+            "days": days,
+            "classification": classification,
         }
 
     @staticmethod
@@ -213,17 +211,17 @@ class DORAMetricsService:
             created_at__gte=cutoff,
             caused_incident=True,
             mttr_seconds__isnull=False,
-            environment='production',
+            environment="production",
         )
         if service:
             qs = qs.filter(service=service)
 
         stats = qs.aggregate(
-            avg_seconds=Avg('mttr_seconds'),
-            count=Count('id'),
+            avg_seconds=Avg("mttr_seconds"),
+            count=Count("id"),
         )
 
-        avg_seconds = stats['avg_seconds']
+        avg_seconds = stats["avg_seconds"]
         if avg_seconds is not None:
             avg_seconds = int(avg_seconds)
 
@@ -234,11 +232,11 @@ class DORAMetricsService:
         )
 
         return {
-            'avg_seconds': avg_seconds,
-            'avg_human': DORAMetricsService._humanize_seconds(avg_seconds),
-            'incident_count': stats['count'],
-            'days': days,
-            'classification': classification,
+            "avg_seconds": avg_seconds,
+            "avg_human": DORAMetricsService._humanize_seconds(avg_seconds),
+            "incident_count": stats["count"],
+            "days": days,
+            "classification": classification,
         }
 
     @staticmethod
@@ -251,33 +249,33 @@ class DORAMetricsService:
 
         # Determine overall classification (lowest of the four)
         classifications = [
-            freq['classification'],
-            lead['classification'],
-            cfr['classification'],
-            mttr['classification'],
+            freq["classification"],
+            lead["classification"],
+            cfr["classification"],
+            mttr["classification"],
         ]
-        ranking = {'Elite': 4, 'High': 3, 'Medium': 2, 'Low': 1, 'N/A': 0}
-        valid = [c for c in classifications if c != 'N/A']
+        ranking = {"Elite": 4, "High": 3, "Medium": 2, "Low": 1, "N/A": 0}
+        valid = [c for c in classifications if c != "N/A"]
         if valid:
             overall = min(valid, key=lambda x: ranking.get(x, 0))
         else:
-            overall = 'N/A'
+            overall = "N/A"
 
         return {
-            'period_days': days,
-            'service': service or 'all',
-            'overall_classification': overall,
-            'deployment_frequency': freq,
-            'lead_time_for_changes': lead,
-            'change_failure_rate': cfr,
-            'mean_time_to_recovery': mttr,
+            "period_days": days,
+            "service": service or "all",
+            "overall_classification": overall,
+            "deployment_frequency": freq,
+            "lead_time_for_changes": lead,
+            "change_failure_rate": cfr,
+            "mean_time_to_recovery": mttr,
         }
 
     @staticmethod
     def _humanize_seconds(seconds):
         """Convert seconds to human-readable duration."""
         if seconds is None:
-            return 'N/A'
+            return "N/A"
         if seconds < 60:
             return f"{seconds}s"
         if seconds < 3600:

@@ -18,9 +18,7 @@ describe('ServicesHero', () => {
 
     it('should render the subheading description', () => {
       render(<ServicesHero />);
-      expect(
-        screen.getByText(/From intimate retreats to grand celebrations/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/From intimate retreats to grand celebrations/i)).toBeInTheDocument();
     });
 
     it('should render all service highlights', () => {
@@ -190,7 +188,7 @@ describe('ServicesHero', () => {
       const buttons = screen.getAllByRole('button');
       expect(buttons.length).toBeGreaterThanOrEqual(2);
 
-      buttons.forEach(button => {
+      buttons.forEach((button) => {
         expect(button).toHaveAttribute('type', 'button');
       });
     });

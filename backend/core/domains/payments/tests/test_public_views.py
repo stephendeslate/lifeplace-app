@@ -1,13 +1,11 @@
 # backend/core/domains/payments/tests/test_public_views.py
-import json
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.core.cache import cache
-from rest_framework.test import APIClient
 from rest_framework import status
+from rest_framework.test import APIClient
 
 from core.domains.payments.models import PaymentGateway
-from core.domains.users.models import User
 
 
 class PublicPaymentGatewayViewSetTestCase(TestCase):
@@ -27,14 +25,14 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
                 "name": "Stripe",
                 "is_active": True,
                 "description": "Credit card payments via Stripe",
-            }
+            },
         )
         # Always update config to ensure test settings are applied
         self.active_gateway_1.config = {
             "publishable_key": "pk_test_123456789",
             "secret_key": "sk_test_987654321",
             "webhook_secret": "whsec_test_123",
-            "test_mode": True
+            "test_mode": True,
         }
         self.active_gateway_1.is_active = True
         self.active_gateway_1.description = "Credit card payments via Stripe"
@@ -45,11 +43,7 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
             code="paypal",
             is_active=True,
             description="PayPal payments",
-            config={
-                "client_id": "paypal_client_123",
-                "client_secret": "paypal_secret_456",
-                "environment": "sandbox"
-            }
+            config={"client_id": "paypal_client_123", "client_secret": "paypal_secret_456", "environment": "sandbox"},
         )
 
         self.inactive_gateway = PaymentGateway.objects.create(
@@ -57,14 +51,11 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
             code="inactive",
             is_active=False,
             description="This gateway is disabled",
-            config={
-                "secret_key": "should_not_be_exposed",
-                "api_key": "sensitive_data"
-            }
+            config={"secret_key": "should_not_be_exposed", "api_key": "sensitive_data"},
         )
 
         # Base URL for public gateway endpoints
-        self.list_url = reverse('public-payment-gateway-list')
+        self.list_url = reverse("public-payment-gateway-list")
 
     def test_public_access_no_authentication_required(self):
         """Test that public endpoint doesn't require authentication"""
@@ -80,10 +71,10 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)  # Only 2 active gateways
 
-        gateway_codes = [gateway['code'] for gateway in response.data]
-        self.assertIn('stripe', gateway_codes)
-        self.assertIn('paypal', gateway_codes)
-        self.assertNotIn('inactive', gateway_codes)
+        gateway_codes = [gateway["code"] for gateway in response.data]
+        self.assertIn("stripe", gateway_codes)
+        self.assertIn("paypal", gateway_codes)
+        self.assertNotIn("inactive", gateway_codes)
 
     def test_sensitive_data_not_exposed(self):
         """Test that sensitive configuration data is not exposed"""
@@ -93,19 +84,19 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
 
         for gateway in response.data:
             # Check that sensitive fields are not present
-            self.assertNotIn('config', gateway)
-            self.assertNotIn('secret_key', gateway)
-            self.assertNotIn('publishable_key', gateway)
-            self.assertNotIn('client_secret', gateway)
-            self.assertNotIn('webhook_secret', gateway)
+            self.assertNotIn("config", gateway)
+            self.assertNotIn("secret_key", gateway)
+            self.assertNotIn("publishable_key", gateway)
+            self.assertNotIn("client_secret", gateway)
+            self.assertNotIn("webhook_secret", gateway)
 
             # Check that only safe fields are present
-            expected_fields = {'id', 'name', 'code', 'is_active', 'description'}
+            expected_fields = {"id", "name", "code", "is_active", "description"}
             actual_fields = set(gateway.keys())
 
             # public_config is optional and safe
-            if 'public_config' in actual_fields:
-                actual_fields.remove('public_config')
+            if "public_config" in actual_fields:
+                actual_fields.remove("public_config")
 
             self.assertEqual(actual_fields, expected_fields)
 
@@ -120,50 +111,50 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         for gateway in response.data:
-            if 'public_config' in gateway:
-                public_config = gateway['public_config']
+            if "public_config" in gateway:
+                public_config = gateway["public_config"]
 
                 # Check that only safe config fields are included
-                if gateway['code'] == 'stripe':
-                    self.assertIn('test_mode', public_config)
-                    self.assertEqual(public_config['test_mode'], True)
+                if gateway["code"] == "stripe":
+                    self.assertIn("test_mode", public_config)
+                    self.assertEqual(public_config["test_mode"], True)
                     # publishable_key is safe for client-side use
-                    self.assertIn('publishable_key', public_config)
+                    self.assertIn("publishable_key", public_config)
                     # Ensure truly sensitive data is not exposed
-                    self.assertNotIn('secret_key', public_config)
-                    self.assertNotIn('webhook_secret', public_config)
+                    self.assertNotIn("secret_key", public_config)
+                    self.assertNotIn("webhook_secret", public_config)
 
-                elif gateway['code'] == 'paypal':
-                    self.assertIn('environment', public_config)
-                    self.assertEqual(public_config['environment'], 'sandbox')
+                elif gateway["code"] == "paypal":
+                    self.assertIn("environment", public_config)
+                    self.assertEqual(public_config["environment"], "sandbox")
                     # Ensure no sensitive data
-                    self.assertNotIn('client_id', public_config)
-                    self.assertNotIn('client_secret', public_config)
+                    self.assertNotIn("client_id", public_config)
+                    self.assertNotIn("client_secret", public_config)
 
     def test_retrieve_specific_gateway(self):
         """Test retrieving a specific active gateway by ID"""
-        detail_url = reverse('public-payment-gateway-detail', args=[self.active_gateway_1.id])
+        detail_url = reverse("public-payment-gateway-detail", args=[self.active_gateway_1.id])
         response = self.client.get(detail_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['id'], self.active_gateway_1.id)
-        self.assertEqual(response.data['code'], 'stripe')
-        self.assertEqual(response.data['name'], 'Stripe')
+        self.assertEqual(response.data["id"], self.active_gateway_1.id)
+        self.assertEqual(response.data["code"], "stripe")
+        self.assertEqual(response.data["name"], "Stripe")
 
         # Check that sensitive data is not exposed
-        self.assertNotIn('config', response.data)
+        self.assertNotIn("config", response.data)
 
     def test_retrieve_inactive_gateway_404(self):
         """Test that retrieving an inactive gateway returns 404"""
-        detail_url = reverse('public-payment-gateway-detail', args=[self.inactive_gateway.id])
+        detail_url = reverse("public-payment-gateway-detail", args=[self.inactive_gateway.id])
         response = self.client.get(detail_url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-        self.assertIn('not found or not active', response.data['detail'])
+        self.assertIn("not found or not active", response.data["detail"])
 
     def test_retrieve_nonexistent_gateway_404(self):
         """Test that retrieving a non-existent gateway returns 404"""
-        detail_url = reverse('public-payment-gateway-detail', args=[99999])
+        detail_url = reverse("public-payment-gateway-detail", args=[99999])
         response = self.client.get(detail_url)
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -175,7 +166,7 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # Test PUT is not allowed
-        detail_url = reverse('public-payment-gateway-detail', args=[self.active_gateway_1.id])
+        detail_url = reverse("public-payment-gateway-detail", args=[self.active_gateway_1.id])
         response = self.client.put(detail_url, {})
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
@@ -195,7 +186,7 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
         self.assertEqual(response1.data, response2.data)
 
         # Check that cache key exists
-        cache_key = 'public_payment_gateways'
+        cache_key = "public_payment_gateways"
         cached_data = cache.get(cache_key)
         self.assertIsNotNone(cached_data)
 
@@ -206,11 +197,8 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
         initial_count = len(response1.data)
 
         # Create a new active gateway
-        new_gateway = PaymentGateway.objects.create(
-            name="New Gateway",
-            code="new_gateway",
-            is_active=True,
-            description="New test gateway"
+        PaymentGateway.objects.create(
+            name="New Gateway", code="new_gateway", is_active=True, description="New test gateway"
         )
 
         # Cache should still return old data
@@ -224,11 +212,13 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
         response3 = self.client.get(self.list_url)
         self.assertEqual(len(response3.data), initial_count + 1)
 
-    @override_settings(CACHES={
-        'default': {
-            'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+    @override_settings(
+        CACHES={
+            "default": {
+                "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+            }
         }
-    })
+    )
     def test_works_without_cache(self):
         """Test that endpoint works even when caching is disabled"""
         response = self.client.get(self.list_url)
@@ -245,7 +235,7 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
         viewset = PublicPaymentGatewayViewSet()
 
         # Check that throttle classes are configured
-        self.assertTrue(hasattr(viewset, 'throttle_classes'))
+        self.assertTrue(hasattr(viewset, "throttle_classes"))
         self.assertTrue(len(viewset.throttle_classes) > 0)
 
     def test_response_format_is_correct(self):
@@ -259,19 +249,19 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
             gateway = response.data[0]
 
             # Required fields
-            required_fields = ['id', 'name', 'code', 'is_active', 'description']
+            required_fields = ["id", "name", "code", "is_active", "description"]
             for field in required_fields:
                 self.assertIn(field, gateway)
 
             # Check field types
-            self.assertIsInstance(gateway['id'], int)
-            self.assertIsInstance(gateway['name'], str)
-            self.assertIsInstance(gateway['code'], str)
-            self.assertIsInstance(gateway['is_active'], bool)
-            self.assertIsInstance(gateway['description'], str)
+            self.assertIsInstance(gateway["id"], int)
+            self.assertIsInstance(gateway["name"], str)
+            self.assertIsInstance(gateway["code"], str)
+            self.assertIsInstance(gateway["is_active"], bool)
+            self.assertIsInstance(gateway["description"], str)
 
             # is_active should always be True for public endpoint
-            self.assertTrue(gateway['is_active'])
+            self.assertTrue(gateway["is_active"])
 
     def test_ordering_is_consistent(self):
         """Test that gateways are returned in consistent order"""
@@ -282,8 +272,8 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
         self.assertEqual(response2.status_code, status.HTTP_200_OK)
 
         # Order should be consistent (by name)
-        gateway_names_1 = [g['name'] for g in response1.data]
-        gateway_names_2 = [g['name'] for g in response2.data]
+        gateway_names_1 = [g["name"] for g in response1.data]
+        gateway_names_2 = [g["name"] for g in response2.data]
 
         self.assertEqual(gateway_names_1, gateway_names_2)
         self.assertEqual(gateway_names_1, sorted(gateway_names_1))
@@ -304,9 +294,8 @@ class PublicPaymentGatewayViewSetTestCase(TestCase):
     def test_endpoint_url_structure(self):
         """Test that the endpoint URL structure is correct"""
         # Should be accessible at /api/payments/public/gateways/
-        expected_path = '/api/payments/public/gateways/'
-        self.assertTrue(self.list_url.endswith(expected_path) or
-                       'public/gateways' in self.list_url)
+        expected_path = "/api/payments/public/gateways/"
+        self.assertTrue(self.list_url.endswith(expected_path) or "public/gateways" in self.list_url)
 
     def tearDown(self):
         """Clean up after each test"""

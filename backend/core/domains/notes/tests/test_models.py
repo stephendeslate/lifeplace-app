@@ -8,8 +8,9 @@ Tests:
 - Note relationship to content objects
 """
 
-import pytest
 from django.contrib.contenttypes.models import ContentType
+
+import pytest
 
 from core.domains.notes.models import Note
 
@@ -25,17 +26,17 @@ class TestNoteModel:
         content_type = ContentType.objects.get_for_model(event)
 
         note = Note.objects.create(
-            title='Test Note',
-            content='This is a test note content.',
+            title="Test Note",
+            content="This is a test note content.",
             created_by=admin,
             content_type=content_type,
             object_id=event.id,
-            is_client_visible=False
+            is_client_visible=False,
         )
 
         assert note.id is not None
-        assert note.title == 'Test Note'
-        assert note.content == 'This is a test note content.'
+        assert note.title == "Test Note"
+        assert note.content == "This is a test note content."
         assert note.created_by == admin
         assert note.content_object == event
         assert not note.is_client_visible
@@ -43,16 +44,16 @@ class TestNoteModel:
     def test_create_note_with_user(self, user_factory):
         """Test creating a note attached to a user (client)."""
         admin = user_factory(admin=True)
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         content_type = ContentType.objects.get_for_model(client)
 
         note = Note.objects.create(
-            title='Client Note',
-            content='Note about the client.',
+            title="Client Note",
+            content="Note about the client.",
             created_by=admin,
             content_type=content_type,
             object_id=client.id,
-            is_client_visible=True
+            is_client_visible=True,
         )
 
         assert note.content_object == client
@@ -65,15 +66,11 @@ class TestNoteModel:
         content_type = ContentType.objects.get_for_model(event)
 
         note = Note.objects.create(
-            title='',
-            content='Note without title.',
-            created_by=admin,
-            content_type=content_type,
-            object_id=event.id
+            title="", content="Note without title.", created_by=admin, content_type=content_type, object_id=event.id
         )
 
-        assert note.title == ''
-        assert note.content == 'Note without title.'
+        assert note.title == ""
+        assert note.content == "Note without title."
 
     def test_note_string_representation_with_title(self, user_factory, event_factory):
         """Test Note __str__ returns title when available."""
@@ -82,14 +79,14 @@ class TestNoteModel:
         content_type = ContentType.objects.get_for_model(event)
 
         note = Note.objects.create(
-            title='Important Meeting Notes',
-            content='Content here.',
+            title="Important Meeting Notes",
+            content="Content here.",
             created_by=admin,
             content_type=content_type,
-            object_id=event.id
+            object_id=event.id,
         )
 
-        assert str(note) == 'Note: Important Meeting Notes'
+        assert str(note) == "Note: Important Meeting Notes"
 
     def test_note_string_representation_without_title(self, user_factory, event_factory):
         """Test Note __str__ returns truncated content when no title."""
@@ -98,15 +95,15 @@ class TestNoteModel:
         content_type = ContentType.objects.get_for_model(event)
 
         note = Note.objects.create(
-            title='',
-            content='This is a note without a title and has long content.',
+            title="",
+            content="This is a note without a title and has long content.",
             created_by=admin,
             content_type=content_type,
-            object_id=event.id
+            object_id=event.id,
         )
 
         # Should show first 50 characters of content
-        assert str(note) == 'Note: This is a note without a title and has long conten'
+        assert str(note) == "Note: This is a note without a title and has long conten"
 
     def test_note_ordering(self, user_factory, event_factory):
         """Test notes are ordered by created_at descending."""
@@ -115,25 +112,25 @@ class TestNoteModel:
         content_type = ContentType.objects.get_for_model(event)
 
         note1 = Note.objects.create(
-            title='First Note',
-            content='Created first.',
+            title="First Note",
+            content="Created first.",
             created_by=admin,
             content_type=content_type,
-            object_id=event.id
+            object_id=event.id,
         )
         note2 = Note.objects.create(
-            title='Second Note',
-            content='Created second.',
+            title="Second Note",
+            content="Created second.",
             created_by=admin,
             content_type=content_type,
-            object_id=event.id
+            object_id=event.id,
         )
         note3 = Note.objects.create(
-            title='Third Note',
-            content='Created third.',
+            title="Third Note",
+            content="Created third.",
             created_by=admin,
             content_type=content_type,
-            object_id=event.id
+            object_id=event.id,
         )
 
         notes = list(Note.objects.all())
@@ -149,14 +146,9 @@ class TestNoteModel:
         content_type = ContentType.objects.get_for_model(event)
 
         note = Note.objects.create(
-            title='Test Note',
-            content='Content.',
-            created_by=admin,
-            content_type=content_type,
-            object_id=event.id
+            title="Test Note", content="Content.", created_by=admin, content_type=content_type, object_id=event.id
         )
 
-        admin_id = admin.id
         admin.delete()
 
         note.refresh_from_db()
@@ -169,10 +161,7 @@ class TestNoteModel:
         content_type = ContentType.objects.get_for_model(event)
 
         note = Note.objects.create(
-            content='Test content.',
-            created_by=admin,
-            content_type=content_type,
-            object_id=event.id
+            content="Test content.", created_by=admin, content_type=content_type, object_id=event.id
         )
 
         assert note.is_client_visible is False
@@ -184,11 +173,7 @@ class TestNoteModel:
         content_type = ContentType.objects.get_for_model(event)
 
         note = Note.objects.create(
-            title='Test Note',
-            content='Content.',
-            created_by=admin,
-            content_type=content_type,
-            object_id=event.id
+            title="Test Note", content="Content.", created_by=admin, content_type=content_type, object_id=event.id
         )
 
         assert note.created_at is not None
@@ -201,15 +186,15 @@ class TestNoteModel:
         content_type = ContentType.objects.get_for_model(event)
 
         note = Note.objects.create(
-            title='Test Note',
-            content='Original content.',
+            title="Test Note",
+            content="Original content.",
             created_by=admin,
             content_type=content_type,
-            object_id=event.id
+            object_id=event.id,
         )
         original_updated_at = note.updated_at
 
-        note.content = 'Updated content.'
+        note.content = "Updated content."
         note.save()
 
         note.refresh_from_db()
@@ -225,14 +210,14 @@ class TestNoteIndexes:
         # This is a meta test - the index is defined in Meta.indexes
         from core.domains.notes.models import Note
 
-        index_names = [index.name for index in Note._meta.indexes]
+        [index.name for index in Note._meta.indexes]
         # Check that we have an index (Django auto-generates index names)
         assert len(Note._meta.indexes) >= 1
 
         # Check index fields
         index_fields = Note._meta.indexes[0].fields
-        assert 'content_type' in index_fields
-        assert 'object_id' in index_fields
+        assert "content_type" in index_fields
+        assert "object_id" in index_fields
 
 
 @pytest.mark.django_db
@@ -247,17 +232,14 @@ class TestNoteGenericRelation:
 
         for i in range(3):
             Note.objects.create(
-                title=f'Note {i+1}',
-                content=f'Content for note {i+1}.',
+                title=f"Note {i + 1}",
+                content=f"Content for note {i + 1}.",
                 created_by=admin,
                 content_type=content_type,
-                object_id=event.id
+                object_id=event.id,
             )
 
-        notes = Note.objects.filter(
-            content_type=content_type,
-            object_id=event.id
-        )
+        notes = Note.objects.filter(content_type=content_type, object_id=event.id)
         assert notes.count() == 3
 
     def test_notes_for_different_objects(self, user_factory, event_factory):
@@ -268,37 +250,29 @@ class TestNoteGenericRelation:
         content_type = ContentType.objects.get_for_model(event1)
 
         Note.objects.create(
-            title='Note for Event 1',
-            content='Content.',
+            title="Note for Event 1",
+            content="Content.",
             created_by=admin,
             content_type=content_type,
-            object_id=event1.id
+            object_id=event1.id,
         )
         Note.objects.create(
-            title='Note for Event 2',
-            content='Content.',
+            title="Note for Event 2",
+            content="Content.",
             created_by=admin,
             content_type=content_type,
-            object_id=event2.id
+            object_id=event2.id,
         )
 
-        event1_notes = Note.objects.filter(
-            content_type=content_type,
-            object_id=event1.id
-        )
-        event2_notes = Note.objects.filter(
-            content_type=content_type,
-            object_id=event2.id
-        )
+        event1_notes = Note.objects.filter(content_type=content_type, object_id=event1.id)
+        event2_notes = Note.objects.filter(content_type=content_type, object_id=event2.id)
 
         assert event1_notes.count() == 1
         assert event2_notes.count() == 1
-        assert event1_notes.first().title == 'Note for Event 1'
-        assert event2_notes.first().title == 'Note for Event 2'
+        assert event1_notes.first().title == "Note for Event 1"
+        assert event2_notes.first().title == "Note for Event 2"
 
-    def test_note_deletion_does_not_affect_content_object(
-        self, user_factory, event_factory
-    ):
+    def test_note_deletion_does_not_affect_content_object(self, user_factory, event_factory):
         """Test that deleting a note does not delete the content object."""
         admin = user_factory(admin=True)
         event = event_factory()
@@ -306,15 +280,12 @@ class TestNoteGenericRelation:
         event_id = event.id
 
         note = Note.objects.create(
-            title='Test Note',
-            content='Content.',
-            created_by=admin,
-            content_type=content_type,
-            object_id=event.id
+            title="Test Note", content="Content.", created_by=admin, content_type=content_type, object_id=event.id
         )
 
         note.delete()
 
         # Event should still exist
         from core.domains.events.models import Event
+
         assert Event.objects.filter(id=event_id).exists()

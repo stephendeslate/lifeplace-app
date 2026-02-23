@@ -18,7 +18,19 @@ vi.mock('../../../contexts/AuthContext', () => ({
 
 // Mock the design system components
 vi.mock('../../../design-system', () => ({
-  HeroBackground: ({ children, gradient, animated, overlay, sx }: { children: React.ReactNode; gradient?: string; animated?: boolean; overlay?: string; sx?: object }) => (
+  HeroBackground: ({
+    children,
+    gradient,
+    animated,
+    overlay,
+    sx,
+  }: {
+    children: React.ReactNode;
+    gradient?: string;
+    animated?: boolean;
+    overlay?: string;
+    sx?: object;
+  }) => (
     <div
       data-testid="hero-background"
       data-gradient={gradient}
@@ -29,7 +41,15 @@ vi.mock('../../../design-system', () => ({
       {children}
     </div>
   ),
-  AnimatedElement: ({ children, animation, delay }: { children: React.ReactNode; animation?: string; delay?: number }) => (
+  AnimatedElement: ({
+    children,
+    animation,
+    delay,
+  }: {
+    children: React.ReactNode;
+    animation?: string;
+    delay?: number;
+  }) => (
     <div data-testid="animated-element" data-animation={animation} data-delay={delay}>
       {children}
     </div>
@@ -116,7 +136,19 @@ vi.mock('../../../design-system', () => ({
 }));
 
 vi.mock('../../../design-system/components/GlassCard', () => ({
-  GlassCard: ({ children, variant, intensity, hover, sx }: { children: React.ReactNode; variant?: string; intensity?: string; hover?: boolean; sx?: object }) => (
+  GlassCard: ({
+    children,
+    variant,
+    intensity,
+    hover,
+    sx,
+  }: {
+    children: React.ReactNode;
+    variant?: string;
+    intensity?: string;
+    hover?: boolean;
+    sx?: object;
+  }) => (
     <div
       data-testid="glass-card"
       data-variant={variant}
@@ -237,14 +269,14 @@ describe('HeroSection', () => {
     it('should render subheading', () => {
       renderHeroSection(mockAuthNotAuthenticated);
       expect(
-        screen.getByText(/Experience the cozy ambience and peaceful environment/i)
+        screen.getByText(/Experience the cozy ambience and peaceful environment/i),
       ).toBeInTheDocument();
     });
 
     it('should render Bible verse quote', () => {
       renderHeroSection(mockAuthNotAuthenticated);
       expect(
-        screen.getByText(/"I have come that they may have life, and have it to the full."/i)
+        screen.getByText(/"I have come that they may have life, and have it to the full."/i),
       ).toBeInTheDocument();
       expect(screen.getByText(/John 10:10b/i)).toBeInTheDocument();
     });

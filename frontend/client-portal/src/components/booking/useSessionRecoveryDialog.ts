@@ -16,27 +16,33 @@ export const useSessionRecoveryDialog = () => {
     setIsLoading(false);
   }, []);
 
-  const handleRestore = React.useCallback(async (onRestore: () => Promise<void> | void) => {
-    setIsLoading(true);
-    try {
-      await onRestore();
-      hideDialog();
-    } catch (error) {
-      if (import.meta.env.DEV) console.error('Failed to restore session:', error);
-      setIsLoading(false);
-    }
-  }, [hideDialog]);
+  const handleRestore = React.useCallback(
+    async (onRestore: () => Promise<void> | void) => {
+      setIsLoading(true);
+      try {
+        await onRestore();
+        hideDialog();
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('Failed to restore session:', error);
+        setIsLoading(false);
+      }
+    },
+    [hideDialog],
+  );
 
-  const handleDiscard = React.useCallback(async (onDiscard: () => Promise<void> | void) => {
-    setIsLoading(true);
-    try {
-      await onDiscard();
-      hideDialog();
-    } catch (error) {
-      if (import.meta.env.DEV) console.error('Failed to discard session:', error);
-      setIsLoading(false);
-    }
-  }, [hideDialog]);
+  const handleDiscard = React.useCallback(
+    async (onDiscard: () => Promise<void> | void) => {
+      setIsLoading(true);
+      try {
+        await onDiscard();
+        hideDialog();
+      } catch (error) {
+        if (import.meta.env.DEV) console.error('Failed to discard session:', error);
+        setIsLoading(false);
+      }
+    },
+    [hideDialog],
+  );
 
   return {
     isOpen,

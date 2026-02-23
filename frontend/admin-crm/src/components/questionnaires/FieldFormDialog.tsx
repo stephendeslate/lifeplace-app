@@ -21,11 +21,8 @@ import {
   IconButton,
   Stack,
 } from '@mui/material';
+import { Add as AddIcon, Remove as RemoveIcon } from '@mui/icons-material';
 import {
-  Add as AddIcon,
-  Remove as RemoveIcon,
-} from '@mui/icons-material';
-import { 
   type FieldFormDialogProps,
   type QuestionnaireFieldFormData,
   type CreateQuestionnaireFieldData,
@@ -94,50 +91,52 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
     }
   }, [editingField, open]);
 
-  const handleInputChange = (field: keyof QuestionnaireFieldFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | 
-           { target: { value: unknown } }
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
+  const handleInputChange =
+    (field: keyof QuestionnaireFieldFormData) =>
+    (
+      event:
+        | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        | { target: { value: unknown } },
+    ) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
         ...prev,
-        [field]: '',
+        [field]: value,
       }));
-    }
-  };
 
-  const handleSwitchChange = (field: keyof QuestionnaireFieldFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.checked,
-    }));
-  };
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: '',
+        }));
+      }
+    };
+
+  const handleSwitchChange =
+    (field: keyof QuestionnaireFieldFormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: event.target.checked,
+      }));
+    };
 
   const handleOptionChange = (index: number, value: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      options: prev.options.map((opt, i) => i === index ? value : opt),
+      options: prev.options.map((opt, i) => (i === index ? value : opt)),
     }));
   };
 
   const handleAddOption = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       options: [...prev.options, ''],
     }));
   };
 
   const handleRemoveOption = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       options: prev.options.filter((_, i) => i !== index),
     }));
@@ -155,7 +154,10 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
     }
 
     // Options required for select/multi-select but NOT for guests (categories are optional)
-    if ((formData.type === 'select' || formData.type === 'multi-select') && formData.options.length === 0) {
+    if (
+      (formData.type === 'select' || formData.type === 'multi-select') &&
+      formData.options.length === 0
+    ) {
       newErrors.options = 'Options are required for select fields';
     }
 
@@ -167,7 +169,8 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
     if (!validateForm()) return;
 
     // Determine if options are needed based on type
-    const needsOptions = formData.type === 'select' || formData.type === 'multi-select' || formData.type === 'guests';
+    const needsOptions =
+      formData.type === 'select' || formData.type === 'multi-select' || formData.type === 'guests';
 
     const submitData: CreateQuestionnaireFieldData | UpdateQuestionnaireFieldData = {
       name: formData.name.trim(),
@@ -175,9 +178,7 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
       required: formData.required,
       order: formData.order || 1,
       // Options for select, multi-select, and guests (categories)
-      options: needsOptions
-        ? formData.options.filter(opt => opt.trim())
-        : [],
+      options: needsOptions ? formData.options.filter((opt) => opt.trim()) : [],
       // Phase 1.1: Description and placeholder
       description: formData.description.trim(),
       placeholder: formData.placeholder.trim(),
@@ -208,7 +209,8 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
     }
   };
 
-  const requiresOptions = (type: string) => type === 'select' || type === 'multi-select' || type === 'guests';
+  const requiresOptions = (type: string) =>
+    type === 'select' || type === 'multi-select' || type === 'guests';
   const isFileType = (type: string) => type === 'file';
   const isGuestsType = (type: string) => type === 'guests';
 
@@ -222,7 +224,7 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
         sx: {
           borderRadius: tokens.spacing.radius.xxl,
           border: `1px solid ${tokens.color.borders.glass}`,
-        }
+        },
       }}
     >
       {open && (
@@ -230,7 +232,7 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
           <DialogTitle sx={{ fontWeight: 700, textAlign: 'center' }}>
             {editingField ? 'Edit Field' : 'Create New Field'}
           </DialogTitle>
-      
+
           <DialogContent>
             <Box component="form" noValidate sx={{ mt: 1 }}>
               <Stack spacing={3}>
@@ -346,18 +348,15 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
                       <Typography variant="h6">
                         {isGuestsType(formData.type) ? 'Guest Categories' : 'Options'}
                       </Typography>
-                      <Button
-                        size="small"
-                        startIcon={<AddIcon />}
-                        onClick={handleAddOption}
-                      >
+                      <Button size="small" startIcon={<AddIcon />} onClick={handleAddOption}>
                         {isGuestsType(formData.type) ? 'Add Category' : 'Add Option'}
                       </Button>
                     </Box>
 
                     {isGuestsType(formData.type) && (
                       <Alert severity="info" sx={{ mb: 2 }}>
-                        Define guest categories (e.g., Adults, Children, Infants). Leave empty for a simple total count.
+                        Define guest categories (e.g., Adults, Children, Infants). Leave empty for a
+                        simple total count.
                       </Alert>
                     )}
 
@@ -374,9 +373,11 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
                             <TextField
                               size="small"
                               fullWidth
-                              placeholder={isGuestsType(formData.type)
-                                ? `Category ${index + 1} (e.g., Adults)`
-                                : `Option ${index + 1}`}
+                              placeholder={
+                                isGuestsType(formData.type)
+                                  ? `Category ${index + 1} (e.g., Adults)`
+                                  : `Option ${index + 1}`
+                              }
                               value={option}
                               onChange={(e) => handleOptionChange(index, e.target.value)}
                             />
@@ -438,8 +439,11 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
                         label="Allowed File Types"
                         value={formData.allowed_file_types.join(', ')}
                         onChange={(e) => {
-                          const types = e.target.value.split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-                          setFormData(prev => ({ ...prev, allowed_file_types: types }));
+                          const types = e.target.value
+                            .split(',')
+                            .map((t) => t.trim().toLowerCase())
+                            .filter(Boolean);
+                          setFormData((prev) => ({ ...prev, allowed_file_types: types }));
                         }}
                         placeholder="pdf, jpg, png, doc"
                         helperText="Comma-separated list of allowed extensions (leave empty for all types)"
@@ -451,8 +455,10 @@ export const FieldFormDialog: React.FC<FieldFormDialogProps> = ({
               </Stack>
             </Box>
           </DialogContent>
-          
-          <DialogActions sx={{ p: 3, borderTop: `1px solid ${tokens.color.borders.glass}`, gap: 2 }}>
+
+          <DialogActions
+            sx={{ p: 3, borderTop: `1px solid ${tokens.color.borders.glass}`, gap: 2 }}
+          >
             <Button
               onClick={handleClose}
               disabled={isLoading}

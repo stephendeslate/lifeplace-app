@@ -1,11 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Typography,
-} from '@mui/material';
-import {
-  Settings as SettingsIcon,
-} from '@mui/icons-material';
+import { Box, Typography } from '@mui/material';
+import { Settings as SettingsIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useLayout } from '../../contexts/LayoutContext';
 import { settingsNavigationConfig } from '../../config/settings-navigation';
@@ -18,9 +13,7 @@ export const EnhancedSettings: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Settings' },
-    ]);
+    setBreadcrumbs([{ label: 'Settings' }]);
 
     // Simulate loading
     setTimeout(() => setLoading(false), 300);
@@ -62,11 +55,7 @@ export const EnhancedSettings: React.FC = () => {
             >
               Settings
             </Typography>
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{ fontWeight: 500 }}
-            >
+            <Typography variant="body1" color="text.secondary" sx={{ fontWeight: 500 }}>
               Configure your LifePlace experience
             </Typography>
           </Box>
@@ -86,7 +75,7 @@ export const EnhancedSettings: React.FC = () => {
             gap: 3,
           }}
         >
-          {[1, 2, 3, 4, 5, 6].map(i => (
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <SmartCardSkeleton key={i} />
           ))}
         </Box>

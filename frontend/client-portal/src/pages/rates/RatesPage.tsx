@@ -1,15 +1,15 @@
 // pages/rates/RatesPage.tsx
 
-import React from "react";
-import { Box, Typography, Stack, CircularProgress } from "@mui/material";
-import { RatesHero } from "./components/RatesHero";
-import { PackageCard } from "./components/PackageCard";
-import { WeddingPackages } from "./components/WeddingPackages";
-import { RatesNote } from "./components/RatesNote";
-import { AnimatedElement } from "../../design-system/components/AnimatedElement";
-import { Section, Container } from "../../design-system";
-import { useRatesPageData } from "../../hooks/useRatesPage";
-import type { RatesPageProps, PackageInfo } from "./types/rates.types";
+import React from 'react';
+import { Box, Typography, Stack, CircularProgress } from '@mui/material';
+import { RatesHero } from './components/RatesHero';
+import { PackageCard } from './components/PackageCard';
+import { WeddingPackages } from './components/WeddingPackages';
+import { RatesNote } from './components/RatesNote';
+import { AnimatedElement } from '../../design-system/components/AnimatedElement';
+import { Section, Container } from '../../design-system';
+import { useRatesPageData } from '../../hooks/useRatesPage';
+import type { RatesPageProps, PackageInfo } from './types/rates.types';
 
 const RatesPage: React.FC<RatesPageProps> = ({ onNavigateToBooking }) => {
   const { data, isLoading, error } = useRatesPageData();
@@ -33,10 +33,10 @@ const RatesPage: React.FC<RatesPageProps> = ({ onNavigateToBooking }) => {
     return (
       <Box
         sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "100vh",
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
         }}
       >
         <CircularProgress />
@@ -48,22 +48,20 @@ const RatesPage: React.FC<RatesPageProps> = ({ onNavigateToBooking }) => {
     return (
       <Box
         sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "100vh",
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
         }}
       >
-        <Typography color="error">
-          Failed to load rates. Please try again later.
-        </Typography>
+        <Typography color="error">Failed to load rates. Please try again later.</Typography>
       </Box>
     );
   }
 
   return (
     <>
-      <Box sx={{ minHeight: "100vh", width: "100%" }}>
+      <Box sx={{ minHeight: '100vh', width: '100%' }}>
         <RatesHero />
 
         {/* Packages Section */}
@@ -71,34 +69,23 @@ const RatesPage: React.FC<RatesPageProps> = ({ onNavigateToBooking }) => {
           <Container maxWidth="wide">
             <Stack spacing={6}>
               <AnimatedElement animation="fadeIn" delay={100}>
-                <Stack
-                  spacing={2}
-                  alignItems="center"
-                  sx={{ textAlign: "center" }}
-                >
-                  <Typography
-                    variant="h2"
-                    sx={{ fontWeight: 600, color: "primary.main" }}
-                  >
+                <Stack spacing={2} alignItems="center" sx={{ textAlign: 'center' }}>
+                  <Typography variant="h2" sx={{ fontWeight: 600, color: 'primary.main' }}>
                     Event Packages
                   </Typography>
-                  <Typography
-                    variant="h6"
-                    color="text.secondary"
-                    sx={{ maxWidth: 700 }}
-                  >
-                    Choose from our range of packages designed for camps,
-                    retreats, and team-building events.
+                  <Typography variant="h6" color="text.secondary" sx={{ maxWidth: 700 }}>
+                    Choose from our range of packages designed for camps, retreats, and
+                    team-building events.
                   </Typography>
                 </Stack>
               </AnimatedElement>
 
               <Box
                 sx={{
-                  display: "grid",
+                  display: 'grid',
                   gridTemplateColumns: {
-                    xs: "1fr",
-                    lg: "repeat(2, 1fr)",
+                    xs: '1fr',
+                    lg: 'repeat(2, 1fr)',
                   },
                   gap: 4,
                 }}

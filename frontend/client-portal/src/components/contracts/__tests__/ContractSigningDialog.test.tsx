@@ -10,7 +10,12 @@ import { vi } from 'vitest';
 const mockSignedContract = {
   id: 'contract-1',
   event: { id: 'event-1', title: 'Wedding Event', date: '2024-06-01', status: 'confirmed' },
-  template: { id: 'template-1', name: 'Wedding Contract Template', description: '', signature_requirements: ['CLIENT'] },
+  template: {
+    id: 'template-1',
+    name: 'Wedding Contract Template',
+    description: '',
+    signature_requirements: ['CLIENT'],
+  },
   status: 'SIGNED' as const,
   content: '<p>Contract content here</p>',
   sent_at: '2024-05-01T10:00:00Z',
@@ -25,7 +30,14 @@ const mockSignedContract = {
   signatures: [{ role: 'CLIENT', signed: true, signer_name: 'John Doe' }],
   is_fully_signed: true,
   missing_signatures: [],
-  signature_progress: { total_required: 1, signed_count: 1, percentage: 100, required_roles: [], signed_roles: [], missing_roles: [] },
+  signature_progress: {
+    total_required: 1,
+    signed_count: 1,
+    percentage: 100,
+    required_roles: [],
+    signed_roles: [],
+    missing_roles: [],
+  },
   created_at: '2024-05-01T10:00:00Z',
   updated_at: new Date().toISOString(),
 };
@@ -67,12 +79,14 @@ vi.mock('../../../apis/contracts.api', async (importOriginal) => {
 
 // Mock dependencies
 vi.mock('../EnhancedSignaturePad', () => ({
-  default: function MockEnhancedSignaturePad({ onSignatureChange }: { onSignatureChange: (data: string) => void }) {
+  default: function MockEnhancedSignaturePad({
+    onSignatureChange,
+  }: {
+    onSignatureChange: (data: string) => void;
+  }) {
     return (
       <div data-testid="enhanced-signature-pad">
-        <button onClick={() => onSignatureChange('mock-signature-data')}>
-          Mock Signature
-        </button>
+        <button onClick={() => onSignatureChange('mock-signature-data')}>Mock Signature</button>
       </div>
     );
   },
@@ -146,7 +160,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     expect(screen.getByText('Sign Contract - Wedding Event')).toBeInTheDocument();
@@ -160,7 +174,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     expect(screen.queryByText('Sign Contract - Wedding Event')).not.toBeInTheDocument();
@@ -174,7 +188,7 @@ describe('ContractSigningDialog', () => {
         contract={null}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     expect(screen.queryByText('Sign Contract')).not.toBeInTheDocument();
@@ -188,7 +202,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     expect(screen.getByText('Please review the contract carefully')).toBeInTheDocument();
@@ -203,7 +217,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     expect(screen.getByText('Review Contract')).toBeInTheDocument();
@@ -214,7 +228,7 @@ describe('ContractSigningDialog', () => {
 
   it('allows progression through steps', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(
       <ContractSigningDialog
         open={true}
@@ -222,7 +236,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     // Should start at review contract step
@@ -245,7 +259,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     // Go to legal disclosure step
@@ -265,7 +279,7 @@ describe('ContractSigningDialog', () => {
 
   it('allows progression after accepting legal disclosure', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(
       <ContractSigningDialog
         open={true}
@@ -273,7 +287,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     // Go to legal disclosure step
@@ -299,7 +313,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     // Navigate to signature step
@@ -324,7 +338,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     // Navigate to signature step
@@ -359,7 +373,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     // Navigate to signature step
@@ -391,7 +405,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     // Navigate through all steps
@@ -420,7 +434,7 @@ describe('ContractSigningDialog', () => {
 
   it('allows going back through steps', async () => {
     const user = userEvent.setup();
-    
+
     renderWithProviders(
       <ContractSigningDialog
         open={true}
@@ -428,7 +442,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     // Go forward
@@ -448,7 +462,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     const backButton = screen.getByText('Back');
@@ -465,7 +479,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     // Press Escape to close dialog
@@ -476,10 +490,10 @@ describe('ContractSigningDialog', () => {
 
   it('handles errors during signing', async () => {
     // const user = userEvent.setup();
-    
+
     // Mock console.error to avoid noise in tests
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    
+
     renderWithProviders(
       <ContractSigningDialog
         open={true}
@@ -487,12 +501,12 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     // Navigate to confirmation and complete signing
     // (This would trigger error handling in the component)
-    
+
     consoleSpy.mockRestore();
   });
 
@@ -504,7 +518,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     // Navigate to second step
@@ -519,7 +533,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     rerender(
@@ -529,7 +543,7 @@ describe('ContractSigningDialog', () => {
         contract={mockContract}
         onSignComplete={mockOnSignComplete}
         onError={mockOnError}
-      />
+      />,
     );
 
     // Should be back at first step

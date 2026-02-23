@@ -26,7 +26,7 @@ export const authApi = {
    */
   refreshToken: async (refreshToken: string): Promise<{ access: string; refresh?: string }> => {
     const response = await api.post<{ access: string; refresh?: string }>('/users/token/refresh/', {
-      refresh: refreshToken
+      refresh: refreshToken,
     });
     return response.data;
   },
@@ -53,7 +53,9 @@ export const authApi = {
   /**
    * Get invitation details (public endpoint - returns limited fields)
    */
-  getInvitation: async (invitationId: string): Promise<{
+  getInvitation: async (
+    invitationId: string,
+  ): Promise<{
     id: string;
     first_name: string;
     last_name: string;
@@ -73,10 +75,13 @@ export const authApi = {
   /**
    * Accept invitation (public endpoint)
    */
-  acceptInvitation: async (invitationId: string, data: {
-    password: string;
-    confirm_password: string;
-  }): Promise<{
+  acceptInvitation: async (
+    invitationId: string,
+    data: {
+      password: string;
+      confirm_password: string;
+    },
+  ): Promise<{
     user: User;
     tokens: {
       access: string;
@@ -99,14 +104,18 @@ export const authApi = {
    * Request password reset - sends email with reset token
    */
   requestPasswordReset: async (email: string): Promise<{ detail: string }> => {
-    const response = await api.post<{ detail: string }>('/users/password-reset/request/', { email });
+    const response = await api.post<{ detail: string }>('/users/password-reset/request/', {
+      email,
+    });
     return response.data;
   },
 
   /**
    * Validate password reset token
    */
-  validateResetToken: async (tokenId: string): Promise<{
+  validateResetToken: async (
+    tokenId: string,
+  ): Promise<{
     valid: boolean;
     email?: string;
     reason?: 'already_used' | 'expired' | 'not_found';
@@ -122,13 +131,16 @@ export const authApi = {
   /**
    * Confirm password reset with new password
    */
-  confirmPasswordReset: async (tokenId: string, data: {
-    password: string;
-    confirm_password: string;
-  }): Promise<{ detail: string }> => {
+  confirmPasswordReset: async (
+    tokenId: string,
+    data: {
+      password: string;
+      confirm_password: string;
+    },
+  ): Promise<{ detail: string }> => {
     const response = await api.post<{ detail: string }>(
       `/users/password-reset/confirm/${tokenId}/`,
-      data
+      data,
     );
     return response.data;
   },

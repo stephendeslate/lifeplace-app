@@ -74,11 +74,13 @@ export const ActionCard: React.FC<ActionCardProps> = ({
         borderRadius: 2,
         cursor: onClick ? 'pointer' : 'default',
         transition: 'all 0.2s ease',
-        '&:hover': onClick ? {
-          borderColor: theme.palette.primary.main,
-          boxShadow: theme.shadows[3],
-          transform: 'translateY(-1px)',
-        } : {},
+        '&:hover': onClick
+          ? {
+              borderColor: theme.palette.primary.main,
+              boxShadow: theme.shadows[3],
+              transform: 'translateY(-1px)',
+            }
+          : {},
       }}
       onClick={onClick}
     >
@@ -182,11 +184,7 @@ export const ActionCard: React.FC<ActionCardProps> = ({
 
           {/* Due Date */}
           {action.dueDate && (
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ ml: 'auto !important' }}
-            >
+            <Typography variant="caption" color="text.secondary" sx={{ ml: 'auto !important' }}>
               Due: {formatDate(action.dueDate)}
             </Typography>
           )}

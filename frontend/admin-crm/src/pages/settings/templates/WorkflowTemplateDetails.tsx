@@ -2,17 +2,7 @@
 // Follows the same pattern as BookingFlowDetails
 
 import React, { useEffect, useState } from 'react';
-import {
-  Box,
-  Button,
-  Typography,
-  Tabs,
-  Tab,
-  Alert,
-  Chip,
-  Stack,
-  Divider,
-} from '@mui/material';
+import { Box, Button, Typography, Tabs, Tab, Alert, Chip, Stack, Divider } from '@mui/material';
 import {
   ArrowBack as BackIcon,
   AccountTree as WorkflowIcon,
@@ -26,7 +16,11 @@ import {
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLayout } from '../../../contexts/LayoutContext';
-import { useWorkflowTemplates, useWorkflowStages, useWorkflowTriggers } from '../../../hooks/useWorkflows';
+import {
+  useWorkflowTemplates,
+  useWorkflowStages,
+  useWorkflowTriggers,
+} from '../../../hooks/useWorkflows';
 import { useEventTypes } from '../../../hooks/useEvents';
 import type {
   WorkflowTemplate,
@@ -89,13 +83,13 @@ export const WorkflowTemplateDetails: React.FC = () => {
   const templateId = parseInt(id || '0');
 
   // Hooks for workflow template
-  const {
-    useWorkflowTemplate,
-    updateTemplate,
-    isUpdatingTemplate,
-  } = useWorkflowTemplates();
+  const { useWorkflowTemplate, updateTemplate, isUpdatingTemplate } = useWorkflowTemplates();
 
-  const { data: template, isLoading: isLoadingTemplate, refetch: refetchTemplate } = useWorkflowTemplate(templateId);
+  const {
+    data: template,
+    isLoading: isLoadingTemplate,
+    refetch: refetchTemplate,
+  } = useWorkflowTemplate(templateId);
 
   // Hooks for workflow stages
   const {
@@ -112,24 +106,22 @@ export const WorkflowTemplateDetails: React.FC = () => {
   const { data: stages = [], isLoading: isLoadingStages } = useStagesForTemplate(templateId);
 
   // Hooks for workflow triggers (execution history)
-  const {
-    triggers,
-    isLoadingTriggers,
-    manualTrigger,
-    isTriggering,
-    refetchTriggers,
-  } = useWorkflowTriggers({ template_id: templateId });
+  const { triggers, isLoadingTriggers, manualTrigger, isTriggering, refetchTriggers } =
+    useWorkflowTriggers({ template_id: templateId });
 
   // Get event types for the form
   const { eventTypes = [] } = useEventTypes();
 
   // Organize stages by type
-  const organizedStages = STAGE_TYPE_ORDER.reduce((acc, stageType) => {
-    acc[stageType] = stages
-      .filter(stage => stage.stage === stageType)
-      .sort((a, b) => a.order - b.order);
-    return acc;
-  }, {} as Record<StageType, WorkflowStage[]>);
+  const organizedStages = STAGE_TYPE_ORDER.reduce(
+    (acc, stageType) => {
+      acc[stageType] = stages
+        .filter((stage) => stage.stage === stageType)
+        .sort((a, b) => a.order - b.order);
+      return acc;
+    },
+    {} as Record<StageType, WorkflowStage[]>,
+  );
 
   useEffect(() => {
     if (template) {
@@ -159,12 +151,15 @@ export const WorkflowTemplateDetails: React.FC = () => {
         is_active: data.is_active,
       };
 
-      updateTemplate({ id: template.id, data: updateData }, {
-        onSuccess: () => {
-          setEditDialogOpen(false);
-          refetchTemplate();
+      updateTemplate(
+        { id: template.id, data: updateData },
+        {
+          onSuccess: () => {
+            setEditDialogOpen(false);
+            refetchTemplate();
+          },
         },
-      });
+      );
     }
   };
 
@@ -219,14 +214,17 @@ export const WorkflowTemplateDetails: React.FC = () => {
         metadata: data.metadata,
       };
 
-      updateStage({ id: editingStage.id, data: updateData }, {
-        onSuccess: () => {
-          setStageDialogOpen(false);
-          setEditingStage(null);
-          refetchStages();
-          refetchTemplate();
+      updateStage(
+        { id: editingStage.id, data: updateData },
+        {
+          onSuccess: () => {
+            setStageDialogOpen(false);
+            setEditingStage(null);
+            refetchStages();
+            refetchTemplate();
+          },
         },
-      });
+      );
     } else {
       const createData: CreateWorkflowStageData = {
         template: templateId,
@@ -289,7 +287,7 @@ export const WorkflowTemplateDetails: React.FC = () => {
           helperText: 'Leave empty to use for any event type',
           options: [
             { value: '', label: 'Any Event Type' },
-            ...eventTypes.map(et => ({ value: et.id, label: et.name })),
+            ...eventTypes.map((et) => ({ value: et.id, label: et.name })),
           ],
         },
       ],
@@ -331,7 +329,8 @@ export const WorkflowTemplateDetails: React.FC = () => {
     return (
       <Box>
         <Alert severity="error" sx={{ mb: 2 }}>
-          Workflow template not found. It may have been deleted or you may not have permission to view it.
+          Workflow template not found. It may have been deleted or you may not have permission to
+          view it.
         </Alert>
         <Button
           startIcon={<BackIcon />}
@@ -346,9 +345,7 @@ export const WorkflowTemplateDetails: React.FC = () => {
   const getTabLabel = (label: string, count?: number) => (
     <Box display="flex" alignItems="center" gap={1}>
       {label}
-      {count !== undefined && (
-        <Chip label={count} size="small" color="primary" />
-      )}
+      {count !== undefined && <Chip label={count} size="small" color="primary" />}
     </Box>
   );
 
@@ -411,8 +408,16 @@ export const WorkflowTemplateDetails: React.FC = () => {
           }}
         >
           <Tab icon={<WorkflowIcon />} label="Overview" iconPosition="start" />
-          <Tab icon={<StagesIcon />} label={getTabLabel('Stages', stages.length)} iconPosition="start" />
-          <Tab icon={<HistoryIcon />} label={getTabLabel('History', triggers.length)} iconPosition="start" />
+          <Tab
+            icon={<StagesIcon />}
+            label={getTabLabel('Stages', stages.length)}
+            iconPosition="start"
+          />
+          <Tab
+            icon={<HistoryIcon />}
+            label={getTabLabel('History', triggers.length)}
+            iconPosition="start"
+          />
         </Tabs>
       </ModernGlassCard>
 
@@ -420,11 +425,7 @@ export const WorkflowTemplateDetails: React.FC = () => {
       <TabPanel value={activeTab} index={0}>
         <Stack spacing={4}>
           {/* Template Metrics */}
-          <Box
-            display="grid"
-            gridTemplateColumns={{ xs: '1fr', md: 'repeat(3, 1fr)' }}
-            gap={3}
-          >
+          <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: 'repeat(3, 1fr)' }} gap={3}>
             <ModernMetricCard
               title="Template Status"
               value={template.is_active ? 'Active' : 'Inactive'}
@@ -508,12 +509,17 @@ export const WorkflowTemplateDetails: React.FC = () => {
           {/* Stage Distribution */}
           <ModernGlassCard title="Stage Distribution" size="large" borderRadius="xxl">
             <Stack spacing={2}>
-              {STAGE_TYPE_ORDER.map(stageType => {
+              {STAGE_TYPE_ORDER.map((stageType) => {
                 const stageCount = organizedStages[stageType]?.length || 0;
                 const stageLabel = stageType.replace('_', ' ');
-                
+
                 return (
-                  <Box key={stageType} display="flex" justifyContent="space-between" alignItems="center">
+                  <Box
+                    key={stageType}
+                    display="flex"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
                     <Typography variant="body2" fontWeight="500">
                       {stageLabel} Stages:
                     </Typography>
@@ -531,12 +537,7 @@ export const WorkflowTemplateDetails: React.FC = () => {
                 <Typography variant="body2" fontWeight="600">
                   Total Stages:
                 </Typography>
-                <Chip
-                  label={stages.length}
-                  size="small"
-                  color="success"
-                  variant="filled"
-                />
+                <Chip label={stages.length} size="small" color="success" variant="filled" />
               </Box>
             </Stack>
           </ModernGlassCard>
@@ -587,7 +588,7 @@ export const WorkflowTemplateDetails: React.FC = () => {
             />
           ) : (
             <Stack spacing={4}>
-              {STAGE_TYPE_ORDER.map(stageType => {
+              {STAGE_TYPE_ORDER.map((stageType) => {
                 const stagesInType = organizedStages[stageType] || [];
                 const stageLabel = stageType.replace('_', ' ');
 

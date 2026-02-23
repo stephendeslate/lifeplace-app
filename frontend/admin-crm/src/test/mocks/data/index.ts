@@ -1,4 +1,4 @@
 // frontend/admin-crm/src/test/mocks/data/index.ts
 
-export * from './users.mock'
-export * from './clients.mock'
+export * from './users.mock';
+export * from './clients.mock';

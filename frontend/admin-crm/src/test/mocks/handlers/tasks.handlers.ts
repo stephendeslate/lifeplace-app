@@ -1,8 +1,8 @@
-import { http, HttpResponse, delay } from "msw";
-import { mockTasks, mockTaskCounts, createMockTask } from "../data/tasks.mock";
-import type { Task, TaskCounts } from "../../../types/tasks.types";
+import { http, HttpResponse, delay } from 'msw';
+import { mockTasks, mockTaskCounts, createMockTask } from '../data/tasks.mock';
+import type { Task, TaskCounts } from '../../../types/tasks.types';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
 // The tasks system in this app is a composite that aggregates from
 // other domain APIs (quotes, contracts, payments, communications, support).
@@ -22,10 +22,10 @@ export const tasksHandlers = [
   http.get(`${BASE_URL}/tasks/`, async ({ request }) => {
     await delay(30);
     const url = new URL(request.url);
-    const domain = url.searchParams.get("domain");
-    const priority = url.searchParams.get("priority");
-    const status = url.searchParams.get("status");
-    const search = url.searchParams.get("search")?.toLowerCase();
+    const domain = url.searchParams.get('domain');
+    const priority = url.searchParams.get('priority');
+    const status = url.searchParams.get('status');
+    const search = url.searchParams.get('search')?.toLowerCase();
     let filtered = [...tasksStore];
 
     if (domain) {
@@ -46,8 +46,8 @@ export const tasksHandlers = [
       );
     }
 
-    const page = Number(url.searchParams.get("page") || 1);
-    const pageSize = Number(url.searchParams.get("page_size") || 25);
+    const page = Number(url.searchParams.get('page') || 1);
+    const pageSize = Number(url.searchParams.get('page_size') || 25);
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
     const paginated = filtered.slice(start, end);
@@ -75,7 +75,7 @@ export const tasksHandlers = [
     const id = params.id as string;
     const task = tasksStore.find((t) => t.id === id);
     if (!task) {
-      return HttpResponse.json({ detail: "Not found." }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found.' }, { status: 404 });
     }
     return HttpResponse.json(task);
   }),
@@ -86,21 +86,21 @@ export const tasksHandlers = [
     const body = (await request.json()) as Record<string, unknown>;
     const newTask = createMockTask({
       id: `task-${tasksStore.length + 100}`,
-      domain: body.domain as Task["domain"],
-      type: (body.type as string) || "pending_action",
+      domain: body.domain as Task['domain'],
+      type: (body.type as string) || 'pending_action',
       title: body.title as string,
-      description: (body.description as string) || "",
-      priority: (body.priority as Task["priority"]) || "medium",
+      description: (body.description as string) || '',
+      priority: (body.priority as Task['priority']) || 'medium',
       entityId: body.entityId as number,
       eventId: body.eventId as number,
       eventName: body.eventName as string,
       clientName: body.clientName as string,
-      status: (body.status as string) || "pending",
+      status: (body.status as string) || 'pending',
     });
     tasksStore.push(newTask);
 
     // Update counts
-    const domain = newTask.domain as keyof Omit<TaskCounts, "total">;
+    const domain = newTask.domain as keyof Omit<TaskCounts, 'total'>;
     if (domain in countsStore) {
       countsStore[domain] += 1;
       countsStore.total += 1;
@@ -116,7 +116,7 @@ export const tasksHandlers = [
     const body = (await request.json()) as Record<string, unknown>;
     const idx = tasksStore.findIndex((t) => t.id === id);
     if (idx === -1) {
-      return HttpResponse.json({ detail: "Not found." }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found.' }, { status: 404 });
     }
     tasksStore[idx] = {
       ...tasksStore[idx],
@@ -131,11 +131,11 @@ export const tasksHandlers = [
     const id = params.id as string;
     const idx = tasksStore.findIndex((t) => t.id === id);
     if (idx === -1) {
-      return HttpResponse.json({ detail: "Not found." }, { status: 404 });
+      return HttpResponse.json({ detail: 'Not found.' }, { status: 404 });
     }
 
     // Update counts
-    const domain = tasksStore[idx].domain as keyof Omit<TaskCounts, "total">;
+    const domain = tasksStore[idx].domain as keyof Omit<TaskCounts, 'total'>;
     if (domain in countsStore) {
       countsStore[domain] = Math.max(0, countsStore[domain] - 1);
       countsStore.total = Math.max(0, countsStore.total - 1);

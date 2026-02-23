@@ -19,23 +19,18 @@ export const BookingFlowPreviewWrapper: React.FC<BookingFlowPreviewWrapperProps>
 }) => {
   // Use the evolved hook structure - useBookingFlow is now returned from useBookingFlows
   const { useBookingFlow } = useBookingFlows();
-  
+
   // Call the hook with the flow ID
-  const { 
-    data: flowDetail, 
-    isLoading, 
-    error,
-    refetch 
-  } = useBookingFlow(flow.id);
+  const { data: flowDetail, isLoading, error, refetch } = useBookingFlow(flow.id);
 
   // Handle loading state
   if (isLoading) {
     return (
-      <Box 
-        display="flex" 
+      <Box
+        display="flex"
         flexDirection="column"
-        justifyContent="center" 
-        alignItems="center" 
+        justifyContent="center"
+        alignItems="center"
         py={4}
         gap={2}
       >
@@ -50,12 +45,12 @@ export const BookingFlowPreviewWrapper: React.FC<BookingFlowPreviewWrapperProps>
   // Handle error state with retry option
   if (error) {
     return (
-      <Alert 
+      <Alert
         severity="error"
         action={
           <Box>
-            <Typography 
-              variant="button" 
+            <Typography
+              variant="button"
               sx={{ cursor: 'pointer', textDecoration: 'underline' }}
               onClick={() => refetch()}
             >
@@ -78,18 +73,13 @@ export const BookingFlowPreviewWrapper: React.FC<BookingFlowPreviewWrapperProps>
   if (!flowDetail) {
     return (
       <Alert severity="warning">
-        Booking flow details not found. The flow may have been deleted or you may not have permission to view it.
+        Booking flow details not found. The flow may have been deleted or you may not have
+        permission to view it.
       </Alert>
     );
   }
 
   // Ensure the flow detail has the correct structure for BookingFlowPreview
   // The evolved types show that BookingFlowDetail extends BookingFlow and includes steps
-  return (
-    <BookingFlowPreview
-      flow={flowDetail}
-      compact={compact}
-      showMobileView={showMobileView}
-    />
-  );
+  return <BookingFlowPreview flow={flowDetail} compact={compact} showMobileView={showMobileView} />;
 };

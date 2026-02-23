@@ -12,13 +12,12 @@ import type {
  * Questionnaire API functions for managing questionnaires and responses
  */
 export class QuestionnaireApi {
-  
   /**
    * Get all active questionnaires
    */
   static async getQuestionnaires(): Promise<Questionnaire[]> {
     const response = await api.get<Questionnaire[]>('/questionnaires/questionnaires/', {
-      params: { is_active: true }
+      params: { is_active: true },
     });
     return response.data;
   }
@@ -28,10 +27,10 @@ export class QuestionnaireApi {
    */
   static async getQuestionnairesByEventType(eventTypeId: number): Promise<Questionnaire[]> {
     const response = await api.get<Questionnaire[]>('/questionnaires/questionnaires/', {
-      params: { 
+      params: {
         event_type: eventTypeId,
-        is_active: true 
-      }
+        is_active: true,
+      },
     });
     return response.data;
   }
@@ -39,20 +38,22 @@ export class QuestionnaireApi {
   /**
    * Get detailed questionnaire with fields
    */
-  static async getQuestionnaireDetail(questionnaireId: number): Promise<QuestionnaireDetailResponse> {
+  static async getQuestionnaireDetail(
+    questionnaireId: number,
+  ): Promise<QuestionnaireDetailResponse> {
     // Check if we're in a booking flow context
     const isBookingContext = window.location.pathname.includes('/booking');
-    
+
     if (isBookingContext) {
       // Use public endpoint for booking flow
       const response = await api.get<QuestionnaireDetailResponse>(
-        `/bookingflow/public/flows/questionnaires/${questionnaireId}/`
+        `/bookingflow/public/flows/questionnaires/${questionnaireId}/`,
       );
       return response.data;
     } else {
       // Use authenticated endpoint for admin/other contexts
       const response = await api.get<QuestionnaireDetailResponse>(
-        `/questionnaires/questionnaires/${questionnaireId}/`
+        `/questionnaires/questionnaires/${questionnaireId}/`,
       );
       return response.data;
     }
@@ -62,7 +63,9 @@ export class QuestionnaireApi {
    * Get questionnaire fields for a specific questionnaire
    */
   static async getQuestionnaireFields(questionnaireId: number): Promise<QuestionnaireField[]> {
-    const response = await api.get<QuestionnaireField[]>(`/questionnaires/questionnaires/${questionnaireId}/fields/`);
+    const response = await api.get<QuestionnaireField[]>(
+      `/questionnaires/questionnaires/${questionnaireId}/fields/`,
+    );
     return response.data;
   }
 
@@ -72,12 +75,12 @@ export class QuestionnaireApi {
    * Validate questionnaire responses
    */
   static validateResponses(
-    fields: QuestionnaireField[], 
-    responses: Record<string, unknown>
+    fields: QuestionnaireField[],
+    responses: Record<string, unknown>,
   ): { isValid: boolean; errors: Record<string, string[]> } {
     const errors: Record<string, string[]> = {};
 
-    fields.forEach(field => {
+    fields.forEach((field) => {
       const response = responses[field.id.toString()];
       const fieldErrors: string[] = [];
 
@@ -121,7 +124,10 @@ export class QuestionnaireApi {
 
           case 'select':
           case 'multi-select':
-            if (field.options && !this.isValidOption(response, field.options, field.type === 'multi-select')) {
+            if (
+              field.options &&
+              !this.isValidOption(response, field.options, field.type === 'multi-select')
+            ) {
               fieldErrors.push('Please select a valid option');
             }
             break;
@@ -141,7 +147,7 @@ export class QuestionnaireApi {
 
     return {
       isValid: Object.keys(errors).length === 0,
-      errors
+      errors,
     };
   }
 
@@ -150,13 +156,13 @@ export class QuestionnaireApi {
    */
   static formatResponses(
     fields: QuestionnaireField[],
-    responses: Record<string, unknown>
+    responses: Record<string, unknown>,
   ): Record<string, unknown> {
     const formatted: Record<string, unknown> = {};
 
-    fields.forEach(field => {
+    fields.forEach((field) => {
       const response = responses[field.id.toString()];
-      
+
       if (response !== undefined && response !== null) {
         switch (field.type) {
           case 'number':
@@ -236,15 +242,15 @@ export class QuestionnaireApi {
   }
 
   private static isValidOption(
-    response: unknown, 
-    options: string[], 
-    isMultiSelect: boolean
+    response: unknown,
+    options: string[],
+    isMultiSelect: boolean,
   ): boolean {
     if (isMultiSelect) {
       if (!Array.isArray(response)) {
         return false;
       }
-      return response.every(item => options.includes(item));
+      return response.every((item) => options.includes(item));
     } else {
       return options.includes(response as string);
     }
@@ -255,11 +261,11 @@ export class QuestionnaireApi {
     if (file instanceof File) {
       return true;
     }
-    
+
     if (Array.isArray(file)) {
-      return file.every(f => f instanceof File);
+      return file.every((f) => f instanceof File);
     }
-    
+
     return false;
   }
 
@@ -271,7 +277,7 @@ export class QuestionnaireApi {
   static async processFileUploads(
     questionnaireId: number,
     fieldId: number,
-    files: File[]
+    files: File[],
   ): Promise<string[]> {
     const uploadedFiles: string[] = [];
 
@@ -287,7 +293,7 @@ export class QuestionnaireApi {
             'Content-Type': 'multipart/form-data',
           },
         });
-        
+
         const data = response.data as { file_url?: string; file_id?: string };
         if (data.file_url) {
           uploadedFiles.push(data.file_url);
@@ -308,10 +314,7 @@ export class QuestionnaireApi {
   /**
    * Get response display value for different field types
    */
-  static getResponseDisplayValue(
-    field: QuestionnaireField, 
-    response: unknown
-  ): string {
+  static getResponseDisplayValue(field: QuestionnaireField, response: unknown): string {
     if (response === undefined || response === null) {
       return 'No response';
     }
@@ -352,7 +355,7 @@ export class QuestionnaireApi {
    */
   static generateResponseSummary(
     questionnaires: QuestionnaireDetailResponse[],
-    responses: Record<string, unknown>
+    responses: Record<string, unknown>,
   ): Array<{
     questionnaireName: string;
     responses: Array<{
@@ -361,9 +364,9 @@ export class QuestionnaireApi {
       required: boolean;
     }>;
   }> {
-    return questionnaires.map(questionnaire => ({
+    return questionnaires.map((questionnaire) => ({
       questionnaireName: questionnaire.name,
-      responses: questionnaire.fields.map(field => ({
+      responses: questionnaire.fields.map((field) => ({
         fieldName: field.name,
         value: this.getResponseDisplayValue(field, responses[field.id.toString()]),
         required: field.required,

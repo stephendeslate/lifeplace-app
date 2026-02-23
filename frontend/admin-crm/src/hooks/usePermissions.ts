@@ -14,7 +14,11 @@
 import { useMemo, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import type { AdminPermissionKey, AdminPermissions } from '../types/permissions.types';
-import { FULL_ADMIN_PERMISSIONS, DEFAULT_ADMIN_PERMISSIONS, getPagePermissions } from '../types/permissions.types';
+import {
+  FULL_ADMIN_PERMISSIONS,
+  DEFAULT_ADMIN_PERMISSIONS,
+  getPagePermissions,
+} from '../types/permissions.types';
 
 export interface SettingsFeatures {
   create: boolean;
@@ -80,7 +84,7 @@ export const usePermissions = (): UsePermissionsReturn => {
     (permission: AdminPermissionKey): boolean => {
       return permissions[permission] ?? false;
     },
-    [permissions]
+    [permissions],
   );
 
   // Check if user has any of the specified permissions
@@ -88,7 +92,7 @@ export const usePermissions = (): UsePermissionsReturn => {
     (permissionList: AdminPermissionKey[]): boolean => {
       return permissionList.some((p) => permissions[p]);
     },
-    [permissions]
+    [permissions],
   );
 
   // Check if user has all of the specified permissions
@@ -96,7 +100,7 @@ export const usePermissions = (): UsePermissionsReturn => {
     (permissionList: AdminPermissionKey[]): boolean => {
       return permissionList.every((p) => permissions[p]);
     },
-    [permissions]
+    [permissions],
   );
 
   // Check if user is a full admin
@@ -117,7 +121,7 @@ export const usePermissions = (): UsePermissionsReturn => {
         duplicate: canModify,
       };
     },
-    [hasPermission, hasAnyPermission]
+    [hasPermission, hasAnyPermission],
   );
 
   // Check if user can access a page (always true for view-only access)
@@ -126,7 +130,7 @@ export const usePermissions = (): UsePermissionsReturn => {
       // View-only access is always allowed for admins
       return user?.role === 'ADMIN';
     },
-    [user]
+    [user],
   );
 
   // Check if user can edit on a page
@@ -135,7 +139,7 @@ export const usePermissions = (): UsePermissionsReturn => {
       const requiredPermissions = getPagePermissions(path);
       return requiredPermissions.length === 0 || hasAnyPermission(requiredPermissions);
     },
-    [hasAnyPermission]
+    [hasAnyPermission],
   );
 
   return {

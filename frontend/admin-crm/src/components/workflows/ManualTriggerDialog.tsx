@@ -199,9 +199,7 @@ export const ManualTriggerDialog: React.FC<ManualTriggerDialogProps> = ({
               />
             )}
             noOptionsText={
-              isLoadingEvents
-                ? 'Loading events...'
-                : 'No events found using this workflow template'
+              isLoadingEvents ? 'Loading events...' : 'No events found using this workflow template'
             }
           />
 
@@ -221,7 +219,9 @@ export const ManualTriggerDialog: React.FC<ManualTriggerDialogProps> = ({
           variant="contained"
           color="primary"
           disabled={!selectedEvent || isTriggering}
-          startIcon={isTriggering ? <CircularProgress size={20} color="inherit" /> : <TriggerIcon />}
+          startIcon={
+            isTriggering ? <CircularProgress size={20} color="inherit" /> : <TriggerIcon />
+          }
         >
           {isTriggering ? 'Triggering...' : 'Trigger Now'}
         </Button>

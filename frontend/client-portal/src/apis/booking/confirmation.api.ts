@@ -12,14 +12,11 @@ import api from '../../utils/api';
  * email sending, and data formatting.
  */
 export class ConfirmationApi {
-
   /**
    * Get session details for confirmation display
    */
   static async getSessionDetails(sessionId: string): Promise<Record<string, unknown>> {
-    const response = await api.get(
-      `/bookingflow/public/flows/session/${sessionId}/`
-    );
+    const response = await api.get(`/bookingflow/public/flows/session/${sessionId}/`);
     return response.data as Record<string, unknown>;
   }
 
@@ -71,7 +68,7 @@ export class ConfirmationApi {
     totalPrice: string;
   } {
     const bookingData = session.booking_data || {};
-    
+
     // Extract event details from various steps
     const eventDetails: Record<string, unknown> = {};
     const contactInfo: Record<string, unknown> = {};
@@ -116,7 +113,7 @@ export class ConfirmationApi {
     });
 
     return {
-      bookingReference: this.generateBookingReference((session.session_id as string)),
+      bookingReference: this.generateBookingReference(session.session_id as string),
       eventDetails,
       contactInfo,
       packages: packages.map((pkg: Record<string, unknown>) => ({
@@ -151,7 +148,7 @@ export class ConfirmationApi {
    */
   static formatDate(dateString: string): string {
     if (!dateString) return '';
-    
+
     try {
       return new Date(dateString).toLocaleDateString('en-PH', {
         weekday: 'long',
@@ -169,12 +166,12 @@ export class ConfirmationApi {
    */
   static formatTime(timeString: string): string {
     if (!timeString) return '';
-    
+
     try {
       const [hours, minutes] = timeString.split(':');
       const date = new Date();
       date.setHours(parseInt(hours), parseInt(minutes));
-      
+
       return date.toLocaleTimeString('en-PH', {
         hour: 'numeric',
         minute: '2-digit',
@@ -197,18 +194,19 @@ export class ConfirmationApi {
       {
         title: 'Confirmation Email',
         description: "You'll receive a detailed confirmation email within the next few minutes.",
-        icon: 'email'
+        icon: 'email',
       },
       {
         title: 'Personal Contact',
-        description: 'Our event coordinator will contact you within 24 hours to finalize arrangements.',
-        icon: 'phone'
+        description:
+          'Our event coordinator will contact you within 24 hours to finalize arrangements.',
+        icon: 'phone',
       },
       {
         title: 'Event Preparation',
         description: "We'll work with you to ensure every detail is perfect for your event.",
-        icon: 'calendar'
-      }
+        icon: 'calendar',
+      },
     ];
 
     // If config has custom next steps content, try to parse it
@@ -237,7 +235,7 @@ export class ConfirmationApi {
     return {
       phone: '(02) 123-4567',
       email: 'info@lifeplacealfonso.com',
-      message: "We're here to help make your event unforgettable!"
+      message: "We're here to help make your event unforgettable!",
     };
   }
 }

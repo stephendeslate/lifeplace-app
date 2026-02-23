@@ -8,18 +8,18 @@ Tests:
 - Error handling
 """
 
-import pytest
-from decimal import Decimal
-from django.utils import timezone
-from datetime import timedelta
-from unittest.mock import patch, MagicMock
 import io
+from datetime import timedelta
+from decimal import Decimal
+from unittest.mock import MagicMock, patch
+
+from django.utils import timezone
+
+import pytest
 
 from core.domains.sales.models import (
     EventQuote,
     QuoteLineItem,
-    QuoteOption,
-    QuoteOptionItem,
 )
 from core.domains.sales.pdf_service import QuotePDFService
 
@@ -28,11 +28,9 @@ from core.domains.sales.pdf_service import QuotePDFService
 def product_category(db):
     """Create a product category for testing."""
     from core.domains.products.models import ProductCategory
+
     return ProductCategory.objects.create(
-        name='Test Category',
-        slug='test-category',
-        description='Test category description',
-        is_active=True
+        name="Test Category", slug="test-category", description="Test category description", is_active=True
     )
 
 
@@ -40,13 +38,14 @@ def product_category(db):
 def product_option(db, product_category):
     """Create a product option for testing."""
     from core.domains.products.models import ProductOption
+
     return ProductOption.objects.create(
-        name='Test Package',
-        description='Test package description',
+        name="Test Package",
+        description="Test package description",
         category=product_category,
-        base_price=Decimal('5000.00'),
-        type='PACKAGE',
-        is_active=True
+        base_price=Decimal("5000.00"),
+        type="PACKAGE",
+        is_active=True,
     )
 
 
@@ -58,12 +57,12 @@ def draft_quote(db, event_factory, user_factory):
     return EventQuote.objects.create(
         event=event,
         version=1,
-        status='DRAFT',
-        subtotal=Decimal('5000.00'),
-        tax_amount=Decimal('600.00'),
-        total_amount=Decimal('5600.00'),
+        status="DRAFT",
+        subtotal=Decimal("5000.00"),
+        tax_amount=Decimal("600.00"),
+        total_amount=Decimal("5600.00"),
         valid_until=timezone.now().date() + timedelta(days=30),
-        created_by=admin_user
+        created_by=admin_user,
     )
 
 
@@ -75,13 +74,13 @@ def sent_quote(db, event_factory, user_factory):
     return EventQuote.objects.create(
         event=event,
         version=1,
-        status='SENT',
-        subtotal=Decimal('5000.00'),
-        tax_amount=Decimal('600.00'),
-        total_amount=Decimal('5600.00'),
+        status="SENT",
+        subtotal=Decimal("5000.00"),
+        tax_amount=Decimal("600.00"),
+        total_amount=Decimal("5600.00"),
         valid_until=timezone.now().date() + timedelta(days=30),
         sent_at=timezone.now(),
-        created_by=admin_user
+        created_by=admin_user,
     )
 
 
@@ -93,14 +92,14 @@ def accepted_quote(db, event_factory, user_factory):
     return EventQuote.objects.create(
         event=event,
         version=1,
-        status='ACCEPTED',
-        subtotal=Decimal('5000.00'),
-        tax_amount=Decimal('600.00'),
-        total_amount=Decimal('5600.00'),
+        status="ACCEPTED",
+        subtotal=Decimal("5000.00"),
+        tax_amount=Decimal("600.00"),
+        total_amount=Decimal("5600.00"),
         valid_until=timezone.now().date() + timedelta(days=30),
         sent_at=timezone.now() - timedelta(days=2),
         accepted_at=timezone.now(),
-        created_by=admin_user
+        created_by=admin_user,
     )
 
 
@@ -112,15 +111,15 @@ def rejected_quote(db, event_factory, user_factory):
     return EventQuote.objects.create(
         event=event,
         version=1,
-        status='REJECTED',
-        subtotal=Decimal('5000.00'),
-        tax_amount=Decimal('600.00'),
-        total_amount=Decimal('5600.00'),
+        status="REJECTED",
+        subtotal=Decimal("5000.00"),
+        tax_amount=Decimal("600.00"),
+        total_amount=Decimal("5600.00"),
         valid_until=timezone.now().date() + timedelta(days=30),
         sent_at=timezone.now() - timedelta(days=2),
         rejected_at=timezone.now(),
-        rejection_reason='Too expensive',
-        created_by=admin_user
+        rejection_reason="Too expensive",
+        created_by=admin_user,
     )
 
 
@@ -132,13 +131,13 @@ def expired_quote(db, event_factory, user_factory):
     return EventQuote.objects.create(
         event=event,
         version=1,
-        status='EXPIRED',
-        subtotal=Decimal('5000.00'),
-        tax_amount=Decimal('600.00'),
-        total_amount=Decimal('5600.00'),
+        status="EXPIRED",
+        subtotal=Decimal("5000.00"),
+        tax_amount=Decimal("600.00"),
+        total_amount=Decimal("5600.00"),
         valid_until=timezone.now().date() - timedelta(days=1),  # Expired
         sent_at=timezone.now() - timedelta(days=10),
-        created_by=admin_user
+        created_by=admin_user,
     )
 
 
@@ -150,35 +149,35 @@ def quote_with_line_items(db, event_factory, user_factory, product_option):
     quote = EventQuote.objects.create(
         event=event,
         version=1,
-        status='SENT',
-        subtotal=Decimal('7500.00'),
-        tax_amount=Decimal('900.00'),
-        discount_amount=Decimal('500.00'),
-        total_amount=Decimal('7900.00'),
+        status="SENT",
+        subtotal=Decimal("7500.00"),
+        tax_amount=Decimal("900.00"),
+        discount_amount=Decimal("500.00"),
+        total_amount=Decimal("7900.00"),
         valid_until=timezone.now().date() + timedelta(days=30),
         sent_at=timezone.now(),
         created_by=admin_user,
-        notes='Special notes for this quote',
-        terms_and_conditions='Payment due within 30 days.'
+        notes="Special notes for this quote",
+        terms_and_conditions="Payment due within 30 days.",
     )
 
     # Add multiple line items
     QuoteLineItem.objects.create(
         quote=quote,
-        description='Premium Package',
+        description="Premium Package",
         quantity=1,
-        unit_price=Decimal('5000.00'),
-        tax_rate=Decimal('12.00'),
-        total=Decimal('5000.00'),
-        product=product_option
+        unit_price=Decimal("5000.00"),
+        tax_rate=Decimal("12.00"),
+        total=Decimal("5000.00"),
+        product=product_option,
     )
     QuoteLineItem.objects.create(
         quote=quote,
-        description='Photography Add-on',
+        description="Photography Add-on",
         quantity=2,
-        unit_price=Decimal('1250.00'),
-        tax_rate=Decimal('12.00'),
-        total=Decimal('2500.00')
+        unit_price=Decimal("1250.00"),
+        tax_rate=Decimal("12.00"),
+        total=Decimal("2500.00"),
     )
 
     return quote
@@ -187,16 +186,15 @@ def quote_with_line_items(db, event_factory, user_factory, product_option):
 @pytest.fixture
 def mock_branding():
     """Mock branding context."""
-    with patch('core.domains.sales.pdf_service.PDFBrandingService') as mock:
-        mock.get_branding_context.return_value = MagicMock(
-            primary_color_rgb=(0.2, 0.4, 0.6)
-        )
+    with patch("core.domains.sales.pdf_service.PDFBrandingService") as mock:
+        mock.get_branding_context.return_value = MagicMock(primary_color_rgb=(0.2, 0.4, 0.6))
         yield mock
 
 
 # =============================================================================
 # PDF GENERATION TESTS
 # =============================================================================
+
 
 @pytest.mark.django_db
 class TestQuotePDFServiceGenerate:
@@ -217,7 +215,7 @@ class TestQuotePDFServiceGenerate:
         content = buffer.read()
         assert len(content) > 0
         # PDF files start with %PDF
-        assert content.startswith(b'%PDF')
+        assert content.startswith(b"%PDF")
 
     def test_generate_pdf_for_draft_quote(self, mock_branding, draft_quote):
         """Test PDF generation for draft quote."""
@@ -269,11 +267,9 @@ class TestQuotePDFServiceGenerate:
 
         assert buffer is not None
 
-    def test_generate_pdf_with_terms_and_conditions(
-        self, mock_branding, draft_quote
-    ):
+    def test_generate_pdf_with_terms_and_conditions(self, mock_branding, draft_quote):
         """Test PDF includes terms and conditions."""
-        draft_quote.terms_and_conditions = 'Test terms and conditions content'
+        draft_quote.terms_and_conditions = "Test terms and conditions content"
         draft_quote.save()
 
         buffer = QuotePDFService.generate_quote_pdf(draft_quote)
@@ -282,7 +278,7 @@ class TestQuotePDFServiceGenerate:
 
     def test_generate_pdf_with_notes(self, mock_branding, draft_quote):
         """Test PDF includes notes."""
-        draft_quote.notes = 'Test notes content'
+        draft_quote.notes = "Test notes content"
         draft_quote.save()
 
         buffer = QuotePDFService.generate_quote_pdf(draft_quote)
@@ -291,7 +287,7 @@ class TestQuotePDFServiceGenerate:
 
     def test_generate_pdf_with_discount(self, mock_branding, quote_with_line_items):
         """Test PDF includes discount amount."""
-        quote_with_line_items.discount_amount = Decimal('500.00')
+        quote_with_line_items.discount_amount = Decimal("500.00")
         quote_with_line_items.save()
 
         buffer = QuotePDFService.generate_quote_pdf(quote_with_line_items)
@@ -306,11 +302,11 @@ class TestQuotePDFServiceGenerate:
         quote = EventQuote.objects.create(
             event=event,
             version=1,
-            status='DRAFT',
-            subtotal=Decimal('5000.00'),
-            total_amount=Decimal('5000.00'),
+            status="DRAFT",
+            subtotal=Decimal("5000.00"),
+            total_amount=Decimal("5000.00"),
             valid_until=timezone.now().date() + timedelta(days=30),
-            created_by=admin_user
+            created_by=admin_user,
         )
 
         buffer = QuotePDFService.generate_quote_pdf(quote)
@@ -324,7 +320,7 @@ class TestQuotePDFServiceSave:
 
     def test_save_quote_pdf_creates_file(self, mock_branding, draft_quote):
         """Test that save_quote_pdf saves file to model."""
-        url = QuotePDFService.save_quote_pdf(draft_quote)
+        QuotePDFService.save_quote_pdf(draft_quote)
 
         draft_quote.refresh_from_db()
         assert draft_quote.pdf_file is not None
@@ -343,15 +339,14 @@ class TestQuotePDFServiceSave:
 
         draft_quote.refresh_from_db()
         filename = draft_quote.pdf_file.name
-        assert f'quote_{draft_quote.id}_v{draft_quote.version}' in filename
-        assert filename.endswith('.pdf')
+        assert f"quote_{draft_quote.id}_v{draft_quote.version}" in filename
+        assert filename.endswith(".pdf")
 
     def test_save_quote_pdf_overwrites_existing(self, mock_branding, draft_quote):
         """Test that saving PDF overwrites existing file."""
         # Save first time
         QuotePDFService.save_quote_pdf(draft_quote)
         draft_quote.refresh_from_db()
-        first_file = draft_quote.pdf_file.name
 
         # Save second time
         QuotePDFService.save_quote_pdf(draft_quote)
@@ -366,7 +361,7 @@ class TestQuotePDFServiceSave:
 class TestQuotePDFServiceErrors:
     """Tests for error handling in QuotePDFService."""
 
-    @patch('core.domains.sales.pdf_service.SimpleDocTemplate')
+    @patch("core.domains.sales.pdf_service.SimpleDocTemplate")
     def test_generate_pdf_handles_error(self, mock_doc, mock_branding, draft_quote):
         """Test that generate_pdf handles errors gracefully."""
         mock_doc.return_value.build.side_effect = Exception("PDF error")
@@ -376,7 +371,7 @@ class TestQuotePDFServiceErrors:
 
         assert "PDF error" in str(exc_info.value)
 
-    @patch('core.domains.sales.pdf_service.QuotePDFService.generate_quote_pdf')
+    @patch("core.domains.sales.pdf_service.QuotePDFService.generate_quote_pdf")
     def test_save_pdf_handles_generation_error(self, mock_generate, draft_quote):
         """Test that save_pdf handles generation errors."""
         mock_generate.side_effect = Exception("Generation error")
@@ -391,10 +386,8 @@ class TestQuotePDFServiceBranding:
 
     def test_generate_pdf_uses_branding_service(self, draft_quote):
         """Test that PDF generation uses branding service."""
-        with patch('core.domains.sales.pdf_service.PDFBrandingService') as mock:
-            mock.get_branding_context.return_value = MagicMock(
-                primary_color_rgb=(0.5, 0.5, 0.5)
-            )
+        with patch("core.domains.sales.pdf_service.PDFBrandingService") as mock:
+            mock.get_branding_context.return_value = MagicMock(primary_color_rgb=(0.5, 0.5, 0.5))
 
             QuotePDFService.generate_quote_pdf(draft_quote)
 
@@ -402,11 +395,9 @@ class TestQuotePDFServiceBranding:
 
     def test_generate_pdf_with_custom_colors(self, draft_quote):
         """Test PDF with custom branding colors."""
-        with patch('core.domains.sales.pdf_service.PDFBrandingService') as mock:
+        with patch("core.domains.sales.pdf_service.PDFBrandingService") as mock:
             # Custom red color
-            mock.get_branding_context.return_value = MagicMock(
-                primary_color_rgb=(1.0, 0.0, 0.0)
-            )
+            mock.get_branding_context.return_value = MagicMock(primary_color_rgb=(1.0, 0.0, 0.0))
 
             buffer = QuotePDFService.generate_quote_pdf(draft_quote)
 
@@ -417,27 +408,23 @@ class TestQuotePDFServiceBranding:
 class TestQuotePDFServiceClientInfo:
     """Tests for client information in PDF."""
 
-    def test_generate_pdf_includes_client_info(
-        self, mock_branding, draft_quote, user_factory
-    ):
+    def test_generate_pdf_includes_client_info(self, mock_branding, draft_quote, user_factory):
         """Test that PDF includes client information."""
         # Ensure client has phone
         client = draft_quote.event.client
-        client.phone = '+1234567890'
+        client.phone = "+1234567890"
         client.save()
 
         buffer = QuotePDFService.generate_quote_pdf(draft_quote)
 
         assert buffer is not None
 
-    def test_generate_pdf_without_client_phone(
-        self, mock_branding, draft_quote
-    ):
+    def test_generate_pdf_without_client_phone(self, mock_branding, draft_quote):
         """Test PDF generation when client has no phone."""
         # Ensure client has no phone
         client = draft_quote.event.client
-        if hasattr(client, 'phone'):
-            client.phone = ''
+        if hasattr(client, "phone"):
+            client.phone = ""
             client.save()
 
         buffer = QuotePDFService.generate_quote_pdf(draft_quote)
@@ -449,17 +436,13 @@ class TestQuotePDFServiceClientInfo:
 class TestQuotePDFServiceEventInfo:
     """Tests for event information in PDF."""
 
-    def test_generate_pdf_includes_event_details(
-        self, mock_branding, draft_quote
-    ):
+    def test_generate_pdf_includes_event_details(self, mock_branding, draft_quote):
         """Test that PDF includes event details."""
         buffer = QuotePDFService.generate_quote_pdf(draft_quote)
 
         assert buffer is not None
 
-    def test_generate_pdf_with_event_type(
-        self, mock_branding, draft_quote, event_type_factory
-    ):
+    def test_generate_pdf_with_event_type(self, mock_branding, draft_quote, event_type_factory):
         """Test PDF generation with event type."""
         event_type = event_type_factory()
         draft_quote.event.event_type = event_type
@@ -478,9 +461,7 @@ class TestQuotePDFServiceEventInfo:
 
         assert buffer is not None
 
-    def test_generate_pdf_without_start_date(
-        self, mock_branding, event_factory, user_factory
-    ):
+    def test_generate_pdf_without_start_date(self, mock_branding, event_factory, user_factory):
         """Test PDF generation when event has no start date.
 
         Event.start_date is NOT NULL at DB level so we cannot persist None.
@@ -493,15 +474,15 @@ class TestQuotePDFServiceEventInfo:
         quote = EventQuote.objects.create(
             event=event,
             version=1,
-            status='DRAFT',
-            subtotal=Decimal('5000.00'),
-            total_amount=Decimal('5000.00'),
+            status="DRAFT",
+            subtotal=Decimal("5000.00"),
+            total_amount=Decimal("5000.00"),
             valid_until=timezone.now().date() + timedelta(days=30),
-            created_by=admin_user
+            created_by=admin_user,
         )
 
         # Override start_date on the in-memory event accessed through the quote
-        quote.event.__dict__['start_date'] = None
+        quote.event.__dict__["start_date"] = None
 
         buffer = QuotePDFService.generate_quote_pdf(quote)
 
@@ -544,7 +525,7 @@ class TestQuotePDFServiceTotals:
 
     def test_pdf_with_zero_subtotal(self, mock_branding, draft_quote):
         """Test PDF with zero subtotal."""
-        draft_quote.subtotal = Decimal('0')
+        draft_quote.subtotal = Decimal("0")
         draft_quote.save()
 
         buffer = QuotePDFService.generate_quote_pdf(draft_quote)
@@ -552,9 +533,9 @@ class TestQuotePDFServiceTotals:
 
     def test_pdf_with_large_amounts(self, mock_branding, draft_quote):
         """Test PDF with large monetary amounts."""
-        draft_quote.subtotal = Decimal('1000000.00')
-        draft_quote.tax_amount = Decimal('120000.00')
-        draft_quote.total_amount = Decimal('1120000.00')
+        draft_quote.subtotal = Decimal("1000000.00")
+        draft_quote.tax_amount = Decimal("120000.00")
+        draft_quote.total_amount = Decimal("1120000.00")
         draft_quote.save()
 
         buffer = QuotePDFService.generate_quote_pdf(draft_quote)
@@ -562,9 +543,9 @@ class TestQuotePDFServiceTotals:
 
     def test_pdf_with_decimal_amounts(self, mock_branding, draft_quote):
         """Test PDF with decimal monetary amounts."""
-        draft_quote.subtotal = Decimal('1234.56')
-        draft_quote.tax_amount = Decimal('148.15')
-        draft_quote.total_amount = Decimal('1382.71')
+        draft_quote.subtotal = Decimal("1234.56")
+        draft_quote.tax_amount = Decimal("148.15")
+        draft_quote.total_amount = Decimal("1382.71")
         draft_quote.save()
 
         buffer = QuotePDFService.generate_quote_pdf(draft_quote)

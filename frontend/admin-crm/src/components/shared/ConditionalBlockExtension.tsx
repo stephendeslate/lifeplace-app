@@ -30,7 +30,14 @@ import {
 import type { NodeViewProps } from '@tiptap/react';
 
 // Condition operators
-type ConditionOperator = 'exists' | 'not_exists' | 'equals' | 'not_equals' | 'contains' | 'greater' | 'less';
+type ConditionOperator =
+  | 'exists'
+  | 'not_exists'
+  | 'equals'
+  | 'not_equals'
+  | 'contains'
+  | 'greater'
+  | 'less';
 
 interface ConditionConfig {
   variable: string;
@@ -105,7 +112,9 @@ const ConditionalConfigDialog: React.FC<ConditionalConfigDialogProps> = ({
     onClose();
   };
 
-  const needsValue = ['equals', 'not_equals', 'contains', 'greater', 'less'].includes(config.operator);
+  const needsValue = ['equals', 'not_equals', 'contains', 'greater', 'less'].includes(
+    config.operator,
+  );
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -126,7 +135,9 @@ const ConditionalConfigDialog: React.FC<ConditionalConfigDialogProps> = ({
             <Select
               value={config.operator}
               label="Condition"
-              onChange={(e) => setConfig({ ...config, operator: e.target.value as ConditionOperator })}
+              onChange={(e) =>
+                setConfig({ ...config, operator: e.target.value as ConditionOperator })
+              }
             >
               <MenuItem value="exists">Exists (has a value)</MenuItem>
               <MenuItem value="not_exists">Does not exist (empty)</MenuItem>
@@ -152,10 +163,7 @@ const ConditionalConfigDialog: React.FC<ConditionalConfigDialogProps> = ({
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
               Preview:
             </Typography>
-            <Typography
-              variant="body2"
-              sx={{ fontFamily: 'monospace', color: 'primary.main' }}
-            >
+            <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'primary.main' }}>
               {generateDjangoCondition(config)}
             </Typography>
           </Paper>
@@ -165,11 +173,7 @@ const ConditionalConfigDialog: React.FC<ConditionalConfigDialogProps> = ({
         <Button onClick={onClose} color="inherit">
           Cancel
         </Button>
-        <Button
-          onClick={handleSave}
-          variant="contained"
-          disabled={!config.variable}
-        >
+        <Button onClick={handleSave} variant="contained" disabled={!config.variable}>
           Apply Condition
         </Button>
       </DialogActions>

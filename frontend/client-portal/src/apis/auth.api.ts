@@ -1,7 +1,13 @@
 // frontend/client-portal/src/apis/auth.api.ts
 
 import api from '../utils/api';
-import type { LoginCredentials, RegisterCredentials, User, LoginResponse, GoogleLoginResponse } from '../types/auth.types';
+import type {
+  LoginCredentials,
+  RegisterCredentials,
+  User,
+  LoginResponse,
+  GoogleLoginResponse,
+} from '../types/auth.types';
 
 export const authApi = {
   /**
@@ -50,7 +56,7 @@ export const authApi = {
    */
   refreshToken: async (refreshToken: string): Promise<{ access: string; refresh?: string }> => {
     const response = await api.post<{ access: string; refresh?: string }>('/users/token/refresh/', {
-      refresh: refreshToken
+      refresh: refreshToken,
     });
     return response.data;
   },
@@ -87,14 +93,18 @@ export const authApi = {
    * Request password reset - sends email with reset token
    */
   requestPasswordReset: async (email: string): Promise<{ detail: string }> => {
-    const response = await api.post<{ detail: string }>('/users/password-reset/request/', { email });
+    const response = await api.post<{ detail: string }>('/users/password-reset/request/', {
+      email,
+    });
     return response.data;
   },
 
   /**
    * Validate password reset token
    */
-  validateResetToken: async (tokenId: string): Promise<{
+  validateResetToken: async (
+    tokenId: string,
+  ): Promise<{
     valid: boolean;
     email?: string;
     reason?: 'already_used' | 'expired' | 'not_found';
@@ -110,13 +120,16 @@ export const authApi = {
   /**
    * Confirm password reset with new password
    */
-  confirmPasswordReset: async (tokenId: string, data: {
-    password: string;
-    confirm_password: string;
-  }): Promise<{ detail: string }> => {
+  confirmPasswordReset: async (
+    tokenId: string,
+    data: {
+      password: string;
+      confirm_password: string;
+    },
+  ): Promise<{ detail: string }> => {
     const response = await api.post<{ detail: string }>(
       `/users/password-reset/confirm/${tokenId}/`,
-      data
+      data,
     );
     return response.data;
   },

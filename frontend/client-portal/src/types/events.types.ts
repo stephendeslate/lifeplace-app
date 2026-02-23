@@ -63,7 +63,14 @@ export interface Event {
   payment_status: 'PENDING' | 'PARTIAL' | 'PAID' | 'OVERDUE';
   days_until_event?: number | null;
   // Contract information (optional for backward compatibility)
-  contract_status?: 'DRAFT' | 'SENT' | 'PARTIALLY_SIGNED' | 'SIGNED' | 'EXPIRED' | 'VOID' | 'AMENDED';
+  contract_status?:
+    | 'DRAFT'
+    | 'SENT'
+    | 'PARTIALLY_SIGNED'
+    | 'SIGNED'
+    | 'EXPIRED'
+    | 'VOID'
+    | 'AMENDED';
   has_contracts?: boolean;
   contracts_count?: number;
   pending_signature_required?: boolean;
@@ -170,7 +177,7 @@ export interface TaskUpdate {
   completion_notes?: string;
 }
 
-// File upload interface  
+// File upload interface
 export interface FileUpload {
   name: string;
   category: 'CONTRACT' | 'QUOTE' | 'PAYMENT' | 'REQUIREMENTS' | 'PHOTO' | 'OTHER';

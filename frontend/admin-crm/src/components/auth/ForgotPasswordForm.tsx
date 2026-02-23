@@ -2,19 +2,8 @@
 // Reusable form for requesting password reset
 
 import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Alert,
-  InputAdornment,
-} from '@mui/material';
-import {
-  Email,
-  LockResetOutlined,
-  ArrowBack,
-} from '@mui/icons-material';
+import { Box, Button, TextField, Typography, Alert, InputAdornment } from '@mui/material';
+import { Email, LockResetOutlined, ArrowBack } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useToastActions } from '../../contexts/ToastContext';
 import { tokens } from '../../design-system';
@@ -65,7 +54,8 @@ export const ForgotPasswordForm: React.FC = () => {
       setIsSuccess(true);
       showSuccess('Email Sent', response.detail);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to send reset email. Please try again.';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to send reset email. Please try again.';
       setSubmitError(errorMessage);
       showError('Request Failed', errorMessage);
     } finally {

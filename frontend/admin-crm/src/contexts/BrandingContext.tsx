@@ -113,14 +113,10 @@ export const BrandingProvider: React.FC<BrandingProviderProps> = ({ children }) 
       faviconUrl: companySettings?.favicon || null,
       companyName: companySettings?.company_name || 'LifePlace',
     }),
-    [colors, isLoading, error, companySettings]
+    [colors, isLoading, error, companySettings],
   );
 
-  return (
-    <BrandingContext.Provider value={value}>
-      {children}
-    </BrandingContext.Provider>
-  );
+  return <BrandingContext.Provider value={value}>{children}</BrandingContext.Provider>;
 };
 
 // Hook for getting brand colors without needing the full context

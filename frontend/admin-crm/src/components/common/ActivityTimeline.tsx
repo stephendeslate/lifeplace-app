@@ -20,15 +20,11 @@ import {
 } from '@mui/material';
 // Simple Timeline components using basic MUI
 const Timeline: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <Box sx={{ position: 'relative' }}>
-    {children}
-  </Box>
+  <Box sx={{ position: 'relative' }}>{children}</Box>
 );
 
 const TimelineItem: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <Box sx={{ display: 'flex', mb: 2 }}>
-    {children}
-  </Box>
+  <Box sx={{ display: 'flex', mb: 2 }}>{children}</Box>
 );
 
 const TimelineSeparator: React.FC<{ children: React.ReactNode }> = ({ children }) => (
@@ -38,39 +34,41 @@ const TimelineSeparator: React.FC<{ children: React.ReactNode }> = ({ children }
 );
 
 const TimelineConnector: React.FC = () => (
-  <Box sx={{ 
-    width: 2, 
-    height: 40, 
-    bgcolor: 'grey.300',
-    my: 0.5,
-    borderRadius: 1
-  }} />
+  <Box
+    sx={{
+      width: 2,
+      height: 40,
+      bgcolor: 'grey.300',
+      my: 0.5,
+      borderRadius: 1,
+    }}
+  />
 );
 
 const TimelineContent: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <Box sx={{ flex: 1 }}>
-    {children}
-  </Box>
+  <Box sx={{ flex: 1 }}>{children}</Box>
 );
 
-const TimelineDot: React.FC<{ 
+const TimelineDot: React.FC<{
   color?: 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info';
   variant?: 'filled' | 'outlined';
   children?: React.ReactNode;
 }> = ({ color = 'primary', variant = 'filled', children }) => (
-  <Box sx={{
-    width: 24,
-    height: 24,
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    bgcolor: variant === 'filled' ? `${color}.main` : 'transparent',
-    border: variant === 'outlined' ? `2px solid` : 'none',
-    borderColor: variant === 'outlined' ? `${color}.main` : 'transparent',
-    color: variant === 'filled' ? 'white' : `${color}.main`,
-    fontSize: '14px',
-  }}>
+  <Box
+    sx={{
+      width: 24,
+      height: 24,
+      borderRadius: '50%',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      bgcolor: variant === 'filled' ? `${color}.main` : 'transparent',
+      border: variant === 'outlined' ? `2px solid` : 'none',
+      borderColor: variant === 'outlined' ? `${color}.main` : 'transparent',
+      color: variant === 'filled' ? 'white' : `${color}.main`,
+      fontSize: '14px',
+    }}
+  >
     {children}
   </Box>
 );
@@ -96,7 +94,15 @@ import { format, isToday, isYesterday, differenceInDays } from 'date-fns';
 
 export interface ActivityItem {
   id: string;
-  type: 'communication' | 'payment' | 'event' | 'contract' | 'invoice' | 'note' | 'status_change' | 'workflow';
+  type:
+    | 'communication'
+    | 'payment'
+    | 'event'
+    | 'contract'
+    | 'invoice'
+    | 'note'
+    | 'status_change'
+    | 'workflow';
   title: string;
   description?: string;
   timestamp: string;
@@ -124,7 +130,7 @@ interface ActivityTimelineProps {
 
 const getActivityIcon = (type: string, status?: string) => {
   const iconProps = { fontSize: 'small' as const };
-  
+
   switch (type) {
     case 'communication':
       return <EmailIcon {...iconProps} />;
@@ -141,7 +147,11 @@ const getActivityIcon = (type: string, status?: string) => {
     case 'note':
       return <NoteIcon {...iconProps} />;
     case 'status_change':
-      return status === 'completed' ? <CompletedIcon {...iconProps} /> : <EditIcon {...iconProps} />;
+      return status === 'completed' ? (
+        <CompletedIcon {...iconProps} />
+      ) : (
+        <EditIcon {...iconProps} />
+      );
     case 'workflow':
       return <ScheduleIcon {...iconProps} />;
     default:
@@ -149,11 +159,14 @@ const getActivityIcon = (type: string, status?: string) => {
   }
 };
 
-const getActivityColor = (type: string, status?: string): 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' => {
+const getActivityColor = (
+  type: string,
+  status?: string,
+): 'primary' | 'secondary' | 'success' | 'error' | 'warning' | 'info' => {
   if (status === 'failed') return 'error';
   if (status === 'completed') return 'success';
   if (status === 'pending') return 'warning';
-  
+
   switch (type) {
     case 'communication':
     case 'sms':
@@ -176,15 +189,15 @@ const formatRelativeTime = (timestamp: string) => {
   const date = new Date(timestamp);
   const now = new Date();
   const diffDays = differenceInDays(now, date);
-  
+
   if (isToday(date)) {
     return `Today at ${format(date, 'h:mm a')}`;
   } else if (isYesterday(date)) {
     return `Yesterday at ${format(date, 'h:mm a')}`;
   } else if (diffDays < 7) {
-    return format(date, 'EEEE \'at\' h:mm a');
+    return format(date, "EEEE 'at' h:mm a");
   } else {
-    return format(date, 'MMM d, yyyy \'at\' h:mm a');
+    return format(date, "MMM d, yyyy 'at' h:mm a");
   }
 };
 
@@ -202,11 +215,15 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
 
   // Filter activities
-  const filteredActivities = activities.filter(activity => {
+  const filteredActivities = activities.filter((activity) => {
     if (typeFilter !== 'all' && activity.type !== typeFilter) return false;
     if (statusFilter !== 'all' && activity.status !== statusFilter) return false;
-    if (searchTerm && !activity.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        !activity.description?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (
+      searchTerm &&
+      !activity.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      !activity.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+      return false;
     return true;
   });
 
@@ -220,8 +237,8 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
     setExpandedItems(newExpanded);
   };
 
-  const uniqueTypes = [...new Set(activities.map(a => a.type))];
-  const uniqueStatuses = [...new Set(activities.map(a => a.status).filter(Boolean))];
+  const uniqueTypes = [...new Set(activities.map((a) => a.type))];
+  const uniqueStatuses = [...new Set(activities.map((a) => a.status).filter(Boolean))];
 
   return (
     <Card>
@@ -235,7 +252,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
               </IconButton>
             )}
             {showFilters && (
-              <IconButton 
+              <IconButton
                 onClick={() => setShowFiltersPanel(!showFiltersPanel)}
                 size="small"
                 color={showFiltersPanel ? 'primary' : 'default'}
@@ -272,9 +289,9 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                     onChange={(e) => setTypeFilter(e.target.value)}
                   >
                     <MenuItem value="all">All Types</MenuItem>
-                    {uniqueTypes.map(type => (
+                    {uniqueTypes.map((type) => (
                       <MenuItem key={type} value={type}>
-                        {type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        {type.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
                       </MenuItem>
                     ))}
                   </Select>
@@ -287,9 +304,9 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                     onChange={(e) => setStatusFilter(e.target.value)}
                   >
                     <MenuItem value="all">All Statuses</MenuItem>
-                    {uniqueStatuses.map(status => (
+                    {uniqueStatuses.map((status) => (
                       <MenuItem key={status} value={status}>
-                        {status?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        {status?.replace('_', ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
                       </MenuItem>
                     ))}
                   </Select>
@@ -322,12 +339,13 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
             <Timeline>
               {filteredActivities.map((activity, index) => {
                 const isExpanded = expandedItems.has(activity.id);
-                const hasDetails = activity.description || activity.metadata || activity.relatedEntity;
-                
+                const hasDetails =
+                  activity.description || activity.metadata || activity.relatedEntity;
+
                 return (
                   <TimelineItem key={activity.id}>
                     <TimelineSeparator>
-                      <TimelineDot 
+                      <TimelineDot
                         color={getActivityColor(activity.type, activity.status)}
                         variant={activity.status === 'completed' ? 'filled' : 'outlined'}
                       >
@@ -336,17 +354,22 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                       {index < filteredActivities.length - 1 && <TimelineConnector />}
                     </TimelineSeparator>
                     <TimelineContent>
-                      <Card 
-                        variant="outlined" 
-                        sx={{ 
+                      <Card
+                        variant="outlined"
+                        sx={{
                           mb: 2,
                           cursor: onActivityClick ? 'pointer' : 'default',
-                          '&:hover': onActivityClick ? { bgcolor: 'action.hover' } : {}
+                          '&:hover': onActivityClick ? { bgcolor: 'action.hover' } : {},
                         }}
                         onClick={onActivityClick ? () => onActivityClick(activity) : undefined}
                       >
                         <CardContent sx={{ pb: hasDetails ? 1 : 2 }}>
-                          <Box display="flex" justifyContent="space-between" alignItems="start" mb={1}>
+                          <Box
+                            display="flex"
+                            justifyContent="space-between"
+                            alignItems="start"
+                            mb={1}
+                          >
                             <Typography variant="subtitle2" fontWeight="medium">
                               {activity.title}
                             </Typography>
@@ -372,7 +395,7 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                               )}
                             </Stack>
                           </Box>
-                          
+
                           <Typography variant="caption" color="text.secondary">
                             {formatRelativeTime(activity.timestamp)}
                             {activity.user && ` • by ${activity.user.name}`}
@@ -385,7 +408,13 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                 size="small"
                                 variant="outlined"
                                 color="primary"
-                                icon={activity.relatedEntity.type === 'client' ? <ClientIcon /> : <EventIcon />}
+                                icon={
+                                  activity.relatedEntity.type === 'client' ? (
+                                    <ClientIcon />
+                                  ) : (
+                                    <EventIcon />
+                                  )
+                                }
                               />
                             </Box>
                           )}
@@ -397,13 +426,16 @@ export const ActivityTimeline: React.FC<ActivityTimelineProps> = ({
                                   {activity.description}
                                 </Typography>
                               )}
-                              
+
                               {activity.metadata && Object.keys(activity.metadata).length > 0 && (
                                 <Stack spacing={0.5}>
                                   {Object.entries(activity.metadata).map(([key, value]) => (
                                     <Box key={key} display="flex" justifyContent="space-between">
                                       <Typography variant="caption" color="text.secondary">
-                                        {key.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}:
+                                        {key
+                                          .replace('_', ' ')
+                                          .replace(/\b\w/g, (l) => l.toUpperCase())}
+                                        :
                                       </Typography>
                                       <Typography variant="caption">
                                         {typeof value === 'string' ? value : JSON.stringify(value)}

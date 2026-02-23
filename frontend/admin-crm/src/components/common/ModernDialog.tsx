@@ -80,8 +80,8 @@ export const ModernDialog: React.FC<ModernDialogProps> = ({
     onClose();
   };
 
-  const visibleActions = actions.filter(action => action.show !== false);
-  const isAnyActionLoading = visibleActions.some(action => action.loading);
+  const visibleActions = actions.filter((action) => action.show !== false);
+  const isAnyActionLoading = visibleActions.some((action) => action.loading);
 
   return (
     <Dialog
@@ -113,7 +113,11 @@ export const ModernDialog: React.FC<ModernDialogProps> = ({
           pr: showCloseButton ? 1 : 3,
         }}
       >
-        <Typography variant="h6" component="div" sx={{ fontWeight: 'inherit', fontSize: 'inherit' }}>
+        <Typography
+          variant="h6"
+          component="div"
+          sx={{ fontWeight: 'inherit', fontSize: 'inherit' }}
+        >
           {title}
         </Typography>
         {showCloseButton && (
@@ -132,7 +136,7 @@ export const ModernDialog: React.FC<ModernDialogProps> = ({
         )}
       </DialogTitle>
 
-      <DialogContent 
+      <DialogContent
         sx={{
           pt: 3,
           pb: visibleActions.length > 0 ? 1 : 3,
@@ -155,17 +159,20 @@ export const ModernDialog: React.FC<ModernDialogProps> = ({
               endIcon={action.loading ? undefined : action.endIcon}
               sx={{
                 ...(action.variant === 'contained' && {
-                  background: action.color === 'error' 
-                    ? `linear-gradient(135deg, ${tokens.color.error[500]} 0%, ${tokens.color.error[600]} 100%)`
-                    : `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
+                  background:
+                    action.color === 'error'
+                      ? `linear-gradient(135deg, ${tokens.color.error[500]} 0%, ${tokens.color.error[600]} 100%)`
+                      : `linear-gradient(135deg, ${tokens.color.primary[500]} 0%, ${tokens.color.primary[600]} 100%)`,
                   '&:hover': {
-                    background: action.color === 'error'
-                      ? `linear-gradient(135deg, ${tokens.color.error[600]} 0%, ${tokens.color.error[700]} 100%)`
-                      : `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
+                    background:
+                      action.color === 'error'
+                        ? `linear-gradient(135deg, ${tokens.color.error[600]} 0%, ${tokens.color.error[700]} 100%)`
+                        : `linear-gradient(135deg, ${tokens.color.primary[600]} 0%, ${tokens.color.primary[700]} 100%)`,
                     transform: 'translateY(-1px)',
-                    boxShadow: action.color === 'error'
-                      ? `0 6px 20px ${tokens.color.error[500]}40`
-                      : `0 6px 20px ${tokens.color.primary[500]}40`,
+                    boxShadow:
+                      action.color === 'error'
+                        ? `0 6px 20px ${tokens.color.error[500]}40`
+                        : `0 6px 20px ${tokens.color.primary[500]}40`,
                   },
                   '&:disabled': {
                     background: tokens.color.neutral[200],
@@ -180,11 +187,7 @@ export const ModernDialog: React.FC<ModernDialogProps> = ({
                 }),
               }}
             >
-              {action.loading ? (
-                <CircularProgress size={20} color="inherit" />
-              ) : (
-                action.label
-              )}
+              {action.loading ? <CircularProgress size={20} color="inherit" /> : action.label}
             </Button>
           ))}
         </DialogActions>
@@ -203,7 +206,7 @@ export const createStandardActions = (
     confirmColor?: 'primary' | 'error' | 'warning';
     isLoading?: boolean;
     confirmDisabled?: boolean;
-  }
+  },
 ): ModernDialogAction[] => [
   {
     label: options?.cancelLabel || 'Cancel',
@@ -224,7 +227,7 @@ export const createStandardActions = (
 export const createDeleteActions = (
   onCancel: () => void,
   onDelete: () => void,
-  isDeleting?: boolean
+  isDeleting?: boolean,
 ): ModernDialogAction[] => [
   {
     label: 'Cancel',

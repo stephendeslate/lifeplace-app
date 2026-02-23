@@ -3,19 +3,8 @@
 
 import React from 'react';
 import { Box, Typography, Stack } from '@mui/material';
-import {
-  LocationOn,
-  LocalOffer,
-  Campaign,
-  CheckCircle,
-} from '@mui/icons-material';
-import {
-  Section,
-  Container,
-  ModernCard,
-  AnimatedElement,
-  tokens,
-} from '../../../design-system';
+import { LocationOn, LocalOffer, Campaign, CheckCircle } from '@mui/icons-material';
+import { Section, Container, ModernCard, AnimatedElement, tokens } from '../../../design-system';
 import type { PartnerBenefit } from '../types/partner.types';
 
 export const PartnerBenefits: React.FC = () => {
@@ -23,19 +12,22 @@ export const PartnerBenefits: React.FC = () => {
     {
       id: 'facility-access',
       title: 'Premium Facility Access',
-      description: 'Access to a well-equipped venue in a desirable location with versatile event spaces.',
+      description:
+        'Access to a well-equipped venue in a desirable location with versatile event spaces.',
       icon: <LocationOn sx={{ fontSize: 40, color: tokens.color.base.sage[600] }} />,
     },
     {
       id: 'discounts',
       title: 'Exclusive Discounts',
-      description: 'Enjoy exclusive discounts and referral incentives for your clients and organization.',
+      description:
+        'Enjoy exclusive discounts and referral incentives for your clients and organization.',
       icon: <LocalOffer sx={{ fontSize: 40, color: tokens.color.base.terracotta[500] }} />,
     },
     {
       id: 'marketing',
       title: 'Cross-Promotional Marketing',
-      description: 'Benefit from joint marketing opportunities and increased visibility to our client base.',
+      description:
+        'Benefit from joint marketing opportunities and increased visibility to our client base.',
       icon: <Campaign sx={{ fontSize: 40, color: tokens.color.base.sage[600] }} />,
     },
     {
@@ -52,7 +44,11 @@ export const PartnerBenefits: React.FC = () => {
         <Stack spacing={tokens.spacing.space[12]}>
           {/* Section Header */}
           <AnimatedElement animation="fadeIn" delay={100}>
-            <Stack spacing={tokens.spacing.space[3]} alignItems="center" sx={{ textAlign: 'center' }}>
+            <Stack
+              spacing={tokens.spacing.space[3]}
+              alignItems="center"
+              sx={{ textAlign: 'center' }}
+            >
               <Typography
                 variant="h2"
                 sx={{

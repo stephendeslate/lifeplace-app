@@ -107,7 +107,10 @@ export const useCurrencySettings = () => {
       try {
         return await currencyApi.getCurrencySettings();
       } catch (error) {
-        console.warn('Failed to fetch currency settings from API, using localStorage fallback:', error);
+        console.warn(
+          'Failed to fetch currency settings from API, using localStorage fallback:',
+          error,
+        );
         return currencyStorageService.getSettings();
       }
     },
@@ -120,7 +123,10 @@ export const useCurrencySettings = () => {
       try {
         return await currencyApi.updateCurrencySettings(newSettings);
       } catch (error) {
-        console.warn('Failed to update currency settings via API, using localStorage fallback:', error);
+        console.warn(
+          'Failed to update currency settings via API, using localStorage fallback:',
+          error,
+        );
         const processedSettings: CurrencySettings = {
           ...newSettings,
           decimalPlaces: parseInt(newSettings.decimalPlaces, 10) || 0,
@@ -133,7 +139,7 @@ export const useCurrencySettings = () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.currencySettings });
       showSuccess(
         'Currency Settings Updated',
-        `Default currency set to ${getCurrencyConfig(updatedSettings.defaultCurrency).name}.`
+        `Default currency set to ${getCurrencyConfig(updatedSettings.defaultCurrency).name}.`,
       );
     },
     onError: (error: unknown) => {
@@ -148,7 +154,10 @@ export const useCurrencySettings = () => {
       try {
         return await currencyApi.resetCurrencySettings();
       } catch (error) {
-        console.warn('Failed to reset currency settings via API, using localStorage fallback:', error);
+        console.warn(
+          'Failed to reset currency settings via API, using localStorage fallback:',
+          error,
+        );
         currencyStorageService.setSettings(DEFAULT_CURRENCY_SETTINGS);
         return DEFAULT_CURRENCY_SETTINGS;
       }
@@ -223,25 +232,23 @@ export const useCurrencyRates = () => {
   // Function to get rate between currencies
   const getExchangeRate = (fromCurrency: string, toCurrency: string): number | null => {
     if (fromCurrency === toCurrency) return 1;
-    
-    const rate = rates.find(
-      r => r.fromCurrency === fromCurrency && r.toCurrency === toCurrency
-    );
-    
+
+    const rate = rates.find((r) => r.fromCurrency === fromCurrency && r.toCurrency === toCurrency);
+
     return rate?.rate || null;
   };
 
   return {
     // Data
     rates,
-    
+
     // Loading states
     isLoading,
     isUpdating: updateRatesMutation.isPending,
-    
+
     // Error states
     error,
-    
+
     // Actions
     updateRates: updateRatesMutation.mutate,
     refetch,
@@ -272,19 +279,17 @@ export const useSupportedCurrencies = () => {
  */
 export const useCurrencyOptions = (enabledOnly: boolean = false) => {
   const { settings } = useCurrencySettings();
-  
+
   return useQuery({
     queryKey: ['currency-options', enabledOnly, settings.enabledCurrencies],
     queryFn: () => {
       const allOptions = getCurrencyOptions();
-      
+
       if (!enabledOnly) {
         return allOptions;
       }
-      
-      return allOptions.filter(option => 
-        settings.enabledCurrencies.includes(option.code)
-      );
+
+      return allOptions.filter((option) => settings.enabledCurrencies.includes(option.code));
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -296,7 +301,7 @@ export const useCurrencyOptions = (enabledOnly: boolean = false) => {
  */
 export const useCurrentCurrency = () => {
   const { settings, isLoading } = useCurrencySettings();
-  
+
   return {
     currentCurrency: settings.defaultCurrency as unknown as SupportedCurrency,
     currencyConfig: getCurrencyConfig(settings.defaultCurrency),
@@ -310,49 +315,52 @@ export const useCurrentCurrency = () => {
  */
 export const useCurrencyValidation = () => {
   const { settings } = useCurrencySettings();
-  
-  const validateAmount = (amount: string | number, currencyCode?: string): {
+
+  const validateAmount = (
+    amount: string | number,
+    currencyCode?: string,
+  ): {
     isValid: boolean;
     error?: string;
     formatted?: string;
   } => {
     const currency = currencyCode || settings.defaultCurrency;
     const config = getCurrencyConfig(currency);
-    
+
     const numericAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-    
+
     if (isNaN(numericAmount)) {
       return {
         isValid: false,
         error: 'Please enter a valid number',
       };
     }
-    
+
     if (numericAmount < 0) {
       return {
         isValid: false,
         error: 'Amount cannot be negative',
       };
     }
-    
+
     // Check if amount has more decimal places than allowed
     const decimalPlaces = settings.decimalPlaces || config.decimals;
     const amountString = numericAmount.toString();
     const decimalIndex = amountString.indexOf('.');
-    
+
     if (decimalIndex !== -1 && amountString.length - decimalIndex - 1 > decimalPlaces) {
       return {
         isValid: false,
         error: `Maximum ${decimalPlaces} decimal places allowed for ${config.name}`,
       };
     }
-    
+
     return {
       isValid: true,
       formatted: numericAmount.toFixed(decimalPlaces),
     };
   };
-  
+
   return {
     validateAmount,
   };
@@ -368,28 +376,28 @@ export const useCurrencyManagement = () => {
   const supportedCurrencies = useSupportedCurrencies();
   const currencyOptions = useCurrencyOptions(false);
   const validation = useCurrencyValidation();
-  
+
   return {
     // Settings
     ...settingsHook,
-    
+
     // Rates
     rates: ratesHook.rates,
     isLoadingRates: ratesHook.isLoading,
     updateRates: ratesHook.updateRates,
     getExchangeRate: ratesHook.getExchangeRate,
-    
+
     // Supported currencies
     supportedCurrencies: supportedCurrencies.data || [],
     isLoadingSupportedCurrencies: supportedCurrencies.isLoading,
-    
+
     // Options
     currencyOptions: currencyOptions.data || [],
     isLoadingOptions: currencyOptions.isLoading,
-    
+
     // Validation
     validateAmount: validation.validateAmount,
-    
+
     // Overall loading state
     isLoading: settingsHook.isLoading || ratesHook.isLoading || supportedCurrencies.isLoading,
   };

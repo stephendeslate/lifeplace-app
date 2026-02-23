@@ -115,7 +115,7 @@ export const SWIMLANE_CONFIGS: SwimlaneConfig[] = [
 
 // Helper to get swimlane config
 export const getSwimlaneConfig = (stageType: StageType): SwimlaneConfig => {
-  return SWIMLANE_CONFIGS.find(c => c.stageType === stageType) || SWIMLANE_CONFIGS[0];
+  return SWIMLANE_CONFIGS.find((c) => c.stageType === stageType) || SWIMLANE_CONFIGS[0];
 };
 
 // Automation type icons/labels

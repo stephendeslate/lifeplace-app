@@ -1,7 +1,7 @@
 // frontend/client-portal/src/components/booking/steps/CleanPackageSelectionStep.tsx
 // Enhanced: Venue-aware package selection with custom bundle option
 
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   Box,
   Typography,
@@ -17,7 +17,7 @@ import {
   useTheme,
   alpha,
   Paper,
-} from "@mui/material";
+} from '@mui/material';
 import {
   CheckCircle as CheckCircleIcon,
   RadioButtonUnchecked as RadioButtonUncheckedIcon,
@@ -28,11 +28,11 @@ import {
   Remove as RemoveIcon,
   Add as AddIcon,
   Build as BuildIcon,
-} from "@mui/icons-material";
-import { useQuery } from "@tanstack/react-query";
-import { GlassCard } from "../../../design-system/components/GlassCard";
-import { AnimatedElement } from "../../../design-system/components/AnimatedElement";
-import { useAccessibility } from "../../accessibility";
+} from '@mui/icons-material';
+import { useQuery } from '@tanstack/react-query';
+import { GlassCard } from '../../../design-system/components/GlassCard';
+import { AnimatedElement } from '../../../design-system/components/AnimatedElement';
+import { useAccessibility } from '../../accessibility';
 import type {
   ProductOption,
   PackageSelectionStepData,
@@ -40,19 +40,19 @@ import type {
   SelectedPackage,
   AttendeeBreakdown,
   BookingFlowStep,
-} from "../../../types/booking";
+} from '../../../types/booking';
 import type {
   VenueSelectionStepData,
   DateTimeStepData,
-} from "../../../types/booking/stepData.types";
+} from '../../../types/booking/stepData.types';
 import type {
   RentableVenue,
   RentableVenueWithEventType,
-} from "../../../types/booking/venues.types";
-import { ProductsApi } from "../../../apis/booking/products.api";
-import { VenuesApi } from "../../../apis/booking/venues.api";
-import { useBooking } from "../../../contexts/BookingContext";
-import { useCurrencySettings } from "../../../hooks/useCurrency";
+} from '../../../types/booking/venues.types';
+import { ProductsApi } from '../../../apis/booking/products.api';
+import { VenuesApi } from '../../../apis/booking/venues.api';
+import { useBooking } from '../../../contexts/BookingContext';
+import { useCurrencySettings } from '../../../hooks/useCurrency';
 
 /**
  * Extracts the guest count from questionnaire responses by finding fields
@@ -75,8 +75,7 @@ function extractGuestCount(
   let found = false;
 
   for (const step of enabledSteps) {
-    if (step.step_type !== "questionnaire" || !step.configuration_data)
-      continue;
+    if (step.step_type !== 'questionnaire' || !step.configuration_data) continue;
     const items = step.configuration_data.questionnaire_items || [];
     for (const item of items) {
       const fields = item.questionnaire_details?.fields || [];
@@ -85,8 +84,7 @@ function extractGuestCount(
           const key = `field_${field.id}`;
           const value = questionnaireResponses[key];
           if (value != null) {
-            const num =
-              typeof value === "number" ? value : parseInt(String(value), 10);
+            const num = typeof value === 'number' ? value : parseInt(String(value), 10);
             if (!isNaN(num)) {
               totalGuests += num;
               found = true;
@@ -105,9 +103,7 @@ function extractGuestCount(
  * Returns { enabled, tiers } where enabled is true only when child_pricing_enabled
  * is true AND at least one tier is configured.
  */
-function extractChildPricingConfig(
-  enabledSteps: BookingFlowStep[] | undefined,
-): {
+function extractChildPricingConfig(enabledSteps: BookingFlowStep[] | undefined): {
   enabled: boolean;
   tiers: Array<{
     min_age: number;
@@ -118,11 +114,8 @@ function extractChildPricingConfig(
 } {
   if (!enabledSteps) return { enabled: false, tiers: [] };
   for (const step of enabledSteps) {
-    if (step.step_type !== "payment_info" || !step.configuration_data) continue;
-    const configData = step.configuration_data as unknown as Record<
-      string,
-      unknown
-    >;
+    if (step.step_type !== 'payment_info' || !step.configuration_data) continue;
+    const configData = step.configuration_data as unknown as Record<string, unknown>;
     const effectiveTerms = configData.effective_payment_terms as
       | Record<string, unknown>
       | undefined;
@@ -146,7 +139,7 @@ interface PackageCardProps {
   onSelect: (pkg: ProductOption) => void;
   onQuantityChange: (pkg: ProductOption, quantity: number) => void;
   canSelectMore: boolean;
-  selectionType: "SINGLE" | "MULTIPLE";
+  selectionType: 'SINGLE' | 'MULTIPLE';
   animationDelay: number;
   isCustomBundle?: boolean;
   isMultiVenue?: boolean;
@@ -178,26 +171,16 @@ const PackageCard: React.FC<PackageCardProps> = ({
   const [showBreakdown, setShowBreakdown] = useState(false);
 
   const handleSelect = useCallback(() => {
-    if (selectionType === "SINGLE" || (!isSelected && canSelectMore)) {
+    if (selectionType === 'SINGLE' || (!isSelected && canSelectMore)) {
       onSelect(pkg);
       announceToScreenReader(`Selected ${pkg.name}`);
     }
-  }, [
-    pkg,
-    onSelect,
-    isSelected,
-    canSelectMore,
-    selectionType,
-    announceToScreenReader,
-  ]);
+  }, [pkg, onSelect, isSelected, canSelectMore, selectionType, announceToScreenReader]);
 
   const handleQuantityChange = useCallback(
     (change: number) => {
       const maxQty = pkg.maximum_quantity ?? Infinity;
-      const newQuantity = Math.max(
-        0,
-        Math.min(maxQty, selectedQuantity + change),
-      );
+      const newQuantity = Math.max(0, Math.min(maxQty, selectedQuantity + change));
       onQuantityChange(pkg, newQuantity);
       announceToScreenReader(`Updated ${pkg.name} quantity to ${newQuantity}`);
     },
@@ -217,34 +200,28 @@ const PackageCard: React.FC<PackageCardProps> = ({
         variant="light"
         intensity="medium"
         sx={{
-          position: "relative",
+          position: 'relative',
           cursor:
-            selectionType === "SINGLE" || (!isSelected && canSelectMore)
-              ? "pointer"
-              : "default",
-          backgroundColor: isSelected
-            ? alpha(packageColor, 0.1)
-            : alpha("#fff", 0.08),
-          border: isSelected
-            ? `2px solid ${packageColor}`
-            : `1px solid ${alpha("#fff", 0.1)}`,
-          transform: isSelected ? "scale(1.02)" : "scale(1)",
-          transition: "all 0.3s ease",
-          "&:hover": {
-            transform: "scale(1.02)",
+            selectionType === 'SINGLE' || (!isSelected && canSelectMore) ? 'pointer' : 'default',
+          backgroundColor: isSelected ? alpha(packageColor, 0.1) : alpha('#fff', 0.08),
+          border: isSelected ? `2px solid ${packageColor}` : `1px solid ${alpha('#fff', 0.1)}`,
+          transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+          transition: 'all 0.3s ease',
+          '&:hover': {
+            transform: 'scale(1.02)',
             backgroundColor: alpha(packageColor, 0.05),
             border: `2px solid ${alpha(packageColor, 0.5)}`,
           },
-          "&::before": isSelected
+          '&::before': isSelected
             ? {
                 content: '""',
-                position: "absolute",
+                position: 'absolute',
                 top: 0,
                 left: 0,
                 right: 0,
                 height: 4,
                 backgroundColor: packageColor,
-                borderRadius: "8px 8px 0 0",
+                borderRadius: '8px 8px 0 0',
               }
             : {},
         }}
@@ -254,17 +231,17 @@ const PackageCard: React.FC<PackageCardProps> = ({
           {/* Header */}
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start",
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
               mb: 2,
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               {isCustomBundle && (
                 <Chip
                   icon={<BuildIcon fontSize="small" />}
-                  label={isMultiVenue ? "Custom Bundle" : "Venue Package"}
+                  label={isMultiVenue ? 'Custom Bundle' : 'Venue Package'}
                   size="small"
                   sx={{
                     backgroundColor: alpha(theme.palette.secondary.main, 0.15),
@@ -291,8 +268,8 @@ const PackageCard: React.FC<PackageCardProps> = ({
                   size="small"
                   variant="outlined"
                   sx={{
-                    backgroundColor: alpha("#fff", 0.05),
-                    borderColor: alpha("#fff", 0.2),
+                    backgroundColor: alpha('#fff', 0.05),
+                    borderColor: alpha('#fff', 0.2),
                   }}
                 />
               )}
@@ -305,13 +282,13 @@ const PackageCard: React.FC<PackageCardProps> = ({
                   sx={{
                     color: packageColor,
                     fontSize: 28,
-                    filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
+                    filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))',
                   }}
                 />
               ) : (
                 <RadioButtonUncheckedIcon
                   sx={{
-                    color: alpha("#fff", 0.4),
+                    color: alpha('#fff', 0.4),
                     fontSize: 28,
                   }}
                 />
@@ -325,11 +302,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
           </Typography>
 
           {pkg.description && (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ mb: 3, lineHeight: 1.6 }}
-            >
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3, lineHeight: 1.6 }}>
               {pkg.description}
             </Typography>
           )}
@@ -342,7 +315,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
                 label={`${pkg.included_hours} hours included`}
                 size="small"
                 variant="outlined"
-                sx={{ backgroundColor: alpha("#fff", 0.1) }}
+                sx={{ backgroundColor: alpha('#fff', 0.1) }}
               />
             )}
           </Stack>
@@ -350,34 +323,30 @@ const PackageCard: React.FC<PackageCardProps> = ({
           {/* Pricing */}
           <Box
             sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               mb: 2,
             }}
           >
             <Box>
-              <Typography
-                variant="h4"
-                sx={{ fontWeight: 700, color: packageColor }}
-              >
-                {pkg.formatted_price ||
-                  `₱${parseFloat(pkg.base_price || "0").toLocaleString()}`}
+              <Typography variant="h4" sx={{ fontWeight: 700, color: packageColor }}>
+                {pkg.formatted_price || `₱${parseFloat(pkg.base_price || '0').toLocaleString()}`}
               </Typography>
               {/* Pricing unit display - use pricing_unit if available, fall back to pricing_model */}
               {pkg.pricing_unit ? (
                 <Typography variant="body2" color="text.secondary">
                   {pkg.pricing_unit_display?.toLowerCase() ||
-                    pkg.pricing_unit.replace("PER_", "per ").toLowerCase()}
+                    pkg.pricing_unit.replace('PER_', 'per ').toLowerCase()}
                 </Typography>
               ) : (
                 <>
-                  {pkg.pricing_model === "HOURLY" && (
+                  {pkg.pricing_model === 'HOURLY' && (
                     <Typography variant="body2" color="text.secondary">
                       per hour
                     </Typography>
                   )}
-                  {pkg.pricing_model === "FIXED" && (
+                  {pkg.pricing_model === 'FIXED' && (
                     <Typography variant="body2" color="text.secondary">
                       per event
                     </Typography>
@@ -388,7 +357,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
 
             {/* Show excess hour pricing if available */}
             {pkg.has_excess_hours && pkg.excess_hour_price && (
-              <Box sx={{ textAlign: "right" }}>
+              <Box sx={{ textAlign: 'right' }}>
                 <Typography variant="caption" color="text.secondary">
                   Additional hours:
                 </Typography>
@@ -400,7 +369,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
           </Box>
 
           {/* Per-person pricing info */}
-          {pkg.pricing_unit === "PER_PERSON" && (
+          {pkg.pricing_unit === 'PER_PERSON' && (
             <Box
               sx={{
                 mb: 2,
@@ -412,20 +381,12 @@ const PackageCard: React.FC<PackageCardProps> = ({
             >
               {pkg.minimum_guests && pkg.minimum_guests > 1 ? (
                 <>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 600, color: packageColor }}
-                  >
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: packageColor }}>
                     Minimum {pkg.minimum_guests} persons
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 700, mt: 0.25 }}
-                  >
+                  <Typography variant="body2" sx={{ fontWeight: 700, mt: 0.25 }}>
                     Starting at ₱
-                    {(
-                      parseFloat(pkg.base_price || "0") * pkg.minimum_guests
-                    ).toLocaleString()}
+                    {(parseFloat(pkg.base_price || '0') * pkg.minimum_guests).toLocaleString()}
                   </Typography>
                 </>
               ) : (
@@ -437,7 +398,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
           )}
 
           {/* Per-person headcount input (always simple stepper first, with optional breakdown) */}
-          {pkg.pricing_unit === "PER_PERSON" && isSelected && (
+          {pkg.pricing_unit === 'PER_PERSON' && isSelected && (
             <Box
               sx={{
                 mb: 2,
@@ -449,20 +410,17 @@ const PackageCard: React.FC<PackageCardProps> = ({
               onClick={(e) => e.stopPropagation()}
             >
               {/* Simple headcount stepper — always shown */}
-              <Typography
-                variant="subtitle2"
-                sx={{ display: "block", mb: 1, fontWeight: 600 }}
-              >
+              <Typography variant="subtitle2" sx={{ display: 'block', mb: 1, fontWeight: 600 }}>
                 Number of Guests
                 {pkg.minimum_guests && pkg.minimum_guests > 1
                   ? ` (minimum ${pkg.minimum_guests})`
-                  : ""}
+                  : ''}
               </Typography>
               <Box
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   gap: 2,
                 }}
               >
@@ -471,260 +429,212 @@ const PackageCard: React.FC<PackageCardProps> = ({
                   onClick={() => handleQuantityChange(-1)}
                   disabled={selectedQuantity <= (pkg.minimum_guests || 1)}
                   sx={{
-                    backgroundColor: alpha("#fff", 0.1),
-                    "&:hover": { backgroundColor: alpha("#fff", 0.2) },
+                    backgroundColor: alpha('#fff', 0.1),
+                    '&:hover': { backgroundColor: alpha('#fff', 0.2) },
                   }}
                 >
                   <RemoveIcon />
                 </IconButton>
                 <Typography
                   variant="h6"
-                  sx={{ minWidth: 40, textAlign: "center", fontWeight: 600 }}
+                  sx={{ minWidth: 40, textAlign: 'center', fontWeight: 600 }}
                 >
                   {selectedQuantity}
                 </Typography>
                 <IconButton
                   size="small"
                   onClick={() => handleQuantityChange(1)}
-                  disabled={
-                    pkg.maximum_guests
-                      ? selectedQuantity >= pkg.maximum_guests
-                      : false
-                  }
+                  disabled={pkg.maximum_guests ? selectedQuantity >= pkg.maximum_guests : false}
                   sx={{
-                    backgroundColor: alpha("#fff", 0.1),
-                    "&:hover": { backgroundColor: alpha("#fff", 0.2) },
+                    backgroundColor: alpha('#fff', 0.1),
+                    '&:hover': { backgroundColor: alpha('#fff', 0.2) },
                   }}
                 >
                   <AddIcon />
                 </IconButton>
                 {pkg.maximum_guests && (
-                  <Typography
-                    variant="caption"
-                    sx={{ color: alpha("#fff", 0.7) }}
-                  >
+                  <Typography variant="caption" sx={{ color: alpha('#fff', 0.7) }}>
                     max {pkg.maximum_guests}
                   </Typography>
                 )}
               </Box>
-              <Typography
-                variant="body2"
-                sx={{ textAlign: "center", mt: 1, fontWeight: 600 }}
-              >
-                {selectedQuantity} × ₱
-                {parseFloat(pkg.base_price || "0").toLocaleString()}/person = ₱
-                {(
-                  selectedQuantity * parseFloat(pkg.base_price || "0")
-                ).toLocaleString()}
+              <Typography variant="body2" sx={{ textAlign: 'center', mt: 1, fontWeight: 600 }}>
+                {selectedQuantity} × ₱{parseFloat(pkg.base_price || '0').toLocaleString()}/person =
+                ₱{(selectedQuantity * parseFloat(pkg.base_price || '0')).toLocaleString()}
               </Typography>
 
               {/* Optional attendee breakdown toggle — only when child pricing is enabled */}
-              {childPricingEnabled &&
-                attendeeBreakdown &&
-                onAttendeeBreakdownChange && (
-                  <>
-                    <Divider
-                      sx={{ my: 1.5, borderColor: alpha("#fff", 0.1) }}
-                    />
-                    <Collapse in={showBreakdown}>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: "block", mb: 1.5 }}
-                      >
-                        Adjust counts per age group for discounted rates. Total
-                        must meet the minimum.
-                      </Typography>
-                      <Stack spacing={1.5}>
-                        {attendeeBreakdown.map((tier, tierIdx) => {
-                          const totalCount = attendeeBreakdown.reduce(
-                            (sum, t) => sum + t.count,
-                            0,
-                          );
-                          const atMin = tier.count <= 0;
-                          const atMax = pkg.maximum_guests
-                            ? totalCount >= pkg.maximum_guests
-                            : false;
+              {childPricingEnabled && attendeeBreakdown && onAttendeeBreakdownChange && (
+                <>
+                  <Divider sx={{ my: 1.5, borderColor: alpha('#fff', 0.1) }} />
+                  <Collapse in={showBreakdown}>
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block', mb: 1.5 }}
+                    >
+                      Adjust counts per age group for discounted rates. Total must meet the minimum.
+                    </Typography>
+                    <Stack spacing={1.5}>
+                      {attendeeBreakdown.map((tier, tierIdx) => {
+                        const totalCount = attendeeBreakdown.reduce((sum, t) => sum + t.count, 0);
+                        const atMin = tier.count <= 0;
+                        const atMax = pkg.maximum_guests ? totalCount >= pkg.maximum_guests : false;
 
-                          // Build age range label
-                          const ageRange =
-                            tier.min_age != null && tier.max_age != null
-                              ? `Ages ${tier.min_age}–${tier.max_age}`
-                              : tier.min_age != null
-                                ? `Ages ${tier.min_age}+`
-                                : "";
+                        // Build age range label
+                        const ageRange =
+                          tier.min_age != null && tier.max_age != null
+                            ? `Ages ${tier.min_age}–${tier.max_age}`
+                            : tier.min_age != null
+                              ? `Ages ${tier.min_age}+`
+                              : '';
 
-                          return (
+                        return (
+                          <Box
+                            key={tierIdx}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 1,
+                            }}
+                          >
+                            <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
+                                {tier.tier_label}
+                                {ageRange && (
+                                  <Typography
+                                    component="span"
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{ ml: 0.5 }}
+                                  >
+                                    ({ageRange})
+                                  </Typography>
+                                )}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: 'block', lineHeight: 1.3 }}
+                              >
+                                {tier.discount_percentage === 100
+                                  ? 'Free'
+                                  : tier.discount_percentage > 0
+                                    ? `${tier.discount_percentage}% off — `
+                                    : ''}
+                                {tier.discount_percentage < 100 &&
+                                  `₱${tier.unit_price.toLocaleString()}/person`}
+                              </Typography>
+                            </Box>
+
                             <Box
-                              key={tierIdx}
                               sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
+                                display: 'flex',
+                                alignItems: 'center',
                                 gap: 1,
+                                flex: '0 0 auto',
                               }}
                             >
-                              <Box sx={{ flex: "1 1 auto", minWidth: 0 }}>
-                                <Typography
-                                  variant="body2"
-                                  sx={{ fontWeight: 600, lineHeight: 1.3 }}
-                                >
-                                  {tier.tier_label}
-                                  {ageRange && (
-                                    <Typography
-                                      component="span"
-                                      variant="caption"
-                                      color="text.secondary"
-                                      sx={{ ml: 0.5 }}
-                                    >
-                                      ({ageRange})
-                                    </Typography>
-                                  )}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                  sx={{ display: "block", lineHeight: 1.3 }}
-                                >
-                                  {tier.discount_percentage === 100
-                                    ? "Free"
-                                    : tier.discount_percentage > 0
-                                      ? `${tier.discount_percentage}% off — `
-                                      : ""}
-                                  {tier.discount_percentage < 100 &&
-                                    `₱${tier.unit_price.toLocaleString()}/person`}
-                                </Typography>
-                              </Box>
-
-                              <Box
+                              <IconButton
+                                size="small"
+                                onClick={() => onAttendeeBreakdownChange(tierIdx, tier.count - 1)}
+                                disabled={atMin}
                                 sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                  flex: "0 0 auto",
+                                  width: 32,
+                                  height: 32,
+                                  backgroundColor: alpha('#fff', 0.1),
+                                  '&:hover': {
+                                    backgroundColor: alpha('#fff', 0.2),
+                                  },
                                 }}
                               >
-                                <IconButton
-                                  size="small"
-                                  onClick={() =>
-                                    onAttendeeBreakdownChange(
-                                      tierIdx,
-                                      tier.count - 1,
-                                    )
-                                  }
-                                  disabled={atMin}
-                                  sx={{
-                                    width: 32,
-                                    height: 32,
-                                    backgroundColor: alpha("#fff", 0.1),
-                                    "&:hover": {
-                                      backgroundColor: alpha("#fff", 0.2),
-                                    },
-                                  }}
-                                >
-                                  <RemoveIcon fontSize="small" />
-                                </IconButton>
-                                <Typography
-                                  variant="body1"
-                                  sx={{
-                                    minWidth: 32,
-                                    textAlign: "center",
-                                    fontWeight: 600,
-                                  }}
-                                >
-                                  {tier.count}
-                                </Typography>
-                                <IconButton
-                                  size="small"
-                                  onClick={() =>
-                                    onAttendeeBreakdownChange(
-                                      tierIdx,
-                                      tier.count + 1,
-                                    )
-                                  }
-                                  disabled={atMax}
-                                  sx={{
-                                    width: 32,
-                                    height: 32,
-                                    backgroundColor: alpha("#fff", 0.1),
-                                    "&:hover": {
-                                      backgroundColor: alpha("#fff", 0.2),
-                                    },
-                                  }}
-                                >
-                                  <AddIcon fontSize="small" />
-                                </IconButton>
-                              </Box>
+                                <RemoveIcon fontSize="small" />
+                              </IconButton>
+                              <Typography
+                                variant="body1"
+                                sx={{
+                                  minWidth: 32,
+                                  textAlign: 'center',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {tier.count}
+                              </Typography>
+                              <IconButton
+                                size="small"
+                                onClick={() => onAttendeeBreakdownChange(tierIdx, tier.count + 1)}
+                                disabled={atMax}
+                                sx={{
+                                  width: 32,
+                                  height: 32,
+                                  backgroundColor: alpha('#fff', 0.1),
+                                  '&:hover': {
+                                    backgroundColor: alpha('#fff', 0.2),
+                                  },
+                                }}
+                              >
+                                <AddIcon fontSize="small" />
+                              </IconButton>
                             </Box>
-                          );
-                        })}
-                      </Stack>
+                          </Box>
+                        );
+                      })}
+                    </Stack>
 
-                      {/* Breakdown total */}
-                      <Divider
-                        sx={{ my: 1.5, borderColor: alpha("#fff", 0.1) }}
-                      />
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                          Total:{" "}
-                          {attendeeBreakdown.reduce(
-                            (sum, t) => sum + t.count,
-                            0,
-                          )}{" "}
-                          persons
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          sx={{ fontWeight: 700, color: packageColor }}
-                        >
-                          ₱
-                          {attendeeBreakdown
-                            .reduce((sum, t) => sum + t.subtotal, 0)
-                            .toLocaleString()}
-                        </Typography>
-                      </Box>
-                    </Collapse>
-
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        if (showBreakdown && onResetBreakdown) {
-                          onResetBreakdown();
-                        }
-                        setShowBreakdown(!showBreakdown);
-                      }}
+                    {/* Breakdown total */}
+                    <Divider sx={{ my: 1.5, borderColor: alpha('#fff', 0.1) }} />
+                    <Box
                       sx={{
-                        mt: 1,
-                        textTransform: "none",
-                        color: packageColor,
-                        fontWeight: 600,
-                        p: 0,
-                        minWidth: 0,
-                        "&:hover": { backgroundColor: "transparent" },
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
                       }}
                     >
-                      {showBreakdown
-                        ? "Use simple headcount"
-                        : "Have children or infants? Adjust by age group"}
-                    </Button>
-                  </>
-                )}
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        Total: {attendeeBreakdown.reduce((sum, t) => sum + t.count, 0)} persons
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontWeight: 700, color: packageColor }}>
+                        ₱
+                        {attendeeBreakdown.reduce((sum, t) => sum + t.subtotal, 0).toLocaleString()}
+                      </Typography>
+                    </Box>
+                  </Collapse>
+
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      if (showBreakdown && onResetBreakdown) {
+                        onResetBreakdown();
+                      }
+                      setShowBreakdown(!showBreakdown);
+                    }}
+                    sx={{
+                      mt: 1,
+                      textTransform: 'none',
+                      color: packageColor,
+                      fontWeight: 600,
+                      p: 0,
+                      minWidth: 0,
+                      '&:hover': { backgroundColor: 'transparent' },
+                    }}
+                  >
+                    {showBreakdown
+                      ? 'Use simple headcount'
+                      : 'Have children or infants? Adjust by age group'}
+                  </Button>
+                </>
+              )}
             </Box>
           )}
 
           {/* Quantity selector for multiple selection (only when package allows multiple quantities) */}
-          {selectionType === "MULTIPLE" && isSelected && pkg.allow_multiple && (
+          {selectionType === 'MULTIPLE' && isSelected && pkg.allow_multiple && (
             <Box
               sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
                 gap: 2,
                 mb: 2,
               }}
@@ -737,16 +647,13 @@ const PackageCard: React.FC<PackageCardProps> = ({
                 }}
                 disabled={selectedQuantity <= 1}
                 sx={{
-                  backgroundColor: alpha("#fff", 0.1),
-                  "&:hover": { backgroundColor: alpha("#fff", 0.2) },
+                  backgroundColor: alpha('#fff', 0.1),
+                  '&:hover': { backgroundColor: alpha('#fff', 0.2) },
                 }}
               >
                 <RemoveIcon />
               </IconButton>
-              <Typography
-                variant="h6"
-                sx={{ minWidth: 40, textAlign: "center", fontWeight: 600 }}
-              >
+              <Typography variant="h6" sx={{ minWidth: 40, textAlign: 'center', fontWeight: 600 }}>
                 {selectedQuantity}
               </Typography>
               <IconButton
@@ -755,23 +662,16 @@ const PackageCard: React.FC<PackageCardProps> = ({
                   e.stopPropagation();
                   handleQuantityChange(1);
                 }}
-                disabled={
-                  pkg.maximum_quantity
-                    ? selectedQuantity >= pkg.maximum_quantity
-                    : false
-                }
+                disabled={pkg.maximum_quantity ? selectedQuantity >= pkg.maximum_quantity : false}
                 sx={{
-                  backgroundColor: alpha("#fff", 0.1),
-                  "&:hover": { backgroundColor: alpha("#fff", 0.2) },
+                  backgroundColor: alpha('#fff', 0.1),
+                  '&:hover': { backgroundColor: alpha('#fff', 0.2) },
                 }}
               >
                 <AddIcon />
               </IconButton>
               {pkg.maximum_quantity && (
-                <Typography
-                  variant="caption"
-                  sx={{ color: alpha("#fff", 0.7) }}
-                >
+                <Typography variant="caption" sx={{ color: alpha('#fff', 0.7) }}>
                   max {pkg.maximum_quantity}
                 </Typography>
               )}
@@ -779,9 +679,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
           )}
 
           {/* Show additional details if they exist in the API response */}
-          {(pkg.minimum_hours ||
-            pkg.maximum_hours ||
-            pkg.advance_booking_days) && (
+          {(pkg.minimum_hours || pkg.maximum_hours || pkg.advance_booking_days) && (
             <Box>
               <Button
                 startIcon={expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
@@ -791,14 +689,14 @@ const PackageCard: React.FC<PackageCardProps> = ({
                 }}
                 size="small"
                 sx={{
-                  color: "text.secondary",
-                  backgroundColor: alpha("#fff", 0.1),
-                  "&:hover": {
-                    backgroundColor: alpha("#fff", 0.2),
+                  color: 'text.secondary',
+                  backgroundColor: alpha('#fff', 0.1),
+                  '&:hover': {
+                    backgroundColor: alpha('#fff', 0.2),
                   },
                 }}
               >
-                {expanded ? "Less Details" : "More Details"}
+                {expanded ? 'Less Details' : 'More Details'}
               </Button>
 
               <Collapse in={expanded}>
@@ -806,7 +704,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
                   sx={{
                     mt: 2,
                     pt: 2,
-                    borderTop: `1px solid ${alpha("#fff", 0.1)}`,
+                    borderTop: `1px solid ${alpha('#fff', 0.1)}`,
                   }}
                 >
                   <Stack spacing={1}>
@@ -822,8 +720,7 @@ const PackageCard: React.FC<PackageCardProps> = ({
                     )}
                     {pkg.advance_booking_days && (
                       <Typography variant="body2" color="text.secondary">
-                        • Advance booking required: {pkg.advance_booking_days}{" "}
-                        days
+                        • Advance booking required: {pkg.advance_booking_days} days
                       </Typography>
                     )}
                     {pkg.sku && (
@@ -871,8 +768,8 @@ const VenueHoursSelector: React.FC<VenueHoursSelectorProps> = ({
         // Get effective pricing (uses event-type config if available)
         const pricing = VenuesApi.getEffectivePricing(venue);
         const additionalHours = venueHours[venue.id] || 0;
-        const excessPrice = parseFloat(pricing.excessHourPrice || "0");
-        const includedHours = parseFloat(pricing.includedHours || "0");
+        const excessPrice = parseFloat(pricing.excessHourPrice || '0');
+        const includedHours = parseFloat(pricing.includedHours || '0');
         const totalCost = additionalHours * excessPrice;
 
         // Skip hours selector for all-day access venues
@@ -887,18 +784,10 @@ const VenueHoursSelector: React.FC<VenueHoursSelectorProps> = ({
                 border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
               }}
             >
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-              >
+              <Box display="flex" justifyContent="space-between" alignItems="center">
                 <Box>
                   <Typography fontWeight={600}>{venue.name}</Typography>
-                  <Typography
-                    variant="body2"
-                    color="success.main"
-                    fontWeight={500}
-                  >
+                  <Typography variant="body2" color="success.main" fontWeight={500}>
                     All-day access included
                   </Typography>
                 </Box>
@@ -914,11 +803,11 @@ const VenueHoursSelector: React.FC<VenueHoursSelectorProps> = ({
             sx={{
               p: 2,
               mb: 2,
-              backgroundColor: alpha("#fff", 0.08),
-              border: `1px solid ${alpha("#fff", 0.1)}`,
-              transition: "all 0.3s ease",
-              "&:hover": {
-                backgroundColor: alpha("#fff", 0.12),
+              backgroundColor: alpha('#fff', 0.08),
+              border: `1px solid ${alpha('#fff', 0.1)}`,
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: alpha('#fff', 0.12),
                 border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
               },
             }}
@@ -930,19 +819,14 @@ const VenueHoursSelector: React.FC<VenueHoursSelectorProps> = ({
               flexWrap="wrap"
               gap={2}
             >
-              <Box sx={{ flex: "1 1 200px" }}>
+              <Box sx={{ flex: '1 1 200px' }}>
                 <Typography fontWeight={600}>{venue.name}</Typography>
                 <Typography variant="body2" color="text.secondary">
                   Includes {includedHours} hours
                 </Typography>
               </Box>
 
-              <Box
-                display="flex"
-                alignItems="center"
-                gap={2}
-                sx={{ flex: "0 0 auto" }}
-              >
+              <Box display="flex" alignItems="center" gap={2} sx={{ flex: '0 0 auto' }}>
                 <Typography variant="body2" color="text.secondary">
                   Need more?
                 </Typography>
@@ -952,21 +836,19 @@ const VenueHoursSelector: React.FC<VenueHoursSelectorProps> = ({
                   alignItems="center"
                   gap={1}
                   sx={{
-                    backgroundColor: alpha("#fff", 0.05),
+                    backgroundColor: alpha('#fff', 0.05),
                     borderRadius: 2,
                     p: 0.5,
                   }}
                 >
                   <IconButton
                     size="small"
-                    onClick={() =>
-                      onHoursChange(venue.id, Math.max(0, additionalHours - 1))
-                    }
+                    onClick={() => onHoursChange(venue.id, Math.max(0, additionalHours - 1))}
                     disabled={additionalHours === 0}
                     sx={{
-                      backgroundColor: alpha("#fff", 0.1),
-                      "&:hover": { backgroundColor: alpha("#fff", 0.2) },
-                      "&.Mui-disabled": { opacity: 0.3 },
+                      backgroundColor: alpha('#fff', 0.1),
+                      '&:hover': { backgroundColor: alpha('#fff', 0.2) },
+                      '&.Mui-disabled': { opacity: 0.3 },
                     }}
                   >
                     <RemoveIcon fontSize="small" />
@@ -975,9 +857,9 @@ const VenueHoursSelector: React.FC<VenueHoursSelectorProps> = ({
                   <Typography
                     sx={{
                       minWidth: 50,
-                      textAlign: "center",
+                      textAlign: 'center',
                       fontWeight: 600,
-                      fontSize: "1.1rem",
+                      fontSize: '1.1rem',
                     }}
                   >
                     +{additionalHours}
@@ -985,17 +867,12 @@ const VenueHoursSelector: React.FC<VenueHoursSelectorProps> = ({
 
                   <IconButton
                     size="small"
-                    onClick={() =>
-                      onHoursChange(
-                        venue.id,
-                        Math.min(maxHours, additionalHours + 1),
-                      )
-                    }
+                    onClick={() => onHoursChange(venue.id, Math.min(maxHours, additionalHours + 1))}
                     disabled={additionalHours >= maxHours}
                     sx={{
-                      backgroundColor: alpha("#fff", 0.1),
-                      "&:hover": { backgroundColor: alpha("#fff", 0.2) },
-                      "&.Mui-disabled": { opacity: 0.3 },
+                      backgroundColor: alpha('#fff', 0.1),
+                      '&:hover': { backgroundColor: alpha('#fff', 0.2) },
+                      '&.Mui-disabled': { opacity: 0.3 },
                     }}
                   >
                     <AddIcon fontSize="small" />
@@ -1009,18 +886,14 @@ const VenueHoursSelector: React.FC<VenueHoursSelectorProps> = ({
                     size="small"
                     sx={{
                       fontWeight: 600,
-                      fontSize: "0.875rem",
+                      fontSize: '0.875rem',
                     }}
                   />
                 )}
               </Box>
             </Box>
 
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{ display: "block", mt: 1 }}
-            >
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
               Additional hours: ₱{excessPrice.toLocaleString()}/hr
             </Typography>
           </Paper>
@@ -1058,15 +931,10 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
   const guestCountFromQuestionnaire = useMemo(
     () =>
       extractGuestCount(
-        state.stepData?.questionnaire?.responses as
-          | Record<string, unknown>
-          | undefined,
+        state.stepData?.questionnaire?.responses as Record<string, unknown> | undefined,
         state.currentFlow?.enabled_steps,
       ),
-    [
-      state.stepData?.questionnaire?.responses,
-      state.currentFlow?.enabled_steps,
-    ],
+    [state.stepData?.questionnaire?.responses, state.currentFlow?.enabled_steps],
   );
 
   // Extract child pricing config from payment_info step
@@ -1094,8 +962,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
 
       return packages.filter((pkg) => {
         // If package has no event_days restriction, it's available for all durations
-        if (pkg.event_days === null || pkg.event_days === undefined)
-          return true;
+        if (pkg.event_days === null || pkg.event_days === undefined) return true;
         // Otherwise, exact match required
         return pkg.event_days === eventDays;
       });
@@ -1103,13 +970,9 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     [eventDays],
   );
 
-  const [availablePackages, setAvailablePackages] = useState<ProductOption[]>(
-    [],
-  );
+  const [availablePackages, setAvailablePackages] = useState<ProductOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [venueAdditionalHours, setVenueAdditionalHours] = useState<
-    Record<number, number>
-  >(() => {
+  const [venueAdditionalHours, setVenueAdditionalHours] = useState<Record<number, number>>(() => {
     // Initialize from stepData if available
     if (stepData.venue_additional_hours) {
       return Object.entries(stepData.venue_additional_hours).reduce(
@@ -1122,9 +985,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     }
     return {};
   });
-  const selectionType = (config?.selection_type || "SINGLE") as
-    | "SINGLE"
-    | "MULTIPLE";
+  const selectionType = (config?.selection_type || 'SINGLE') as 'SINGLE' | 'MULTIPLE';
   const minSelection = config?.min_selection || 1;
   const maxSelection = config?.max_selection || 1;
 
@@ -1134,9 +995,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
       stepData.venue_additional_hours &&
       Object.keys(stepData.venue_additional_hours).length > 0
     ) {
-      const hoursFromStep = Object.entries(
-        stepData.venue_additional_hours,
-      ).reduce(
+      const hoursFromStep = Object.entries(stepData.venue_additional_hours).reduce(
         (acc, [key, value]) => ({
           ...acc,
           [parseInt(key)]: value,
@@ -1145,10 +1004,10 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
       );
 
       // Only update if actually different to avoid infinite loops
-      const currentKeys = Object.keys(venueAdditionalHours).sort().join(",");
-      const newKeys = Object.keys(hoursFromStep).sort().join(",");
-      const currentVals = Object.values(venueAdditionalHours).sort().join(",");
-      const newVals = Object.values(hoursFromStep).sort().join(",");
+      const currentKeys = Object.keys(venueAdditionalHours).sort().join(',');
+      const newKeys = Object.keys(hoursFromStep).sort().join(',');
+      const currentVals = Object.values(venueAdditionalHours).sort().join(',');
+      const newVals = Object.values(hoursFromStep).sort().join(',');
 
       if (currentKeys !== newKeys || currentVals !== newVals) {
         setVenueAdditionalHours(hoursFromStep);
@@ -1172,7 +1031,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
 
   // Fetch venues for display and custom bundle calculation with event-type-specific pricing
   const { data: allVenues } = useQuery({
-    queryKey: ["rentable-venues", eventTypeId],
+    queryKey: ['rentable-venues', eventTypeId],
     queryFn: () => VenuesApi.getRentableVenues(eventTypeId),
     enabled: hasVenueSelection,
   });
@@ -1194,19 +1053,17 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     }));
 
     const subtotal = venuePricings.reduce(
-      (sum, { pricing }) => sum + parseFloat(pricing.basePrice || "0"),
+      (sum, { pricing }) => sum + parseFloat(pricing.basePrice || '0'),
       0,
     );
 
     // Check if any venue has all-day access
-    const hasAllDayAccess = venuePricings.some(
-      ({ pricing }) => pricing.isAllDayAccess,
-    );
+    const hasAllDayAccess = venuePricings.some(({ pricing }) => pricing.isAllDayAccess);
 
     const totalHours = hasAllDayAccess
       ? 24 // All-day access
       : venuePricings.reduce(
-          (sum, { pricing }) => sum + parseFloat(pricing.includedHours || "0"),
+          (sum, { pricing }) => sum + parseFloat(pricing.includedHours || '0'),
           0,
         );
 
@@ -1217,9 +1074,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
 
     // Get excess hour price from first venue (not applicable for all-day access)
     const firstVenuePricing = venuePricings[0]?.pricing;
-    const excessHourPrice = hasAllDayAccess
-      ? "0"
-      : firstVenuePricing?.excessHourPrice || "0";
+    const excessHourPrice = hasAllDayAccess ? '0' : firstVenuePricing?.excessHourPrice || '0';
 
     return {
       subtotal,
@@ -1229,7 +1084,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
       discountAmount,
       total,
       excessHourPrice,
-      venueNames: selectedVenues.map((v) => v.name).join(" + "),
+      venueNames: selectedVenues.map((v) => v.name).join(' + '),
       hasAllDayAccess,
     };
   }, [selectedVenues]);
@@ -1242,7 +1097,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     // Contextual naming based on single vs multi-venue
     const packageName = isMultiVenue
       ? `Custom: ${customBundlePricing.venueNames}`
-      : selectedVenues[0]?.name || "Your Venue";
+      : selectedVenues[0]?.name || 'Your Venue';
 
     // Build description based on features
     let packageDescription: string;
@@ -1261,12 +1116,12 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
       base_price: customBundlePricing.total.toString(),
       formatted_price: `₱${customBundlePricing.total.toLocaleString()}`,
       included_hours: customBundlePricing.hasAllDayAccess
-        ? "All day"
+        ? 'All day'
         : customBundlePricing.totalHours,
       excess_hour_price: customBundlePricing.excessHourPrice,
       has_excess_hours: !customBundlePricing.hasAllDayAccess,
-      pricing_model: "FIXED" as const,
-      type: "PACKAGE" as const,
+      pricing_model: 'FIXED' as const,
+      type: 'PACKAGE' as const,
       is_active: true,
       is_featured: false,
     } as ProductOption;
@@ -1288,8 +1143,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         }
         // Priority 2: Filter by configured categories
         else if (config?.available_categories?.length) {
-          const allPackages =
-            await ProductsApi.getPackages(effectiveEventTypeId);
+          const allPackages = await ProductsApi.getPackages(effectiveEventTypeId);
           const categoryIds = new Set(config.available_categories);
           packages = allPackages.filter((pkg) => categoryIds.has(pkg.category));
         }
@@ -1300,7 +1154,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
 
         setAvailablePackages(Array.isArray(packages) ? packages : []);
       } catch (err) {
-        if (import.meta.env.DEV) console.error("Failed to load packages:", err);
+        if (import.meta.env.DEV) console.error('Failed to load packages:', err);
         setAvailablePackages([]);
       } finally {
         setIsLoading(false);
@@ -1308,11 +1162,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     };
 
     loadPackages();
-  }, [
-    config?.available_packages_details,
-    config?.available_categories,
-    effectiveEventTypeId,
-  ]);
+  }, [config?.available_packages_details, config?.available_categories, effectiveEventTypeId]);
 
   // Helper to build complete data with venue hours (same pattern as AddonSelectionStep)
   const buildCompleteData = useCallback(
@@ -1329,10 +1179,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         selected_packages: packages,
       };
 
-      if (
-        selectedVenues.length > 0 &&
-        Object.keys(venueHoursForApi).length > 0
-      ) {
+      if (selectedVenues.length > 0 && Object.keys(venueHoursForApi).length > 0) {
         dataToSend.venue_additional_hours = venueHoursForApi;
       }
 
@@ -1358,14 +1205,13 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     [stepData.selected_packages],
   );
   const totalSelected = stepData.selected_packages?.length || 0;
-  const canSelectMore =
-    selectionType === "MULTIPLE" && totalSelected < maxSelection;
+  const canSelectMore = selectionType === 'MULTIPLE' && totalSelected < maxSelection;
 
   // Calculate subtotal for display (packages + excess hours)
   const subtotalPrice = useMemo(() => {
     const packagesPrice =
       stepData.selected_packages?.reduce((sum, pkg) => {
-        const price = parseFloat(pkg.price || "0");
+        const price = parseFloat(pkg.price || '0');
         return sum + price * (pkg.quantity || 1);
       }, 0) || 0;
 
@@ -1373,7 +1219,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     const excessHoursCost = selectedVenues.reduce((sum, venue) => {
       const additionalHours = venueAdditionalHours[venue.id] || 0;
       const effectivePricing = VenuesApi.getEffectivePricing(venue);
-      const excessPrice = parseFloat(effectivePricing.excessHourPrice || "0");
+      const excessPrice = parseFloat(effectivePricing.excessHourPrice || '0');
       return sum + additionalHours * excessPrice;
     }, 0);
 
@@ -1396,10 +1242,10 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
       actions.setPricingBreakdown({
         subtotal: subtotalPrice.toFixed(2),
         tax: tax.toFixed(2),
-        discount: "0.00", // Discount is calculated in PricingSummaryStep
+        discount: '0.00', // Discount is calculated in PricingSummaryStep
         formattedSubtotal: formatAmount(subtotalPrice),
         formattedTax: formatAmount(tax),
-        formattedDiscount: "",
+        formattedDiscount: '',
       });
     }
   }, [totalPrice, subtotalPrice, state.taxRate, formatAmount, actions]);
@@ -1412,17 +1258,14 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     (pkg: ProductOption) => {
       const isCurrentlySelected = selectedPackageIds.includes(pkg.id);
 
-      if (selectionType === "SINGLE") {
+      if (selectionType === 'SINGLE') {
         if (isCurrentlySelected) {
           onDataChange(buildCompleteData([]));
         } else {
           // For PER_PERSON packages, set initial quantity to guest count or minimum_guests
-          const isPerPerson = pkg.pricing_unit === "PER_PERSON";
+          const isPerPerson = pkg.pricing_unit === 'PER_PERSON';
           const initialQuantity = isPerPerson
-            ? Math.max(
-                pkg.minimum_guests || 1,
-                guestCountFromQuestionnaire || 0,
-              )
+            ? Math.max(pkg.minimum_guests || 1, guestCountFromQuestionnaire || 0)
             : 1;
 
           const selectedPkg: SelectedPackage = {
@@ -1441,26 +1284,21 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
           // Initialize attendee breakdown for PER_PERSON packages with child pricing
           if (isPerPerson && childPricingConfig.enabled) {
             const adultTier =
-              childPricingConfig.tiers.find(
-                (t) => t.discount_percentage === 0,
-              ) || childPricingConfig.tiers[0];
+              childPricingConfig.tiers.find((t) => t.discount_percentage === 0) ||
+              childPricingConfig.tiers[0];
             const basePriceNum = parseFloat(pkg.base_price);
-            selectedPkg.attendee_breakdown = childPricingConfig.tiers.map(
-              (tier) => ({
-                tier_label: tier.label,
-                min_age: tier.min_age,
-                max_age: tier.max_age,
-                count: tier === adultTier ? initialQuantity : 0,
-                discount_percentage: tier.discount_percentage,
-                unit_price: basePriceNum * (1 - tier.discount_percentage / 100),
-                subtotal:
-                  tier === adultTier
-                    ? basePriceNum *
-                      (1 - tier.discount_percentage / 100) *
-                      initialQuantity
-                    : 0,
-              }),
-            );
+            selectedPkg.attendee_breakdown = childPricingConfig.tiers.map((tier) => ({
+              tier_label: tier.label,
+              min_age: tier.min_age,
+              max_age: tier.max_age,
+              count: tier === adultTier ? initialQuantity : 0,
+              discount_percentage: tier.discount_percentage,
+              unit_price: basePriceNum * (1 - tier.discount_percentage / 100),
+              subtotal:
+                tier === adultTier
+                  ? basePriceNum * (1 - tier.discount_percentage / 100) * initialQuantity
+                  : 0,
+            }));
           }
 
           // For custom bundle, we'll need to create it on the backend later
@@ -1475,18 +1313,13 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         // MULTIPLE selection
         if (isCurrentlySelected) {
           const updatedPackages =
-            stepData.selected_packages?.filter(
-              (p) => p.product_id !== pkg.id,
-            ) || [];
+            stepData.selected_packages?.filter((p) => p.product_id !== pkg.id) || [];
           onDataChange(buildCompleteData(updatedPackages));
         } else if (canSelectMore) {
           // For PER_PERSON packages, set initial quantity to guest count or minimum_guests
-          const isPerPerson = pkg.pricing_unit === "PER_PERSON";
+          const isPerPerson = pkg.pricing_unit === 'PER_PERSON';
           const initialQuantity = isPerPerson
-            ? Math.max(
-                pkg.minimum_guests || 1,
-                guestCountFromQuestionnaire || 0,
-              )
+            ? Math.max(pkg.minimum_guests || 1, guestCountFromQuestionnaire || 0)
             : 1;
 
           const selectedPkg: SelectedPackage = {
@@ -1505,26 +1338,21 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
           // Initialize attendee breakdown for PER_PERSON packages with child pricing
           if (isPerPerson && childPricingConfig.enabled) {
             const adultTier =
-              childPricingConfig.tiers.find(
-                (t) => t.discount_percentage === 0,
-              ) || childPricingConfig.tiers[0];
+              childPricingConfig.tiers.find((t) => t.discount_percentage === 0) ||
+              childPricingConfig.tiers[0];
             const basePriceNum = parseFloat(pkg.base_price);
-            selectedPkg.attendee_breakdown = childPricingConfig.tiers.map(
-              (tier) => ({
-                tier_label: tier.label,
-                min_age: tier.min_age,
-                max_age: tier.max_age,
-                count: tier === adultTier ? initialQuantity : 0,
-                discount_percentage: tier.discount_percentage,
-                unit_price: basePriceNum * (1 - tier.discount_percentage / 100),
-                subtotal:
-                  tier === adultTier
-                    ? basePriceNum *
-                      (1 - tier.discount_percentage / 100) *
-                      initialQuantity
-                    : 0,
-              }),
-            );
+            selectedPkg.attendee_breakdown = childPricingConfig.tiers.map((tier) => ({
+              tier_label: tier.label,
+              min_age: tier.min_age,
+              max_age: tier.max_age,
+              count: tier === adultTier ? initialQuantity : 0,
+              discount_percentage: tier.discount_percentage,
+              unit_price: basePriceNum * (1 - tier.discount_percentage / 100),
+              subtotal:
+                tier === adultTier
+                  ? basePriceNum * (1 - tier.discount_percentage / 100) * initialQuantity
+                  : 0,
+            }));
           }
 
           if (pkg.id === -1) {
@@ -1532,10 +1360,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
             selectedPkg.venue_ids = selectedVenueIds;
           }
 
-          const updatedPackages = [
-            ...(stepData.selected_packages || []),
-            selectedPkg,
-          ];
+          const updatedPackages = [...(stepData.selected_packages || []), selectedPkg];
           onDataChange(buildCompleteData(updatedPackages));
         }
       }
@@ -1559,13 +1384,12 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
       if (quantity === 0) {
         // Allow removal (quantity 0 removes the package)
         const updatedPackages =
-          stepData.selected_packages?.filter((p) => p.product_id !== pkg.id) ||
-          [];
+          stepData.selected_packages?.filter((p) => p.product_id !== pkg.id) || [];
         onDataChange(buildCompleteData(updatedPackages));
       } else {
         // For PER_PERSON packages, enforce minimum_guests
         let clampedQuantity = quantity;
-        if (pkg.pricing_unit === "PER_PERSON") {
+        if (pkg.pricing_unit === 'PER_PERSON') {
           const minQty = pkg.minimum_guests || 1;
           clampedQuantity = Math.max(minQty, quantity);
         }
@@ -1576,28 +1400,21 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
 
             // If attendee_breakdown exists, keep it in sync with quantity
             if (p.attendee_breakdown && p.attendee_breakdown.length > 0) {
-              const currentTotal = p.attendee_breakdown.reduce(
-                (sum, t) => sum + t.count,
-                0,
-              );
+              const currentTotal = p.attendee_breakdown.reduce((sum, t) => sum + t.count, 0);
               const delta = clampedQuantity - currentTotal;
               if (delta !== 0) {
                 // Adjust the adult tier (0% discount) to absorb the delta
-                const adultIdx = p.attendee_breakdown.findIndex(
-                  (t) => t.discount_percentage === 0,
-                );
+                const adultIdx = p.attendee_breakdown.findIndex((t) => t.discount_percentage === 0);
                 const adjustIdx = adultIdx >= 0 ? adultIdx : 0;
-                const updatedBreakdown = p.attendee_breakdown.map(
-                  (tier, idx) => {
-                    if (idx !== adjustIdx) return tier;
-                    const newCount = Math.max(0, tier.count + delta);
-                    return {
-                      ...tier,
-                      count: newCount,
-                      subtotal: tier.unit_price * newCount,
-                    };
-                  },
-                );
+                const updatedBreakdown = p.attendee_breakdown.map((tier, idx) => {
+                  if (idx !== adjustIdx) return tier;
+                  const newCount = Math.max(0, tier.count + delta);
+                  return {
+                    ...tier,
+                    count: newCount,
+                    subtotal: tier.unit_price * newCount,
+                  };
+                });
                 return {
                   ...p,
                   quantity: clampedQuantity,
@@ -1632,10 +1449,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
           });
 
           // Calculate total across all tiers
-          const totalCount = updatedBreakdown.reduce(
-            (sum, t) => sum + t.count,
-            0,
-          );
+          const totalCount = updatedBreakdown.reduce((sum, t) => sum + t.count, 0);
 
           // Enforce minimum_guests on total
           const minGuests = p.minimum_guests || 1;
@@ -1671,9 +1485,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         stepData.selected_packages?.map((p) => {
           if (p.product_id !== packageId || !p.attendee_breakdown) return p;
 
-          const adultIdx = p.attendee_breakdown.findIndex(
-            (t) => t.discount_percentage === 0,
-          );
+          const adultIdx = p.attendee_breakdown.findIndex((t) => t.discount_percentage === 0);
           const resetIdx = adultIdx >= 0 ? adultIdx : 0;
 
           const resetBreakdown = p.attendee_breakdown.map((tier, idx) => ({
@@ -1735,7 +1547,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
 
   if (isLoading) {
     return (
-      <Box sx={{ textAlign: "center", py: 8 }}>
+      <Box sx={{ textAlign: 'center', py: 8 }}>
         <LinearProgress sx={{ mb: 2 }} />
         <Typography variant="body2" color="text.secondary">
           Loading available packages...
@@ -1748,7 +1560,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
     <Box>
       {/* Header */}
       <AnimatedElement animation="slideDown" delay={100}>
-        <Box sx={{ textAlign: "center", mb: 4 }}>
+        <Box sx={{ textAlign: 'center', mb: 4 }}>
           <Typography variant="h4" sx={{ fontWeight: 700, mb: 2 }}>
             Choose Your Package
           </Typography>
@@ -1756,15 +1568,15 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
           {/* Venue context */}
           {hasVenueSelection && selectedVenues.length > 0 && (
             <Typography variant="body1" color="text.secondary">
-              Based on your selection:{" "}
-              <strong>{selectedVenues.map((v) => v.name).join(", ")}</strong>
+              Based on your selection:{' '}
+              <strong>{selectedVenues.map((v) => v.name).join(', ')}</strong>
             </Typography>
           )}
         </Box>
       </AnimatedElement>
 
       {/* Selection info */}
-      {selectionType === "MULTIPLE" && (
+      {selectionType === 'MULTIPLE' && (
         <AnimatedElement animation="fadeIn" delay={200}>
           <Alert
             severity="info"
@@ -1774,8 +1586,8 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
               border: `1px solid ${alpha(theme.palette.info.main, 0.3)}`,
             }}
           >
-            You can select {minSelection} to {maxSelection} packages. Currently
-            selected: {totalSelected}
+            You can select {minSelection} to {maxSelection} packages. Currently selected:{' '}
+            {totalSelected}
           </Alert>
         </AnimatedElement>
       )}
@@ -1785,7 +1597,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         <>
           <AnimatedElement animation="fadeIn" delay={250}>
             <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-              {isMultiVenue ? "Create Custom Bundle" : "Book Your Venue"}
+              {isMultiVenue ? 'Create Custom Bundle' : 'Book Your Venue'}
             </Typography>
           </AnimatedElement>
 
@@ -1794,8 +1606,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
               pkg={customBundlePackage}
               isSelected={isCustomBundleSelected}
               selectedQuantity={
-                stepData.selected_packages?.find((p) => p.product_id === -1)
-                  ?.quantity || 0
+                stepData.selected_packages?.find((p) => p.product_id === -1)?.quantity || 0
               }
               onSelect={handlePackageSelect}
               onQuantityChange={handleQuantityChange}
@@ -1806,8 +1617,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
               isMultiVenue={isMultiVenue}
               childPricingEnabled={childPricingConfig.enabled}
               attendeeBreakdown={
-                stepData.selected_packages?.find((p) => p.product_id === -1)
-                  ?.attendee_breakdown
+                stepData.selected_packages?.find((p) => p.product_id === -1)?.attendee_breakdown
               }
               onAttendeeBreakdownChange={(tierIndex, newCount) =>
                 handleAttendeeBreakdownChange(-1, tierIndex, newCount)
@@ -1841,13 +1651,13 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
       {/* Pre-made Package Grid */}
       <Box
         sx={{
-          display: "grid",
+          display: 'grid',
           gridTemplateColumns: {
-            xs: "1fr",
+            xs: '1fr',
             md:
               Array.isArray(filteredPackages) && filteredPackages.length === 2
-                ? "repeat(2, 1fr)"
-                : "repeat(auto-fit, minmax(350px, 1fr))",
+                ? 'repeat(2, 1fr)'
+                : 'repeat(auto-fit, minmax(350px, 1fr))',
           },
           gap: 4,
           mb: 4,
@@ -1860,8 +1670,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
               pkg={pkg}
               isSelected={selectedPackageIds.includes(pkg.id)}
               selectedQuantity={
-                stepData.selected_packages?.find((p) => p.product_id === pkg.id)
-                  ?.quantity || 0
+                stepData.selected_packages?.find((p) => p.product_id === pkg.id)?.quantity || 0
               }
               onSelect={handlePackageSelect}
               onQuantityChange={handleQuantityChange}
@@ -1870,8 +1679,7 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
               animationDelay={400 + index * 150}
               childPricingEnabled={childPricingConfig.enabled}
               attendeeBreakdown={
-                stepData.selected_packages?.find((p) => p.product_id === pkg.id)
-                  ?.attendee_breakdown
+                stepData.selected_packages?.find((p) => p.product_id === pkg.id)?.attendee_breakdown
               }
               onAttendeeBreakdownChange={(tierIndex, newCount) =>
                 handleAttendeeBreakdownChange(pkg.id, tierIndex, newCount)
@@ -1882,10 +1690,10 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
         ) : (
           <Box
             sx={{
-              gridColumn: "1 / -1",
-              textAlign: "center",
+              gridColumn: '1 / -1',
+              textAlign: 'center',
               py: 8,
-              color: "text.secondary",
+              color: 'text.secondary',
             }}
           >
             <Typography variant="h6" gutterBottom>
@@ -1901,10 +1709,10 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
       </Box>
 
       {/* Validation Errors */}
-      {hasFieldError("selected_packages") && (
+      {hasFieldError('selected_packages') && (
         <AnimatedElement animation="slideUp" delay={0}>
           <Alert severity="error" sx={{ mt: 2 }}>
-            {getFieldError("selected_packages")}
+            {getFieldError('selected_packages')}
           </Alert>
         </AnimatedElement>
       )}
@@ -1923,34 +1731,26 @@ const CleanPackageSelectionStep: React.FC<CleanPackageSelectionStepProps> = ({
           >
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
               }}
             >
               <Box>
                 <Typography variant="h6">
-                  Total Selected: {totalSelected}{" "}
-                  {totalSelected === 1 ? "package" : "packages"}
+                  Total Selected: {totalSelected} {totalSelected === 1 ? 'package' : 'packages'}
                 </Typography>
                 {/* Per-person breakdown detail */}
                 {stepData.selected_packages?.map((pkg) =>
-                  pkg.pricing_unit === "PER_PERSON" ? (
-                    <Typography
-                      key={pkg.product_id}
-                      variant="body2"
-                      color="text.secondary"
-                    >
-                      {pkg.quantity} {pkg.quantity === 1 ? "person" : "persons"}{" "}
-                      × ₱{parseFloat(pkg.price || "0").toLocaleString()}/person
+                  pkg.pricing_unit === 'PER_PERSON' ? (
+                    <Typography key={pkg.product_id} variant="body2" color="text.secondary">
+                      {pkg.quantity} {pkg.quantity === 1 ? 'person' : 'persons'} × ₱
+                      {parseFloat(pkg.price || '0').toLocaleString()}/person
                     </Typography>
                   ) : null,
                 )}
               </Box>
-              <Typography
-                variant="h5"
-                sx={{ fontWeight: 700, color: theme.palette.success.main }}
-              >
+              <Typography variant="h5" sx={{ fontWeight: 700, color: theme.palette.success.main }}>
                 ₱{totalPrice.toLocaleString()}
               </Typography>
             </Box>

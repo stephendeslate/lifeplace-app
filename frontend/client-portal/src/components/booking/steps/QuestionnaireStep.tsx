@@ -29,13 +29,13 @@ import { CheckCircle, Warning } from '@mui/icons-material';
 import {
   useQuestionnaireFileUpload,
   useDynamicQuestionnaire,
-  useQuestionnaireSummary
+  useQuestionnaireSummary,
 } from '../../../hooks/booking/useQuestionnaire';
-import type { 
+import type {
   QuestionnaireStepConfiguration,
   QuestionnaireField,
   QuestionnaireDetailResponse,
-  StepValidationResult
+  StepValidationResult,
 } from '../../../types/booking';
 import QuestionnaireApi from '../../../apis/booking/questionnaire.api';
 
@@ -55,7 +55,9 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
   validationErrors,
   onValidate,
 }) => {
-  const [questionnairesWithFields, setQuestionnairesWithFields] = useState<Map<number, QuestionnaireDetailResponse>>(new Map());
+  const [questionnairesWithFields, setQuestionnairesWithFields] = useState<
+    Map<number, QuestionnaireDetailResponse>
+  >(new Map());
   const [loadingQuestionnaires, setLoadingQuestionnaires] = useState<Set<number>>(new Set());
   const [loadErrors, setLoadErrors] = useState<Map<number, string>>(new Map());
 
@@ -63,114 +65,132 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
   const responses = stepData;
 
   // File upload hook
-  const {
-    uploadFiles,
-    getUploadedFiles,
-    isUploading,
-    getUploadError,
-  } = useQuestionnaireFileUpload();
+  const { uploadFiles, getUploadedFiles, isUploading, getUploadError } =
+    useQuestionnaireFileUpload();
 
   // Update response helper that directly calls parent's onDataChange
-  const updateResponse = useCallback((fieldId: string | number, value: unknown) => {
-    const updatedData = {
-      ...responses,
-      [`field_${fieldId}`]: value,
-    };
-    onDataChange(updatedData);
+  const updateResponse = useCallback(
+    (fieldId: string | number, value: unknown) => {
+      const updatedData = {
+        ...responses,
+        [`field_${fieldId}`]: value,
+      };
+      onDataChange(updatedData);
 
-    // Auto-validate if onValidate is provided
-    if (onValidate) {
-      onValidate(updatedData).catch(error => {
-        if (import.meta.env.DEV) console.warn('Validation failed:', error);
-      });
-    }
-  }, [responses, onDataChange, onValidate]);
+      // Auto-validate if onValidate is provided
+      if (onValidate) {
+        onValidate(updatedData).catch((error) => {
+          if (import.meta.env.DEV) console.warn('Validation failed:', error);
+        });
+      }
+    },
+    [responses, onDataChange, onValidate],
+  );
 
   // Get response for a specific field
-  const getResponse = useCallback((fieldKey: string) => {
-    return responses[fieldKey];
-  }, [responses]);
+  const getResponse = useCallback(
+    (fieldKey: string) => {
+      return responses[fieldKey];
+    },
+    [responses],
+  );
 
   // Check if a field has a response
-  const hasResponse = useCallback((fieldKey: string) => {
-    const response = responses[fieldKey];
-    return response !== undefined && response !== null && response !== '';
-  }, [responses]);
+  const hasResponse = useCallback(
+    (fieldKey: string) => {
+      const response = responses[fieldKey];
+      return response !== undefined && response !== null && response !== '';
+    },
+    [responses],
+  );
 
   // Get validation error for a field
-  const getFieldError = useCallback((fieldKey: string) => {
-    return validationErrors[fieldKey]?.[0];
-  }, [validationErrors]);
+  const getFieldError = useCallback(
+    (fieldKey: string) => {
+      return validationErrors[fieldKey]?.[0];
+    },
+    [validationErrors],
+  );
 
   // Check if a field has validation errors
-  const hasFieldError = useCallback((fieldKey: string) => {
-    return !!(validationErrors[fieldKey]?.length > 0);
-  }, [validationErrors]);
+  const hasFieldError = useCallback(
+    (fieldKey: string) => {
+      return !!(validationErrors[fieldKey]?.length > 0);
+    },
+    [validationErrors],
+  );
 
   // Calculate completion percentage
   const completionPercentage = useMemo(() => {
     const allFields: QuestionnaireField[] = [];
-    questionnairesWithFields.forEach(q => {
+    questionnairesWithFields.forEach((q) => {
       allFields.push(...q.fields);
     });
-    
+
     if (allFields.length === 0) return 0;
-    
-    const responseCount = allFields.filter(field => 
-      hasResponse(`field_${field.id}`)
-    ).length;
-    
+
+    const responseCount = allFields.filter((field) => hasResponse(`field_${field.id}`)).length;
+
     return Math.round((responseCount / allFields.length) * 100);
   }, [questionnairesWithFields, hasResponse]);
 
   // Get required fields that are missing responses
   const missingRequiredFields = useMemo(() => {
     const allFields: QuestionnaireField[] = [];
-    questionnairesWithFields.forEach(q => {
+    questionnairesWithFields.forEach((q) => {
       allFields.push(...q.fields);
     });
-    
-    return allFields.filter(field => 
-      field.required && !hasResponse(`field_${field.id}`)
-    );
+
+    return allFields.filter((field) => field.required && !hasResponse(`field_${field.id}`));
   }, [questionnairesWithFields, hasResponse]);
 
   // Load questionnaire details
-  const loadQuestionnaireDetails = useCallback(async (questionnaireId: number) => {
-    if (questionnairesWithFields.has(questionnaireId) || loadingQuestionnaires.has(questionnaireId)) {
-      return;
-    }
-
-    setLoadingQuestionnaires(prev => new Set([...prev, questionnaireId]));
-    setLoadErrors(prev => {
-      const newErrors = new Map(prev);
-      newErrors.delete(questionnaireId);
-      return newErrors;
-    });
-
-    try {
-      // ✅ FIX: Use the API directly instead of the hook
-      const questionnaire = await QuestionnaireApi.getQuestionnaireDetail(questionnaireId);
-      
-      if (questionnaire) {
-        setQuestionnairesWithFields(prev => new Map([...prev, [questionnaireId, questionnaire]]));
+  const loadQuestionnaireDetails = useCallback(
+    async (questionnaireId: number) => {
+      if (
+        questionnairesWithFields.has(questionnaireId) ||
+        loadingQuestionnaires.has(questionnaireId)
+      ) {
+        return;
       }
-    } catch (error) {
-      if (import.meta.env.DEV) console.error(`Failed to load questionnaire ${questionnaireId}:`, error);
-      setLoadErrors(prev => new Map([...prev, [questionnaireId, 'Failed to load questionnaire']]));
-    } finally {
-      setLoadingQuestionnaires(prev => {
-        const newLoading = new Set(prev);
-        newLoading.delete(questionnaireId);
-        return newLoading;
+
+      setLoadingQuestionnaires((prev) => new Set([...prev, questionnaireId]));
+      setLoadErrors((prev) => {
+        const newErrors = new Map(prev);
+        newErrors.delete(questionnaireId);
+        return newErrors;
       });
-    }
-  }, [questionnairesWithFields, loadingQuestionnaires]);
+
+      try {
+        // ✅ FIX: Use the API directly instead of the hook
+        const questionnaire = await QuestionnaireApi.getQuestionnaireDetail(questionnaireId);
+
+        if (questionnaire) {
+          setQuestionnairesWithFields(
+            (prev) => new Map([...prev, [questionnaireId, questionnaire]]),
+          );
+        }
+      } catch (error) {
+        if (import.meta.env.DEV)
+          console.error(`Failed to load questionnaire ${questionnaireId}:`, error);
+        setLoadErrors(
+          (prev) => new Map([...prev, [questionnaireId, 'Failed to load questionnaire']]),
+        );
+      } finally {
+        setLoadingQuestionnaires((prev) => {
+          const newLoading = new Set(prev);
+          newLoading.delete(questionnaireId);
+          return newLoading;
+        });
+      }
+    },
+    [questionnairesWithFields, loadingQuestionnaires],
+  );
 
   // Load all questionnaires on mount
   React.useEffect(() => {
     if (config?.questionnaire_items) {
-      config.questionnaire_items.forEach(item => {
+      config.questionnaire_items.forEach((item) => {
         loadQuestionnaireDetails(item.questionnaire);
       });
     }
@@ -178,17 +198,13 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
 
   // Dynamic questionnaire logic
   const allQuestionnaires = Array.from(questionnairesWithFields.values());
-  const {
-    visibleQuestionnaires,
-    getVisibleFields,
-    shouldShowQuestionnaire,
-    shouldShowField,
-  } = useDynamicQuestionnaire(allQuestionnaires, responses);
+  const { visibleQuestionnaires, getVisibleFields, shouldShowQuestionnaire, shouldShowField } =
+    useDynamicQuestionnaire(allQuestionnaires, responses);
 
   // Summary for validation
   const { hasAnyResponses, responseCount } = useQuestionnaireSummary(
     visibleQuestionnaires,
-    responses
+    responses,
   );
 
   const handleFieldChange = async (fieldId: string, value: unknown) => {
@@ -209,7 +225,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
 
   const findQuestionnaireForField = (fieldId: number): number | null => {
     for (const [qId, questionnaire] of questionnairesWithFields) {
-      if (questionnaire.fields.some(field => field.id === fieldId)) {
+      if (questionnaire.fields.some((field) => field.id === fieldId)) {
         return qId;
       }
     }
@@ -310,7 +326,9 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
             <DatePicker
               label={field.name}
               value={value ? new Date(value as string | number | Date) : null}
-              onChange={(date) => handleFieldChange(fieldKey, date?.toISOString().split('T')[0] || '')}
+              onChange={(date) =>
+                handleFieldChange(fieldKey, date?.toISOString().split('T')[0] || '')
+              }
               slotProps={{
                 textField: {
                   fullWidth: true,
@@ -329,7 +347,9 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
             <TimePicker
               label={field.name}
               value={value ? new Date(`2000-01-01T${value}`) : null}
-              onChange={(time) => handleFieldChange(fieldKey, time?.toTimeString().split(' ')[0] || '')}
+              onChange={(time) =>
+                handleFieldChange(fieldKey, time?.toTimeString().split(' ')[0] || '')
+              }
               slotProps={{
                 textField: {
                   fullWidth: true,
@@ -416,17 +436,9 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
         return (
           <FormControl error={hasError}>
             <FormLabel component="legend">{field.name}</FormLabel>
-            <RadioGroup
-              value={value}
-              onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
-            >
+            <RadioGroup value={value} onChange={(e) => handleFieldChange(fieldKey, e.target.value)}>
               {field.options?.map((option) => (
-                <FormControlLabel
-                  key={option}
-                  value={option}
-                  control={<Radio />}
-                  label={option}
-                />
+                <FormControlLabel key={option} value={option} control={<Radio />} label={option} />
               ))}
             </RadioGroup>
             {(error || field.description || field.help_text) && (
@@ -437,11 +449,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
 
       case 'file':
         if (!config?.allow_file_uploads) {
-          return (
-            <Alert severity="info">
-              File uploads are not enabled for this questionnaire
-            </Alert>
-          );
+          return <Alert severity="info">File uploads are not enabled for this questionnaire</Alert>;
         }
 
         return (() => {
@@ -449,76 +457,85 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
           const uploading = isUploading(field.id);
           const uploadedFiles = getUploadedFiles(field.id);
 
-        return (
-          <FormControl fullWidth error={hasError}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              {field.name} {field.required && '*'}
-            </Typography>
-            
-            <TextField
-              type="file"
-              fullWidth
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                const files = Array.from(e.target.files || []) as File[];
-                if (files.length > 0) {
-                  // Validate file size
-                  const maxSizeMB = config?.max_file_size_mb || 10;
-                  const oversizedFiles = files.filter(file => file.size > maxSizeMB * 1024 * 1024);
-                  
-                  if (oversizedFiles.length > 0) {
-                    alert(`Some files are too large. Maximum file size is ${maxSizeMB}MB`);
-                    return;
-                  }
+          return (
+            <FormControl fullWidth error={hasError}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                {field.name} {field.required && '*'}
+              </Typography>
 
-                  // Validate file types
-                  if (config?.allowed_file_types && config.allowed_file_types.length > 0) {
-                    const invalidFiles = files.filter(file => {
-                      const fileExt = file.name.split('.').pop()?.toLowerCase();
-                      return !fileExt || !config.allowed_file_types.includes(fileExt);
-                    });
+              <TextField
+                type="file"
+                fullWidth
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const files = Array.from(e.target.files || []) as File[];
+                  if (files.length > 0) {
+                    // Validate file size
+                    const maxSizeMB = config?.max_file_size_mb || 10;
+                    const oversizedFiles = files.filter(
+                      (file) => file.size > maxSizeMB * 1024 * 1024,
+                    );
 
-                    if (invalidFiles.length > 0) {
-                      alert(`Some files have invalid types. Allowed types: ${config.allowed_file_types.join(', ')}`);
+                    if (oversizedFiles.length > 0) {
+                      alert(`Some files are too large. Maximum file size is ${maxSizeMB}MB`);
                       return;
                     }
+
+                    // Validate file types
+                    if (config?.allowed_file_types && config.allowed_file_types.length > 0) {
+                      const invalidFiles = files.filter((file) => {
+                        const fileExt = file.name.split('.').pop()?.toLowerCase();
+                        return !fileExt || !config.allowed_file_types.includes(fileExt);
+                      });
+
+                      if (invalidFiles.length > 0) {
+                        alert(
+                          `Some files have invalid types. Allowed types: ${config.allowed_file_types.join(', ')}`,
+                        );
+                        return;
+                      }
+                    }
+
+                    handleFileUpload(field.id, files);
                   }
-
-                  handleFileUpload(field.id, files);
+                }}
+                inputProps={{
+                  accept: config?.allowed_file_types?.map((ext) => `.${ext}`).join(','),
+                  multiple: true,
+                }}
+                error={hasError}
+                helperText={
+                  error ||
+                  field.description ||
+                  field.help_text ||
+                  `Max file size: ${config?.max_file_size_mb || 10}MB`
                 }
-              }}
-              inputProps={{
-                accept: config?.allowed_file_types?.map(ext => `.${ext}`).join(','),
-                multiple: true,
-              }}
-              error={hasError}
-              helperText={error || field.description || field.help_text || `Max file size: ${config?.max_file_size_mb || 10}MB`}
-              disabled={uploading}
-            />
+                disabled={uploading}
+              />
 
-            {uploading && (
-              <Box sx={{ mt: 1 }}>
-                <LinearProgress />
-                <Typography variant="caption" color="text.secondary">
-                  Uploading files...
-                </Typography>
-              </Box>
-            )}
+              {uploading && (
+                <Box sx={{ mt: 1 }}>
+                  <LinearProgress />
+                  <Typography variant="caption" color="text.secondary">
+                    Uploading files...
+                  </Typography>
+                </Box>
+              )}
 
-            {uploadError && (
-              <Alert severity="error" sx={{ mt: 1 }}>
-                {uploadError}
-              </Alert>
-            )}
+              {uploadError && (
+                <Alert severity="error" sx={{ mt: 1 }}>
+                  {uploadError}
+                </Alert>
+              )}
 
-            {uploadedFiles.length > 0 && (
-              <Box sx={{ mt: 1 }}>
-                <Typography variant="caption" color="text.secondary">
-                  Uploaded files: {uploadedFiles.length}
-                </Typography>
-              </Box>
-            )}
-          </FormControl>
-        );
+              {uploadedFiles.length > 0 && (
+                <Box sx={{ mt: 1 }}>
+                  <Typography variant="caption" color="text.secondary">
+                    Uploaded files: {uploadedFiles.length}
+                  </Typography>
+                </Box>
+              )}
+            </FormControl>
+          );
         })();
 
       case 'rating':
@@ -530,7 +547,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
               value={value}
               onChange={(e) => handleFieldChange(fieldKey, parseInt(e.target.value) || 0)}
               inputProps={{ min: 1, max: 5 }}
-              helperText={error || field.description || field.help_text || "Rate from 1 to 5"}
+              helperText={error || field.description || field.help_text || 'Rate from 1 to 5'}
               error={hasError}
             />
           </FormControl>
@@ -542,13 +559,13 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
 
         if (categories) {
           // Multi-category guest count (e.g., Adults, Children, Infants)
-          const guestValues = typeof value === 'string' && value
-            ? JSON.parse(value)
-            : {};
+          const guestValues = typeof value === 'string' && value ? JSON.parse(value) : {};
 
           return (
             <FormControl fullWidth error={hasError}>
-              <FormLabel component="legend">{field.name} {field.required && '*'}</FormLabel>
+              <FormLabel component="legend">
+                {field.name} {field.required && '*'}
+              </FormLabel>
               <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
                 {categories.map((category) => (
                   <Box key={category} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -597,11 +614,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
       }
 
       default:
-        return (
-          <Alert severity="warning">
-            Unsupported field type: {field.type}
-          </Alert>
-        );
+        return <Alert severity="warning">Unsupported field type: {field.type}</Alert>;
     }
   };
 
@@ -629,11 +642,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
   }
 
   if (!config || !config.questionnaire_items || config.questionnaire_items.length === 0) {
-    return (
-      <Alert severity="info">
-        No questionnaires configured for this step
-      </Alert>
-    );
+    return <Alert severity="info">No questionnaires configured for this step</Alert>;
   }
 
   return (
@@ -649,7 +658,9 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
       {/* Progress indicator */}
       {visibleQuestionnaires.length > 0 && (
         <Box sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+          <Box
+            sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}
+          >
             <Typography variant="body2" color="text.secondary">
               Completion Progress
             </Typography>
@@ -668,14 +679,16 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
         {config.questionnaire_items.map((questionnaireItem) => {
           const questionnaire = questionnairesWithFields.get(questionnaireItem.questionnaire);
-          
+
           if (!questionnaire) {
             const error = loadErrors.get(questionnaireItem.questionnaire);
             return (
-              <Paper key={questionnaireItem.id} elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
-                <Alert severity="warning">
-                  {error || 'Unable to load questionnaire'}
-                </Alert>
+              <Paper
+                key={questionnaireItem.id}
+                elevation={0}
+                sx={{ p: 3, border: 1, borderColor: 'divider' }}
+              >
+                <Alert severity="warning">{error || 'Unable to load questionnaire'}</Alert>
               </Paper>
             );
           }
@@ -686,13 +699,17 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
           }
 
           const visibleFields = getVisibleFields(questionnaire);
-          
+
           if (visibleFields.length === 0) {
             return null;
           }
 
           return (
-            <Paper key={questionnaireItem.id} elevation={0} sx={{ p: 3, border: 1, borderColor: 'divider' }}>
+            <Paper
+              key={questionnaireItem.id}
+              elevation={0}
+              sx={{ p: 3, border: 1, borderColor: 'divider' }}
+            >
               <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                 {questionnaire.name}
               </Typography>
@@ -701,9 +718,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
                 {visibleFields
                   .sort((a, b) => a.order - b.order)
                   .map((field) => (
-                    <Box key={field.id}>
-                      {renderField(field, questionnaire)}
-                    </Box>
+                    <Box key={field.id}>{renderField(field, questionnaire)}</Box>
                   ))}
               </Box>
             </Paper>
@@ -718,7 +733,7 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
             Missing Required Information:
           </Typography>
           <ul style={{ margin: 0, paddingLeft: 20 }}>
-            {missingRequiredFields.map(field => (
+            {missingRequiredFields.map((field) => (
               <li key={field.id}>{field.name}</li>
             ))}
           </ul>
@@ -736,8 +751,10 @@ export const QuestionnaireStep: React.FC<QuestionnaireStepProps> = ({
       {config.allow_file_uploads && (
         <Alert severity="info" sx={{ mt: 3 }}>
           <Typography variant="body2">
-            <strong>File Upload Information:</strong><br />
-            Maximum file size: {config.max_file_size_mb}MB<br />
+            <strong>File Upload Information:</strong>
+            <br />
+            Maximum file size: {config.max_file_size_mb}MB
+            <br />
             {config.allowed_file_types && config.allowed_file_types.length > 0 && (
               <>Allowed file types: {config.allowed_file_types.join(', ')}</>
             )}

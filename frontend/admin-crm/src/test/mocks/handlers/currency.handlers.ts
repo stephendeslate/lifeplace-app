@@ -1,63 +1,63 @@
-import { http, HttpResponse, delay } from "msw";
+import { http, HttpResponse, delay } from 'msw';
 import type {
   CurrencySettingsResponse,
   SupportedCurrency,
   CurrencyFormatSettings,
-} from "../../../apis/currency.api";
+} from '../../../apis/currency.api';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
 let userSettingsStore: CurrencySettingsResponse = {
   id: 1,
-  default_currency: "PHP",
-  enabled_currencies: ["PHP", "USD"],
-  display_format: "symbol",
+  default_currency: 'PHP',
+  enabled_currencies: ['PHP', 'USD'],
+  display_format: 'symbol',
   decimal_places: 2,
-  thousands_separator: ",",
-  decimal_separator: ".",
+  thousands_separator: ',',
+  decimal_separator: '.',
   auto_format: true,
   compact_format: false,
   user: 1,
-  created_at: "2024-01-01T00:00:00Z",
-  updated_at: "2024-06-15T10:00:00Z",
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-06-15T10:00:00Z',
 };
 
 let systemSettingsStore: CurrencySettingsResponse = {
   id: 1,
-  default_currency: "PHP",
-  enabled_currencies: ["PHP", "USD", "EUR", "SGD", "HKD"],
-  display_format: "symbol",
+  default_currency: 'PHP',
+  enabled_currencies: ['PHP', 'USD', 'EUR', 'SGD', 'HKD'],
+  display_format: 'symbol',
   decimal_places: 2,
-  thousands_separator: ",",
-  decimal_separator: ".",
+  thousands_separator: ',',
+  decimal_separator: '.',
   auto_format: true,
   compact_format: false,
-  created_at: "2024-01-01T00:00:00Z",
-  updated_at: "2024-06-15T10:00:00Z",
+  created_at: '2024-01-01T00:00:00Z',
+  updated_at: '2024-06-15T10:00:00Z',
 };
 
 const supportedCurrencies: SupportedCurrency[] = [
   {
-    code: "PHP",
-    name: "Philippine Peso",
-    symbol: "\u20B1",
-    locale: "en-PH",
+    code: 'PHP',
+    name: 'Philippine Peso',
+    symbol: '\u20B1',
+    locale: 'en-PH',
     decimals: 2,
   },
-  { code: "USD", name: "US Dollar", symbol: "$", locale: "en-US", decimals: 2 },
-  { code: "EUR", name: "Euro", symbol: "\u20AC", locale: "en-EU", decimals: 2 },
+  { code: 'USD', name: 'US Dollar', symbol: '$', locale: 'en-US', decimals: 2 },
+  { code: 'EUR', name: 'Euro', symbol: '\u20AC', locale: 'en-EU', decimals: 2 },
   {
-    code: "SGD",
-    name: "Singapore Dollar",
-    symbol: "S$",
-    locale: "en-SG",
+    code: 'SGD',
+    name: 'Singapore Dollar',
+    symbol: 'S$',
+    locale: 'en-SG',
     decimals: 2,
   },
   {
-    code: "HKD",
-    name: "Hong Kong Dollar",
-    symbol: "HK$",
-    locale: "en-HK",
+    code: 'HKD',
+    name: 'Hong Kong Dollar',
+    symbol: 'HK$',
+    locale: 'en-HK',
     decimals: 2,
   },
 ];
@@ -65,30 +65,30 @@ const supportedCurrencies: SupportedCurrency[] = [
 export const resetCurrencyStore = () => {
   userSettingsStore = {
     id: 1,
-    default_currency: "PHP",
-    enabled_currencies: ["PHP", "USD"],
-    display_format: "symbol",
+    default_currency: 'PHP',
+    enabled_currencies: ['PHP', 'USD'],
+    display_format: 'symbol',
     decimal_places: 2,
-    thousands_separator: ",",
-    decimal_separator: ".",
+    thousands_separator: ',',
+    decimal_separator: '.',
     auto_format: true,
     compact_format: false,
     user: 1,
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-06-15T10:00:00Z",
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-06-15T10:00:00Z',
   };
   systemSettingsStore = {
     id: 1,
-    default_currency: "PHP",
-    enabled_currencies: ["PHP", "USD", "EUR", "SGD", "HKD"],
-    display_format: "symbol",
+    default_currency: 'PHP',
+    enabled_currencies: ['PHP', 'USD', 'EUR', 'SGD', 'HKD'],
+    display_format: 'symbol',
     decimal_places: 2,
-    thousands_separator: ",",
-    decimal_separator: ".",
+    thousands_separator: ',',
+    decimal_separator: '.',
     auto_format: true,
     compact_format: false,
-    created_at: "2024-01-01T00:00:00Z",
-    updated_at: "2024-06-15T10:00:00Z",
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-06-15T10:00:00Z',
   };
 };
 
@@ -99,7 +99,7 @@ export const currencyHandlers = [
     return HttpResponse.json({
       success: true,
       data: userSettingsStore,
-      message: "Currency settings retrieved successfully.",
+      message: 'Currency settings retrieved successfully.',
     });
   }),
 
@@ -115,7 +115,7 @@ export const currencyHandlers = [
     return HttpResponse.json({
       success: true,
       data: userSettingsStore,
-      message: "Currency settings updated successfully.",
+      message: 'Currency settings updated successfully.',
     });
   }),
 
@@ -124,22 +124,22 @@ export const currencyHandlers = [
     await delay(50);
     userSettingsStore = {
       id: 1,
-      default_currency: "PHP",
-      enabled_currencies: ["PHP", "USD"],
-      display_format: "symbol",
+      default_currency: 'PHP',
+      enabled_currencies: ['PHP', 'USD'],
+      display_format: 'symbol',
       decimal_places: 2,
-      thousands_separator: ",",
-      decimal_separator: ".",
+      thousands_separator: ',',
+      decimal_separator: '.',
       auto_format: true,
       compact_format: false,
       user: 1,
-      created_at: "2024-01-01T00:00:00Z",
+      created_at: '2024-01-01T00:00:00Z',
       updated_at: new Date().toISOString(),
     };
     return HttpResponse.json({
       success: true,
       data: userSettingsStore,
-      message: "Currency settings reset to defaults.",
+      message: 'Currency settings reset to defaults.',
     });
   }),
 
@@ -149,7 +149,7 @@ export const currencyHandlers = [
     return HttpResponse.json({
       success: true,
       data: systemSettingsStore,
-      message: "System currency settings retrieved successfully.",
+      message: 'System currency settings retrieved successfully.',
     });
   }),
 
@@ -165,7 +165,7 @@ export const currencyHandlers = [
     return HttpResponse.json({
       success: true,
       data: systemSettingsStore,
-      message: "System currency settings updated successfully.",
+      message: 'System currency settings updated successfully.',
     });
   }),
 
@@ -175,7 +175,7 @@ export const currencyHandlers = [
     return HttpResponse.json({
       success: true,
       data: supportedCurrencies,
-      message: "Supported currencies retrieved successfully.",
+      message: 'Supported currencies retrieved successfully.',
     });
   }),
 
@@ -195,7 +195,7 @@ export const currencyHandlers = [
     return HttpResponse.json({
       success: true,
       data: formatSettings,
-      message: "Currency format settings retrieved successfully.",
+      message: 'Currency format settings retrieved successfully.',
     });
   }),
 ];

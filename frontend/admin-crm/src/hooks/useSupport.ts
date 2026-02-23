@@ -3,11 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useToastActions } from '../contexts/ToastContext';
 import { supportApi } from '../apis/support.api';
-import type {
-  SupportFilters,
-  SupportInquiryUpdate,
-  SupportReply,
-} from '../types/support.types';
+import type { SupportFilters, SupportInquiryUpdate, SupportReply } from '../types/support.types';
 
 export const useSupport = () => {
   const queryClient = useQueryClient();
@@ -55,9 +51,7 @@ export const useSupport = () => {
       onError: (error: unknown) => {
         const err = error as { response?: { data?: { detail?: string; error?: string } } };
         const message =
-          err.response?.data?.detail ||
-          err.response?.data?.error ||
-          'Failed to update inquiry.';
+          err.response?.data?.detail || err.response?.data?.error || 'Failed to update inquiry.';
         showError('Update Failed', message);
       },
     });
@@ -77,9 +71,7 @@ export const useSupport = () => {
       onError: (error: unknown) => {
         const err = error as { response?: { data?: { detail?: string; error?: string } } };
         const message =
-          err.response?.data?.detail ||
-          err.response?.data?.error ||
-          'Failed to send reply.';
+          err.response?.data?.detail || err.response?.data?.error || 'Failed to send reply.';
         showError('Reply Failed', message);
       },
     });

@@ -15,7 +15,7 @@ declare module '@mui/material/styles' {
     };
     animations: {
       fast: string;
-      normal: string; 
+      normal: string;
       slow: string;
       glass: string;
     };
@@ -54,7 +54,7 @@ declare module '@mui/material/styles' {
 
 export const createAdminTheme = (mode: 'light' | 'dark' = 'light'): Theme => {
   const glassMode = mode === 'dark' ? designTokens.glass.dark : designTokens.glass.light;
-  
+
   return createTheme({
     palette: {
       mode,
@@ -90,13 +90,17 @@ export const createAdminTheme = (mode: 'light' | 'dark' = 'light'): Theme => {
       },
       grey: designTokens.colors.neutral,
       background: {
-        default: mode === 'dark' ? designTokens.colors.neutral[950] : designTokens.colors.neutral[50],
+        default:
+          mode === 'dark' ? designTokens.colors.neutral[950] : designTokens.colors.neutral[50],
         paper: mode === 'dark' ? designTokens.colors.neutral[900] : '#ffffff',
       },
       text: {
-        primary: mode === 'dark' ? designTokens.colors.neutral[50] : designTokens.colors.neutral[800],
-        secondary: mode === 'dark' ? designTokens.colors.neutral[300] : designTokens.colors.neutral[600],
-        disabled: mode === 'dark' ? designTokens.colors.neutral[600] : designTokens.colors.neutral[400],
+        primary:
+          mode === 'dark' ? designTokens.colors.neutral[50] : designTokens.colors.neutral[800],
+        secondary:
+          mode === 'dark' ? designTokens.colors.neutral[300] : designTokens.colors.neutral[600],
+        disabled:
+          mode === 'dark' ? designTokens.colors.neutral[600] : designTokens.colors.neutral[400],
       },
     },
     typography: {

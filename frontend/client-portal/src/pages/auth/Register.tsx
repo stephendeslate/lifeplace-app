@@ -98,14 +98,12 @@ const Register: React.FC<RegisterProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleInputChange = (field: string) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleInputChange = (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
-    
+
     if (field.startsWith('profile.')) {
       const profileField = field.split('.')[1];
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         profile: {
           ...prev.profile,
@@ -113,7 +111,7 @@ const Register: React.FC<RegisterProps> = ({
         },
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         [field]: value,
       }));
@@ -121,7 +119,7 @@ const Register: React.FC<RegisterProps> = ({
 
     // Clear field error when user starts typing
     if (errors[field]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
         [field]: '',
       }));
@@ -158,12 +156,12 @@ const Register: React.FC<RegisterProps> = ({
       await register(cleanedData);
       showSuccess(
         'Welcome to LifePlace!',
-        'Your account has been created successfully. You are now logged in.'
+        'Your account has been created successfully. You are now logged in.',
       );
       onRegisterSuccess?.();
     } catch (error: unknown) {
       if (import.meta.env.DEV) console.error('Registration error:', error);
-      
+
       // Handle different types of errors
       const validationErrors = ErrorHandler.extractValidationErrors(error);
       const newErrors: Record<string, string> = {};
@@ -187,9 +185,9 @@ const Register: React.FC<RegisterProps> = ({
 
   const handleTogglePasswordVisibility = (field: 'password' | 'confirm_password') => () => {
     if (field === 'password') {
-      setShowPassword(prev => !prev);
+      setShowPassword((prev) => !prev);
     } else {
-      setShowConfirmPassword(prev => !prev);
+      setShowConfirmPassword((prev) => !prev);
     }
   };
 
@@ -325,7 +323,13 @@ const Register: React.FC<RegisterProps> = ({
                         InputProps={{
                           startAdornment: (
                             <InputAdornment position="start">
-                              <Person sx={{ color: errors.first_name ? theme.palette.error.main : tokens.color.base.neutral[600] }} />
+                              <Person
+                                sx={{
+                                  color: errors.first_name
+                                    ? theme.palette.error.main
+                                    : tokens.color.base.neutral[600],
+                                }}
+                              />
                             </InputAdornment>
                           ),
                         }}
@@ -359,7 +363,13 @@ const Register: React.FC<RegisterProps> = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Email sx={{ color: errors.email ? theme.palette.error.main : tokens.color.base.neutral[600] }} />
+                          <Email
+                            sx={{
+                              color: errors.email
+                                ? theme.palette.error.main
+                                : tokens.color.base.neutral[600],
+                            }}
+                          />
                         </InputAdornment>
                       ),
                     }}
@@ -379,7 +389,13 @@ const Register: React.FC<RegisterProps> = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Lock sx={{ color: errors.password ? theme.palette.error.main : tokens.color.base.neutral[600] }} />
+                          <Lock
+                            sx={{
+                              color: errors.password
+                                ? theme.palette.error.main
+                                : tokens.color.base.neutral[600],
+                            }}
+                          />
                         </InputAdornment>
                       ),
                       endAdornment: (
@@ -410,7 +426,13 @@ const Register: React.FC<RegisterProps> = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Lock sx={{ color: errors.confirm_password ? theme.palette.error.main : tokens.color.base.neutral[600] }} />
+                          <Lock
+                            sx={{
+                              color: errors.confirm_password
+                                ? theme.palette.error.main
+                                : tokens.color.base.neutral[600],
+                            }}
+                          />
                         </InputAdornment>
                       ),
                       endAdornment: (
@@ -454,7 +476,13 @@ const Register: React.FC<RegisterProps> = ({
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Phone sx={{ color: errors['profile.phone'] ? theme.palette.error.main : tokens.color.base.neutral[600] }} />
+                          <Phone
+                            sx={{
+                              color: errors['profile.phone']
+                                ? theme.palette.error.main
+                                : tokens.color.base.neutral[600],
+                            }}
+                          />
                         </InputAdornment>
                       ),
                     }}

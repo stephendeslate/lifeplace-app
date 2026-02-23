@@ -155,8 +155,8 @@ export const PartnerHero: React.FC = () => {
                     textAlign: 'center',
                   }}
                 >
-                  Discover the power of collaboration. Join our network of trusted partners
-                  and help create memorable experiences at LifePlace Alfonso.
+                  Discover the power of collaboration. Join our network of trusted partners and help
+                  create memorable experiences at LifePlace Alfonso.
                 </Typography>
               </Box>
             </AnimatedElement>

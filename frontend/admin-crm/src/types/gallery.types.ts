@@ -29,15 +29,15 @@ export interface GalleryPhotoFormData {
   sort_order: number;
 }
 
-export type CreateGalleryPhotoData = Omit<GalleryPhotoFormData, "image">;
+export type CreateGalleryPhotoData = Omit<GalleryPhotoFormData, 'image'>;
 export type UpdateGalleryPhotoData = Partial<CreateGalleryPhotoData>;
 
 // Category choices matching backend
 export const GALLERY_CATEGORIES = [
-  { value: "GENERAL", label: "General" },
-  { value: "WEDDING", label: "Wedding" },
-  { value: "TEAM_BUILDING", label: "Team Building" },
-  { value: "CAMPS_AND_RETREATS", label: "Camps & Retreats" },
-  { value: "WORKSHOP", label: "Workshop" },
-  { value: "ATMOSPHERE", label: "Atmosphere & Details" },
+  { value: 'GENERAL', label: 'General' },
+  { value: 'WEDDING', label: 'Wedding' },
+  { value: 'TEAM_BUILDING', label: 'Team Building' },
+  { value: 'CAMPS_AND_RETREATS', label: 'Camps & Retreats' },
+  { value: 'WORKSHOP', label: 'Workshop' },
+  { value: 'ATMOSPHERE', label: 'Atmosphere & Details' },
 ];

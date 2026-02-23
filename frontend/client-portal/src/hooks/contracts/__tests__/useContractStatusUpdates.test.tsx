@@ -70,9 +70,7 @@ const createTestQueryClient = () => {
 };
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
-  <QueryClientProvider client={createTestQueryClient()}>
-    {children}
-  </QueryClientProvider>
+  <QueryClientProvider client={createTestQueryClient()}>{children}</QueryClientProvider>
 );
 
 describe('useContractStatusUpdates', () => {
@@ -112,7 +110,7 @@ describe('useContractStatusUpdates', () => {
           enabled: true,
           onStatusChange: mockOnStatusChange,
         }),
-      { wrapper }
+      { wrapper },
     );
 
     await waitFor(() => {
@@ -128,7 +126,7 @@ describe('useContractStatusUpdates', () => {
           enabled: false,
           onStatusChange: mockOnStatusChange,
         }),
-      { wrapper }
+      { wrapper },
     );
 
     expect(mockContractsApi.getContractStatus).not.toHaveBeenCalled();
@@ -142,7 +140,7 @@ describe('useContractStatusUpdates', () => {
           enabled: true,
           onStatusChange: mockOnStatusChange,
         }),
-      { wrapper }
+      { wrapper },
     );
 
     expect(mockContractsApi.getContractStatus).not.toHaveBeenCalled();
@@ -157,7 +155,7 @@ describe('useContractStatusUpdates', () => {
           pollingInterval: 10000,
           onStatusChange: mockOnStatusChange,
         }),
-      { wrapper }
+      { wrapper },
     );
 
     await waitFor(() => {
@@ -178,7 +176,7 @@ describe('useContractStatusUpdates', () => {
           enabled: true,
           onStatusChange,
         }),
-      { wrapper }
+      { wrapper },
     );
 
     // Wait for initial load
@@ -230,7 +228,7 @@ describe('useContractStatusUpdates', () => {
           enabled: true,
           onStatusChange: mockOnStatusChange,
         }),
-      { wrapper }
+      { wrapper },
     );
 
     await waitFor(() => {
@@ -248,7 +246,7 @@ describe('useContractStatusUpdates', () => {
           enabled: true,
           onStatusChange: mockOnStatusChange,
         }),
-      { wrapper }
+      { wrapper },
     );
 
     // Initially loading
@@ -275,7 +273,7 @@ describe('useRealTimeContractUpdates', () => {
       useRealTimeContractUpdates({
         contractId: 'contract-1',
         onUpdate: mockOnUpdate,
-      })
+      }),
     );
 
     expect(typeof result.current.startListening).toBe('function');
@@ -289,7 +287,7 @@ describe('useRealTimeContractUpdates', () => {
       useRealTimeContractUpdates({
         contractId: 'contract-1',
         onUpdate: mockOnUpdate,
-      })
+      }),
     );
 
     // Start listening
@@ -310,7 +308,7 @@ describe('useRealTimeContractUpdates', () => {
       useRealTimeContractUpdates({
         contractId: 'contract-1',
         onUpdate: mockOnUpdate,
-      })
+      }),
     );
 
     result.current.simulateUpdate('signature_added', {
@@ -327,7 +325,7 @@ describe('useRealTimeContractUpdates', () => {
       useRealTimeContractUpdates({
         contractId: 'contract-1',
         onUpdate: mockOnUpdate,
-      })
+      }),
     );
 
     act(() => {
@@ -347,7 +345,7 @@ describe('useRealTimeContractUpdates', () => {
         contractId: 'contract-1',
         autoConnect: true,
         onUpdate: mockOnUpdate,
-      })
+      }),
     );
 
     expect(result.current.isConnected).toBe(true);
@@ -358,7 +356,7 @@ describe('useRealTimeContractUpdates', () => {
       useRealTimeContractUpdates({
         contractId: 'contract-1',
         onUpdate: mockOnUpdate,
-      })
+      }),
     );
 
     // Simulate connection error
@@ -408,7 +406,7 @@ describe('useGlobalSignatureEvents', () => {
       expect.objectContaining({
         type: 'signature_added',
         contractId: 'contract-1',
-      })
+      }),
     );
 
     // Remove event listener
@@ -446,11 +444,13 @@ describe('useGlobalSignatureEvents', () => {
     result.current.simulateSignatureEvent('contract-2', 'signature_added');
 
     expect(mockCallback).toHaveBeenCalledTimes(2);
-    expect(mockCallback).toHaveBeenNthCalledWith(1,
-      expect.objectContaining({ contractId: 'contract-1' })
+    expect(mockCallback).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ contractId: 'contract-1' }),
     );
-    expect(mockCallback).toHaveBeenNthCalledWith(2,
-      expect.objectContaining({ contractId: 'contract-2' })
+    expect(mockCallback).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ contractId: 'contract-2' }),
     );
   });
 

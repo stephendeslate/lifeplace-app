@@ -1,16 +1,8 @@
 // frontend/admin-crm/src/hooks/useNotifications.ts
 
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  keepPreviousData,
-} from "@tanstack/react-query";
-import {
-  notificationsApi,
-  type NotificationTypeQueryParams,
-} from "../apis/notifications.api";
-import { useToastActions } from "../contexts/ToastContext";
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { notificationsApi, type NotificationTypeQueryParams } from '../apis/notifications.api';
+import { useToastActions } from '../contexts/ToastContext';
 import type {
   NotificationFilters,
   NotificationBulkActionData,
@@ -18,7 +10,7 @@ import type {
   CreateNotificationTypeData,
   UpdateNotificationTypeData,
   UpdateNotificationPreferenceData,
-} from "../types/notifications.types";
+} from '../types/notifications.types';
 
 interface ApiError {
   response?: {
@@ -40,7 +32,7 @@ export const useNotifications = (filters?: NotificationFilters) => {
     error: notificationsError,
     refetch: refetchNotifications,
   } = useQuery({
-    queryKey: ["notifications", filters],
+    queryKey: ['notifications', filters],
     queryFn: () => notificationsApi.getNotifications(filters),
     staleTime: 15 * 1000, // 15 seconds
     refetchInterval: 15 * 1000, // Refetch every 15 seconds
@@ -49,7 +41,7 @@ export const useNotifications = (filters?: NotificationFilters) => {
 
   const useNotification = (id: number) => {
     return useQuery({
-      queryKey: ["notification", id],
+      queryKey: ['notification', id],
       queryFn: () => notificationsApi.getNotification(id),
       enabled: !!id,
     });
@@ -57,7 +49,7 @@ export const useNotifications = (filters?: NotificationFilters) => {
 
   const useUnreadNotifications = (limit?: number) => {
     return useQuery({
-      queryKey: ["notifications", "unread", limit],
+      queryKey: ['notifications', 'unread', limit],
       queryFn: () => notificationsApi.getUnread(limit),
       staleTime: 15 * 1000, // 15 seconds
       refetchInterval: 15 * 1000, // Refetch every 15 seconds
@@ -67,7 +59,7 @@ export const useNotifications = (filters?: NotificationFilters) => {
 
   const useRecentNotifications = (limit?: number) => {
     return useQuery({
-      queryKey: ["notifications", "recent", limit],
+      queryKey: ['notifications', 'recent', limit],
       queryFn: () => notificationsApi.getRecent(limit),
       staleTime: 60 * 1000, // 1 minute
     });
@@ -75,7 +67,7 @@ export const useNotifications = (filters?: NotificationFilters) => {
 
   const useNotificationCounts = () => {
     return useQuery({
-      queryKey: ["notification-counts"],
+      queryKey: ['notification-counts'],
       queryFn: notificationsApi.getCounts,
       staleTime: 15 * 1000, // 15 seconds
       refetchInterval: 15 * 1000, // Refetch every 15 seconds
@@ -85,7 +77,7 @@ export const useNotifications = (filters?: NotificationFilters) => {
 
   const useNotificationStats = (days?: number) => {
     return useQuery({
-      queryKey: ["notification-stats", days],
+      queryKey: ['notification-stats', days],
       queryFn: () => notificationsApi.getStats(days),
       staleTime: 5 * 60 * 1000, // 5 minutes
     });
@@ -95,91 +87,79 @@ export const useNotifications = (filters?: NotificationFilters) => {
   const markAsReadMutation = useMutation({
     mutationFn: (id: number) => notificationsApi.markAsRead(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notification-counts"] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
     },
     onError: (error: ApiError) => {
-      const message =
-        error.response?.data?.detail || "Failed to mark notification as read";
-      showError("Action Failed", message);
+      const message = error.response?.data?.detail || 'Failed to mark notification as read';
+      showError('Action Failed', message);
     },
   });
 
   const markAsUnreadMutation = useMutation({
     mutationFn: (id: number) => notificationsApi.markAsUnread(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notification-counts"] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
     },
     onError: (error: ApiError) => {
-      const message =
-        error.response?.data?.detail || "Failed to mark notification as unread";
-      showError("Action Failed", message);
+      const message = error.response?.data?.detail || 'Failed to mark notification as unread';
+      showError('Action Failed', message);
     },
   });
 
   const markAllAsReadMutation = useMutation({
     mutationFn: notificationsApi.markAllAsRead,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notification-counts"] });
-      showSuccess(
-        "All Read",
-        `Marked ${data.marked_read} notifications as read.`,
-      );
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
+      showSuccess('All Read', `Marked ${data.marked_read} notifications as read.`);
     },
     onError: (error: ApiError) => {
-      const message =
-        error.response?.data?.detail ||
-        "Failed to mark all notifications as read";
-      showError("Action Failed", message);
+      const message = error.response?.data?.detail || 'Failed to mark all notifications as read';
+      showError('Action Failed', message);
     },
   });
 
   const bulkActionMutation = useMutation({
-    mutationFn: (data: NotificationBulkActionData) =>
-      notificationsApi.bulkAction(data),
+    mutationFn: (data: NotificationBulkActionData) => notificationsApi.bulkAction(data),
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notification-counts"] });
-      showSuccess("Bulk Action Complete", result.message);
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
+      showSuccess('Bulk Action Complete', result.message);
     },
     onError: (error: ApiError) => {
-      const message =
-        error.response?.data?.detail || "Failed to perform bulk action";
-      showError("Bulk Action Failed", message);
+      const message = error.response?.data?.detail || 'Failed to perform bulk action';
+      showError('Bulk Action Failed', message);
     },
   });
 
   const deleteNotificationMutation = useMutation({
     mutationFn: (id: number) => notificationsApi.deleteNotification(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notification-counts"] });
-      showSuccess("Notification Deleted", "Notification has been deleted.");
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
+      showSuccess('Notification Deleted', 'Notification has been deleted.');
     },
     onError: (error: ApiError) => {
-      const message =
-        error.response?.data?.detail || "Failed to delete notification";
-      showError("Delete Failed", message);
+      const message = error.response?.data?.detail || 'Failed to delete notification';
+      showError('Delete Failed', message);
     },
   });
 
   const createNotificationMutation = useMutation({
-    mutationFn: (data: CreateNotificationData) =>
-      notificationsApi.createNotification(data),
+    mutationFn: (data: CreateNotificationData) => notificationsApi.createNotification(data),
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      queryClient.invalidateQueries({ queryKey: ["notification-counts"] });
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-counts'] });
       showSuccess(
-        "Notifications Sent",
+        'Notifications Sent',
         `Successfully sent ${result.created_count} of ${result.total_recipients} notifications.`,
       );
     },
     onError: (error: ApiError) => {
-      const message =
-        error.response?.data?.detail || "Failed to create notifications";
-      showError("Creation Failed", message);
+      const message = error.response?.data?.detail || 'Failed to create notifications';
+      showError('Creation Failed', message);
     },
   });
 
@@ -234,7 +214,7 @@ export const useNotificationTypes = (params?: NotificationTypeQueryParams) => {
     error: typesError,
     refetch: refetchTypes,
   } = useQuery({
-    queryKey: ["notification-types", params],
+    queryKey: ['notification-types', params],
     queryFn: () => notificationsApi.getNotificationTypes(params),
     staleTime: 10 * 60 * 1000, // 10 minutes
     placeholderData: keepPreviousData,
@@ -246,7 +226,7 @@ export const useNotificationTypes = (params?: NotificationTypeQueryParams) => {
 
   const useNotificationType = (id: number) => {
     return useQuery({
-      queryKey: ["notification-type", id],
+      queryKey: ['notification-type', id],
       queryFn: () => notificationsApi.getNotificationType(id),
       enabled: !!id,
       staleTime: 10 * 60 * 1000,
@@ -255,7 +235,7 @@ export const useNotificationTypes = (params?: NotificationTypeQueryParams) => {
 
   const useNotificationCategories = () => {
     return useQuery({
-      queryKey: ["notification-categories"],
+      queryKey: ['notification-categories'],
       queryFn: notificationsApi.getNotificationCategories,
       staleTime: 60 * 60 * 1000, // 1 hour
     });
@@ -263,7 +243,7 @@ export const useNotificationTypes = (params?: NotificationTypeQueryParams) => {
 
   const useNotificationPriorities = () => {
     return useQuery({
-      queryKey: ["notification-priorities"],
+      queryKey: ['notification-priorities'],
       queryFn: notificationsApi.getNotificationPriorities,
       staleTime: 60 * 60 * 1000, // 1 hour
     });
@@ -271,58 +251,40 @@ export const useNotificationTypes = (params?: NotificationTypeQueryParams) => {
 
   // Mutations
   const createTypeMutation = useMutation({
-    mutationFn: (data: CreateNotificationTypeData) =>
-      notificationsApi.createNotificationType(data),
+    mutationFn: (data: CreateNotificationTypeData) => notificationsApi.createNotificationType(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notification-types"] });
-      showSuccess(
-        "Type Created",
-        "Notification type has been created successfully.",
-      );
+      queryClient.invalidateQueries({ queryKey: ['notification-types'] });
+      showSuccess('Type Created', 'Notification type has been created successfully.');
     },
     onError: (error: ApiError) => {
-      const message =
-        error.response?.data?.detail || "Failed to create notification type";
-      showError("Creation Failed", message);
+      const message = error.response?.data?.detail || 'Failed to create notification type';
+      showError('Creation Failed', message);
     },
   });
 
   const updateTypeMutation = useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: number;
-      data: UpdateNotificationTypeData;
-    }) => notificationsApi.updateNotificationType(id, data),
+    mutationFn: ({ id, data }: { id: number; data: UpdateNotificationTypeData }) =>
+      notificationsApi.updateNotificationType(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notification-types"] });
-      queryClient.invalidateQueries({ queryKey: ["notification-type"] });
-      showSuccess(
-        "Type Updated",
-        "Notification type has been updated successfully.",
-      );
+      queryClient.invalidateQueries({ queryKey: ['notification-types'] });
+      queryClient.invalidateQueries({ queryKey: ['notification-type'] });
+      showSuccess('Type Updated', 'Notification type has been updated successfully.');
     },
     onError: (error: ApiError) => {
-      const message =
-        error.response?.data?.detail || "Failed to update notification type";
-      showError("Update Failed", message);
+      const message = error.response?.data?.detail || 'Failed to update notification type';
+      showError('Update Failed', message);
     },
   });
 
   const deleteTypeMutation = useMutation({
     mutationFn: (id: number) => notificationsApi.deleteNotificationType(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notification-types"] });
-      showSuccess(
-        "Type Deleted",
-        "Notification type has been deleted successfully.",
-      );
+      queryClient.invalidateQueries({ queryKey: ['notification-types'] });
+      showSuccess('Type Deleted', 'Notification type has been deleted successfully.');
     },
     onError: (error: ApiError) => {
-      const message =
-        error.response?.data?.detail || "Failed to delete notification type";
-      showError("Delete Failed", message);
+      const message = error.response?.data?.detail || 'Failed to delete notification type';
+      showError('Delete Failed', message);
     },
   });
 
@@ -365,14 +327,14 @@ export const useNotificationPreferences = () => {
     error: preferencesError,
     refetch: refetchPreferences,
   } = useQuery({
-    queryKey: ["notification-preferences", "my"],
+    queryKey: ['notification-preferences', 'my'],
     queryFn: notificationsApi.getMyPreferences,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const useDigestFrequencies = () => {
     return useQuery({
-      queryKey: ["digest-frequencies"],
+      queryKey: ['digest-frequencies'],
       queryFn: notificationsApi.getDigestFrequencies,
       staleTime: 60 * 60 * 1000, // 1 hour
     });
@@ -380,7 +342,7 @@ export const useNotificationPreferences = () => {
 
   const useAllPreferences = (userId?: number) => {
     return useQuery({
-      queryKey: ["notification-preferences", "all", userId],
+      queryKey: ['notification-preferences', 'all', userId],
       queryFn: () => notificationsApi.getAllPreferences(userId),
       enabled: !!userId, // Only fetch if userId is provided (admin only)
       staleTime: 5 * 60 * 1000,
@@ -392,29 +354,27 @@ export const useNotificationPreferences = () => {
     mutationFn: (data: UpdateNotificationPreferenceData) =>
       notificationsApi.updatePreferences(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
+      queryClient.invalidateQueries({ queryKey: ['notification-preferences'] });
       showSuccess(
-        "Preferences Updated",
-        "Your notification preferences have been updated successfully.",
+        'Preferences Updated',
+        'Your notification preferences have been updated successfully.',
       );
     },
     onError: (error: ApiError) => {
-      const message =
-        error.response?.data?.detail || "Failed to update preferences";
-      showError("Update Failed", message);
+      const message = error.response?.data?.detail || 'Failed to update preferences';
+      showError('Update Failed', message);
     },
   });
 
   const resetToDefaultsMutation = useMutation({
     mutationFn: notificationsApi.resetPreferencesToDefaults,
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["notification-preferences"] });
-      showSuccess("Preferences Reset", result.message);
+      queryClient.invalidateQueries({ queryKey: ['notification-preferences'] });
+      showSuccess('Preferences Reset', result.message);
     },
     onError: (error: ApiError) => {
-      const message =
-        error.response?.data?.detail || "Failed to reset preferences";
-      showError("Reset Failed", message);
+      const message = error.response?.data?.detail || 'Failed to reset preferences';
+      showError('Reset Failed', message);
     },
   });
 

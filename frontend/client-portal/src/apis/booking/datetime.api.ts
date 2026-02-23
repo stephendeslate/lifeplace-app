@@ -2,30 +2,26 @@
 
 import api from '../../utils/api';
 import { formatInTimeZone } from 'date-fns-tz';
-import type {
-  DateTimeStepData,
-  StepValidationResult,
-} from '../../types/booking';
+import type { DateTimeStepData, StepValidationResult } from '../../types/booking';
 
 /**
  * Date step API functions (date-only selection)
  */
 export class DateTimeApi {
-
   /**
    * Validate date step data
    */
   static async validateStepData(
     sessionId: string,
     stepId: number,
-    stepData: DateTimeStepData
+    stepData: DateTimeStepData,
   ): Promise<StepValidationResult> {
     const response = await api.post<StepValidationResult>(
       `/bookingflow/public/flows/session/${sessionId}/validate/`,
       {
         step_id: stepId,
-        step_data: stepData
-      }
+        step_data: stepData,
+      },
     );
     return response.data;
   }
@@ -37,16 +33,13 @@ export class DateTimeApi {
     sessionId: string,
     stepId: number,
     stepData: DateTimeStepData,
-    markCompleted: boolean = false
+    markCompleted: boolean = false,
   ): Promise<Record<string, unknown>> {
-    const response = await api.patch(
-      `/bookingflow/public/flows/session/${sessionId}/update/`,
-      {
-        step_id: stepId,
-        step_data: stepData,
-        mark_completed: markCompleted
-      }
-    );
+    const response = await api.patch(`/bookingflow/public/flows/session/${sessionId}/update/`, {
+      step_id: stepId,
+      step_data: stepData,
+      mark_completed: markCompleted,
+    });
     return response.data as Record<string, unknown>;
   }
 
@@ -55,18 +48,18 @@ export class DateTimeApi {
    */
   static async checkAvailability(
     sessionId: string,
-    stepData: DateTimeStepData
+    stepData: DateTimeStepData,
   ): Promise<{ available: boolean; message: string }> {
     try {
       const validation = await this.validateStepData(sessionId, 0, stepData);
       return {
         available: validation.isValid,
-        message: validation.isValid ? 'Available' : 'Please check your date selection'
+        message: validation.isValid ? 'Available' : 'Please check your date selection',
       };
     } catch {
       return {
         available: false,
-        message: 'Unable to check availability at this time'
+        message: 'Unable to check availability at this time',
       };
     }
   }
@@ -81,16 +74,17 @@ export class DateTimeApi {
       resource_requirements: Array.isArray(data.resource_requirements)
         ? data.resource_requirements
         : [],
-      staff_requirements: Array.isArray(data.staff_requirements)
-        ? data.staff_requirements
-        : [],
+      staff_requirements: Array.isArray(data.staff_requirements) ? data.staff_requirements : [],
     };
   }
 
   /**
    * Validate date data client-side
    */
-  static validateData(data: DateTimeStepData): { isValid: boolean; errors: Record<string, string[]> } {
+  static validateData(data: DateTimeStepData): {
+    isValid: boolean;
+    errors: Record<string, string[]>;
+  } {
     const errors: Record<string, string[]> = {};
 
     if (!data.start_date) {
@@ -107,7 +101,7 @@ export class DateTimeApi {
 
     return {
       isValid: Object.keys(errors).length === 0,
-      errors
+      errors,
     };
   }
 

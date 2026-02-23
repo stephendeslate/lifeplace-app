@@ -72,14 +72,15 @@ export const QuoteOptionsManager: React.FC<QuoteOptionsManagerProps> = ({
     const currency = currencySettings?.defaultCurrency || 'PHP';
     return formatCurrency(amount, currency, {
       showSymbol: currencySettings?.displayFormat !== 'code',
-      showCode: currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
+      showCode:
+        currencySettings?.displayFormat === 'code' || currencySettings?.displayFormat === 'both',
       minimumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
       maximumFractionDigits: currencySettings?.decimalPlaces ?? (currency === 'PHP' ? 0 : 2),
     });
   };
 
   const toggleOptionExpanded = (optionId: number) => {
-    setExpandedOptions(prev => {
+    setExpandedOptions((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(optionId)) {
         newSet.delete(optionId);
@@ -91,21 +92,21 @@ export const QuoteOptionsManager: React.FC<QuoteOptionsManagerProps> = ({
   };
 
   const handleAddItem = () => {
-    setNewOption(prev => ({
+    setNewOption((prev) => ({
       ...prev,
       items: [...prev.items, { description: '', quantity: '1', unit_price: '0', total: '0' }],
     }));
   };
 
   const handleRemoveItem = (index: number) => {
-    setNewOption(prev => ({
+    setNewOption((prev) => ({
       ...prev,
       items: prev.items.filter((_, i) => i !== index),
     }));
   };
 
   const handleItemChange = (index: number, field: string, value: string) => {
-    setNewOption(prev => {
+    setNewOption((prev) => {
       const items = [...prev.items];
       items[index] = { ...items[index], [field]: value };
 
@@ -126,7 +127,7 @@ export const QuoteOptionsManager: React.FC<QuoteOptionsManagerProps> = ({
       return;
     }
 
-    if (newOption.items.length === 0 || newOption.items.every(item => !item.description.trim())) {
+    if (newOption.items.length === 0 || newOption.items.every((item) => !item.description.trim())) {
       showToast({ type: 'error', title: 'Error', message: 'At least one item is required' });
       return;
     }
@@ -137,8 +138,8 @@ export const QuoteOptionsManager: React.FC<QuoteOptionsManagerProps> = ({
         name: newOption.name,
         description: newOption.description,
         items: newOption.items
-          .filter(item => item.description.trim())
-          .map(item => ({
+          .filter((item) => item.description.trim())
+          .map((item) => ({
             description: item.description,
             quantity: parseInt(item.quantity) || 1,
             unit_price: item.unit_price,
@@ -183,28 +184,30 @@ export const QuoteOptionsManager: React.FC<QuoteOptionsManagerProps> = ({
         )}
       </Box>
 
-      {(!options || options.length === 0) ? (
+      {!options || options.length === 0 ? (
         <Typography color="text.secondary" variant="body2">
-          No pricing options defined. {!readOnly && 'Add options to offer different pricing packages.'}
+          No pricing options defined.{' '}
+          {!readOnly && 'Add options to offer different pricing packages.'}
         </Typography>
       ) : (
         <Stack spacing={2}>
           {options.map((option: QuoteOption) => (
             <Card key={option.id} variant="outlined">
               <CardContent sx={{ pb: 1 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                  }}
+                >
                   <Box sx={{ flex: 1 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
                       <Typography variant="subtitle1" fontWeight="medium">
                         {option.name}
                       </Typography>
                       {option.is_selected && (
-                        <Chip
-                          label="Selected"
-                          size="small"
-                          color="success"
-                          icon={<CheckIcon />}
-                        />
+                        <Chip label="Selected" size="small" color="success" icon={<CheckIcon />} />
                       )}
                     </Box>
                     {option.description && (
@@ -224,7 +227,9 @@ export const QuoteOptionsManager: React.FC<QuoteOptionsManagerProps> = ({
                     <Button
                       size="small"
                       onClick={() => toggleOptionExpanded(option.id)}
-                      endIcon={expandedOptions.has(option.id) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                      endIcon={
+                        expandedOptions.has(option.id) ? <ExpandLessIcon /> : <ExpandMoreIcon />
+                      }
                       sx={{ mt: 1 }}
                     >
                       {option.items.length} items
@@ -286,7 +291,7 @@ export const QuoteOptionsManager: React.FC<QuoteOptionsManagerProps> = ({
             <TextField
               label="Option Name"
               value={newOption.name}
-              onChange={(e) => setNewOption(prev => ({ ...prev, name: e.target.value }))}
+              onChange={(e) => setNewOption((prev) => ({ ...prev, name: e.target.value }))}
               fullWidth
               required
               placeholder="e.g., Premium Package, Basic Package"
@@ -294,7 +299,7 @@ export const QuoteOptionsManager: React.FC<QuoteOptionsManagerProps> = ({
             <TextField
               label="Description"
               value={newOption.description}
-              onChange={(e) => setNewOption(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e) => setNewOption((prev) => ({ ...prev, description: e.target.value }))}
               fullWidth
               multiline
               rows={2}
@@ -302,7 +307,14 @@ export const QuoteOptionsManager: React.FC<QuoteOptionsManagerProps> = ({
             />
 
             <Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 2,
+                }}
+              >
                 <Typography variant="subtitle1">Items</Typography>
                 <Button startIcon={<AddIcon />} size="small" onClick={handleAddItem}>
                   Add Item

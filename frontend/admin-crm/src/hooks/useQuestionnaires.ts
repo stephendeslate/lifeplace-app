@@ -1,17 +1,9 @@
 // frontend/admin-crm/src/hooks/useQuestionnaires.ts
 
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  keepPreviousData,
-} from "@tanstack/react-query";
-import {
-  questionnairesApi,
-  type QuestionnaireQueryParams,
-} from "../apis/questionnaires.api";
-import { useToastActions } from "../contexts/ToastContext";
-import { extractErrorMessage } from "../utils/errorHandling";
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { questionnairesApi, type QuestionnaireQueryParams } from '../apis/questionnaires.api';
+import { useToastActions } from '../contexts/ToastContext';
+import { extractErrorMessage } from '../utils/errorHandling';
 import type {
   QuestionnaireFieldFilters,
   QuestionnaireResponseFilters,
@@ -22,7 +14,7 @@ import type {
   ReorderQuestionnairesData,
   ReorderFieldsData,
   SaveEventResponsesData,
-} from "../types/questionnaires.types";
+} from '../types/questionnaires.types';
 
 export const useQuestionnaires = (params?: QuestionnaireQueryParams) => {
   const queryClient = useQueryClient();
@@ -35,7 +27,7 @@ export const useQuestionnaires = (params?: QuestionnaireQueryParams) => {
     error: questionnairesError,
     refetch: refetchQuestionnaires,
   } = useQuery({
-    queryKey: ["questionnaires", params],
+    queryKey: ['questionnaires', params],
     queryFn: () => questionnairesApi.getQuestionnaires(params),
     staleTime: 5 * 60 * 1000, // 5 minutes
     placeholderData: keepPreviousData,
@@ -47,7 +39,7 @@ export const useQuestionnaires = (params?: QuestionnaireQueryParams) => {
 
   const useQuestionnaire = (id: number) => {
     return useQuery({
-      queryKey: ["questionnaire", id],
+      queryKey: ['questionnaire', id],
       queryFn: () => questionnairesApi.getQuestionnaire(id),
       enabled: !!id,
       staleTime: 2 * 60 * 1000, // 2 minutes
@@ -56,7 +48,7 @@ export const useQuestionnaires = (params?: QuestionnaireQueryParams) => {
 
   const useActiveQuestionnaires = () => {
     return useQuery({
-      queryKey: ["questionnaires", "active"],
+      queryKey: ['questionnaires', 'active'],
       queryFn: () => questionnairesApi.getActiveQuestionnaires(),
       staleTime: 5 * 60 * 1000,
     });
@@ -64,24 +56,22 @@ export const useQuestionnaires = (params?: QuestionnaireQueryParams) => {
 
   // Mutations
   const createQuestionnaireMutation = useMutation({
-    mutationFn: (data: CreateQuestionnaireData) =>
-      questionnairesApi.createQuestionnaire(data),
+    mutationFn: (data: CreateQuestionnaireData) => questionnairesApi.createQuestionnaire(data),
     onSuccess: (newQuestionnaire) => {
-      queryClient.invalidateQueries({ queryKey: ["questionnaires"] });
+      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
       showSuccess(
-        "Questionnaire Created",
+        'Questionnaire Created',
         `${newQuestionnaire.name} has been created successfully.`,
       );
     },
     onError: (error: unknown) => {
       const message =
-        error && typeof error === "object" && "response" in error
+        error && typeof error === 'object' && 'response' in error
           ? String(
-              (error as { response?: { data?: { detail?: string } } }).response
-                ?.data?.detail,
-            ) || "Failed to create questionnaire"
-          : "Failed to create questionnaire";
-      showError("Create Failed", message);
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to create questionnaire'
+          : 'Failed to create questionnaire';
+      showError('Create Failed', message);
     },
   });
 
@@ -89,67 +79,57 @@ export const useQuestionnaires = (params?: QuestionnaireQueryParams) => {
     mutationFn: ({ id, data }: { id: number; data: UpdateQuestionnaireData }) =>
       questionnairesApi.updateQuestionnaire(id, data),
     onSuccess: (updatedQuestionnaire) => {
-      queryClient.invalidateQueries({ queryKey: ["questionnaires"] });
+      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
       queryClient.invalidateQueries({
-        queryKey: ["questionnaire", updatedQuestionnaire.id],
+        queryKey: ['questionnaire', updatedQuestionnaire.id],
       });
       showSuccess(
-        "Questionnaire Updated",
+        'Questionnaire Updated',
         `${updatedQuestionnaire.name} has been updated successfully.`,
       );
     },
     onError: (error: unknown) => {
       const message =
-        error && typeof error === "object" && "response" in error
+        error && typeof error === 'object' && 'response' in error
           ? String(
-              (error as { response?: { data?: { detail?: string } } }).response
-                ?.data?.detail,
-            ) || "Failed to update questionnaire"
-          : "Failed to update questionnaire";
-      showError("Update Failed", message);
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to update questionnaire'
+          : 'Failed to update questionnaire';
+      showError('Update Failed', message);
     },
   });
 
   const deleteQuestionnaireMutation = useMutation({
     mutationFn: (id: number) => questionnairesApi.deleteQuestionnaire(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["questionnaires"] });
-      showSuccess(
-        "Questionnaire Deleted",
-        "Questionnaire has been deleted successfully.",
-      );
+      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
+      showSuccess('Questionnaire Deleted', 'Questionnaire has been deleted successfully.');
     },
     onError: (error: unknown) => {
       const message =
-        error && typeof error === "object" && "response" in error
+        error && typeof error === 'object' && 'response' in error
           ? String(
-              (error as { response?: { data?: { detail?: string } } }).response
-                ?.data?.detail,
-            ) || "Failed to delete questionnaire"
-          : "Failed to delete questionnaire";
-      showError("Delete Failed", message);
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to delete questionnaire'
+          : 'Failed to delete questionnaire';
+      showError('Delete Failed', message);
     },
   });
 
   const reorderQuestionnairesMutation = useMutation({
-    mutationFn: (data: ReorderQuestionnairesData) =>
-      questionnairesApi.reorderQuestionnaires(data),
+    mutationFn: (data: ReorderQuestionnairesData) => questionnairesApi.reorderQuestionnaires(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["questionnaires"] });
-      showSuccess(
-        "Order Updated",
-        "Questionnaires have been reordered successfully.",
-      );
+      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
+      showSuccess('Order Updated', 'Questionnaires have been reordered successfully.');
     },
     onError: (error: unknown) => {
       const message =
-        error && typeof error === "object" && "response" in error
+        error && typeof error === 'object' && 'response' in error
           ? String(
-              (error as { response?: { data?: { detail?: string } } }).response
-                ?.data?.detail,
-            ) || "Failed to reorder questionnaires"
-          : "Failed to reorder questionnaires";
-      showError("Reorder Failed", message);
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to reorder questionnaires'
+          : 'Failed to reorder questionnaires';
+      showError('Reorder Failed', message);
     },
   });
 
@@ -197,14 +177,14 @@ export const useQuestionnaireFields = (filters?: QuestionnaireFieldFilters) => {
     error: fieldsError,
     refetch: refetchFields,
   } = useQuery({
-    queryKey: ["questionnaire-fields", filters],
+    queryKey: ['questionnaire-fields', filters],
     queryFn: () => questionnairesApi.getFields(filters),
     staleTime: 5 * 60 * 1000,
   });
 
   const useQuestionnaireFields = (questionnaireId: number) => {
     return useQuery({
-      queryKey: ["questionnaire-fields", questionnaireId],
+      queryKey: ['questionnaire-fields', questionnaireId],
       queryFn: () => questionnairesApi.getQuestionnaireFields(questionnaireId),
       enabled: !!questionnaireId,
       staleTime: 5 * 60 * 1000,
@@ -213,7 +193,7 @@ export const useQuestionnaireFields = (filters?: QuestionnaireFieldFilters) => {
 
   const useField = (id: number) => {
     return useQuery({
-      queryKey: ["questionnaire-field", id],
+      queryKey: ['questionnaire-field', id],
       queryFn: () => questionnairesApi.getField(id),
       enabled: !!id,
     });
@@ -221,76 +201,62 @@ export const useQuestionnaireFields = (filters?: QuestionnaireFieldFilters) => {
 
   // Mutations
   const createFieldMutation = useMutation({
-    mutationFn: (data: CreateQuestionnaireFieldData) =>
-      questionnairesApi.createField(data),
+    mutationFn: (data: CreateQuestionnaireFieldData) => questionnairesApi.createField(data),
     onSuccess: (newField) => {
-      queryClient.invalidateQueries({ queryKey: ["questionnaire-fields"] });
-      queryClient.invalidateQueries({ queryKey: ["questionnaires"] });
-      showSuccess(
-        "Field Created",
-        `${newField.name} has been created successfully.`,
-      );
+      queryClient.invalidateQueries({ queryKey: ['questionnaire-fields'] });
+      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
+      showSuccess('Field Created', `${newField.name} has been created successfully.`);
     },
     onError: (error: unknown) => {
-      const message = extractErrorMessage(error, "Failed to create field");
-      showError("Create Failed", message);
+      const message = extractErrorMessage(error, 'Failed to create field');
+      showError('Create Failed', message);
     },
   });
 
   const updateFieldMutation = useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: number;
-      data: UpdateQuestionnaireFieldData;
-    }) => questionnairesApi.updateField(id, data),
+    mutationFn: ({ id, data }: { id: number; data: UpdateQuestionnaireFieldData }) =>
+      questionnairesApi.updateField(id, data),
     onSuccess: (updatedField) => {
-      queryClient.invalidateQueries({ queryKey: ["questionnaire-fields"] });
+      queryClient.invalidateQueries({ queryKey: ['questionnaire-fields'] });
       queryClient.invalidateQueries({
-        queryKey: ["questionnaire-field", updatedField.id],
+        queryKey: ['questionnaire-field', updatedField.id],
       });
-      queryClient.invalidateQueries({ queryKey: ["questionnaires"] });
-      showSuccess(
-        "Field Updated",
-        `${updatedField.name} has been updated successfully.`,
-      );
+      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
+      showSuccess('Field Updated', `${updatedField.name} has been updated successfully.`);
     },
     onError: (error: unknown) => {
-      const message = extractErrorMessage(error, "Failed to update field");
-      showError("Update Failed", message);
+      const message = extractErrorMessage(error, 'Failed to update field');
+      showError('Update Failed', message);
     },
   });
 
   const deleteFieldMutation = useMutation({
     mutationFn: (id: number) => questionnairesApi.deleteField(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["questionnaire-fields"] });
-      queryClient.invalidateQueries({ queryKey: ["questionnaires"] });
-      showSuccess("Field Deleted", "Field has been deleted successfully.");
+      queryClient.invalidateQueries({ queryKey: ['questionnaire-fields'] });
+      queryClient.invalidateQueries({ queryKey: ['questionnaires'] });
+      showSuccess('Field Deleted', 'Field has been deleted successfully.');
     },
     onError: (error: unknown) => {
-      const message = extractErrorMessage(error, "Failed to delete field");
-      showError("Delete Failed", message);
+      const message = extractErrorMessage(error, 'Failed to delete field');
+      showError('Delete Failed', message);
     },
   });
 
   const reorderFieldsMutation = useMutation({
-    mutationFn: (data: ReorderFieldsData) =>
-      questionnairesApi.reorderFields(data),
+    mutationFn: (data: ReorderFieldsData) => questionnairesApi.reorderFields(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["questionnaire-fields"] });
-      showSuccess("Order Updated", "Fields have been reordered successfully.");
+      queryClient.invalidateQueries({ queryKey: ['questionnaire-fields'] });
+      showSuccess('Order Updated', 'Fields have been reordered successfully.');
     },
     onError: (error: unknown) => {
       const message =
-        error && typeof error === "object" && "response" in error
+        error && typeof error === 'object' && 'response' in error
           ? String(
-              (error as { response?: { data?: { detail?: string } } }).response
-                ?.data?.detail,
-            ) || "Failed to reorder fields"
-          : "Failed to reorder fields";
-      showError("Reorder Failed", message);
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to reorder fields'
+          : 'Failed to reorder fields';
+      showError('Reorder Failed', message);
     },
   });
 
@@ -325,9 +291,7 @@ export const useQuestionnaireFields = (filters?: QuestionnaireFieldFilters) => {
   };
 };
 
-export const useQuestionnaireResponses = (
-  filters?: QuestionnaireResponseFilters,
-) => {
+export const useQuestionnaireResponses = (filters?: QuestionnaireResponseFilters) => {
   const queryClient = useQueryClient();
   const { showSuccess, showError } = useToastActions();
 
@@ -338,14 +302,14 @@ export const useQuestionnaireResponses = (
     error: responsesError,
     refetch: refetchResponses,
   } = useQuery({
-    queryKey: ["questionnaire-responses", filters],
+    queryKey: ['questionnaire-responses', filters],
     queryFn: () => questionnairesApi.getResponses(filters),
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   const useResponse = (id: number) => {
     return useQuery({
-      queryKey: ["questionnaire-response", id],
+      queryKey: ['questionnaire-response', id],
       queryFn: () => questionnairesApi.getResponse(id),
       enabled: !!id,
     });
@@ -353,71 +317,55 @@ export const useQuestionnaireResponses = (
 
   // Mutations
   const createResponseMutation = useMutation({
-    mutationFn: (
-      data: Omit<(typeof responses)[0], "id" | "created_at" | "updated_at">,
-    ) => questionnairesApi.createResponse(data),
+    mutationFn: (data: Omit<(typeof responses)[0], 'id' | 'created_at' | 'updated_at'>) =>
+      questionnairesApi.createResponse(data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["questionnaire-responses"] });
-      showSuccess("Response Saved", "Response has been saved successfully.");
+      queryClient.invalidateQueries({ queryKey: ['questionnaire-responses'] });
+      showSuccess('Response Saved', 'Response has been saved successfully.');
     },
     onError: (error: unknown) => {
       const message =
-        error && typeof error === "object" && "response" in error
+        error && typeof error === 'object' && 'response' in error
           ? String(
-              (error as { response?: { data?: { detail?: string } } }).response
-                ?.data?.detail,
-            ) || "Failed to save response"
-          : "Failed to save response";
-      showError("Save Failed", message);
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to save response'
+          : 'Failed to save response';
+      showError('Save Failed', message);
     },
   });
 
   const updateResponseMutation = useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: number;
-      data: Partial<(typeof responses)[0]>;
-    }) => questionnairesApi.updateResponse(id, data),
+    mutationFn: ({ id, data }: { id: number; data: Partial<(typeof responses)[0]> }) =>
+      questionnairesApi.updateResponse(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["questionnaire-responses"] });
-      showSuccess(
-        "Response Updated",
-        "Response has been updated successfully.",
-      );
+      queryClient.invalidateQueries({ queryKey: ['questionnaire-responses'] });
+      showSuccess('Response Updated', 'Response has been updated successfully.');
     },
     onError: (error: unknown) => {
       const message =
-        error && typeof error === "object" && "response" in error
+        error && typeof error === 'object' && 'response' in error
           ? String(
-              (error as { response?: { data?: { detail?: string } } }).response
-                ?.data?.detail,
-            ) || "Failed to update response"
-          : "Failed to update response";
-      showError("Update Failed", message);
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to update response'
+          : 'Failed to update response';
+      showError('Update Failed', message);
     },
   });
 
   const saveEventResponsesMutation = useMutation({
-    mutationFn: (data: SaveEventResponsesData) =>
-      questionnairesApi.saveEventResponses(data),
+    mutationFn: (data: SaveEventResponsesData) => questionnairesApi.saveEventResponses(data),
     onSuccess: (responses) => {
-      queryClient.invalidateQueries({ queryKey: ["questionnaire-responses"] });
-      showSuccess(
-        "Responses Saved",
-        `${responses.length} responses have been saved successfully.`,
-      );
+      queryClient.invalidateQueries({ queryKey: ['questionnaire-responses'] });
+      showSuccess('Responses Saved', `${responses.length} responses have been saved successfully.`);
     },
     onError: (error: unknown) => {
       const message =
-        error && typeof error === "object" && "response" in error
+        error && typeof error === 'object' && 'response' in error
           ? String(
-              (error as { response?: { data?: { detail?: string } } }).response
-                ?.data?.detail,
-            ) || "Failed to save responses"
-          : "Failed to save responses";
-      showError("Save Failed", message);
+              (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+            ) || 'Failed to save responses'
+          : 'Failed to save responses';
+      showError('Save Failed', message);
     },
   });
 

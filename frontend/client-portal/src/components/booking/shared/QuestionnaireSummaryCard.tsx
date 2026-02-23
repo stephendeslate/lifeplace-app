@@ -11,11 +11,7 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from '@mui/material';
-import {
-  Quiz,
-  ExpandMore,
-  AttachFile,
-} from '@mui/icons-material';
+import { Quiz, ExpandMore, AttachFile } from '@mui/icons-material';
 import type { QuestionnaireResponseSummary } from '../../../types/booking';
 
 interface QuestionnaireSummaryCardProps {
@@ -97,9 +93,7 @@ export const QuestionnaireSummaryCard: React.FC<QuestionnaireSummaryCardProps> =
                   <Typography variant="body1" sx={{ fontWeight: 500 }}>
                     {formatAnswer(response.answer, response.fieldType)}
                   </Typography>
-                  {rIndex < questionnaire.responses.length - 1 && (
-                    <Divider sx={{ mt: 2 }} />
-                  )}
+                  {rIndex < questionnaire.responses.length - 1 && <Divider sx={{ mt: 2 }} />}
                 </Box>
               ))}
             </Box>

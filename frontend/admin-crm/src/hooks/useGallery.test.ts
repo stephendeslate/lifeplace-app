@@ -1,17 +1,17 @@
 // frontend/admin-crm/src/hooks/useGallery.test.ts
 
-import { describe, it, expect } from "vitest";
-import { renderHook, waitFor, act } from "@testing-library/react";
-import { useGalleryPhotos } from "./useGallery";
-import { createTestWrapper } from "../test/utils/render";
-import { server } from "../test/mocks/server";
-import { http, HttpResponse } from "msw";
+import { describe, it, expect } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
+import { useGalleryPhotos } from './useGallery';
+import { createTestWrapper } from '../test/utils/render';
+import { server } from '../test/mocks/server';
+import { http, HttpResponse } from 'msw';
 
-const BASE_URL = "http://localhost:8000/api";
+const BASE_URL = 'http://localhost:8000/api';
 
-describe("useGallery", () => {
-  describe("useGalleryPhotos", () => {
-    it("fetches gallery photos successfully", async () => {
+describe('useGallery', () => {
+  describe('useGalleryPhotos', () => {
+    it('fetches gallery photos successfully', async () => {
       const { result } = renderHook(() => useGalleryPhotos(), {
         wrapper: createTestWrapper(),
       });
@@ -30,10 +30,10 @@ describe("useGallery", () => {
       expect(result.current.pageCount).toBeGreaterThanOrEqual(1);
     });
 
-    it("handles API error gracefully", async () => {
+    it('handles API error gracefully', async () => {
       server.use(
         http.get(`${BASE_URL}/venues/gallery-photos/`, () => {
-          return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+          return HttpResponse.json({ detail: 'Server error' }, { status: 500 });
         }),
       );
 
@@ -49,7 +49,7 @@ describe("useGallery", () => {
       );
     });
 
-    it("creates a gallery photo", async () => {
+    it('creates a gallery photo', async () => {
       const { result } = renderHook(() => useGalleryPhotos(), {
         wrapper: createTestWrapper(),
       });
@@ -62,8 +62,8 @@ describe("useGallery", () => {
       );
 
       const formData = new FormData();
-      formData.append("title", "Test Photo");
-      formData.append("category", "GENERAL");
+      formData.append('title', 'Test Photo');
+      formData.append('category', 'GENERAL');
 
       act(() => {
         result.current.createGalleryPhoto(formData);
@@ -77,7 +77,7 @@ describe("useGallery", () => {
       );
     });
 
-    it("deletes a gallery photo", async () => {
+    it('deletes a gallery photo', async () => {
       const { result } = renderHook(() => useGalleryPhotos(), {
         wrapper: createTestWrapper(),
       });
@@ -104,7 +104,7 @@ describe("useGallery", () => {
       );
     });
 
-    it("bulk creates gallery photos", async () => {
+    it('bulk creates gallery photos', async () => {
       const { result } = renderHook(() => useGalleryPhotos(), {
         wrapper: createTestWrapper(),
       });
@@ -117,9 +117,9 @@ describe("useGallery", () => {
       );
 
       const formData = new FormData();
-      formData.append("category", "GENERAL");
-      formData.append("images", new Blob(["img1"], { type: "image/jpeg" }));
-      formData.append("images", new Blob(["img2"], { type: "image/jpeg" }));
+      formData.append('category', 'GENERAL');
+      formData.append('images', new Blob(['img1'], { type: 'image/jpeg' }));
+      formData.append('images', new Blob(['img2'], { type: 'image/jpeg' }));
 
       act(() => {
         result.current.bulkCreateGalleryPhotos(formData);
@@ -133,7 +133,7 @@ describe("useGallery", () => {
       );
     });
 
-    it("provides all expected action functions", async () => {
+    it('provides all expected action functions', async () => {
       const { result } = renderHook(() => useGalleryPhotos(), {
         wrapper: createTestWrapper(),
       });
@@ -145,11 +145,11 @@ describe("useGallery", () => {
         { timeout: 5000 },
       );
 
-      expect(result.current.createGalleryPhoto).toBeTypeOf("function");
-      expect(result.current.updateGalleryPhoto).toBeTypeOf("function");
-      expect(result.current.deleteGalleryPhoto).toBeTypeOf("function");
-      expect(result.current.bulkCreateGalleryPhotos).toBeTypeOf("function");
-      expect(result.current.refetchGalleryPhotos).toBeTypeOf("function");
+      expect(result.current.createGalleryPhoto).toBeTypeOf('function');
+      expect(result.current.updateGalleryPhoto).toBeTypeOf('function');
+      expect(result.current.deleteGalleryPhoto).toBeTypeOf('function');
+      expect(result.current.bulkCreateGalleryPhotos).toBeTypeOf('function');
+      expect(result.current.refetchGalleryPhotos).toBeTypeOf('function');
     });
   });
 });

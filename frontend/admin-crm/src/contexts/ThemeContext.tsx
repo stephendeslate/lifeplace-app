@@ -69,7 +69,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   useEffect(() => {
     if (typeof document !== 'undefined') {
       const root = document.documentElement;
-      
+
       // Set theme attribute and color scheme
       root.setAttribute('data-theme', effectiveMode);
       root.style.colorScheme = effectiveMode;
@@ -81,7 +81,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   }, []);
 
   const toggleMode = useCallback(() => {
-    setModeState(current => {
+    setModeState((current) => {
       if (current === 'light') return 'dark';
       if (current === 'dark') return 'system';
       return 'light';
@@ -96,11 +96,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     setMode,
   };
 
-  return (
-    <ThemeContext.Provider value={contextValue}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = (): ThemeContextType => {

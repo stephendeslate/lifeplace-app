@@ -6,22 +6,22 @@ Tests:
 - handle_event_status_change: Booking count updates and tier upgrades on event completion
 """
 
-import pytest
 from decimal import Decimal
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
+
+import pytest
 
 from core.domains.vip.models import (
-    VIPSettings,
-    VIPTier,
     ClientVIPStatus,
     VIPPointTransaction,
-    VIPTierHistory,
+    VIPSettings,
+    VIPTier,
 )
-
 
 # =============================================================================
 # Payment Completion Signal Tests
 # =============================================================================
+
 
 @pytest.mark.django_db
 class TestHandlePaymentCompleted:
@@ -34,23 +34,23 @@ class TestHandlePaymentCompleted:
         settings.is_program_enabled = True
         settings.earning_automatic_enabled = True
         settings.earning_points_enabled = True
-        settings.points_per_currency_spent = Decimal('1.00')
-        settings.points_currency_unit = Decimal('100')
+        settings.points_per_currency_spent = Decimal("1.00")
+        settings.points_currency_unit = Decimal("100")
         settings.save()
 
-        default_tier = VIPTier.objects.create(
-            name='Guest', level=0, is_default=True, is_active=True
-        )
+        default_tier = VIPTier.objects.create(name="Guest", level=0, is_default=True, is_active=True)
         partner_tier = VIPTier.objects.create(
-            name='Partner', level=1, is_active=True,
-            min_total_spent=Decimal('100000'),
+            name="Partner",
+            level=1,
+            is_active=True,
+            min_total_spent=Decimal("100000"),
             min_completed_bookings=2,
         )
 
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         return settings, default_tier, partner_tier, client
 
-    def _create_payment(self, event_factory, payment_factory, client, status='COMPLETED', amount=Decimal('50000.00')):
+    def _create_payment(self, event_factory, payment_factory, client, status="COMPLETED", amount=Decimal("50000.00")):
         """Helper to create a payment with associated event and client."""
         event = event_factory(client=client)
         payment = payment_factory(event=event, status=status, amount=amount)
@@ -62,17 +62,17 @@ class TestHandlePaymentCompleted:
         event = event_factory(client=client)
 
         # Create payment — signal fires on save
-        payment = payment_factory(event=event, status='COMPLETED', amount=Decimal('50000.00'))
+        payment_factory(event=event, status="COMPLETED", amount=Decimal("50000.00"))
 
         client_status = ClientVIPStatus.objects.get(client=client)
-        assert client_status.total_spent >= Decimal('50000.00')
+        assert client_status.total_spent >= Decimal("50000.00")
 
     def test_awards_points_when_enabled(self, vip_setup, event_factory, payment_factory):
         """Payment completion awards points when points earning is enabled."""
         settings, default_tier, _, client = vip_setup
         event = event_factory(client=client)
 
-        payment = payment_factory(event=event, status='COMPLETED', amount=Decimal('50000.00'))
+        payment_factory(event=event, status="COMPLETED", amount=Decimal("50000.00"))
 
         client_status = ClientVIPStatus.objects.get(client=client)
         # 50000 / 100 * 1 = 500 points
@@ -81,7 +81,7 @@ class TestHandlePaymentCompleted:
         # Verify transaction was created
         assert VIPPointTransaction.objects.filter(
             client_vip_status=client_status,
-            transaction_type='EARNED_PAYMENT',
+            transaction_type="EARNED_PAYMENT",
         ).exists()
 
     def test_skips_points_when_disabled(self, vip_setup, event_factory, payment_factory):
@@ -91,11 +91,11 @@ class TestHandlePaymentCompleted:
         settings.save()
 
         event = event_factory(client=client)
-        payment = payment_factory(event=event, status='COMPLETED', amount=Decimal('50000.00'))
+        payment_factory(event=event, status="COMPLETED", amount=Decimal("50000.00"))
 
         # Status may be created but no point transaction
         assert not VIPPointTransaction.objects.filter(
-            transaction_type='EARNED_PAYMENT',
+            transaction_type="EARNED_PAYMENT",
         ).exists()
 
     def test_ignores_non_completed_payments(self, vip_setup, event_factory, payment_factory):
@@ -103,7 +103,7 @@ class TestHandlePaymentCompleted:
         settings, default_tier, _, client = vip_setup
         event = event_factory(client=client)
 
-        payment = payment_factory(event=event, status='PENDING', amount=Decimal('50000.00'))
+        payment_factory(event=event, status="PENDING", amount=Decimal("50000.00"))
 
         assert not ClientVIPStatus.objects.filter(client=client).exists()
 
@@ -114,17 +114,18 @@ class TestHandlePaymentCompleted:
         # DB has NOT NULL on event_id, so create a valid payment then
         # call the handler directly with event_id cleared to test the guard
         event = event_factory(client=client)
-        payment = payment_factory(event=event, status='COMPLETED', amount=Decimal('50000.00'))
+        payment = payment_factory(event=event, status="COMPLETED", amount=Decimal("50000.00"))
 
         # Clean up any VIP status created by the signal during save
         ClientVIPStatus.objects.filter(client=client).delete()
 
         # Now call the handler directly with event cleared to test the guard
         from core.domains.vip.signals import handle_payment_completed
+
         payment.event_id = None
         # Clear Django's cached FK descriptor
-        if 'event' in payment.__dict__:
-            del payment.__dict__['event']
+        if "event" in payment.__dict__:
+            del payment.__dict__["event"]
         handle_payment_completed(sender=type(payment), instance=payment, created=False)
 
         assert not ClientVIPStatus.objects.filter(client=client).exists()
@@ -132,10 +133,10 @@ class TestHandlePaymentCompleted:
     def test_ignores_non_client_role(self, vip_setup, user_factory, event_factory, payment_factory):
         """Signal ignores payments where the event client is not a CLIENT role."""
         settings, _, _, _ = vip_setup
-        admin_user = user_factory(role='ADMIN')
+        admin_user = user_factory(role="ADMIN")
         event = event_factory(client=admin_user)
 
-        payment = payment_factory(event=event, status='COMPLETED', amount=Decimal('50000.00'))
+        payment_factory(event=event, status="COMPLETED", amount=Decimal("50000.00"))
 
         assert not ClientVIPStatus.objects.filter(client=admin_user).exists()
 
@@ -146,7 +147,7 @@ class TestHandlePaymentCompleted:
         settings.save()
 
         event = event_factory(client=client)
-        payment = payment_factory(event=event, status='COMPLETED', amount=Decimal('50000.00'))
+        payment_factory(event=event, status="COMPLETED", amount=Decimal("50000.00"))
 
         assert not ClientVIPStatus.objects.filter(client=client).exists()
 
@@ -158,13 +159,13 @@ class TestHandlePaymentCompleted:
         client_status = ClientVIPStatus.objects.create(
             client=client,
             current_tier=default_tier,
-            status='ACTIVE',
-            total_spent=Decimal('60000.00'),
+            status="ACTIVE",
+            total_spent=Decimal("60000.00"),
         )
 
         event = event_factory(client=client)
         # This payment pushes total over 100k threshold
-        payment = payment_factory(event=event, status='COMPLETED', amount=Decimal('50000.00'))
+        payment_factory(event=event, status="COMPLETED", amount=Decimal("50000.00"))
 
         client_status.refresh_from_db()
         assert client_status.current_tier == partner_tier
@@ -176,9 +177,11 @@ class TestHandlePaymentCompleted:
         event = event_factory(client=client)
 
         # Patch to force an error inside the handler
-        with patch('core.domains.vip.signals.VIPService.get_or_create_client_status', side_effect=Exception("DB error")):
+        with patch(
+            "core.domains.vip.signals.VIPService.get_or_create_client_status", side_effect=Exception("DB error")
+        ):
             # Should not raise — signal catches exceptions
-            payment = payment_factory(event=event, status='COMPLETED', amount=Decimal('50000.00'))
+            payment = payment_factory(event=event, status="COMPLETED", amount=Decimal("50000.00"))
             # Payment should still exist
             assert payment.pk is not None
 
@@ -186,6 +189,7 @@ class TestHandlePaymentCompleted:
 # =============================================================================
 # Event Completion Signal Tests
 # =============================================================================
+
 
 @pytest.mark.django_db
 class TestHandleEventStatusChange:
@@ -197,26 +201,26 @@ class TestHandleEventStatusChange:
         settings = VIPSettings.get_settings()
         settings.is_program_enabled = True
         settings.earning_automatic_enabled = True
-        settings.automatic_earning_type = 'BOTH'
+        settings.automatic_earning_type = "BOTH"
         settings.save()
 
-        default_tier = VIPTier.objects.create(
-            name='Guest', level=0, is_default=True, is_active=True
-        )
+        default_tier = VIPTier.objects.create(name="Guest", level=0, is_default=True, is_active=True)
         partner_tier = VIPTier.objects.create(
-            name='Partner', level=1, is_active=True,
+            name="Partner",
+            level=1,
+            is_active=True,
             min_completed_bookings=2,
         )
 
-        client = user_factory(role='CLIENT')
+        client = user_factory(role="CLIENT")
         return settings, default_tier, partner_tier, client
 
     def test_updates_completed_bookings_count(self, vip_setup, event_factory):
         """Event completion updates the client's completed_bookings_count."""
         settings, default_tier, _, client = vip_setup
 
-        event = event_factory(client=client, status='CONFIRMED')
-        event.status = 'COMPLETED'
+        event = event_factory(client=client, status="CONFIRMED")
+        event.status = "COMPLETED"
         event.save()
 
         client_status = ClientVIPStatus.objects.get(client=client)
@@ -226,7 +230,7 @@ class TestHandleEventStatusChange:
         """Signal ignores events that are not COMPLETED."""
         settings, _, _, client = vip_setup
 
-        event = event_factory(client=client, status='CONFIRMED')
+        event_factory(client=client, status="CONFIRMED")
 
         assert not ClientVIPStatus.objects.filter(client=client).exists()
 
@@ -236,18 +240,19 @@ class TestHandleEventStatusChange:
 
         # DB has NOT NULL on client_id, so create a valid event then
         # call the handler directly with client_id cleared to test the guard
-        temp_client = user_factory(role='CLIENT')
-        event = event_factory(client=temp_client, status='COMPLETED')
+        temp_client = user_factory(role="CLIENT")
+        event = event_factory(client=temp_client, status="COMPLETED")
 
         # Clean up any VIP status created by the signal during save
         ClientVIPStatus.objects.filter(client=temp_client).delete()
 
         # Now call the handler directly with client cleared to test the guard
         from core.domains.vip.signals import handle_event_status_change
+
         event.client_id = None
         # Clear Django's cached FK descriptor
-        if 'client' in event.__dict__:
-            del event.__dict__['client']
+        if "client" in event.__dict__:
+            del event.__dict__["client"]
         handle_event_status_change(sender=type(event), instance=event, created=False)
 
         # No VIP status should be created for null client
@@ -256,10 +261,10 @@ class TestHandleEventStatusChange:
     def test_ignores_non_client_role(self, vip_setup, user_factory, event_factory):
         """Signal ignores events where client is not a CLIENT role."""
         settings, _, _, _ = vip_setup
-        admin_user = user_factory(role='ADMIN')
+        admin_user = user_factory(role="ADMIN")
 
-        event = event_factory(client=admin_user, status='CONFIRMED')
-        event.status = 'COMPLETED'
+        event = event_factory(client=admin_user, status="CONFIRMED")
+        event.status = "COMPLETED"
         event.save()
 
         assert not ClientVIPStatus.objects.filter(client=admin_user).exists()
@@ -272,16 +277,16 @@ class TestHandleEventStatusChange:
         client_status = ClientVIPStatus.objects.create(
             client=client,
             current_tier=default_tier,
-            status='ACTIVE',
+            status="ACTIVE",
             completed_bookings_count=1,
         )
 
         # Complete first event (already counted above)
-        event1 = event_factory(client=client, status='COMPLETED')
+        event_factory(client=client, status="COMPLETED")
 
         # Complete second event — this should trigger upgrade
-        event2 = event_factory(client=client, status='CONFIRMED')
-        event2.status = 'COMPLETED'
+        event2 = event_factory(client=client, status="CONFIRMED")
+        event2.status = "COMPLETED"
         event2.save()
 
         client_status.refresh_from_db()
@@ -294,8 +299,8 @@ class TestHandleEventStatusChange:
         settings.is_program_enabled = False
         settings.save()
 
-        event = event_factory(client=client, status='CONFIRMED')
-        event.status = 'COMPLETED'
+        event = event_factory(client=client, status="CONFIRMED")
+        event.status = "COMPLETED"
         event.save()
 
         assert not ClientVIPStatus.objects.filter(client=client).exists()
@@ -304,10 +309,12 @@ class TestHandleEventStatusChange:
         """Signal handles errors without crashing the event save."""
         settings, _, _, client = vip_setup
 
-        with patch('core.domains.vip.signals.VIPService.get_or_create_client_status', side_effect=Exception("DB error")):
-            event = event_factory(client=client, status='CONFIRMED')
-            event.status = 'COMPLETED'
+        with patch(
+            "core.domains.vip.signals.VIPService.get_or_create_client_status", side_effect=Exception("DB error")
+        ):
+            event = event_factory(client=client, status="CONFIRMED")
+            event.status = "COMPLETED"
             event.save()
             # Event should still be saved
             event.refresh_from_db()
-            assert event.status == 'COMPLETED'
+            assert event.status == "COMPLETED"

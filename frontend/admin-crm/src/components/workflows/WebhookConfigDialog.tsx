@@ -196,9 +196,7 @@ export const WebhookConfigDialog: React.FC<WebhookConfigDialogProps> = ({
       fullWidth
       PaperProps={{ sx: { maxHeight: '90vh' } }}
     >
-      <DialogTitle>
-        {editingWebhook ? 'Edit Webhook' : 'Create Webhook'}
-      </DialogTitle>
+      <DialogTitle>{editingWebhook ? 'Edit Webhook' : 'Create Webhook'}</DialogTitle>
 
       <DialogContent dividers>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, py: 1 }}>
@@ -218,7 +216,9 @@ export const WebhookConfigDialog: React.FC<WebhookConfigDialogProps> = ({
             value={formData.url}
             onChange={(e) => handleInputChange('url', e.target.value)}
             error={!!errors.url}
-            helperText={errors.url || 'The URL to receive webhook events (must be HTTPS in production)'}
+            helperText={
+              errors.url || 'The URL to receive webhook events (must be HTTPS in production)'
+            }
             placeholder="https://your-server.com/webhook"
             required
             fullWidth
@@ -244,11 +244,7 @@ export const WebhookConfigDialog: React.FC<WebhookConfigDialogProps> = ({
               endAdornment: (
                 <InputAdornment position="end">
                   <Tooltip title="Toggle visibility">
-                    <IconButton
-                      onClick={() => setShowSecret(!showSecret)}
-                      edge="end"
-                      size="small"
-                    >
+                    <IconButton onClick={() => setShowSecret(!showSecret)} edge="end" size="small">
                       {showSecret ? <VisibilityOffIcon /> : <VisibilityIcon />}
                     </IconButton>
                   </Tooltip>
@@ -276,9 +272,7 @@ export const WebhookConfigDialog: React.FC<WebhookConfigDialogProps> = ({
 
           {/* Event Types */}
           <FormControl error={!!errors.events} component="fieldset">
-            <FormLabel component="legend">
-              Webhook Events *
-            </FormLabel>
+            <FormLabel component="legend">Webhook Events *</FormLabel>
             <Typography variant="caption" color="text.secondary" sx={{ mb: 1 }}>
               Select which events should trigger this webhook
             </Typography>
@@ -337,9 +331,9 @@ export const WebhookConfigDialog: React.FC<WebhookConfigDialogProps> = ({
               <strong>Verifying webhook signatures</strong>
             </Typography>
             <Typography variant="caption" component="div">
-              All webhook payloads include an <code>X-Webhook-Signature</code> header
-              containing an HMAC-SHA256 signature. Verify this signature using your
-              secret key to ensure the request came from LifePlace.
+              All webhook payloads include an <code>X-Webhook-Signature</code> header containing an
+              HMAC-SHA256 signature. Verify this signature using your secret key to ensure the
+              request came from LifePlace.
             </Typography>
             <Box sx={{ mt: 1 }}>
               <Chip label="HMAC-SHA256" size="small" variant="outlined" sx={{ mr: 1 }} />
@@ -353,14 +347,14 @@ export const WebhookConfigDialog: React.FC<WebhookConfigDialogProps> = ({
         <Button onClick={onClose} disabled={isLoading}>
           Cancel
         </Button>
-        <Button
-          variant="contained"
-          onClick={handleSubmit}
-          disabled={isLoading}
-        >
+        <Button variant="contained" onClick={handleSubmit} disabled={isLoading}>
           {isLoading
-            ? editingWebhook ? 'Updating...' : 'Creating...'
-            : editingWebhook ? 'Update Webhook' : 'Create Webhook'}
+            ? editingWebhook
+              ? 'Updating...'
+              : 'Creating...'
+            : editingWebhook
+              ? 'Update Webhook'
+              : 'Create Webhook'}
         </Button>
       </DialogActions>
     </Dialog>

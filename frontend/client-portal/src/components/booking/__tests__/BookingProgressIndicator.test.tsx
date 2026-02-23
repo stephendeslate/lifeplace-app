@@ -15,7 +15,13 @@ const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 // Mock steps data
 const mockSteps = [
   { id: 'intro', label: 'Introduction', shortLabel: 'Intro', isCompleted: true, isCurrent: false },
-  { id: 'contact', label: 'Contact Info', shortLabel: 'Contact', isCompleted: true, isCurrent: false },
+  {
+    id: 'contact',
+    label: 'Contact Info',
+    shortLabel: 'Contact',
+    isCompleted: true,
+    isCurrent: false,
+  },
   { id: 'datetime', label: 'Date & Time', shortLabel: 'Date', isCompleted: false, isCurrent: true },
   { id: 'package', label: 'Package', shortLabel: 'Package', isCompleted: false, isCurrent: false },
   { id: 'payment', label: 'Payment', shortLabel: 'Pay', isCompleted: false, isCurrent: false },
@@ -32,7 +38,7 @@ describe('BookingProgressIndicator', () => {
             completedSteps={['intro', 'contact']}
             variant="linear"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Should show step count
@@ -48,7 +54,7 @@ describe('BookingProgressIndicator', () => {
             completedSteps={['intro', 'contact']}
             variant="linear"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // 2 out of 5 steps = 40%
@@ -65,7 +71,7 @@ describe('BookingProgressIndicator', () => {
             variant="linear"
             showLabels={true}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Date & Time')).toBeInTheDocument();
@@ -81,7 +87,7 @@ describe('BookingProgressIndicator', () => {
             variant="linear"
             showLabels={false}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Label should not be in the output with variant h6
@@ -104,7 +110,7 @@ describe('BookingProgressIndicator', () => {
             completedSteps={['intro', 'contact']}
             variant="linear"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Select your preferred date and time')).toBeInTheDocument();
@@ -121,7 +127,7 @@ describe('BookingProgressIndicator', () => {
             completedSteps={['intro', 'contact']}
             variant="compact"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Should show step counter chip
@@ -137,7 +143,7 @@ describe('BookingProgressIndicator', () => {
             completedSteps={['intro', 'contact']}
             variant="compact"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Date')).toBeInTheDocument();
@@ -145,7 +151,7 @@ describe('BookingProgressIndicator', () => {
 
     it('falls back to full label when shortLabel not available', () => {
       const stepsWithoutShortLabel = mockSteps.map((s, i) =>
-        i === 2 ? { ...s, shortLabel: undefined } : s
+        i === 2 ? { ...s, shortLabel: undefined } : s,
       );
 
       render(
@@ -156,7 +162,7 @@ describe('BookingProgressIndicator', () => {
             completedSteps={['intro', 'contact']}
             variant="compact"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Date & Time')).toBeInTheDocument();
@@ -173,7 +179,7 @@ describe('BookingProgressIndicator', () => {
             completedSteps={['intro', 'contact']}
             variant="stepper"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Introduction')).toBeInTheDocument();
@@ -191,7 +197,7 @@ describe('BookingProgressIndicator', () => {
             currentStepIndex={2}
             completedSteps={['intro', 'contact']}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('40%')).toBeInTheDocument();
@@ -200,7 +206,13 @@ describe('BookingProgressIndicator', () => {
     it('shows optional label for optional steps', () => {
       const stepsWithOptional = [
         ...mockSteps,
-        { id: 'questionnaire', label: 'Questionnaire', isCompleted: false, isCurrent: false, isOptional: true },
+        {
+          id: 'questionnaire',
+          label: 'Questionnaire',
+          isCompleted: false,
+          isCurrent: false,
+          isOptional: true,
+        },
       ];
 
       render(
@@ -210,7 +222,7 @@ describe('BookingProgressIndicator', () => {
             currentStepIndex={2}
             completedSteps={['intro', 'contact']}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('Optional')).toBeInTheDocument();
@@ -226,7 +238,7 @@ describe('BookingProgressIndicator', () => {
             currentStepIndex={2}
             completedSteps={['intro', 'contact']}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Should have completed icon for completed steps
@@ -237,12 +249,8 @@ describe('BookingProgressIndicator', () => {
     it('handles empty completedSteps array', () => {
       render(
         <TestWrapper>
-          <BookingProgressIndicator
-            steps={mockSteps}
-            currentStepIndex={0}
-            completedSteps={[]}
-          />
-        </TestWrapper>
+          <BookingProgressIndicator steps={mockSteps} currentStepIndex={0} completedSteps={[]} />
+        </TestWrapper>,
       );
 
       expect(screen.getByText('0%')).toBeInTheDocument();
@@ -256,7 +264,7 @@ describe('BookingProgressIndicator', () => {
             currentStepIndex={4}
             completedSteps={['intro', 'contact', 'datetime', 'package', 'payment']}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('100%')).toBeInTheDocument();
@@ -273,14 +281,14 @@ describe('BookingProgressIndicator', () => {
             completedSteps={[]}
             variant="linear"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('0% Complete')).toBeInTheDocument();
     });
 
     it('calculates 100% for all completed steps', () => {
-      const allIds = mockSteps.map(s => s.id);
+      const allIds = mockSteps.map((s) => s.id);
 
       render(
         <TestWrapper>
@@ -290,7 +298,7 @@ describe('BookingProgressIndicator', () => {
             completedSteps={allIds}
             variant="linear"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('100% Complete')).toBeInTheDocument();
@@ -306,7 +314,7 @@ describe('BookingProgressIndicator', () => {
             completedSteps={['intro']}
             variant="linear"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(screen.getByText('20% Complete')).toBeInTheDocument();
@@ -323,7 +331,7 @@ describe('BookingProgressIndicator', () => {
             completedSteps={[]}
             className="custom-class"
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       expect(container.querySelector('.custom-class')).toBeInTheDocument();
@@ -342,7 +350,7 @@ describe('useBookingSteps', () => {
   it('returns all standard steps', () => {
     const { result } = renderHook(() => useBookingSteps());
 
-    const stepIds = result.current.map(s => s.id);
+    const stepIds = result.current.map((s) => s.id);
     expect(stepIds).toContain('introduction');
     expect(stepIds).toContain('contact_info');
     expect(stepIds).toContain('datetime');
@@ -363,14 +371,18 @@ describe('useBookingSteps', () => {
     const { result } = renderHook(() => useBookingSteps(flowConfig));
 
     expect(result.current.length).toBe(3);
-    expect(result.current.map(s => s.id)).toEqual(['introduction', 'contact_info', 'confirmation']);
+    expect(result.current.map((s) => s.id)).toEqual([
+      'introduction',
+      'contact_info',
+      'confirmation',
+    ]);
   });
 
   it('marks optional steps correctly', () => {
     const { result } = renderHook(() => useBookingSteps());
 
-    const addonStep = result.current.find(s => s.id === 'addon_selection');
-    const questionnaireStep = result.current.find(s => s.id === 'questionnaire');
+    const addonStep = result.current.find((s) => s.id === 'addon_selection');
+    const questionnaireStep = result.current.find((s) => s.id === 'questionnaire');
 
     expect(addonStep?.isOptional).toBe(true);
     expect(questionnaireStep?.isOptional).toBe(true);
@@ -379,7 +391,7 @@ describe('useBookingSteps', () => {
   it('includes short labels for mobile view', () => {
     const { result } = renderHook(() => useBookingSteps());
 
-    result.current.forEach(step => {
+    result.current.forEach((step) => {
       expect(step.shortLabel).toBeDefined();
     });
   });
@@ -387,7 +399,7 @@ describe('useBookingSteps', () => {
   it('includes descriptions for steps', () => {
     const { result } = renderHook(() => useBookingSteps());
 
-    result.current.forEach(step => {
+    result.current.forEach((step) => {
       expect(step.description).toBeDefined();
     });
   });

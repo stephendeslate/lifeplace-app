@@ -11,14 +11,7 @@ import {
   Divider,
   alpha,
 } from '@mui/material';
-import {
-  LocationOn,
-  Phone,
-  Email,
-  Facebook,
-  Instagram,
-  MusicNote,
-} from '@mui/icons-material';
+import { LocationOn, Phone, Email, Facebook, Instagram, MusicNote } from '@mui/icons-material';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { tokens } from '../../design-system';
 
@@ -59,7 +52,11 @@ export const PublicFooter: React.FC = () => {
 
   const socialLinks = [
     { icon: <Facebook />, href: 'https://www.facebook.com/lifeplacealfonso/', label: 'Facebook' },
-    { icon: <Instagram />, href: 'https://www.instagram.com/lifeplacealfonso/', label: 'Instagram' },
+    {
+      icon: <Instagram />,
+      href: 'https://www.instagram.com/lifeplacealfonso/',
+      label: 'Instagram',
+    },
     { icon: <MusicNote />, href: 'https://www.tiktok.com/@lifeplacealfonso', label: 'TikTok' },
   ];
 
@@ -75,11 +72,13 @@ export const PublicFooter: React.FC = () => {
     >
       <Container maxWidth="lg">
         <AnimatedElement animation="fadeIn" delay={100}>
-          <Box sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' },
-            gap: tokens.spacing.space[4],
-          }}>
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr 1fr 1fr' },
+              gap: tokens.spacing.space[4],
+            }}
+          >
             {/* Company Info */}
             <Box sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}>
               <Box sx={{ mb: tokens.spacing.space[3] }}>
@@ -103,7 +102,7 @@ export const PublicFooter: React.FC = () => {
                   Creating unforgettable moments in the heart of nature. Experience the perfect
                   blend of tranquility and celebration at our beautiful venue in Alfonso, Cavite.
                 </Typography>
-                
+
                 {/* Social Media */}
                 <Box sx={{ display: 'flex', gap: tokens.spacing.space[1] }}>
                   {socialLinks.map((social) => (
@@ -211,7 +210,10 @@ export const PublicFooter: React.FC = () => {
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: tokens.spacing.space[2] }}>
                 {contactInfo.map((contact) => (
-                  <Box key={contact.label} sx={{ display: 'flex', alignItems: 'flex-start', gap: tokens.spacing.space[1] }}>
+                  <Box
+                    key={contact.label}
+                    sx={{ display: 'flex', alignItems: 'flex-start', gap: tokens.spacing.space[1] }}
+                  >
                     <Box sx={{ color: tokens.color.base.neutral[200], mt: 0.5 }}>
                       {contact.icon}
                     </Box>

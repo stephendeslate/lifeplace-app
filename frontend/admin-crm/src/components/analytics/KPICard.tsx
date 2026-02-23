@@ -18,10 +18,22 @@ interface KPICardProps {
 }
 
 const colorMap = {
-  primary: { bg: createGlassColor(tokens.color.primary[500], 0.1), text: tokens.color.primary[500] },
-  secondary: { bg: createGlassColor(tokens.color.secondary[500], 0.1), text: tokens.color.secondary[500] },
-  success: { bg: createGlassColor(tokens.color.success[500], 0.1), text: tokens.color.success[500] },
-  warning: { bg: createGlassColor(tokens.color.warning[500], 0.1), text: tokens.color.warning[500] },
+  primary: {
+    bg: createGlassColor(tokens.color.primary[500], 0.1),
+    text: tokens.color.primary[500],
+  },
+  secondary: {
+    bg: createGlassColor(tokens.color.secondary[500], 0.1),
+    text: tokens.color.secondary[500],
+  },
+  success: {
+    bg: createGlassColor(tokens.color.success[500], 0.1),
+    text: tokens.color.success[500],
+  },
+  warning: {
+    bg: createGlassColor(tokens.color.warning[500], 0.1),
+    text: tokens.color.warning[500],
+  },
   error: { bg: createGlassColor(tokens.color.error[500], 0.1), text: tokens.color.error[500] },
   info: { bg: createGlassColor(tokens.color.info[500], 0.1), text: tokens.color.info[500] },
 };
@@ -40,8 +52,10 @@ export const KPICard: React.FC<KPICardProps> = ({
 
   const getTrendIcon = () => {
     if (trend === undefined || trend === null) return null;
-    if (trend > 0) return <TrendingUpIcon sx={{ fontSize: 16, color: tokens.color.success[500] }} />;
-    if (trend < 0) return <TrendingDownIcon sx={{ fontSize: 16, color: tokens.color.error[500] }} />;
+    if (trend > 0)
+      return <TrendingUpIcon sx={{ fontSize: 16, color: tokens.color.success[500] }} />;
+    if (trend < 0)
+      return <TrendingDownIcon sx={{ fontSize: 16, color: tokens.color.error[500] }} />;
     return <TrendingFlatIcon sx={{ fontSize: 16, color: tokens.color.neutral[500] }} />;
   };
 
@@ -113,7 +127,8 @@ export const KPICard: React.FC<KPICardProps> = ({
             <Box display="flex" alignItems="center" gap={0.5}>
               {getTrendIcon()}
               <Typography variant="caption" color={getTrendColor()} fontWeight={500}>
-                {trend > 0 ? '+' : ''}{trend}%
+                {trend > 0 ? '+' : ''}
+                {trend}%
               </Typography>
             </Box>
           )}

@@ -162,10 +162,7 @@ export const GoogleLoginButton = ({
                 }}
               >
                 <CircularProgress size={24} color="primary" />
-                <Typography
-                  variant="body2"
-                  sx={{ ml: 2, color: 'text.secondary' }}
-                >
+                <Typography variant="body2" sx={{ ml: 2, color: 'text.secondary' }}>
                   Signing in...
                 </Typography>
               </Box>

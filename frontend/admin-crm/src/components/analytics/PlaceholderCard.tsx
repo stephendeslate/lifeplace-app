@@ -44,13 +44,9 @@ export const PlaceholderCard: React.FC<PlaceholderCardProps> = ({
         {title}
       </Typography>
 
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        textAlign="center"
-        sx={{ maxWidth: 300 }}
-      >
-        {response?.message || 'This feature is currently in development and will be available soon.'}
+      <Typography variant="body2" color="text.secondary" textAlign="center" sx={{ maxWidth: 300 }}>
+        {response?.message ||
+          'This feature is currently in development and will be available soon.'}
       </Typography>
     </Paper>
   );

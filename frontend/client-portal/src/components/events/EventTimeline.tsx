@@ -66,7 +66,9 @@ const getActionIcon = (actionType: string) => {
 };
 
 // Helper to get action color
-const getActionColor = (actionType: string): 'primary' | 'success' | 'warning' | 'error' | 'info' => {
+const getActionColor = (
+  actionType: string,
+): 'primary' | 'success' | 'warning' | 'error' | 'info' => {
   switch (actionType.toLowerCase()) {
     case 'event_created':
     case 'payment_received':
@@ -111,18 +113,15 @@ interface TimelineEventItemProps {
   globalIndex: number;
 }
 
-const TimelineEventItem: React.FC<TimelineEventItemProps> = ({
-  item,
-  isLast,
-  globalIndex,
-}) => {
+const TimelineEventItem: React.FC<TimelineEventItemProps> = ({ item, isLast, globalIndex }) => {
   const theme = useTheme();
   const actionColor = getActionColor(item.action_type);
   const actionIcon = getActionIcon(item.action_type);
 
   // Parse created_at - if no timezone specified, treat as PHT (+08:00)
   const createdAtStr = item.created_at;
-  const hasTimezone = createdAtStr.includes('+') || createdAtStr.includes('Z') || createdAtStr.includes('-', 10);
+  const hasTimezone =
+    createdAtStr.includes('+') || createdAtStr.includes('Z') || createdAtStr.includes('-', 10);
   const normalizedTimestamp = hasTimezone ? createdAtStr : `${createdAtStr}+08:00`;
 
   const postedTime = new Date(normalizedTimestamp);
@@ -174,7 +173,6 @@ const TimelineEventItem: React.FC<TimelineEventItemProps> = ({
             >
               {actionIcon}
             </Avatar>
-
           </Box>
 
           {/* Event Content Card */}
@@ -222,7 +220,9 @@ const TimelineEventItem: React.FC<TimelineEventItemProps> = ({
               </Box>
 
               {/* Action Type Chip */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}>
+              <Box
+                sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.5 }}
+              >
                 <Chip
                   label={formatActionType(item.action_type)}
                   size="small"
@@ -323,11 +323,7 @@ const TimelineSkeleton: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
             <Skeleton variant="circular" width={40} height={40} />
             <Box sx={{ flex: 1 }}>
-              <Skeleton
-                variant="rounded"
-                height={100}
-                sx={{ borderRadius: 2 }}
-              />
+              <Skeleton variant="rounded" height={100} sx={{ borderRadius: 2 }} />
             </Box>
           </Box>
         </Box>
@@ -337,11 +333,7 @@ const TimelineSkeleton: React.FC = () => {
 };
 
 // Main Component
-const EventTimeline: React.FC<EventTimelineProps> = ({
-  eventId,
-  maxItems,
-  showEmpty = true,
-}) => {
+const EventTimeline: React.FC<EventTimelineProps> = ({ eventId, maxItems, showEmpty = true }) => {
   const theme = useTheme();
   const { useEventTimeline } = useEvents();
   const { data: timeline, isLoading, error } = useEventTimeline(eventId);
@@ -363,9 +355,7 @@ const EventTimeline: React.FC<EventTimelineProps> = ({
 
     // Order: Today, Yesterday, This Week, Earlier
     const order = ['Today', 'Yesterday', 'This Week', 'Earlier'];
-    return order
-      .filter((label) => groups[label])
-      .map((label) => ({ label, items: groups[label] }));
+    return order.filter((label) => groups[label]).map((label) => ({ label, items: groups[label] }));
   }, [timeline, maxItems]);
 
   if (isLoading) {
@@ -436,10 +426,7 @@ const EventTimeline: React.FC<EventTimelineProps> = ({
                 key={item.id}
                 item={item}
                 index={index}
-                isLast={
-                  groupIndex === groupedItems.length - 1 &&
-                  index === group.items.length - 1
-                }
+                isLast={groupIndex === groupedItems.length - 1 && index === group.items.length - 1}
                 globalIndex={itemGlobalIndex}
               />
             );

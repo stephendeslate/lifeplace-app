@@ -12,10 +12,10 @@ export interface PublicLayoutContextType {
   mobileMenuOpen: boolean;
   setMobileMenuOpen: (open: boolean) => void;
   toggleMobileMenu: () => void;
-  
+
   // Scroll state
   isScrolled: boolean;
-  
+
   // Layout constants
   headerHeight: number;
 }
@@ -33,7 +33,7 @@ export interface ClientLayoutContextType {
   // Navigation state
   activeItem: string | null;
   setActiveItem: (itemId: string) => void;
-  
+
   // Layout constants
   headerHeight: number;
 }

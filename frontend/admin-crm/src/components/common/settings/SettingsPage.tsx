@@ -1,24 +1,15 @@
 // frontend/admin-crm/src/components/common/settings/SettingsPage.tsx
 
-import { useState, useMemo } from "react";
-import { Box } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
-import {
-  ModernSettingsLayout,
-  ModernPageHeader,
-  createAddAction,
-  createRefreshAction,
-} from "../";
-import {
-  SettingsTable,
-  type SettingsTableColumn,
-  type SettingsTableFilter,
-} from "./SettingsTable";
-import { SettingsFormDialog } from "./SettingsFormDialog";
-import { createStandardActions } from "../ModernTable";
-import type { ModernFormSection } from "../ModernForm";
-import type { HeaderAction } from "../ModernPageHeader";
-import type { ServerPaginationConfig } from "../../../types/common.types";
+import { useState, useMemo } from 'react';
+import { Box } from '@mui/material';
+import { Add as AddIcon } from '@mui/icons-material';
+import { ModernSettingsLayout, ModernPageHeader, createAddAction, createRefreshAction } from '../';
+import { SettingsTable, type SettingsTableColumn, type SettingsTableFilter } from './SettingsTable';
+import { SettingsFormDialog } from './SettingsFormDialog';
+import { createStandardActions } from '../ModernTable';
+import type { ModernFormSection } from '../ModernForm';
+import type { HeaderAction } from '../ModernPageHeader';
+import type { ServerPaginationConfig } from '../../../types/common.types';
 
 export interface SettingsPageConfig<T = Record<string, unknown>> {
   // Page metadata
@@ -35,7 +26,7 @@ export interface SettingsPageConfig<T = Record<string, unknown>> {
     columns: SettingsTableColumn<T>[];
     searchFields?: (keyof T)[];
     filters?: SettingsTableFilter[];
-    defaultSort?: { key: string; order: "asc" | "desc" };
+    defaultSort?: { key: string; order: 'asc' | 'desc' };
     emptyState?: {
       icon?: React.ReactNode;
       title?: string;
@@ -49,7 +40,7 @@ export interface SettingsPageConfig<T = Record<string, unknown>> {
     subtitle?: string;
     sections: ModernFormSection[];
     validation?: (data: T) => Record<string, string>;
-    maxWidth?: "xs" | "sm" | "md" | "lg" | "xl";
+    maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
   };
 
   // Feature flags
@@ -96,7 +87,7 @@ export interface SettingsPageProps<T = Record<string, unknown>> {
     label: string;
     icon: React.ReactNode;
     onClick: (row: T) => void;
-    color?: "default" | "primary" | "secondary" | "error";
+    color?: 'default' | 'primary' | 'secondary' | 'error';
     show?: (row: T) => boolean;
   }>;
 
@@ -147,11 +138,9 @@ export const SettingsPage = <T extends { id: string | number }>({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<T | null>(null);
   const [_isFetchingItem, setIsFetchingItem] = useState(false);
-  const [sortBy, setSortBy] = useState<string>(
-    config.table.defaultSort?.key || "",
-  );
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(
-    config.table.defaultSort?.order || "asc",
+  const [sortBy, setSortBy] = useState<string>(config.table.defaultSort?.key || '');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
+    config.table.defaultSort?.order || 'asc',
   );
 
   const features = {
@@ -170,29 +159,29 @@ export const SettingsPage = <T extends { id: string | number }>({
       // Server-side mode: use totalCount from API (cannot compute active from one page)
       return [
         {
-          label: "Total",
+          label: 'Total',
           value: pagination.totalCount,
-          color: "primary" as const,
+          color: 'primary' as const,
         },
       ];
     }
     // Client-side mode: compute from full data array
     return [
       {
-        label: "Total",
+        label: 'Total',
         value: data.length,
-        color: "primary" as const,
+        color: 'primary' as const,
       },
       {
-        label: "Active",
+        label: 'Active',
         value: data.filter((item: T) => {
           return (
             (item as { is_active?: boolean }).is_active !== false &&
             (item as { active?: boolean }).active !== false &&
-            (item as { status?: string }).status !== "inactive"
+            (item as { status?: string }).status !== 'inactive'
           );
         }).length,
-        color: "success" as const,
+        color: 'success' as const,
       },
     ];
   }, [data, pagination]);
@@ -226,7 +215,7 @@ export const SettingsPage = <T extends { id: string | number }>({
         setEditingItem(freshItem);
         setDialogOpen(true);
       } catch (err) {
-        console.error("Failed to fetch item for editing:", err);
+        console.error('Failed to fetch item for editing:', err);
         // Fallback to using list data if fetch fails
         setEditingItem(item);
         setDialogOpen(true);
@@ -249,9 +238,7 @@ export const SettingsPage = <T extends { id: string | number }>({
     ...(features.edit && hasFormCapability
       ? createStandardActions(
           handleEditClick,
-          (item: T) =>
-            onDelete &&
-            onDelete((item as unknown as { id: string | number }).id),
+          (item: T) => onDelete && onDelete((item as unknown as { id: string | number }).id),
         )
       : []),
   ];
@@ -259,10 +246,7 @@ export const SettingsPage = <T extends { id: string | number }>({
   // Form dialog handlers
   const handleFormSubmit = async (formData: T) => {
     if (editingItem && onUpdate) {
-      await onUpdate(
-        (editingItem as unknown as { id: string | number }).id,
-        formData,
-      );
+      await onUpdate((editingItem as unknown as { id: string | number }).id, formData);
     } else if (onCreate) {
       await onCreate(formData);
     }
@@ -275,17 +259,17 @@ export const SettingsPage = <T extends { id: string | number }>({
   };
 
   const handleSort = (column: string) => {
-    let newOrder: "asc" | "desc";
+    let newOrder: 'asc' | 'desc';
     if (sortBy === column) {
-      newOrder = sortOrder === "asc" ? "desc" : "asc";
+      newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
       setSortOrder(newOrder);
     } else {
-      newOrder = "asc";
+      newOrder = 'asc';
       setSortBy(column);
       setSortOrder(newOrder);
     }
     if (onSortChange) {
-      onSortChange(newOrder === "desc" ? `-${column}` : column);
+      onSortChange(newOrder === 'desc' ? `-${column}` : column);
     }
   };
 
@@ -297,13 +281,9 @@ export const SettingsPage = <T extends { id: string | number }>({
         icon={config.page.icon}
         breadcrumbs={config.page.breadcrumbs}
         primaryAction={
-          headerActions.length > 0
-            ? headerActions[headerActions.length - 1]
-            : undefined
+          headerActions.length > 0 ? headerActions[headerActions.length - 1] : undefined
         }
-        secondaryActions={
-          headerActions.length > 1 ? headerActions.slice(0, -1) : []
-        }
+        secondaryActions={headerActions.length > 1 ? headerActions.slice(0, -1) : []}
         stats={stats}
         size="medium"
       />
@@ -365,9 +345,7 @@ export const SettingsPage = <T extends { id: string | number }>({
             item={editingItem}
             defaultValues={defaultValues}
             onSubmit={handleFormSubmit}
-            onDelete={
-              features.delete && editingItem ? handleFormDelete : undefined
-            }
+            onDelete={features.delete && editingItem ? handleFormDelete : undefined}
             validate={config.form.validation}
             maxWidth={config.form.maxWidth}
             showDelete={features.delete && Boolean(editingItem)}

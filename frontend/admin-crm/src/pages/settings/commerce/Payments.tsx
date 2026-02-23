@@ -28,7 +28,12 @@ import type { PaymentGateway } from '../../../types/payments.types';
 
 // Modern Design System imports
 import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';
-import { ModernPageHeader, type HeaderAction, createRefreshAction, createAddAction } from '../../../components/common/ModernPageHeader';
+import {
+  ModernPageHeader,
+  type HeaderAction,
+  createRefreshAction,
+  createAddAction,
+} from '../../../components/common/ModernPageHeader';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -63,15 +68,15 @@ export const Payments: React.FC = () => {
   const [showSearchField, setShowSearchField] = useState(false);
 
   // Data fetching
-  const { data: gateways = [], isLoading: gatewaysLoading, refetch: refetchGateways } = usePaymentGateways();
+  const {
+    data: gateways = [],
+    isLoading: gatewaysLoading,
+    refetch: refetchGateways,
+  } = usePaymentGateways();
   const { data: healthData, refetch: refetchHealth } = useGatewayHealth();
 
   useEffect(() => {
-    setBreadcrumbs([
-      { label: 'Settings' },
-      { label: 'Commerce' },
-      { label: 'Payments' },
-    ]);
+    setBreadcrumbs([{ label: 'Settings' }, { label: 'Commerce' }, { label: 'Payments' }]);
   }, [setBreadcrumbs]);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -110,10 +115,10 @@ export const Payments: React.FC = () => {
     }
   };
 
-  const hasPayMongo = gateways.some(g => g.code === 'paymongo' && g.is_active);
+  const hasPayMongo = gateways.some((g) => g.code === 'paymongo' && g.is_active);
 
   // Calculate stats
-  const activeGateways = gateways.filter(g => g.is_active).length;
+  const activeGateways = gateways.filter((g) => g.is_active).length;
 
   // Header actions
   const headerActions: HeaderAction[] = [
@@ -127,11 +132,8 @@ export const Payments: React.FC = () => {
     createRefreshAction(handleRefresh),
   ];
 
-  const primaryAction = activeTab === 0 ? createAddAction(
-    'New Gateway',
-    handleAddGateway,
-    'primary'
-  ) : undefined;
+  const primaryAction =
+    activeTab === 0 ? createAddAction('New Gateway', handleAddGateway, 'primary') : undefined;
 
   return (
     <ModernSettingsLayout>
@@ -140,11 +142,7 @@ export const Payments: React.FC = () => {
         title="Payment Configuration"
         subtitle="Configure payment gateways and payment plans for client transactions"
         icon={<PaymentIcon />}
-        breadcrumbs={[
-          { label: 'Settings' },
-          { label: 'Commerce' },
-          { label: 'Payments' },
-        ]}
+        breadcrumbs={[{ label: 'Settings' }, { label: 'Commerce' }, { label: 'Payments' }]}
         primaryAction={primaryAction}
         secondaryActions={headerActions}
         stats={[
@@ -190,16 +188,13 @@ export const Payments: React.FC = () => {
             severity="info"
             icon={<PaymentIcon />}
             action={
-              <Button
-                color="inherit"
-                size="small"
-                onClick={handleAddGateway}
-              >
+              <Button color="inherit" size="small" onClick={handleAddGateway}>
                 Setup PayMongo
               </Button>
             }
           >
-            <strong>Philippine Business?</strong> Setup PayMongo for seamless local payment processing including cards, e-wallets, and bank transfers.
+            <strong>Philippine Business?</strong> Setup PayMongo for seamless local payment
+            processing including cards, e-wallets, and bank transfers.
           </Alert>
         </Box>
       )}
@@ -219,16 +214,8 @@ export const Payments: React.FC = () => {
               },
             }}
           >
-            <Tab
-              label="Payment Gateways"
-              icon={<PaymentIcon />}
-              iconPosition="start"
-            />
-            <Tab
-              label="Payment Plans and Terms"
-              icon={<SettingsIcon />}
-              iconPosition="start"
-            />
+            <Tab label="Payment Gateways" icon={<PaymentIcon />} iconPosition="start" />
+            <Tab label="Payment Plans and Terms" icon={<SettingsIcon />} iconPosition="start" />
           </Tabs>
         </Box>
 
@@ -245,11 +232,7 @@ export const Payments: React.FC = () => {
                   Configure payment processing providers for accepting client payments
                 </Typography>
               </Box>
-              <Button
-                variant="contained"
-                startIcon={<AddIcon />}
-                onClick={handleAddGateway}
-              >
+              <Button variant="contained" startIcon={<AddIcon />} onClick={handleAddGateway}>
                 Add Gateway
               </Button>
             </Box>
@@ -270,7 +253,8 @@ export const Payments: React.FC = () => {
                   Payment Plan Settings
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
-                  Configure default payment plan behavior, installment settings, and late fee policies
+                  Configure default payment plan behavior, installment settings, and late fee
+                  policies
                 </Typography>
               </Box>
             </Box>

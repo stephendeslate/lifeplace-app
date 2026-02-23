@@ -14,11 +14,16 @@ interface SnapshotResponse<T> {
 }
 
 export const metricsApi = {
-  fetchKPISnapshots: async (startDate?: string, endDate?: string): Promise<SnapshotResponse<DailyKPISnapshot>> => {
+  fetchKPISnapshots: async (
+    startDate?: string,
+    endDate?: string,
+  ): Promise<SnapshotResponse<DailyKPISnapshot>> => {
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
-    const response = await api.get<SnapshotResponse<DailyKPISnapshot>>(`/analytics/snapshots/kpis/?${params.toString()}`);
+    const response = await api.get<SnapshotResponse<DailyKPISnapshot>>(
+      `/analytics/snapshots/kpis/?${params.toString()}`,
+    );
     return response.data;
   },
 
@@ -27,11 +32,16 @@ export const metricsApi = {
     return response.data;
   },
 
-  fetchSystemHealthSnapshots: async (startDate?: string, endDate?: string): Promise<SnapshotResponse<SystemHealthSnapshot>> => {
+  fetchSystemHealthSnapshots: async (
+    startDate?: string,
+    endDate?: string,
+  ): Promise<SnapshotResponse<SystemHealthSnapshot>> => {
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
-    const response = await api.get<SnapshotResponse<SystemHealthSnapshot>>(`/analytics/snapshots/health/?${params.toString()}`);
+    const response = await api.get<SnapshotResponse<SystemHealthSnapshot>>(
+      `/analytics/snapshots/health/?${params.toString()}`,
+    );
     return response.data;
   },
 
@@ -39,7 +49,9 @@ export const metricsApi = {
     const params = new URLSearchParams();
     if (days) params.append('days', String(days));
     if (service) params.append('service', service);
-    const response = await api.get<DORAMetricsReport>(`/infrastructure/dora-metrics/?${params.toString()}`);
+    const response = await api.get<DORAMetricsReport>(
+      `/infrastructure/dora-metrics/?${params.toString()}`,
+    );
     return response.data;
   },
 
@@ -47,7 +59,9 @@ export const metricsApi = {
     const params = new URLSearchParams();
     if (limit) params.append('limit', String(limit));
     if (service) params.append('service', service);
-    const response = await api.get<Deployment[]>(`/infrastructure/deployments/?${params.toString()}`);
+    const response = await api.get<Deployment[]>(
+      `/infrastructure/deployments/?${params.toString()}`,
+    );
     return response.data;
   },
 };

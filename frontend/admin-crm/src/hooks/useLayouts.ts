@@ -1,20 +1,11 @@
 // frontend/admin-crm/src/hooks/useLayouts.ts
 
-import {
-  useMutation,
-  useQuery,
-  useQueryClient,
-  keepPreviousData,
-} from "@tanstack/react-query";
-import { layoutsApi, type EmailLayoutQueryParams } from "../apis/layouts.api";
-import { useToastActions } from "../contexts/ToastContext";
-import type {
-  CreateLayoutData,
-  UpdateLayoutData,
-  LayoutPreviewData,
-} from "../types/layouts.types";
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import { layoutsApi, type EmailLayoutQueryParams } from '../apis/layouts.api';
+import { useToastActions } from '../contexts/ToastContext';
+import type { CreateLayoutData, UpdateLayoutData, LayoutPreviewData } from '../types/layouts.types';
 
-const QUERY_KEY = "email-layouts";
+const QUERY_KEY = 'email-layouts';
 
 export const useLayouts = () => {
   const queryClient = useQueryClient();
@@ -55,11 +46,11 @@ export const useLayouts = () => {
       mutationFn: (data: CreateLayoutData) => layoutsApi.createLayout(data),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
-        showSuccess("Layout Created", "Email layout created successfully");
+        showSuccess('Layout Created', 'Email layout created successfully');
       },
       onError: (error: unknown) => {
         const message =
-          error && typeof error === "object" && "response" in error
+          error && typeof error === 'object' && 'response' in error
             ? String(
                 (
                   error as {
@@ -68,11 +59,11 @@ export const useLayouts = () => {
                     };
                   }
                 ).response?.data?.detail ||
-                  (error as { response?: { data?: { templates?: string[] } } })
-                    .response?.data?.templates?.[0],
-              ) || "Failed to create layout"
-            : "Failed to create layout";
-        showError("Creation Failed", message);
+                  (error as { response?: { data?: { templates?: string[] } } }).response?.data
+                    ?.templates?.[0],
+              ) || 'Failed to create layout'
+            : 'Failed to create layout';
+        showError('Creation Failed', message);
       },
     });
   };
@@ -85,11 +76,11 @@ export const useLayouts = () => {
       onSuccess: (data) => {
         queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
         queryClient.invalidateQueries({ queryKey: [QUERY_KEY, data.id] });
-        showSuccess("Layout Updated", "Email layout updated successfully");
+        showSuccess('Layout Updated', 'Email layout updated successfully');
       },
       onError: (error: unknown) => {
         const message =
-          error && typeof error === "object" && "response" in error
+          error && typeof error === 'object' && 'response' in error
             ? String(
                 (
                   error as {
@@ -98,11 +89,11 @@ export const useLayouts = () => {
                     };
                   }
                 ).response?.data?.detail ||
-                  (error as { response?: { data?: { templates?: string[] } } })
-                    .response?.data?.templates?.[0],
-              ) || "Failed to update layout"
-            : "Failed to update layout";
-        showError("Update Failed", message);
+                  (error as { response?: { data?: { templates?: string[] } } }).response?.data
+                    ?.templates?.[0],
+              ) || 'Failed to update layout'
+            : 'Failed to update layout';
+        showError('Update Failed', message);
       },
     });
   };
@@ -113,22 +104,21 @@ export const useLayouts = () => {
       mutationFn: (id: number) => layoutsApi.deleteLayout(id),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
-        showSuccess("Layout Deleted", "Email layout deleted successfully");
+        showSuccess('Layout Deleted', 'Email layout deleted successfully');
       },
       onError: (error: unknown) => {
         const message =
-          error && typeof error === "object" && "response" in error
+          error && typeof error === 'object' && 'response' in error
             ? String(
                 (
                   error as {
                     response?: { data?: { error?: string; detail?: string } };
                   }
                 ).response?.data?.error ||
-                  (error as { response?: { data?: { detail?: string } } })
-                    .response?.data?.detail,
-              ) || "Failed to delete layout"
-            : "Failed to delete layout";
-        showError("Deletion Failed", message);
+                  (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
+              ) || 'Failed to delete layout'
+            : 'Failed to delete layout';
+        showError('Deletion Failed', message);
       },
     });
   };
@@ -140,13 +130,12 @@ export const useLayouts = () => {
         layoutsApi.previewLayout(id, data),
       onError: (error: unknown) => {
         const message =
-          error && typeof error === "object" && "response" in error
+          error && typeof error === 'object' && 'response' in error
             ? String(
-                (error as { response?: { data?: { error?: string } } }).response
-                  ?.data?.error,
-              ) || "Failed to preview layout"
-            : "Failed to preview layout";
-        showError("Preview Failed", message);
+                (error as { response?: { data?: { error?: string } } }).response?.data?.error,
+              ) || 'Failed to preview layout'
+            : 'Failed to preview layout';
+        showError('Preview Failed', message);
       },
     });
   };
@@ -154,7 +143,7 @@ export const useLayouts = () => {
   // Get layout history
   const useLayoutHistory = (id: number) => {
     return useQuery({
-      queryKey: [QUERY_KEY, id, "history"],
+      queryKey: [QUERY_KEY, id, 'history'],
       queryFn: () => layoutsApi.getLayoutHistory(id),
       enabled: !!id,
     });
@@ -169,22 +158,18 @@ export const useLayouts = () => {
         queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
         queryClient.invalidateQueries({ queryKey: [QUERY_KEY, data.id] });
         queryClient.invalidateQueries({
-          queryKey: [QUERY_KEY, data.id, "history"],
+          queryKey: [QUERY_KEY, data.id, 'history'],
         });
-        showSuccess(
-          "Layout Rolled Back",
-          "Layout has been rolled back to the selected version",
-        );
+        showSuccess('Layout Rolled Back', 'Layout has been rolled back to the selected version');
       },
       onError: (error: unknown) => {
         const message =
-          error && typeof error === "object" && "response" in error
+          error && typeof error === 'object' && 'response' in error
             ? String(
-                (error as { response?: { data?: { error?: string } } }).response
-                  ?.data?.error,
-              ) || "Failed to rollback layout"
-            : "Failed to rollback layout";
-        showError("Rollback Failed", message);
+                (error as { response?: { data?: { error?: string } } }).response?.data?.error,
+              ) || 'Failed to rollback layout'
+            : 'Failed to rollback layout';
+        showError('Rollback Failed', message);
       },
     });
   };
@@ -192,7 +177,7 @@ export const useLayouts = () => {
   // Get templates using this layout
   const useLayoutTemplates = (id: number) => {
     return useQuery({
-      queryKey: [QUERY_KEY, id, "templates"],
+      queryKey: [QUERY_KEY, id, 'templates'],
       queryFn: () => layoutsApi.getLayoutTemplates(id),
       enabled: !!id,
     });
@@ -205,20 +190,16 @@ export const useLayouts = () => {
         layoutsApi.duplicateLayout(id, newName),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
-        showSuccess(
-          "Layout Duplicated",
-          "Layout has been duplicated successfully",
-        );
+        showSuccess('Layout Duplicated', 'Layout has been duplicated successfully');
       },
       onError: (error: unknown) => {
         const message =
-          error && typeof error === "object" && "response" in error
+          error && typeof error === 'object' && 'response' in error
             ? String(
-                (error as { response?: { data?: { error?: string } } }).response
-                  ?.data?.error,
-              ) || "Failed to duplicate layout"
-            : "Failed to duplicate layout";
-        showError("Duplication Failed", message);
+                (error as { response?: { data?: { error?: string } } }).response?.data?.error,
+              ) || 'Failed to duplicate layout'
+            : 'Failed to duplicate layout';
+        showError('Duplication Failed', message);
       },
     });
   };

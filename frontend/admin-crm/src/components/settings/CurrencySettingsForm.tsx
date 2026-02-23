@@ -68,7 +68,7 @@ export const CurrencySettingsForm: React.FC<CurrencySettingsFormProps> = ({
   const handleDefaultCurrencyChange = (event: SelectChangeEvent<string>) => {
     const newDefaultCurrency = event.target.value;
     setValue('defaultCurrency', newDefaultCurrency);
-    
+
     const currentEnabled = watchedValues.enabledCurrencies;
     if (!currentEnabled.includes(newDefaultCurrency)) {
       setValue('enabledCurrencies', [...currentEnabled, newDefaultCurrency]);
@@ -78,7 +78,7 @@ export const CurrencySettingsForm: React.FC<CurrencySettingsFormProps> = ({
   const handleEnabledCurrenciesChange = (event: SelectChangeEvent<string[]>) => {
     const newEnabledCurrencies = event.target.value as string[];
     setValue('enabledCurrencies', newEnabledCurrencies);
-    
+
     // If default currency is not in enabled currencies, don't change it
     // The form validation will catch this
   };
@@ -153,12 +153,12 @@ export const CurrencySettingsForm: React.FC<CurrencySettingsFormProps> = ({
                     renderValue={(selected) => (
                       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                         {(selected as string[]).map((code) => {
-                          const currency = supportedCurrencies.find(c => c.code === code);
+                          const currency = supportedCurrencies.find((c) => c.code === code);
                           return (
-                            <Chip 
-                              key={code} 
-                              label={`${currency?.symbol || ''} ${code}`} 
-                              size="small" 
+                            <Chip
+                              key={code}
+                              label={`${currency?.symbol || ''} ${code}`}
+                              size="small"
                             />
                           );
                         })}
@@ -309,9 +309,9 @@ export const CurrencySettingsForm: React.FC<CurrencySettingsFormProps> = ({
         {/* Philippine Business Context Alert */}
         <Alert severity="info">
           <Typography variant="body2">
-            <strong>Philippine Business Context:</strong> Most Philippine businesses don't use decimal places 
-            for peso amounts (e.g., ₱1,500 instead of ₱1,500.00). The default setting of 0 decimal places 
-            is optimized for local business practices.
+            <strong>Philippine Business Context:</strong> Most Philippine businesses don't use
+            decimal places for peso amounts (e.g., ₱1,500 instead of ₱1,500.00). The default setting
+            of 0 decimal places is optimized for local business practices.
           </Typography>
         </Alert>
 

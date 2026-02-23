@@ -15,13 +15,13 @@ import { styled } from '@mui/material/styles';
 import type { BoxProps } from '@mui/material';
 import { tokens } from '../tokens';
 
-export type GradientType = 
-  | 'sunrise' 
-  | 'sunset' 
-  | 'forest' 
-  | 'meadow' 
-  | 'sky' 
-  | 'earth' 
+export type GradientType =
+  | 'sunrise'
+  | 'sunset'
+  | 'forest'
+  | 'meadow'
+  | 'sky'
+  | 'earth'
   | 'mist'
   | 'custom';
 
@@ -34,19 +34,22 @@ interface GradientBackgroundProps extends BoxProps {
 }
 
 const StyledGradientBackground = styled(Box, {
-  shouldForwardProp: (prop) => 
+  shouldForwardProp: (prop) =>
     !['gradient', 'customGradient', 'animated', 'overlay'].includes(prop as string),
-})<GradientBackgroundProps>(({ 
-  gradient = 'forest', 
-  customGradient, 
-  animated = false, 
-  overlay = true 
+})<GradientBackgroundProps>(({
+  gradient = 'forest',
+  customGradient,
+  animated = false,
+  overlay = true,
 }) => {
   const getGradient = () => {
     if (gradient === 'custom' && customGradient) {
       return customGradient;
     }
-    return tokens.color.gradients[gradient as keyof typeof tokens.color.gradients] || tokens.color.gradients.forest;
+    return (
+      tokens.color.gradients[gradient as keyof typeof tokens.color.gradients] ||
+      tokens.color.gradients.forest
+    );
   };
 
   return {
@@ -56,7 +59,7 @@ const StyledGradientBackground = styled(Box, {
     minHeight: '100vh',
     width: '100%',
     overflow: 'hidden',
-    
+
     ...(animated && {
       animation: 'gradient 15s ease infinite',
       '@keyframes gradient': {
@@ -65,7 +68,7 @@ const StyledGradientBackground = styled(Box, {
         '100%': { backgroundPosition: '0% 50%' },
       },
     }),
-    
+
     ...(overlay && {
       '&::before': {
         content: '""',
@@ -84,17 +87,15 @@ const StyledGradientBackground = styled(Box, {
         left: 0,
         right: 0,
         bottom: 0,
-        background: 'radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 50%)',
+        background:
+          'radial-gradient(circle at 80% 80%, rgba(255,255,255,0.05) 0%, transparent 50%)',
         pointerEvents: 'none',
       },
     }),
   };
 });
 
-export const GradientBackground: React.FC<GradientBackgroundProps> = ({
-  children,
-  ...props
-}) => {
+export const GradientBackground: React.FC<GradientBackgroundProps> = ({ children, ...props }) => {
   return (
     <StyledGradientBackground {...props}>
       <Box position="relative" zIndex={1} sx={{ width: '100%', height: '100%' }}>

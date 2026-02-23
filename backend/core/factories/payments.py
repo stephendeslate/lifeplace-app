@@ -8,11 +8,11 @@ Based on actual models in core/domains/payments/models.py:
 - Invoice (invoices with line items)
 """
 
-import factory
-from factory.django import DjangoModelFactory
-from django.utils import timezone
 from datetime import date, timedelta
 from decimal import Decimal
+
+import factory
+from factory.django import DjangoModelFactory
 
 
 class PaymentGatewayFactory(DjangoModelFactory):
@@ -24,46 +24,38 @@ class PaymentGatewayFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'payments.PaymentGateway'
-        django_get_or_create = ('code',)
+        model = "payments.PaymentGateway"
+        django_get_or_create = ("code",)
 
-    name = factory.Sequence(lambda n: f'Gateway {n}')
-    code = factory.Sequence(lambda n: f'gateway_{n}')
+    name = factory.Sequence(lambda n: f"Gateway {n}")
+    code = factory.Sequence(lambda n: f"gateway_{n}")
     is_active = True
-    description = factory.Faker('sentence')
-    config = factory.LazyFunction(lambda: {
-        'publishable_key': 'pk_test_123',
-        'secret_key': 'sk_test_123',
-        'test_mode': True
-    })
+    description = factory.Faker("sentence")
+    config = factory.LazyFunction(
+        lambda: {"publishable_key": "pk_test_123", "secret_key": "sk_test_123", "test_mode": True}
+    )
 
     class Params:
         """Traits for specific gateway types."""
 
         stripe = factory.Trait(
-            name='Stripe',
-            code='stripe',
+            name="Stripe",
+            code="stripe",
             config={
-                'publishable_key': 'pk_test_stripe_123',
-                'secret_key': 'sk_test_stripe_123',
-                'webhook_secret': 'whsec_test_123',
-                'test_mode': True
-            }
+                "publishable_key": "pk_test_stripe_123",
+                "secret_key": "sk_test_stripe_123",
+                "webhook_secret": "whsec_test_123",
+                "test_mode": True,
+            },
         )
 
         paymongo = factory.Trait(
-            name='PayMongo',
-            code='paymongo',
-            config={
-                'public_key': 'pk_test_paymongo_123',
-                'secret_key': 'sk_test_paymongo_123',
-                'test_mode': True
-            }
+            name="PayMongo",
+            code="paymongo",
+            config={"public_key": "pk_test_paymongo_123", "secret_key": "sk_test_paymongo_123", "test_mode": True},
         )
 
-        inactive = factory.Trait(
-            is_active=False
-        )
+        inactive = factory.Trait(is_active=False)
 
 
 class PaymentMethodFactory(DjangoModelFactory):
@@ -75,16 +67,16 @@ class PaymentMethodFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'payments.PaymentMethod'
+        model = "payments.PaymentMethod"
 
-    user = factory.SubFactory('core.factories.users.UserFactory')
-    type = 'CREDIT_CARD'
+    user = factory.SubFactory("core.factories.users.UserFactory")
+    type = "CREDIT_CARD"
     is_default = True
-    nickname = factory.Sequence(lambda n: f'Card {n}')
-    instructions = ''
+    nickname = factory.Sequence(lambda n: f"Card {n}")
+    instructions = ""
     gateway = factory.SubFactory(PaymentGatewayFactory, stripe=True)
-    token_reference = factory.Sequence(lambda n: f'pm_test_{n}')
-    last_four = '4242'
+    token_reference = factory.Sequence(lambda n: f"pm_test_{n}")
+    last_four = "4242"
     metadata = factory.LazyFunction(dict)
 
     @factory.lazy_attribute
@@ -95,28 +87,13 @@ class PaymentMethodFactory(DjangoModelFactory):
     class Params:
         """Traits for payment method types."""
 
-        credit_card = factory.Trait(
-            type='CREDIT_CARD',
-            last_four='4242'
-        )
+        credit_card = factory.Trait(type="CREDIT_CARD", last_four="4242")
 
-        bank_transfer = factory.Trait(
-            type='BANK_TRANSFER',
-            last_four='',
-            expiry_date=None
-        )
+        bank_transfer = factory.Trait(type="BANK_TRANSFER", last_four="", expiry_date=None)
 
-        cash = factory.Trait(
-            type='CASH',
-            last_four='',
-            expiry_date=None,
-            gateway=None
-        )
+        cash = factory.Trait(type="CASH", last_four="", expiry_date=None, gateway=None)
 
-        digital_wallet = factory.Trait(
-            type='DIGITAL_WALLET',
-            last_four=''
-        )
+        digital_wallet = factory.Trait(type="DIGITAL_WALLET", last_four="")
 
 
 class PaymentFactory(DjangoModelFactory):
@@ -128,15 +105,15 @@ class PaymentFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'payments.Payment'
+        model = "payments.Payment"
 
-    event = factory.SubFactory('core.factories.events.EventFactory')
-    amount = Decimal('2500.00')
-    currency = 'PHP'
-    status = 'PENDING'
-    description = factory.Faker('sentence')
-    notes = ''
-    reference_number = ''
+    event = factory.SubFactory("core.factories.events.EventFactory")
+    amount = Decimal("2500.00")
+    currency = "PHP"
+    status = "PENDING"
+    description = factory.Faker("sentence")
+    notes = ""
+    reference_number = ""
     is_manual = False
 
     @factory.lazy_attribute
@@ -148,50 +125,31 @@ class PaymentFactory(DjangoModelFactory):
     def payment_number(self):
         """Generate unique payment number."""
         import uuid
+
         year = date.today().year
         return f"PAY-{year}-{uuid.uuid4().hex[:8].upper()}"
 
     class Params:
         """Traits for payment states."""
 
-        created = factory.Trait(
-            status='CREATED'
-        )
+        created = factory.Trait(status="CREATED")
 
-        pending = factory.Trait(
-            status='PENDING'
-        )
+        pending = factory.Trait(status="PENDING")
 
-        processing = factory.Trait(
-            status='PROCESSING'
-        )
+        processing = factory.Trait(status="PROCESSING")
 
-        completed = factory.Trait(
-            status='COMPLETED',
-            paid_on=factory.LazyFunction(lambda: date.today())
-        )
+        completed = factory.Trait(status="COMPLETED", paid_on=factory.LazyFunction(date.today))
 
-        failed = factory.Trait(
-            status='FAILED'
-        )
+        failed = factory.Trait(status="FAILED")
 
-        cancelled = factory.Trait(
-            status='CANCELLED'
-        )
+        cancelled = factory.Trait(status="CANCELLED")
 
-        refunded = factory.Trait(
-            status='REFUNDED'
-        )
+        refunded = factory.Trait(status="REFUNDED")
 
-        manual = factory.Trait(
-            is_manual=True
-        )
+        manual = factory.Trait(is_manual=True)
 
         overdue = factory.Trait(
-            due_date=factory.LazyFunction(
-                lambda: date.today() - timedelta(days=7)
-            ),
-            status='PENDING'
+            due_date=factory.LazyFunction(lambda: date.today() - timedelta(days=7)), status="PENDING"
         )
 
 
@@ -203,22 +161,23 @@ class InvoiceFactory(DjangoModelFactory):
     """
 
     class Meta:
-        model = 'payments.Invoice'
+        model = "payments.Invoice"
 
-    event = factory.SubFactory('core.factories.events.EventFactory')
-    client = factory.SelfAttribute('event.client')
-    subtotal = Decimal('2500.00')
-    tax_amount = Decimal('300.00')
-    total_amount = Decimal('2800.00')
-    currency = 'PHP'
-    status = 'DRAFT'
-    notes = ''
-    payment_terms = 'Net 30'
+    event = factory.SubFactory("core.factories.events.EventFactory")
+    client = factory.SelfAttribute("event.client")
+    subtotal = Decimal("2500.00")
+    tax_amount = Decimal("300.00")
+    total_amount = Decimal("2800.00")
+    currency = "PHP"
+    status = "DRAFT"
+    notes = ""
+    payment_terms = "Net 30"
 
     @factory.lazy_attribute
     def invoice_id(self):
         """Generate unique invoice ID."""
         import uuid
+
         year = date.today().year
         return f"INV-{year}-{uuid.uuid4().hex[:8].upper()}"
 
@@ -235,33 +194,18 @@ class InvoiceFactory(DjangoModelFactory):
     class Params:
         """Traits for invoice states."""
 
-        draft = factory.Trait(
-            status='DRAFT'
-        )
+        draft = factory.Trait(status="DRAFT")
 
-        issued = factory.Trait(
-            status='ISSUED'
-        )
+        issued = factory.Trait(status="ISSUED")
 
-        partially_paid = factory.Trait(
-            status='PARTIALLY_PAID'
-        )
+        partially_paid = factory.Trait(status="PARTIALLY_PAID")
 
-        paid = factory.Trait(
-            status='PAID'
-        )
+        paid = factory.Trait(status="PAID")
 
-        void = factory.Trait(
-            status='VOID'
-        )
+        void = factory.Trait(status="VOID")
 
-        cancelled = factory.Trait(
-            status='CANCELLED'
-        )
+        cancelled = factory.Trait(status="CANCELLED")
 
         overdue = factory.Trait(
-            status='ISSUED',
-            due_date=factory.LazyFunction(
-                lambda: date.today() - timedelta(days=7)
-            )
+            status="ISSUED", due_date=factory.LazyFunction(lambda: date.today() - timedelta(days=7))
         )

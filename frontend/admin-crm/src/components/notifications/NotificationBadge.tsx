@@ -17,12 +17,7 @@ import {
   Chip,
   Tooltip,
 } from '@mui/material';
-import {
-  Notifications,
-  MarkEmailRead,
-  Settings,
-  Circle,
-} from '@mui/icons-material';
+import { Notifications, MarkEmailRead, Settings, Circle } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
 import type { Notification } from '../../types/notifications.types';
@@ -33,18 +28,12 @@ interface NotificationBadgeProps {
   size?: 'small' | 'medium' | 'large';
 }
 
-export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
-  size = 'medium',
-}) => {
+export const NotificationBadge: React.FC<NotificationBadgeProps> = ({ size = 'medium' }) => {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const {
-    useUnreadNotifications,
-    useNotificationCounts,
-    markAsRead,
-    markAllAsRead,
-  } = useNotifications();
+  const { useUnreadNotifications, useNotificationCounts, markAsRead, markAllAsRead } =
+    useNotifications();
 
   const { data: unreadNotifications = [] } = useUnreadNotifications(5);
   const { data: counts } = useNotificationCounts();
@@ -92,15 +81,24 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
 
   const getCategoryColor = (category: string) => {
     switch (category) {
-      case 'SYSTEM': return tokens.color.notification.system;
-      case 'EVENT': return tokens.color.notification.event;
-      case 'TASK': return tokens.color.notification.task;
-      case 'PAYMENT': return tokens.color.notification.payment;
-      case 'CLIENT': return tokens.color.notification.client;
-      case 'CONTRACT': return tokens.color.notification.contract;
-      case 'WORKFLOW': return tokens.color.notification.workflow;
-      case 'COMMUNICATION': return tokens.color.notification.communication;
-      default: return tokens.color.notification.system;
+      case 'SYSTEM':
+        return tokens.color.notification.system;
+      case 'EVENT':
+        return tokens.color.notification.event;
+      case 'TASK':
+        return tokens.color.notification.task;
+      case 'PAYMENT':
+        return tokens.color.notification.payment;
+      case 'CLIENT':
+        return tokens.color.notification.client;
+      case 'CONTRACT':
+        return tokens.color.notification.contract;
+      case 'WORKFLOW':
+        return tokens.color.notification.workflow;
+      case 'COMMUNICATION':
+        return tokens.color.notification.communication;
+      default:
+        return tokens.color.notification.system;
     }
   };
 
@@ -118,12 +116,7 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
               color: hasUnread ? 'primary.main' : 'text.secondary',
             }}
           >
-            <Badge
-              badgeContent={badgeContent}
-              color="error"
-              max={99}
-              invisible={!hasUnread}
-            >
+            <Badge badgeContent={badgeContent} color="error" max={99} invisible={!hasUnread}>
               <Notifications />
             </Badge>
           </IconButton>
@@ -150,7 +143,7 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
             <Typography variant="h6" fontWeight="bold">
               Notifications
             </Typography>
-            
+
             <Box display="flex" alignItems="center" gap={1}>
               {hasUnread && (
                 <Button
@@ -162,7 +155,7 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
                   Mark All Read
                 </Button>
               )}
-              
+
               <IconButton size="small" onClick={handleSettings}>
                 <Settings />
               </IconButton>
@@ -202,7 +195,7 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
                   <Avatar
                     sx={{
                       bgcolor: getCategoryColor(
-                        notification.notification_type_details?.category || 'SYSTEM'
+                        notification.notification_type_details?.category || 'SYSTEM',
                       ),
                       width: 32,
                       height: 32,
@@ -211,7 +204,7 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
                     <Circle sx={{ fontSize: 8 }} />
                   </Avatar>
                 </ListItemAvatar>
-                
+
                 <ListItemText
                   primary={
                     <Box display="flex" alignItems="center" gap={1} mb={0.5}>
@@ -227,7 +220,7 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
                       >
                         {notification.title}
                       </Typography>
-                      
+
                       <Chip
                         label={notification.notification_type_details?.category || 'SYSTEM'}
                         size="small"
@@ -236,10 +229,10 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
                           height: 16,
                           fontSize: '0.6rem',
                           borderColor: getCategoryColor(
-                            notification.notification_type_details?.category || 'SYSTEM'
+                            notification.notification_type_details?.category || 'SYSTEM',
                           ),
                           color: getCategoryColor(
-                            notification.notification_type_details?.category || 'SYSTEM'
+                            notification.notification_type_details?.category || 'SYSTEM',
                           ),
                         }}
                       />
@@ -259,7 +252,7 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
                       WebkitBoxOrient: 'vertical',
                       overflow: 'hidden',
                       whiteSpace: 'normal',
-                    }
+                    },
                   }}
                 />
               </ListItem>
@@ -271,12 +264,7 @@ export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
 
         {/* Footer */}
         <Box sx={{ p: 1 }}>
-          <Button
-            fullWidth
-            variant="text"
-            onClick={handleViewAll}
-            size="small"
-          >
+          <Button fullWidth variant="text" onClick={handleViewAll} size="small">
             View All Notifications
           </Button>
         </Box>

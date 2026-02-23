@@ -25,10 +25,10 @@ import {
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { useProducts, useProductCategories } from '../../hooks/useProducts';
-import type { 
+import type {
   Discount,
-  CreateDiscountData, 
-  UpdateDiscountData, 
+  CreateDiscountData,
+  UpdateDiscountData,
   DiscountFormData,
 } from '../../types/products.types';
 
@@ -98,42 +98,44 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
     }
   }, [editingDiscount, open]);
 
-  const handleInputChange = (field: keyof DiscountFormData) => (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | 
-           { target: { value: unknown } }
-  ) => {
-    const value = event.target.value;
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
-    
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
+  const handleInputChange =
+    (field: keyof DiscountFormData) =>
+    (
+      event:
+        | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+        | { target: { value: unknown } },
+    ) => {
+      const value = event.target.value;
+      setFormData((prev) => ({
         ...prev,
-        [field]: '',
+        [field]: value,
       }));
-    }
-  };
 
-  const handleSwitchChange = (field: keyof DiscountFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: event.target.checked,
-    }));
-  };
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => ({
+          ...prev,
+          [field]: '',
+        }));
+      }
+    };
+
+  const handleSwitchChange =
+    (field: keyof DiscountFormData) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: event.target.checked,
+      }));
+    };
 
   const handleDateChange = (field: 'valid_from' | 'valid_until') => (date: Date | null) => {
     if (date) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         [field]: date.toISOString().split('T')[0],
       }));
     } else {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
         [field]: '',
       }));
@@ -141,14 +143,14 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
   };
 
   const handleProductsChange = (_event: React.SyntheticEvent, newValue: number[]) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       applicable_products: newValue,
     }));
   };
 
   const handleCategoriesChange = (_event: React.SyntheticEvent, newValue: number[]) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       applicable_categories: newValue,
     }));
@@ -222,11 +224,15 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
       valid_from: formData.valid_from,
       valid_until: formData.valid_until || null,
       max_uses: formData.max_uses ? parseInt(formData.max_uses) : null,
-      max_uses_per_client: formData.max_uses_per_client ? parseInt(formData.max_uses_per_client) : null,
+      max_uses_per_client: formData.max_uses_per_client
+        ? parseInt(formData.max_uses_per_client)
+        : null,
       minimum_order_amount: formData.minimum_order_amount || null,
       minimum_hours: formData.minimum_hours ? parseInt(formData.minimum_hours) : null,
-      applicable_products: formData.applicable_products.length > 0 ? formData.applicable_products : undefined,
-      applicable_categories: formData.applicable_categories.length > 0 ? formData.applicable_categories : undefined,
+      applicable_products:
+        formData.applicable_products.length > 0 ? formData.applicable_products : undefined,
+      applicable_categories:
+        formData.applicable_categories.length > 0 ? formData.applicable_categories : undefined,
     };
 
     onSubmit(submitData);
@@ -265,28 +271,26 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
   };
 
   return (
-    <Dialog 
-      open={open} 
+    <Dialog
+      open={open}
       onClose={handleClose}
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { minHeight: '80vh' }
+        sx: { minHeight: '80vh' },
       }}
     >
       {open && (
         <>
-          <DialogTitle>
-            {editingDiscount ? 'Edit Discount' : 'Create New Discount'}
-          </DialogTitle>
-      
+          <DialogTitle>{editingDiscount ? 'Edit Discount' : 'Create New Discount'}</DialogTitle>
+
           <DialogContent>
             <Box component="form" noValidate sx={{ mt: 1 }}>
               {/* Basic Information */}
               <Typography variant="h6" gutterBottom>
                 Basic Information
               </Typography>
-              
+
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <TextField
@@ -311,7 +315,7 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
                     </Select>
                   </FormControl>
                 </Box>
-                
+
                 <TextField
                   fullWidth
                   label="Description"
@@ -323,7 +327,7 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
                   rows={2}
                   required
                 />
-                
+
                 {formData.application_type === 'CODE_REQUIRED' && (
                   <TextField
                     label="Discount Code"
@@ -343,7 +347,7 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
               <Typography variant="h6" gutterBottom>
                 Discount Configuration
               </Typography>
-              
+
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <FormControl sx={{ flex: 1 }}>
                   <InputLabel>Discount Type</InputLabel>
@@ -357,7 +361,7 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
                     <MenuItem value="FREE_HOURS">Free Hours</MenuItem>
                   </Select>
                 </FormControl>
-                
+
                 <TextField
                   label={getValueLabel()}
                   value={formData.value}
@@ -381,7 +385,7 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
               <Typography variant="h6" gutterBottom>
                 Validity Period
               </Typography>
-              
+
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <DatePicker
                   label="Valid From"
@@ -393,8 +397,8 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
                       error: !!errors.valid_from,
                       helperText: errors.valid_from,
                       required: true,
-                      sx: { flex: 1 }
-                    }
+                      sx: { flex: 1 },
+                    },
                   }}
                 />
                 <DatePicker
@@ -406,8 +410,8 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
                       fullWidth: true,
                       error: !!errors.valid_until,
                       helperText: errors.valid_until || 'Leave empty for no expiration',
-                      sx: { flex: 1 }
-                    }
+                      sx: { flex: 1 },
+                    },
                   }}
                 />
               </Box>
@@ -418,7 +422,7 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
               <Typography variant="h6" gutterBottom>
                 Usage Limits
               </Typography>
-              
+
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <TextField
                   label="Max Total Uses (Optional)"
@@ -446,7 +450,7 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
               <Typography variant="h6" gutterBottom>
                 Minimum Requirements
               </Typography>
-              
+
               <Box sx={{ display: 'flex', gap: 2 }}>
                 <TextField
                   label="Minimum Order Amount (Optional)"
@@ -480,17 +484,17 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
               <Typography variant="h6" gutterBottom>
                 Applicable Items
               </Typography>
-              
+
               <Alert severity="info" sx={{ mb: 2 }}>
                 Leave both fields empty to apply the discount to all products and categories
               </Alert>
-              
+
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <Autocomplete
                   multiple
-                  options={products.map(p => p.id)}
+                  options={products.map((p) => p.id)}
                   getOptionLabel={(option) => {
-                    const product = products.find(p => p.id === option);
+                    const product = products.find((p) => p.id === option);
                     return product ? `${product.name} (${product.category_name})` : '';
                   }}
                   value={formData.applicable_products}
@@ -498,7 +502,7 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
                   loading={isLoadingProducts}
                   renderTags={(value, getTagProps) =>
                     value.map((option, index) => {
-                      const product = products.find(p => p.id === option);
+                      const product = products.find((p) => p.id === option);
                       return (
                         <Chip
                           variant="outlined"
@@ -517,12 +521,12 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
                     />
                   )}
                 />
-                
+
                 <Autocomplete
                   multiple
-                  options={categories.map(c => c.id)}
+                  options={categories.map((c) => c.id)}
                   getOptionLabel={(option) => {
-                    const category = categories.find(c => c.id === option);
+                    const category = categories.find((c) => c.id === option);
                     return category ? category.full_path : '';
                   }}
                   value={formData.applicable_categories}
@@ -530,7 +534,7 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
                   loading={isLoadingCategories}
                   renderTags={(value, getTagProps) =>
                     value.map((option, index) => {
-                      const category = categories.find(c => c.id === option);
+                      const category = categories.find((c) => c.id === option);
                       return (
                         <Chip
                           variant="outlined"
@@ -557,7 +561,7 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
               <Typography variant="h6" gutterBottom>
                 Settings
               </Typography>
-              
+
               <Box>
                 <FormControlLabel
                   control={
@@ -571,15 +575,12 @@ export const DiscountFormDialog: React.FC<DiscountFormDialogProps> = ({
               </Box>
             </Box>
           </DialogContent>
-          
+
           <DialogActions sx={{ p: 3 }}>
-            <Button 
-              onClick={handleClose}
-              disabled={isLoading}
-            >
+            <Button onClick={handleClose} disabled={isLoading}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleSubmit}
               variant="contained"
               disabled={isLoading}
