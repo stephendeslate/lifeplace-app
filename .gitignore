@@ -48,6 +48,9 @@ backend/test_message.json
 # Build artifacts
 *.tar.gz
 
+# Root package-lock (workspace lock files in each app are tracked instead)
+/package-lock.json
+
 # Turborepo
 .turbo/
 
