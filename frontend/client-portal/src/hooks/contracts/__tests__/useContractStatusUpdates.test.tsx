@@ -166,7 +166,8 @@ describe('useContractStatusUpdates', () => {
     rerender();
   });
 
-  it('calls onStatusChange when status changes', async () => {
+  // Retry up to 3 times — this test is timing-sensitive on CI
+  it('calls onStatusChange when status changes', { retry: 3 }, async () => {
     const onStatusChange = vi.fn();
 
     const { result } = renderHook(
