@@ -9,5 +9,4 @@ class WorkflowsConfig(AppConfig):
     verbose_name = "Workflows"
 
     def ready(self):
-        # Import signal handlers
-        pass
+        import core.domains.workflows.signals

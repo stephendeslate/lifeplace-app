@@ -9,4 +9,4 @@ class UsersConfig(AppConfig):
     verbose_name = "Users"
 
     def ready(self):
-        pass
+        import core.domains.users.signals

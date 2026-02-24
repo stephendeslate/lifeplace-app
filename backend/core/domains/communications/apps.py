@@ -7,4 +7,4 @@ class CommunicationsConfig(AppConfig):
     name = "core.domains.communications"
 
     def ready(self):
-        pass
+        import core.domains.communications.signals

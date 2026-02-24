@@ -8,4 +8,4 @@ class BookingflowConfig(AppConfig):
     verbose_name = "Booking Flow"
 
     def ready(self):
-        pass
+        import core.domains.bookingflow.signals

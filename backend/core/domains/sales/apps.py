@@ -10,3 +10,4 @@ class SalesConfig(AppConfig):
 
     def ready(self):
         """Connect signals when app is ready"""
+        import core.domains.sales.signals
