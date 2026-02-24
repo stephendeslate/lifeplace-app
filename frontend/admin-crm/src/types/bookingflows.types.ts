@@ -447,15 +447,9 @@ export interface PaymentTermsConfiguration {
   updated_at: string;
 }
 
-/**
- * Child pricing tier for age-based pricing
- */
-export interface ChildPricingTier {
-  min_age: number;
-  max_age: number;
-  discount_percentage: number;
-  label: string;
-}
+// ChildPricingTier is defined in payments.types.ts — import from there
+import type { ChildPricingTier } from './payments.types';
+export type { ChildPricingTier };
 
 // REMOVED: EventDetailsStepConfiguration (doesn't exist in backend)
 
@@ -641,16 +635,6 @@ export interface ConfigureAddonsData {
 }
 
 // API Response Types
-export interface PaymentGateway {
-  id: number;
-  name: string;
-  code: string;
-  description: string;
-  is_active: boolean;
-  public_config: Record<string, unknown>;
-  supported_methods?: string[];
-}
-
 export interface SavedPaymentMethod {
   id: number;
   type: string;

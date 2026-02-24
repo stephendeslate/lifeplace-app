@@ -2,6 +2,10 @@
 
 import type { SvgIconComponent } from '@mui/icons-material';
 import type { AdminPermissions } from './permissions.types';
+import type { AcceptInvitationResponse as GenericAcceptInvitationResponse } from './auth.types';
+
+// Re-export AcceptInvitationResponse specialized for AdminUser
+export type AcceptInvitationResponse = GenericAcceptInvitationResponse<AdminUser>;
 
 export interface SettingsNavigationItem {
   id: string;
@@ -71,15 +75,6 @@ export interface InviteAdminFormData {
 export interface AcceptInvitationFormData {
   password: string;
   confirm_password: string;
-}
-
-export interface AcceptInvitationResponse {
-  message: string;
-  tokens: {
-    access: string;
-    refresh: string;
-  };
-  user: AdminUser;
 }
 
 export interface CreateAdminUserData {

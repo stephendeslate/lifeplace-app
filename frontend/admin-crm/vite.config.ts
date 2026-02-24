@@ -102,12 +102,6 @@ export default defineConfig({
     hmr: {
       overlay: false, // Reduce HMR overlay noise
     },
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-      },
-    },
   },
   // Performance monitoring
   define: {

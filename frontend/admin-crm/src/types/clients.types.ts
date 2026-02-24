@@ -1,6 +1,9 @@
 // frontend/admin-crm/src/types/clients.types.ts
 
 import type { Event } from './events.types';
+import type { AcceptInvitationResponse } from './auth.types';
+
+export type { AcceptInvitationResponse };
 
 export interface ClientProfile {
   phone?: string;
@@ -62,15 +65,6 @@ export interface AcceptInvitationData {
   confirm_password: string;
 }
 
-export interface AcceptInvitationResponse {
-  message: string;
-  tokens: {
-    access: string;
-    refresh: string;
-  };
-  user: Client;
-}
-
 // Communication Records interfaces
 export interface CommunicationRecord {
   id: string;
@@ -104,12 +98,4 @@ export interface CommunicationFilters {
   date_to?: string;
   search?: string;
   client_id?: number;
-}
-
-// Send Communication interfaces
-export interface SendCommunicationData {
-  template_id: number;
-  recipient: string;
-  client_id?: number;
-  context_data?: Record<string, unknown>;
 }

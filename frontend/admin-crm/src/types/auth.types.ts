@@ -54,3 +54,12 @@ export interface ChangePasswordData {
   current_password: string;
   new_password: string;
 }
+
+export interface AcceptInvitationResponse<T = User> {
+  message: string;
+  tokens: {
+    access: string;
+    refresh: string;
+  };
+  user: T;
+}

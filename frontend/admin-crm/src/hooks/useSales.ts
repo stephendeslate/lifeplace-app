@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { salesApi } from '../apis/sales.api';
-import { useToast } from '../contexts/ToastContext';
+import { useToastActions } from '../contexts/ToastContext';
 import type {
   CreateQuoteTemplateData,
   UpdateQuoteTemplateData,
@@ -53,32 +53,24 @@ export const useActiveQuoteTemplates = () => {
 
 export const useCreateQuoteTemplate = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (data: CreateQuoteTemplateData) => salesApi.createQuoteTemplate(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quoteTemplates'] });
-      showToast({
-        type: 'success',
-        title: 'Template Created',
-        message: 'Quote template has been created successfully.',
-      });
+      showSuccess('Template Created', 'Quote template has been created successfully.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create quote template';
-      showToast({
-        type: 'error',
-        title: 'Creation Failed',
-        message,
-      });
+      showError('Creation Failed', message);
     },
   });
 };
 
 export const useUpdateQuoteTemplate = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateQuoteTemplateData }) =>
@@ -86,44 +78,28 @@ export const useUpdateQuoteTemplate = () => {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['quoteTemplates'] });
       queryClient.invalidateQueries({ queryKey: ['quoteTemplate', id] });
-      showToast({
-        type: 'success',
-        title: 'Template Updated',
-        message: 'Quote template has been updated successfully.',
-      });
+      showSuccess('Template Updated', 'Quote template has been updated successfully.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update quote template';
-      showToast({
-        type: 'error',
-        title: 'Update Failed',
-        message,
-      });
+      showError('Update Failed', message);
     },
   });
 };
 
 export const useDeleteQuoteTemplate = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (id: number) => salesApi.deleteQuoteTemplate(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quoteTemplates'] });
-      showToast({
-        type: 'success',
-        title: 'Template Deleted',
-        message: 'Quote template has been deleted successfully.',
-      });
+      showSuccess('Template Deleted', 'Quote template has been deleted successfully.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete quote template';
-      showToast({
-        type: 'error',
-        title: 'Deletion Failed',
-        message,
-      });
+      showError('Deletion Failed', message);
     },
   });
 };
@@ -138,33 +114,25 @@ export const useQuoteTemplateProducts = () => {
 
 export const useCreateQuoteTemplateProduct = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (data: CreateQuoteTemplateProductData) => salesApi.createQuoteTemplateProduct(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quoteTemplateProducts'] });
       queryClient.invalidateQueries({ queryKey: ['quoteTemplates'] });
-      showToast({
-        type: 'success',
-        title: 'Product Added',
-        message: 'Product has been added to the template.',
-      });
+      showSuccess('Product Added', 'Product has been added to the template.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to add product to template';
-      showToast({
-        type: 'error',
-        title: 'Addition Failed',
-        message,
-      });
+      showError('Addition Failed', message);
     },
   });
 };
 
 export const useUpdateQuoteTemplateProduct = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateQuoteTemplateProductData }) =>
@@ -172,45 +140,29 @@ export const useUpdateQuoteTemplateProduct = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quoteTemplateProducts'] });
       queryClient.invalidateQueries({ queryKey: ['quoteTemplates'] });
-      showToast({
-        type: 'success',
-        title: 'Product Updated',
-        message: 'Template product has been updated successfully.',
-      });
+      showSuccess('Product Updated', 'Template product has been updated successfully.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update template product';
-      showToast({
-        type: 'error',
-        title: 'Update Failed',
-        message,
-      });
+      showError('Update Failed', message);
     },
   });
 };
 
 export const useDeleteQuoteTemplateProduct = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (id: number) => salesApi.deleteQuoteTemplateProduct(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quoteTemplateProducts'] });
       queryClient.invalidateQueries({ queryKey: ['quoteTemplates'] });
-      showToast({
-        type: 'success',
-        title: 'Product Removed',
-        message: 'Product has been removed from the template.',
-      });
+      showSuccess('Product Removed', 'Product has been removed from the template.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to remove product from template';
-      showToast({
-        type: 'error',
-        title: 'Removal Failed',
-        message,
-      });
+      showError('Removal Failed', message);
     },
   });
 };
@@ -249,32 +201,24 @@ export const useQuotesForEvent = (eventId: number) => {
 
 export const useCreateEventQuote = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (data: CreateEventQuoteData) => salesApi.createEventQuote(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['eventQuotes'] });
-      showToast({
-        type: 'success',
-        title: 'Quote Created',
-        message: 'Event quote has been created successfully.',
-      });
+      showSuccess('Quote Created', 'Event quote has been created successfully.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create event quote';
-      showToast({
-        type: 'error',
-        title: 'Creation Failed',
-        message,
-      });
+      showError('Creation Failed', message);
     },
   });
 };
 
 export const useUpdateEventQuote = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateEventQuoteData }) =>
@@ -282,147 +226,99 @@ export const useUpdateEventQuote = () => {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['eventQuotes'] });
       queryClient.invalidateQueries({ queryKey: ['eventQuote', id] });
-      showToast({
-        type: 'success',
-        title: 'Quote Updated',
-        message: 'Event quote has been updated successfully.',
-      });
+      showSuccess('Quote Updated', 'Event quote has been updated successfully.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update event quote';
-      showToast({
-        type: 'error',
-        title: 'Update Failed',
-        message,
-      });
+      showError('Update Failed', message);
     },
   });
 };
 
 export const useDeleteEventQuote = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (id: number) => salesApi.deleteEventQuote(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['eventQuotes'] });
-      showToast({
-        type: 'success',
-        title: 'Quote Deleted',
-        message: 'Event quote has been deleted successfully.',
-      });
+      showSuccess('Quote Deleted', 'Event quote has been deleted successfully.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to delete event quote';
-      showToast({
-        type: 'error',
-        title: 'Deletion Failed',
-        message,
-      });
+      showError('Deletion Failed', message);
     },
   });
 };
 
 export const useSendQuote = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (id: number) => salesApi.sendQuote(id),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['eventQuotes'] });
       queryClient.invalidateQueries({ queryKey: ['eventQuote', id] });
-      showToast({
-        type: 'success',
-        title: 'Quote Sent',
-        message: 'Quote has been sent to the client.',
-      });
+      showSuccess('Quote Sent', 'Quote has been sent to the client.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to send quote';
-      showToast({
-        type: 'error',
-        title: 'Send Failed',
-        message,
-      });
+      showError('Send Failed', message);
     },
   });
 };
 
 export const useAcceptQuote = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, notes }: { id: number; notes?: string }) => salesApi.acceptQuote(id, notes),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['eventQuotes'] });
       queryClient.invalidateQueries({ queryKey: ['eventQuote', id] });
-      showToast({
-        type: 'success',
-        title: 'Quote Accepted',
-        message: 'Quote has been accepted successfully.',
-      });
+      showSuccess('Quote Accepted', 'Quote has been accepted successfully.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to accept quote';
-      showToast({
-        type: 'error',
-        title: 'Accept Failed',
-        message,
-      });
+      showError('Accept Failed', message);
     },
   });
 };
 
 export const useRejectQuote = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, notes }: { id: number; notes?: string }) => salesApi.rejectQuote(id, notes),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['eventQuotes'] });
       queryClient.invalidateQueries({ queryKey: ['eventQuote', id] });
-      showToast({
-        type: 'success',
-        title: 'Quote Rejected',
-        message: 'Quote has been rejected.',
-      });
+      showSuccess('Quote Rejected', 'Quote has been rejected.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to reject quote';
-      showToast({
-        type: 'error',
-        title: 'Reject Failed',
-        message,
-      });
+      showError('Reject Failed', message);
     },
   });
 };
 
 export const useDuplicateQuote = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (id: number) => salesApi.duplicateQuote(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['eventQuotes'] });
-      showToast({
-        type: 'success',
-        title: 'Quote Duplicated',
-        message: 'Quote has been duplicated successfully.',
-      });
+      showSuccess('Quote Duplicated', 'Quote has been duplicated successfully.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to duplicate quote';
-      showToast({
-        type: 'error',
-        title: 'Duplication Failed',
-        message,
-      });
+      showError('Duplication Failed', message);
     },
   });
 };
@@ -437,33 +333,25 @@ export const useQuoteLineItems = (filters?: QuoteLineItemFilters) => {
 
 export const useCreateQuoteLineItem = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (data: CreateQuoteLineItemData) => salesApi.createQuoteLineItem(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quoteLineItems'] });
       queryClient.invalidateQueries({ queryKey: ['eventQuotes'] });
-      showToast({
-        type: 'success',
-        title: 'Line Item Added',
-        message: 'Line item has been added to the quote.',
-      });
+      showSuccess('Line Item Added', 'Line item has been added to the quote.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to add line item';
-      showToast({
-        type: 'error',
-        title: 'Addition Failed',
-        message,
-      });
+      showError('Addition Failed', message);
     },
   });
 };
 
 export const useUpdateQuoteLineItem = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateQuoteLineItemData }) =>
@@ -471,45 +359,29 @@ export const useUpdateQuoteLineItem = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quoteLineItems'] });
       queryClient.invalidateQueries({ queryKey: ['eventQuotes'] });
-      showToast({
-        type: 'success',
-        title: 'Line Item Updated',
-        message: 'Line item has been updated successfully.',
-      });
+      showSuccess('Line Item Updated', 'Line item has been updated successfully.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to update line item';
-      showToast({
-        type: 'error',
-        title: 'Update Failed',
-        message,
-      });
+      showError('Update Failed', message);
     },
   });
 };
 
 export const useDeleteQuoteLineItem = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (id: number) => salesApi.deleteQuoteLineItem(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['quoteLineItems'] });
       queryClient.invalidateQueries({ queryKey: ['eventQuotes'] });
-      showToast({
-        type: 'success',
-        title: 'Line Item Removed',
-        message: 'Line item has been removed from the quote.',
-      });
+      showSuccess('Line Item Removed', 'Line item has been removed from the quote.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to remove line item';
-      showToast({
-        type: 'error',
-        title: 'Removal Failed',
-        message,
-      });
+      showError('Removal Failed', message);
     },
   });
 };
@@ -525,25 +397,17 @@ export const useQuoteOptions = (quoteId: number) => {
 
 export const useCreateQuoteOption = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (data: CreateQuoteOptionData) => salesApi.createQuoteOption(data),
     onSuccess: (_, data) => {
       queryClient.invalidateQueries({ queryKey: ['quoteOptions', data.quote] });
-      showToast({
-        type: 'success',
-        title: 'Option Added',
-        message: 'Quote option has been added successfully.',
-      });
+      showSuccess('Option Added', 'Quote option has been added successfully.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to add quote option';
-      showToast({
-        type: 'error',
-        title: 'Addition Failed',
-        message,
-      });
+      showError('Addition Failed', message);
     },
   });
 };
@@ -568,7 +432,7 @@ export const useQuoteReminders = (quoteId: number) => {
 
 export const useCreateQuoteReminder = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({
@@ -580,19 +444,11 @@ export const useCreateQuoteReminder = () => {
     }) => salesApi.createQuoteReminder(quoteId, data),
     onSuccess: (_, { quoteId }) => {
       queryClient.invalidateQueries({ queryKey: ['quoteReminders', quoteId] });
-      showToast({
-        type: 'success',
-        title: 'Reminder Created',
-        message: 'Quote reminder has been scheduled.',
-      });
+      showSuccess('Reminder Created', 'Quote reminder has been scheduled.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to create reminder';
-      showToast({
-        type: 'error',
-        title: 'Reminder Failed',
-        message,
-      });
+      showError('Reminder Failed', message);
     },
   });
 };
@@ -600,7 +456,7 @@ export const useCreateQuoteReminder = () => {
 // Quote Signing
 export const useSignQuote = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: QuoteSigningData }) =>
@@ -608,19 +464,11 @@ export const useSignQuote = () => {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['eventQuotes'] });
       queryClient.invalidateQueries({ queryKey: ['eventQuote', id] });
-      showToast({
-        type: 'success',
-        title: 'Quote Signed',
-        message: 'Quote has been signed successfully.',
-      });
+      showSuccess('Quote Signed', 'Quote has been signed successfully.');
     },
     onError: (error: ApiError) => {
       const message = error.response?.data?.detail || 'Failed to sign quote';
-      showToast({
-        type: 'error',
-        title: 'Signing Failed',
-        message,
-      });
+      showError('Signing Failed', message);
     },
   });
 };

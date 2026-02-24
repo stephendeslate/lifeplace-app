@@ -65,13 +65,6 @@ export interface CreateTemplateData {
 
 export type UpdateTemplateData = Partial<CreateTemplateData>;
 
-export interface SendCommunicationData {
-  template_id: number;
-  recipient: string;
-  client_id?: number;
-  context_data?: Record<string, unknown>;
-}
-
 export interface ManualSendData {
   template_id: number;
   recipient: string;

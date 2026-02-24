@@ -147,13 +147,6 @@ export const navigationConfig: NavigationGroup[] = [
         roles: ['ADMIN'],
       },
       {
-        id: 'messages',
-        label: 'Messages',
-        path: '/messages',
-        icon: Message,
-        roles: ['ADMIN'],
-      },
-      {
         id: 'payments',
         label: 'Payments',
         path: '/payments',

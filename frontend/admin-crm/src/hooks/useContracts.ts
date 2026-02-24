@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { contractsApi, type ContractTemplateQueryParams } from '../apis/contracts.api';
-import { useToast } from '../contexts/ToastContext';
+import { useToastActions } from '../contexts/ToastContext';
 import type {
   CreateContractTemplateData,
   UpdateContractTemplateData,
@@ -47,17 +47,13 @@ export const useContractTemplate = (id: number) => {
 
 export const useCreateContractTemplate = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (data: CreateContractTemplateData) => contractsApi.createContractTemplate(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contractTemplates'] });
-      showToast({
-        type: 'success',
-        title: 'Template Created',
-        message: 'Contract template has been created successfully.',
-      });
+      showSuccess('Template Created', 'Contract template has been created successfully.');
     },
     onError: (error: unknown) => {
       const message =
@@ -66,18 +62,14 @@ export const useCreateContractTemplate = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to create contract template'
           : 'Failed to create contract template';
-      showToast({
-        type: 'error',
-        title: 'Creation Failed',
-        message,
-      });
+      showError('Creation Failed', message);
     },
   });
 };
 
 export const useUpdateContractTemplate = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateContractTemplateData }) =>
@@ -85,11 +77,7 @@ export const useUpdateContractTemplate = () => {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['contractTemplates'] });
       queryClient.invalidateQueries({ queryKey: ['contractTemplate', id] });
-      showToast({
-        type: 'success',
-        title: 'Template Updated',
-        message: 'Contract template has been updated successfully.',
-      });
+      showSuccess('Template Updated', 'Contract template has been updated successfully.');
     },
     onError: (error: unknown) => {
       const message =
@@ -98,28 +86,20 @@ export const useUpdateContractTemplate = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to update contract template'
           : 'Failed to update contract template';
-      showToast({
-        type: 'error',
-        title: 'Update Failed',
-        message,
-      });
+      showError('Update Failed', message);
     },
   });
 };
 
 export const useDeleteContractTemplate = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (id: number) => contractsApi.deleteContractTemplate(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contractTemplates'] });
-      showToast({
-        type: 'success',
-        title: 'Template Deleted',
-        message: 'Contract template has been deleted successfully.',
-      });
+      showSuccess('Template Deleted', 'Contract template has been deleted successfully.');
     },
     onError: (error: unknown) => {
       const message =
@@ -128,11 +108,7 @@ export const useDeleteContractTemplate = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to delete contract template'
           : 'Failed to delete contract template';
-      showToast({
-        type: 'error',
-        title: 'Deletion Failed',
-        message,
-      });
+      showError('Deletion Failed', message);
     },
   });
 };
@@ -167,17 +143,13 @@ export const useContractsForEvent = (eventId: number) => {
 
 export const useCreateEventContract = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (data: CreateEventContractData) => contractsApi.createEventContract(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['eventContracts'] });
-      showToast({
-        type: 'success',
-        title: 'Contract Created',
-        message: 'Event contract has been created successfully.',
-      });
+      showSuccess('Contract Created', 'Event contract has been created successfully.');
     },
     onError: (error: unknown) => {
       const message =
@@ -186,18 +158,14 @@ export const useCreateEventContract = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to create event contract'
           : 'Failed to create event contract';
-      showToast({
-        type: 'error',
-        title: 'Creation Failed',
-        message,
-      });
+      showError('Creation Failed', message);
     },
   });
 };
 
 export const useUpdateEventContract = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateEventContractData }) =>
@@ -205,11 +173,7 @@ export const useUpdateEventContract = () => {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['eventContracts'] });
       queryClient.invalidateQueries({ queryKey: ['eventContract', id] });
-      showToast({
-        type: 'success',
-        title: 'Contract Updated',
-        message: 'Event contract has been updated successfully.',
-      });
+      showSuccess('Contract Updated', 'Event contract has been updated successfully.');
     },
     onError: (error: unknown) => {
       const message =
@@ -218,11 +182,7 @@ export const useUpdateEventContract = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to update event contract'
           : 'Failed to update event contract';
-      showToast({
-        type: 'error',
-        title: 'Update Failed',
-        message,
-      });
+      showError('Update Failed', message);
     },
   });
 };
@@ -238,17 +198,13 @@ export const useContractsForClient = (clientId: number) => {
 
 export const useDeleteEventContract = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (id: number) => contractsApi.deleteEventContract(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['eventContracts'] });
-      showToast({
-        type: 'success',
-        title: 'Contract Deleted',
-        message: 'Event contract has been deleted successfully.',
-      });
+      showSuccess('Contract Deleted', 'Event contract has been deleted successfully.');
     },
     onError: (error: unknown) => {
       const message =
@@ -257,18 +213,14 @@ export const useDeleteEventContract = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to delete event contract'
           : 'Failed to delete event contract';
-      showToast({
-        type: 'error',
-        title: 'Deletion Failed',
-        message,
-      });
+      showError('Deletion Failed', message);
     },
   });
 };
 
 export const useAddContractSignature = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: CreateContractSignatureData }) =>
@@ -276,11 +228,7 @@ export const useAddContractSignature = () => {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['eventContract', id] });
       queryClient.invalidateQueries({ queryKey: ['contractSignatures'] });
-      showToast({
-        type: 'success',
-        title: 'Signature Added',
-        message: 'Signature has been added to the contract.',
-      });
+      showSuccess('Signature Added', 'Signature has been added to the contract.');
     },
     onError: (error: unknown) => {
       const message =
@@ -289,18 +237,14 @@ export const useAddContractSignature = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to add signature'
           : 'Failed to add signature';
-      showToast({
-        type: 'error',
-        title: 'Signature Failed',
-        message,
-      });
+      showError('Signature Failed', message);
     },
   });
 };
 
 export const useVoidContract = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, reason }: { id: number; reason?: string }) =>
@@ -308,11 +252,7 @@ export const useVoidContract = () => {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['eventContracts'] });
       queryClient.invalidateQueries({ queryKey: ['eventContract', id] });
-      showToast({
-        type: 'success',
-        title: 'Contract Voided',
-        message: 'Contract has been voided successfully.',
-      });
+      showSuccess('Contract Voided', 'Contract has been voided successfully.');
     },
     onError: (error: unknown) => {
       const message =
@@ -321,11 +261,7 @@ export const useVoidContract = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to void contract'
           : 'Failed to void contract';
-      showToast({
-        type: 'error',
-        title: 'Void Failed',
-        message,
-      });
+      showError('Void Failed', message);
     },
   });
 };
@@ -348,18 +284,14 @@ export const useContractSignature = (id: number) => {
 
 export const useVerifySignature = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, verificationMethod }: { id: number; verificationMethod?: string }) =>
       contractsApi.verifySignature(id, verificationMethod),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contractSignatures'] });
-      showToast({
-        type: 'success',
-        title: 'Signature Verified',
-        message: 'Signature has been verified successfully.',
-      });
+      showSuccess('Signature Verified', 'Signature has been verified successfully.');
     },
     onError: (error: unknown) => {
       const message =
@@ -368,11 +300,7 @@ export const useVerifySignature = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to verify signature'
           : 'Failed to verify signature';
-      showToast({
-        type: 'error',
-        title: 'Verification Failed',
-        message,
-      });
+      showError('Verification Failed', message);
     },
   });
 };
@@ -395,18 +323,14 @@ export const useContractAmendmentsForContract = (contractId: number) => {
 
 export const useRequestAmendment = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: CreateContractAmendmentData }) =>
       contractsApi.requestAmendment(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contractAmendments'] });
-      showToast({
-        type: 'success',
-        title: 'Amendment Requested',
-        message: 'Contract amendment has been requested successfully.',
-      });
+      showSuccess('Amendment Requested', 'Contract amendment has been requested successfully.');
     },
     onError: (error: unknown) => {
       const message =
@@ -415,29 +339,21 @@ export const useRequestAmendment = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to request amendment'
           : 'Failed to request amendment';
-      showToast({
-        type: 'error',
-        title: 'Request Failed',
-        message,
-      });
+      showError('Request Failed', message);
     },
   });
 };
 
 export const useApproveAmendment = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, reviewNotes }: { id: number; reviewNotes?: string }) =>
       contractsApi.approveAmendment(id, reviewNotes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contractAmendments'] });
-      showToast({
-        type: 'success',
-        title: 'Amendment Approved',
-        message: 'Contract amendment has been approved successfully.',
-      });
+      showSuccess('Amendment Approved', 'Contract amendment has been approved successfully.');
     },
     onError: (error: unknown) => {
       const message =
@@ -446,29 +362,21 @@ export const useApproveAmendment = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to approve amendment'
           : 'Failed to approve amendment';
-      showToast({
-        type: 'error',
-        title: 'Approval Failed',
-        message,
-      });
+      showError('Approval Failed', message);
     },
   });
 };
 
 export const useRejectAmendment = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, reviewNotes }: { id: number; reviewNotes?: string }) =>
       contractsApi.rejectAmendment(id, reviewNotes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contractAmendments'] });
-      showToast({
-        type: 'success',
-        title: 'Amendment Rejected',
-        message: 'Contract amendment has been rejected.',
-      });
+      showSuccess('Amendment Rejected', 'Contract amendment has been rejected.');
     },
     onError: (error: unknown) => {
       const message =
@@ -477,11 +385,7 @@ export const useRejectAmendment = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to reject amendment'
           : 'Failed to reject amendment';
-      showToast({
-        type: 'error',
-        title: 'Rejection Failed',
-        message,
-      });
+      showError('Rejection Failed', message);
     },
   });
 };
@@ -497,18 +401,14 @@ export const useContractDocuments = (contractId: number) => {
 
 export const useAddContractDocument = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: CreateContractDocumentData }) =>
       contractsApi.addContractDocument(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['contractDocuments', id] });
-      showToast({
-        type: 'success',
-        title: 'Document Added',
-        message: 'Document has been added to the contract.',
-      });
+      showSuccess('Document Added', 'Document has been added to the contract.');
     },
     onError: (error: unknown) => {
       const message =
@@ -517,11 +417,7 @@ export const useAddContractDocument = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to add document'
           : 'Failed to add document';
-      showToast({
-        type: 'error',
-        title: 'Upload Failed',
-        message,
-      });
+      showError('Upload Failed', message);
     },
   });
 };
@@ -537,18 +433,14 @@ export const useContractNotes = (contractId: number) => {
 
 export const useAddContractNote = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: CreateContractNoteData }) =>
       contractsApi.addContractNote(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['contractNotes', id] });
-      showToast({
-        type: 'success',
-        title: 'Note Added',
-        message: 'Note has been added to the contract.',
-      });
+      showSuccess('Note Added', 'Note has been added to the contract.');
     },
     onError: (error: unknown) => {
       const message =
@@ -557,18 +449,14 @@ export const useAddContractNote = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to add note'
           : 'Failed to add note';
-      showToast({
-        type: 'error',
-        title: 'Note Failed',
-        message,
-      });
+      showError('Note Failed', message);
     },
   });
 };
 
 export const useSendContract = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (contractId: number) => contractsApi.sendContract(contractId),
@@ -578,11 +466,7 @@ export const useSendContract = () => {
         queryKey: ['eventContract', updatedContract.id],
       });
       queryClient.setQueryData(['eventContract', updatedContract.id], updatedContract);
-      showToast({
-        type: 'success',
-        title: 'Contract Sent',
-        message: 'Contract has been sent to the client for signature.',
-      });
+      showSuccess('Contract Sent', 'Contract has been sent to the client for signature.');
     },
     onError: (error: unknown) => {
       const message =
@@ -591,17 +475,13 @@ export const useSendContract = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to send contract'
           : 'Failed to send contract';
-      showToast({
-        type: 'error',
-        title: 'Send Failed',
-        message,
-      });
+      showError('Send Failed', message);
     },
   });
 };
 
 export const useDownloadContractPdf = () => {
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: async (contractId: number) => {
@@ -619,11 +499,7 @@ export const useDownloadContractPdf = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      showToast({
-        type: 'success',
-        title: 'Download Started',
-        message: 'Contract PDF download has started.',
-      });
+      showSuccess('Download Started', 'Contract PDF download has started.');
     },
     onError: (error: unknown) => {
       const message =
@@ -632,11 +508,7 @@ export const useDownloadContractPdf = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to download contract PDF'
           : 'Failed to download contract PDF';
-      showToast({
-        type: 'error',
-        title: 'Download Failed',
-        message,
-      });
+      showError('Download Failed', message);
     },
   });
 };

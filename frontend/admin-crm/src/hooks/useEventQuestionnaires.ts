@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { questionnairesApi } from '../apis/questionnaires.api';
-import { useToast } from '../contexts/ToastContext';
+import { useToastActions } from '../contexts/ToastContext';
 import type {
   CreateEventQuestionnaireData,
   UpdateEventQuestionnaireData,
@@ -37,7 +37,7 @@ export const useEventQuestionnaires = () => {
 // Create (assign) a questionnaire to an event
 export const useCreateEventQuestionnaire = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (data: CreateEventQuestionnaireData) =>
@@ -47,11 +47,7 @@ export const useCreateEventQuestionnaire = () => {
       queryClient.invalidateQueries({
         queryKey: ['eventQuestionnaires', 'forEvent', variables.event],
       });
-      showToast({
-        type: 'success',
-        title: 'Questionnaire Assigned',
-        message: 'Questionnaire has been assigned to the event.',
-      });
+      showSuccess('Questionnaire Assigned', 'Questionnaire has been assigned to the event.');
     },
     onError: (error: unknown) => {
       const message =
@@ -60,11 +56,7 @@ export const useCreateEventQuestionnaire = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to assign questionnaire'
           : 'Failed to assign questionnaire';
-      showToast({
-        type: 'error',
-        title: 'Assignment Failed',
-        message,
-      });
+      showError('Assignment Failed', message);
     },
   });
 };
@@ -72,7 +64,7 @@ export const useCreateEventQuestionnaire = () => {
 // Update an EventQuestionnaire
 export const useUpdateEventQuestionnaire = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: UpdateEventQuestionnaireData }) =>
@@ -80,11 +72,7 @@ export const useUpdateEventQuestionnaire = () => {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: ['eventQuestionnaires'] });
       queryClient.invalidateQueries({ queryKey: ['eventQuestionnaire', id] });
-      showToast({
-        type: 'success',
-        title: 'Questionnaire Updated',
-        message: 'Questionnaire assignment has been updated.',
-      });
+      showSuccess('Questionnaire Updated', 'Questionnaire assignment has been updated.');
     },
     onError: (error: unknown) => {
       const message =
@@ -93,11 +81,7 @@ export const useUpdateEventQuestionnaire = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to update questionnaire'
           : 'Failed to update questionnaire';
-      showToast({
-        type: 'error',
-        title: 'Update Failed',
-        message,
-      });
+      showError('Update Failed', message);
     },
   });
 };
@@ -105,17 +89,13 @@ export const useUpdateEventQuestionnaire = () => {
 // Delete (unassign) a questionnaire from an event
 export const useDeleteEventQuestionnaire = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (id: number) => questionnairesApi.deleteEventQuestionnaire(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['eventQuestionnaires'] });
-      showToast({
-        type: 'success',
-        title: 'Questionnaire Removed',
-        message: 'Questionnaire has been removed from the event.',
-      });
+      showSuccess('Questionnaire Removed', 'Questionnaire has been removed from the event.');
     },
     onError: (error: unknown) => {
       const message =
@@ -124,11 +104,7 @@ export const useDeleteEventQuestionnaire = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to remove questionnaire'
           : 'Failed to remove questionnaire';
-      showToast({
-        type: 'error',
-        title: 'Removal Failed',
-        message,
-      });
+      showError('Removal Failed', message);
     },
   });
 };
@@ -136,7 +112,7 @@ export const useDeleteEventQuestionnaire = () => {
 // Send a questionnaire to the client
 export const useSendEventQuestionnaire = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (id: number) => questionnairesApi.sendEventQuestionnaire(id),
@@ -149,11 +125,7 @@ export const useSendEventQuestionnaire = () => {
         ['eventQuestionnaire', updatedQuestionnaire.id],
         updatedQuestionnaire,
       );
-      showToast({
-        type: 'success',
-        title: 'Questionnaire Sent',
-        message: 'Questionnaire has been sent to the client.',
-      });
+      showSuccess('Questionnaire Sent', 'Questionnaire has been sent to the client.');
     },
     onError: (error: unknown) => {
       const message =
@@ -162,11 +134,7 @@ export const useSendEventQuestionnaire = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to send questionnaire'
           : 'Failed to send questionnaire';
-      showToast({
-        type: 'error',
-        title: 'Send Failed',
-        message,
-      });
+      showError('Send Failed', message);
     },
   });
 };
@@ -174,17 +142,13 @@ export const useSendEventQuestionnaire = () => {
 // Send a reminder for an incomplete questionnaire
 export const useSendQuestionnaireReminder = () => {
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const { showSuccess, showError } = useToastActions();
 
   return useMutation({
     mutationFn: (id: number) => questionnairesApi.sendEventQuestionnaireReminder(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['eventQuestionnaires'] });
-      showToast({
-        type: 'success',
-        title: 'Reminder Sent',
-        message: 'Reminder has been sent to the client.',
-      });
+      showSuccess('Reminder Sent', 'Reminder has been sent to the client.');
     },
     onError: (error: unknown) => {
       const message =
@@ -193,11 +157,7 @@ export const useSendQuestionnaireReminder = () => {
               (error as { response?: { data?: { detail?: string } } }).response?.data?.detail,
             ) || 'Failed to send reminder'
           : 'Failed to send reminder';
-      showToast({
-        type: 'error',
-        title: 'Reminder Failed',
-        message,
-      });
+      showError('Reminder Failed', message);
     },
   });
 };
