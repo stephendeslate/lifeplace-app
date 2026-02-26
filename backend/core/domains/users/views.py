@@ -210,6 +210,8 @@ def client_register(request):
 
             # Create user
             user = UserService.create_user(user_data)
+            user.auth_method = "password"
+            user.save(update_fields=["auth_method"])
 
             # Generate tokens for automatic login
             tokens = UserService.get_tokens_for_user(user)
