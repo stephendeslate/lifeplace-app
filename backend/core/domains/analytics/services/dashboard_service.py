@@ -37,11 +37,9 @@ class DashboardService:
 
         # Bookings use created_at (when the booking was made)
         current_bookings = Event.objects.filter(created_at__range=(start_date, end_date))
-        Event.objects.filter(created_at__range=(prev_start, prev_end))
 
         # Completed events use end_date (when the event actually finished)
         current_completed = Event.objects.filter(status="COMPLETED", end_date__range=(start_date, end_date))
-        Event.objects.filter(status="COMPLETED", end_date__range=(prev_start, prev_end))
 
         # Event Revenue - payments from COMPLETED events only (operational success)
         current_event_revenue = Payment.objects.filter(
@@ -65,7 +63,6 @@ class DashboardService:
         total_bookings = current_bookings.count()
         confirmed_count = current_bookings.filter(status="CONFIRMED").count()
         cancelled_count = current_bookings.filter(status="CANCELLED").count()
-        current_bookings.filter(status="LEAD").count()
 
         # Completed count uses end_date
         completed_count = current_completed.count()

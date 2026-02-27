@@ -200,10 +200,15 @@ export const useCommunications = () => {
     });
   };
 
-  const useAnalytics = (templateName?: string, days: number = 30) => {
+  const useAnalytics = (
+    templateName?: string,
+    days: number = 30,
+    startDate?: string,
+    endDate?: string,
+  ) => {
     return useQuery({
-      queryKey: ['communication-analytics', templateName, days],
-      queryFn: () => communicationsApi.getAnalytics(templateName, days),
+      queryKey: ['communication-analytics', templateName, days, startDate, endDate],
+      queryFn: () => communicationsApi.getAnalytics(templateName, days, startDate, endDate),
     });
   };
 

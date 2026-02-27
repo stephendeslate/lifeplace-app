@@ -144,10 +144,20 @@ export const communicationsApi = {
     return response.data;
   },
 
-  getAnalytics: async (templateName?: string, days: number = 30): Promise<AnalyticsData> => {
+  getAnalytics: async (
+    templateName?: string,
+    days: number = 30,
+    startDate?: string,
+    endDate?: string,
+  ): Promise<AnalyticsData> => {
     const params = new URLSearchParams();
     if (templateName) params.append('template_name', templateName);
-    params.append('days', days.toString());
+    if (startDate && endDate) {
+      params.append('start_date', startDate);
+      params.append('end_date', endDate);
+    } else {
+      params.append('days', days.toString());
+    }
 
     const response = await api.get<AnalyticsData>(
       `/communications/records/analytics/?${params.toString()}`,

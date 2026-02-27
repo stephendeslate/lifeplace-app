@@ -3,7 +3,6 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
-    BookingFlowAnalyticsViewSet,
     BookingFlowStepViewSet,
     BookingFlowViewSet,
     BookingSessionViewSet,
@@ -17,7 +16,6 @@ router = DefaultRouter()
 router.register(r"flows", BookingFlowViewSet, basename="bookingflow")
 router.register(r"steps", BookingFlowStepViewSet, basename="bookingflowstep")
 router.register(r"sessions", BookingSessionViewSet, basename="bookingsession")
-router.register(r"analytics", BookingFlowAnalyticsViewSet, basename="bookinganalytics")
 
 # Public router for client-facing endpoints
 public_router = DefaultRouter()

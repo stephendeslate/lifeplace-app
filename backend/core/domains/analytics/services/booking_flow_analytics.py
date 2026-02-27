@@ -118,6 +118,40 @@ class BookingFlowIntegrationService:
         return sorted(funnel_data, key=lambda x: x["order"])
 
     @staticmethod
+    def _collect_event_ids_from_sessions(completed_sessions):
+        """
+        Collect event IDs from completed sessions using both the created_event FK
+        and booking_data as a fallback (for sessions where the FK link was lost).
+        """
+        from core.domains.events.models import Event
+
+        event_ids = set()
+
+        for session in completed_sessions.select_related("created_event"):
+            # Primary: use the direct FK
+            if session.created_event_id:
+                event_ids.add(session.created_event_id)
+                continue
+
+            # Fallback: extract event ID from booking_data (handles orphaned sessions)
+            if not session.booking_data:
+                continue
+
+            completion_result = session.booking_data.get("booking_completion_result", {})
+            if not completion_result:
+                for step_data in session.booking_data.values():
+                    if isinstance(step_data, dict) and "booking_completion_result" in step_data:
+                        completion_result = step_data["booking_completion_result"]
+                        break
+
+            if completion_result and isinstance(completion_result.get("event"), dict):
+                eid = completion_result["event"].get("id")
+                if eid and Event.objects.filter(id=eid).exists():
+                    event_ids.add(eid)
+
+        return list(event_ids)
+
+    @staticmethod
     def get_flow_performance_summary(start_date, end_date):
         """
         Get performance summary for each booking flow.
@@ -139,11 +173,9 @@ class BookingFlowIntegrationService:
             abandoned = sessions.filter(is_abandoned=True).count()
 
             # Get revenue from completed sessions' events
-            completed_event_ids = list(
-                sessions.filter(is_completed=True, created_event__isnull=False).values_list(
-                    "created_event_id", flat=True
-                )
-            )
+            # Uses both created_event FK and booking_data fallback
+            completed_sessions = sessions.filter(is_completed=True)
+            completed_event_ids = BookingFlowIntegrationService._collect_event_ids_from_sessions(completed_sessions)
 
             revenue = Decimal("0")
             if completed_event_ids:

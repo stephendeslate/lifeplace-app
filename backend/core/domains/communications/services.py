@@ -723,9 +723,7 @@ class CommunicationService:
 
         return results
 
-    def update_delivery_status(
-        self, external_message_id: str, status: str, opened_at: timezone.datetime | None = None
-    ):
+    def update_delivery_status(self, external_message_id: str, status: str, opened_at: timezone.datetime | None = None):
         """Update delivery status from webhook"""
         try:
             record = CommunicationRecord.objects.get(external_message_id=external_message_id)
@@ -749,14 +747,28 @@ class AnalyticsService:
     """Service for communication analytics"""
 
     @staticmethod
-    def get_template_stats(template_name: str | None = None, days: int = 30) -> dict[str, Any]:
-        """Get communication statistics"""
-        from datetime import timedelta
+    def get_template_stats(
+        template_name: str | None = None,
+        days: int = 30,
+        start_date: str | None = None,
+        end_date: str | None = None,
+    ) -> dict[str, Any]:
+        """Get communication statistics for a date range.
+
+        If start_date and end_date are provided, uses exact range.
+        Otherwise falls back to 'last N days from now'.
+        """
+        from datetime import datetime, timedelta
 
         from django.db.models import Count
 
-        start_date = timezone.now() - timedelta(days=days)
-        queryset = CommunicationRecord.objects.filter(created_at__gte=start_date)
+        if start_date and end_date:
+            start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+            end_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+            queryset = CommunicationRecord.objects.filter(created_at__gte=start_dt, created_at__lte=end_dt)
+        else:
+            computed_start = timezone.now() - timedelta(days=days)
+            queryset = CommunicationRecord.objects.filter(created_at__gte=computed_start)
 
         if template_name:
             queryset = queryset.filter(template_name=template_name)

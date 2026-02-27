@@ -816,28 +816,39 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
         """Get communication analytics"""
         template_name = request.query_params.get("template_name")
         days = int(request.query_params.get("days", 30))
+        start_date = request.query_params.get("start_date")
+        end_date = request.query_params.get("end_date")
+        use_exact_range = bool(start_date and end_date)
 
         # If user is a client, filter analytics to their own communications
         if request.user.role == "CLIENT":
             client_id = request.user.id
 
-            # Try to get from cache first
-            cached_analytics = communications_cache_service.get_cached_client_analytics(client_id, days)
+            # Try to get from cache first (only for days-based queries)
+            if not use_exact_range:
+                cached_analytics = communications_cache_service.get_cached_client_analytics(client_id, days)
 
-            if cached_analytics is not None:
-                logger.debug(f"Client analytics for {client_id} served from cache")
-                # If template_name filter is applied, we might need fresh data
-                if not template_name:
-                    return Response(cached_analytics)
+                if cached_analytics is not None:
+                    logger.debug(f"Client analytics for {client_id} served from cache")
+                    # If template_name filter is applied, we might need fresh data
+                    if not template_name:
+                        return Response(cached_analytics)
 
             # Cache miss or filtered request - compute analytics
-            from datetime import timedelta
+            from datetime import datetime, timedelta
 
             from django.db.models import Count, Q
             from django.utils import timezone
 
-            start_date = timezone.now() - timedelta(days=days)
-            queryset = CommunicationRecord.objects.filter(client=request.user, created_at__gte=start_date)
+            if use_exact_range:
+                start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+                end_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+                queryset = CommunicationRecord.objects.filter(
+                    client=request.user, created_at__gte=start_dt, created_at__lte=end_dt
+                )
+            else:
+                computed_start = timezone.now() - timedelta(days=days)
+                queryset = CommunicationRecord.objects.filter(client=request.user, created_at__gte=computed_start)
 
             if template_name:
                 queryset = queryset.filter(template_name=template_name)
@@ -855,15 +866,15 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
             stats["open_rate"] = round((stats["opened"] / total) * 100, 2)
             stats["failure_rate"] = round((stats["failed"] / total) * 100, 2)
 
-            # Cache client analytics (only if not template-filtered)
-            if not template_name:
+            # Cache client analytics (only for days-based, non-filtered queries)
+            if not use_exact_range and not template_name:
                 communications_cache_service.cache_client_analytics(client_id, days, stats)
                 logger.info(f"Client analytics for {client_id} cached after computation")
 
             return Response(stats)
         else:
             # Admins get full analytics
-            if template_name:
+            if not use_exact_range and template_name:
                 # Try to get template-specific analytics from cache
                 cached_analytics = communications_cache_service.get_cached_template_analytics(template_name, days)
 
@@ -872,15 +883,16 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
                     return Response(cached_analytics)
 
             # Cache miss or global analytics - compute stats
-            stats = AnalyticsService.get_template_stats(template_name, days)
+            stats = AnalyticsService.get_template_stats(template_name, days, start_date, end_date)
 
-            # Cache the analytics
-            if template_name:
-                communications_cache_service.cache_template_analytics(template_name, days, stats)
-                logger.info(f"Template analytics for {template_name} cached after computation")
-            else:
-                communications_cache_service.cache_global_analytics(days, stats)
-                logger.info("Global analytics cached after computation")
+            # Cache the analytics (only for days-based queries)
+            if not use_exact_range:
+                if template_name:
+                    communications_cache_service.cache_template_analytics(template_name, days, stats)
+                    logger.info(f"Template analytics for {template_name} cached after computation")
+                else:
+                    communications_cache_service.cache_global_analytics(days, stats)
+                    logger.info("Global analytics cached after computation")
 
             return Response(stats)
 
@@ -931,9 +943,7 @@ class CommunicationRecordViewSet(viewsets.ReadOnlyModelViewSet):
             return Response({"message": "Message marked as unread"}, status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response(
-                {"error": f"Failed to mark message as unread: {e!s}"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response({"error": f"Failed to mark message as unread: {e!s}"}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=["post"])
     def mark_all_as_read(self, request):

@@ -380,17 +380,28 @@ export const Dashboard: React.FC = () => {
                 </Box>
               </Box>
               {[
-                { label: 'Database Status', value: 'Operational', color: 'success' as const },
-                { label: 'API Response Time', value: '< 200ms', color: 'success' as const },
-                {
-                  label: 'Active Sessions',
-                  value: `${Math.floor(Math.random() * 50) + 10}`,
-                  color: 'info' as const,
-                },
                 {
                   label: 'Pending Payments',
                   value: pendingPayments,
                   color: (pendingPayments > 5 ? 'warning' : 'success') as 'warning' | 'success',
+                },
+                {
+                  label: 'Confirmed Bookings',
+                  value: dashboardKPIs?.confirmed_bookings ?? 0,
+                  color: 'info' as const,
+                },
+                {
+                  label: 'Completed Events',
+                  value: dashboardKPIs?.completed_bookings ?? 0,
+                  color: 'success' as const,
+                },
+                {
+                  label: 'Cancelled',
+                  value: dashboardKPIs?.cancelled_bookings ?? 0,
+                  color:
+                    (dashboardKPIs?.cancelled_bookings ?? 0) > 0
+                      ? ('warning' as const)
+                      : ('success' as const),
                 },
               ].map((status) => (
                 <Box

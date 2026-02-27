@@ -1,7 +1,7 @@
 // Communications Analytics Tab
 // Shows delivery metrics, open rates, and failure tracking for email/SMS
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Box, Typography, Skeleton, Stack, Chip } from '@mui/material';
 import {
   Email as EmailIcon,
@@ -21,16 +21,13 @@ interface CommunicationsTabProps {
 }
 
 export const CommunicationsTab: React.FC<CommunicationsTabProps> = ({ dateRange }) => {
-  // Convert dateRange to days for the analytics hook
-  const days = useMemo(() => {
-    const start = new Date(dateRange.startDate);
-    const end = new Date(dateRange.endDate);
-    const diff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    return Math.max(diff, 1);
-  }, [dateRange]);
-
   const { useAnalytics } = useCommunications();
-  const { data: analytics, isLoading } = useAnalytics(undefined, days);
+  const { data: analytics, isLoading } = useAnalytics(
+    undefined,
+    30,
+    dateRange.startDate,
+    dateRange.endDate,
+  );
 
   return (
     <Stack spacing={3}>
@@ -177,7 +174,7 @@ export const CommunicationsTab: React.FC<CommunicationsTabProps> = ({ dateRange 
               Period Summary
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Last {days} day{days !== 1 ? 's' : ''}
+              {dateRange.startDate} to {dateRange.endDate}
             </Typography>
 
             <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
