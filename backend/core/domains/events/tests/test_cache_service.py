@@ -26,10 +26,24 @@ from core.domains.events.models import (
 
 @pytest.fixture(autouse=True)
 def clear_cache_before_each():
-    """Clear cache before each test."""
+    """Clear cache before each test.
+
+    Must clear the module-level cache instances from cache_service directly,
+    not just django.core.cache.cache. The conftest's use_dummy_cache fixture
+    reassigns settings.CACHES each test, causing Django's CacheHandler to create
+    new LocMemCache instances. But cache_service.redis_cache (captured at import
+    time) still points to the original instance. Clearing only the default
+    `cache` proxy misses the stale reference, allowing data to bleed between tests.
+    """
+    from core.domains.events.cache_service import analytics_cache, redis_cache
+
     cache.clear()
+    redis_cache.clear()
+    analytics_cache.clear()
     yield
     cache.clear()
+    redis_cache.clear()
+    analytics_cache.clear()
 
 
 # =============================================================================
