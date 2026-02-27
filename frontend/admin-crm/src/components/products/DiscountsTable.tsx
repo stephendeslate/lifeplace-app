@@ -169,7 +169,7 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
     {
       key: 'application_type',
       label: 'Application',
-      hideBelow: 'lg',
+      hideBelow: 'xl',
       render: (_, row) => {
         const discount = row as unknown as Discount;
         return (
@@ -183,7 +183,7 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
     {
       key: 'valid_period',
       label: 'Valid Period',
-      hideBelow: 'md',
+      hideBelow: 'lg',
       render: (_, row) => {
         const discount = row as unknown as Discount;
         return (
@@ -203,7 +203,7 @@ export const DiscountsTable: React.FC<DiscountsTableProps> = ({
     {
       key: 'usage',
       label: 'Usage',
-      hideBelow: 'md',
+      hideBelow: 'lg',
       render: (_, row) => {
         const discount = row as unknown as Discount;
         return getUsageProgress(discount);

@@ -1158,19 +1158,28 @@ export const createModernTheme = (mode: 'light' | 'dark' = 'light') => {
               : `1px solid ${tokens.color.borders.primary}`,
         },
         colorSuccess: {
-          background: mode === 'dark' ? darkSurfaces.semantic.success.bg : undefined,
-          color: mode === 'dark' ? darkSurfaces.semantic.success.text : undefined,
-          border: mode === 'dark' ? `1px solid ${darkSurfaces.semantic.success.border}` : undefined,
+          background: mode === 'dark' ? darkSurfaces.semantic.success.bg : tokens.color.success[50],
+          color: mode === 'dark' ? darkSurfaces.semantic.success.text : tokens.color.success[700],
+          border:
+            mode === 'dark'
+              ? `1px solid ${darkSurfaces.semantic.success.border}`
+              : `1px solid ${tokens.color.success[200]}`,
         },
         colorError: {
-          background: mode === 'dark' ? darkSurfaces.semantic.error.bg : undefined,
-          color: mode === 'dark' ? darkSurfaces.semantic.error.text : undefined,
-          border: mode === 'dark' ? `1px solid ${darkSurfaces.semantic.error.border}` : undefined,
+          background: mode === 'dark' ? darkSurfaces.semantic.error.bg : tokens.color.error[50],
+          color: mode === 'dark' ? darkSurfaces.semantic.error.text : tokens.color.error[700],
+          border:
+            mode === 'dark'
+              ? `1px solid ${darkSurfaces.semantic.error.border}`
+              : `1px solid ${tokens.color.error[200]}`,
         },
         colorWarning: {
-          background: mode === 'dark' ? darkSurfaces.semantic.warning.bg : undefined,
-          color: mode === 'dark' ? darkSurfaces.semantic.warning.text : undefined,
-          border: mode === 'dark' ? `1px solid ${darkSurfaces.semantic.warning.border}` : undefined,
+          background: mode === 'dark' ? darkSurfaces.semantic.warning.bg : tokens.color.warning[50],
+          color: mode === 'dark' ? darkSurfaces.semantic.warning.text : tokens.color.warning[700],
+          border:
+            mode === 'dark'
+              ? `1px solid ${darkSurfaces.semantic.warning.border}`
+              : `1px solid ${tokens.color.warning[200]}`,
         },
       },
     },

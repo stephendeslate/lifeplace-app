@@ -274,7 +274,7 @@ export const AdminUsers: React.FC = () => {
     {
       key: 'company',
       label: 'Company',
-      hideBelow: 'md',
+      hideBelow: 'xl',
       render: (_, user) => (
         <Typography variant="body2" color="text.secondary">
           {user.profile?.company || '-'}
@@ -285,7 +285,7 @@ export const AdminUsers: React.FC = () => {
       key: 'date_joined',
       label: 'Joined',
       sortable: true,
-      hideBelow: 'md',
+      hideBelow: 'lg',
       render: (_, user) => (
         <Typography variant="body2" color="text.secondary">
           {new Date(user.date_joined).toLocaleDateString()}
@@ -295,7 +295,7 @@ export const AdminUsers: React.FC = () => {
     {
       key: 'permission_level',
       label: 'Permission Level',
-      hideBelow: 'lg',
+      hideBelow: 'md',
       render: (_, user) => {
         const isFullAdmin =
           user.is_full_admin ||
@@ -374,7 +374,7 @@ export const AdminUsers: React.FC = () => {
     {
       key: 'invited_by',
       label: 'Invited By',
-      hideBelow: 'md',
+      hideBelow: 'xl',
       render: (_, invitation) => (
         <Typography variant="body2" color="text.secondary">
           {invitation.invited_by}
@@ -385,7 +385,7 @@ export const AdminUsers: React.FC = () => {
       key: 'created_at',
       label: 'Sent',
       sortable: true,
-      hideBelow: 'md',
+      hideBelow: 'lg',
       render: (_, invitation) => (
         <Typography variant="body2" color="text.secondary">
           {new Date(invitation.created_at).toLocaleDateString()}
@@ -395,7 +395,6 @@ export const AdminUsers: React.FC = () => {
     {
       key: 'status',
       label: 'Status',
-      hideBelow: 'lg',
       render: (_, invitation) => {
         const status = getInvitationStatus(invitation);
         return (

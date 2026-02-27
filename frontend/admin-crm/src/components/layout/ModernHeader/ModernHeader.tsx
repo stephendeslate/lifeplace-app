@@ -43,6 +43,7 @@ import {
   CalendarMonth,
   School as TourIcon,
   Speed as SpeedIcon,
+  KeyboardArrowDown,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLayout } from '../../../contexts/LayoutContext';
@@ -71,6 +72,8 @@ const navigationItems = [
 export const ModernHeader: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isAboveLg = useMediaQuery(theme.breakpoints.up('lg'));
+  const isAboveXl = useMediaQuery(theme.breakpoints.up('xl'));
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -87,6 +90,7 @@ export const ModernHeader: React.FC = () => {
 
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
 
   // Simple flat header style - theme aware
   const headerStyle = (() => {
@@ -153,6 +157,12 @@ export const ModernHeader: React.FC = () => {
   const isActiveRoute = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(path + '/');
   };
+
+  // Overflow nav: show as many labeled items as fit, rest go into "More" dropdown
+  const visibleNavCount = isAboveXl ? navigationItems.length : isAboveLg ? 7 : 5;
+  const visibleItems = navigationItems.slice(0, visibleNavCount);
+  const overflowItems = navigationItems.slice(visibleNavCount);
+  const hasActiveOverflow = overflowItems.some((item) => isActiveRoute(item.path));
 
   return (
     <>
@@ -232,8 +242,15 @@ export const ModernHeader: React.FC = () => {
 
             {/* Desktop Navigation */}
             {!isMobile && (
-              <Box data-tour="main-navigation" sx={{ display: 'flex', gap: 1, ml: 4 }}>
-                {navigationItems.map((item) => {
+              <Box
+                data-tour="main-navigation"
+                sx={{
+                  display: 'flex',
+                  gap: isAboveLg ? 1 : 0.5,
+                  ml: isAboveXl ? 3 : isAboveLg ? 2.5 : 2,
+                }}
+              >
+                {visibleItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = isActiveRoute(item.path);
 
@@ -246,8 +263,9 @@ export const ModernHeader: React.FC = () => {
                         color: isActive ? tokens.color.primary[700] : tokens.color.neutral[700],
                         fontWeight: isActive ? 600 : 500,
                         fontSize: '0.875rem',
-                        px: 2,
+                        px: 1.5,
                         py: 1,
+                        whiteSpace: 'nowrap',
                         borderRadius: tokens.spacing.radius.md,
                         position: 'relative',
                         transition: createTransition(['background', 'color'], 'fast'),
@@ -276,6 +294,117 @@ export const ModernHeader: React.FC = () => {
                     </Button>
                   );
                 })}
+
+                {/* Overflow "More" dropdown for items that don't fit */}
+                {overflowItems.length > 0 && (
+                  <>
+                    <Button
+                      onClick={(e) => setMoreMenuAnchor(e.currentTarget)}
+                      endIcon={<KeyboardArrowDown />}
+                      sx={{
+                        color: hasActiveOverflow
+                          ? tokens.color.primary[700]
+                          : tokens.color.neutral[700],
+                        fontWeight: hasActiveOverflow ? 600 : 500,
+                        fontSize: '0.875rem',
+                        px: 1.5,
+                        py: 1,
+                        whiteSpace: 'nowrap',
+                        borderRadius: tokens.spacing.radius.md,
+                        position: 'relative',
+                        transition: createTransition(['background', 'color'], 'fast'),
+                        background: hasActiveOverflow ? tokens.color.primary[50] : 'transparent',
+                        '&:hover': {
+                          background: hasActiveOverflow
+                            ? tokens.color.primary[100]
+                            : tokens.color.neutral[100],
+                        },
+                        '&::after': hasActiveOverflow
+                          ? {
+                              content: '""',
+                              position: 'absolute',
+                              bottom: -8,
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              width: 24,
+                              height: 3,
+                              borderRadius: tokens.spacing.radius.full,
+                              background: tokens.color.primary[600],
+                            }
+                          : {},
+                      }}
+                    >
+                      More
+                    </Button>
+                    <Menu
+                      anchorEl={moreMenuAnchor}
+                      open={Boolean(moreMenuAnchor)}
+                      onClose={() => setMoreMenuAnchor(null)}
+                      transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                      anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+                      PaperProps={{
+                        sx: {
+                          mt: 1,
+                          minWidth: 200,
+                          borderRadius: tokens.spacing.radius.lg,
+                          border:
+                            appTheme.effectiveMode === 'dark'
+                              ? `1px solid ${tokens.color.neutral[700]}`
+                              : `1px solid ${tokens.color.neutral[200]}`,
+                          background:
+                            appTheme.effectiveMode === 'dark' ? tokens.color.neutral[900] : 'white',
+                        },
+                      }}
+                    >
+                      {overflowItems.map((item) => {
+                        const Icon = item.icon;
+                        const isActive = isActiveRoute(item.path);
+
+                        return (
+                          <MenuItem
+                            key={item.path}
+                            onClick={() => {
+                              navigate(item.path);
+                              setMoreMenuAnchor(null);
+                            }}
+                            sx={{
+                              mx: 1,
+                              my: 0.5,
+                              borderRadius: tokens.spacing.radius.md,
+                              transition: createTransition(['background'], 'fast'),
+                              background: isActive ? tokens.color.primary[50] : 'transparent',
+                              '&:hover': {
+                                background: isActive
+                                  ? tokens.color.primary[100]
+                                  : tokens.color.neutral[100],
+                              },
+                            }}
+                          >
+                            <ListItemIcon>
+                              <Icon
+                                sx={{
+                                  color: isActive
+                                    ? tokens.color.primary[600]
+                                    : tokens.color.neutral[600],
+                                  fontSize: 20,
+                                }}
+                              />
+                            </ListItemIcon>
+                            <ListItemText
+                              primaryTypographyProps={{
+                                fontWeight: isActive ? 600 : 500,
+                                fontSize: '0.875rem',
+                                color: isActive ? tokens.color.primary[700] : undefined,
+                              }}
+                            >
+                              {item.label}
+                            </ListItemText>
+                          </MenuItem>
+                        );
+                      })}
+                    </Menu>
+                  </>
+                )}
               </Box>
             )}
           </Box>

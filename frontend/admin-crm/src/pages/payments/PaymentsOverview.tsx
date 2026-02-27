@@ -169,7 +169,21 @@ export const PaymentsOverview: React.FC = () => {
     }
   };
 
-  const getDaysRemaining = (dueDate: string) => {
+  const getDaysRemaining = (dueDate: string, status: PaymentStatus) => {
+    // Terminal statuses — date-based urgency is no longer relevant
+    if (status === 'COMPLETED') {
+      return { text: 'Paid', color: 'success.main', severity: 'paid' as const };
+    }
+    if (status === 'CANCELLED') {
+      return { text: 'Cancelled', color: 'text.disabled', severity: 'cancelled' as const };
+    }
+    if (status === 'REFUNDED') {
+      return { text: 'Refunded', color: 'text.disabled', severity: 'refunded' as const };
+    }
+    if (status === 'FAILED') {
+      return { text: 'Failed', color: 'error.main', severity: 'failed' as const };
+    }
+
     const due = new Date(dueDate);
     const today = new Date();
     const diffTime = due.getTime() - today.getTime();
@@ -364,7 +378,7 @@ export const PaymentsOverview: React.FC = () => {
                 <TableBody>
                   {Array.isArray(payments) &&
                     payments.map((payment) => {
-                      const daysRemaining = getDaysRemaining(payment.due_date);
+                      const daysRemaining = getDaysRemaining(payment.due_date, payment.status);
 
                       return (
                         <TableRow
