@@ -1,5 +1,8 @@
 # Ignore files and directories that should not be tracked by Git
 
+# Dependencies
+node_modules/
+
 # Environment files (may contain secrets)
 .env
 .env.local
@@ -13,6 +16,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+.pytest_cache/
 
 # Virtual environments
 venv/
@@ -33,6 +37,9 @@ backend/staticfiles/
 # macOS
 .DS_Store
 
+# IDE
+.idea/
+
 # Test coverage
 coverage/
 **/coverage/
@@ -46,7 +53,10 @@ coverage/
 backend/test_message.json
 
 # Build artifacts
+dist/
+build/
 *.tar.gz
+*.tsbuildinfo
 
 # Root package-lock (workspace lock files in each app are tracked instead)
 /package-lock.json
