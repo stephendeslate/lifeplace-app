@@ -79,9 +79,7 @@ def expire_sent_quotes():
                 from core.domains.users.models import User
 
                 client = quote.event.client
-                admin_emails = list(
-                    User.objects.filter(is_staff=True, is_active=True).exclude(email="").values_list("email", flat=True)
-                )
+                admin_emails = list(User.objects.get_active_admins().exclude(email="").values_list("email", flat=True))
 
                 if admin_emails:
                     comm_service = CommunicationService()
@@ -185,9 +183,7 @@ def send_quote_expiry_reminders():
                         from core.domains.users.models import User
 
                         admin_emails = list(
-                            User.objects.filter(is_staff=True, is_active=True)
-                            .exclude(email="")
-                            .values_list("email", flat=True)
+                            User.objects.get_active_admins().exclude(email="").values_list("email", flat=True)
                         )
 
                         for admin_email in admin_emails:

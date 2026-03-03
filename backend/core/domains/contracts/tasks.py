@@ -193,9 +193,7 @@ def send_contract_expiry_reminder(self, contract_id: int, days_before_expiry: in
         try:
             from core.domains.users.models import User
 
-            admin_emails = list(
-                User.objects.filter(is_staff=True, is_active=True).exclude(email="").values_list("email", flat=True)
-            )
+            admin_emails = list(User.objects.get_active_admins().exclude(email="").values_list("email", flat=True))
 
             if admin_emails:
                 for admin_email in admin_emails:
@@ -307,9 +305,7 @@ def send_contract_sent_notification(self, contract_id: int):
         event_date_formatted = (
             contract.event.start_date.strftime("%B %d, %Y") if contract.event.start_date else "your event"
         )
-        (
-            contract.valid_until.strftime("%B %d, %Y") if contract.valid_until else "the expiration date"
-        )
+        (contract.valid_until.strftime("%B %d, %Y") if contract.valid_until else "the expiration date")
 
         # Send professional email via CommunicationService
         if client.email:
@@ -443,9 +439,7 @@ def notify_contract_expired(self, contract_id: int):
         try:
             from core.domains.users.models import User
 
-            admin_emails = list(
-                User.objects.filter(is_staff=True, is_active=True).exclude(email="").values_list("email", flat=True)
-            )
+            admin_emails = list(User.objects.get_active_admins().exclude(email="").values_list("email", flat=True))
 
             if admin_emails:
                 comm_service = CommunicationService()

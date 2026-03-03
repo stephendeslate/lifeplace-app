@@ -207,9 +207,7 @@ class EventContract(BaseModel):
                     logger.warning(f"Failed to send client confirmation for contract {self.id}: {client_email_error}")
 
             # Send admin notification emails
-            admin_emails = list(
-                User.objects.filter(is_staff=True, is_active=True).exclude(email="").values_list("email", flat=True)
-            )
+            admin_emails = list(User.objects.get_active_admins().exclude(email="").values_list("email", flat=True))
 
             for admin_email in admin_emails:
                 try:

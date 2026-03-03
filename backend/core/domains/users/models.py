@@ -44,6 +44,14 @@ class UserManager(BaseUserManager):
 
         return self._create_user(email, password, **extra_fields)
 
+    def get_active_admins(self):
+        """Return a queryset of active admin users.
+
+        Single source of truth for "who are the admin users."
+        Uses the application-level role field, not Django's is_staff flag.
+        """
+        return self.filter(role="ADMIN", is_active=True)
+
 
 class User(AbstractUser):
     """User model with email-based authentication and role-based access"""

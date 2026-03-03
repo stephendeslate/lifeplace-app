@@ -169,6 +169,52 @@ class TestUserAdminPermissions:
 
 
 @pytest.mark.django_db
+class TestUserManagerGetActiveAdmins:
+    """Tests for UserManager.get_active_admins() queryset method."""
+
+    def test_returns_active_admin_users(self, user_factory):
+        """Active admin users are included."""
+        admin = user_factory(admin=True)
+        result = User.objects.get_active_admins()
+        assert admin in result
+
+    def test_excludes_client_users(self, user_factory):
+        """Client users are excluded even if active."""
+        client = user_factory(role="CLIENT")
+        result = User.objects.get_active_admins()
+        assert client not in result
+
+    def test_excludes_inactive_admins(self, user_factory):
+        """Inactive admin users are excluded."""
+        inactive_admin = user_factory(admin=True, is_active=False)
+        result = User.objects.get_active_admins()
+        assert inactive_admin not in result
+
+    def test_excludes_staff_only_clients(self, user_factory):
+        """Users with is_staff=True but role=CLIENT are excluded.
+
+        This is the core behavioral distinction from the old is_staff query pattern.
+        """
+        staff_client = user_factory(role="CLIENT", is_staff=True)
+        result = User.objects.get_active_admins()
+        assert staff_client not in result
+
+    def test_returns_chainable_queryset(self, user_factory):
+        """Result is a QuerySet that supports .values_list() chaining."""
+        admin = user_factory(admin=True)
+        emails = list(User.objects.get_active_admins().exclude(email="").values_list("email", flat=True))
+        assert admin.email in emails
+
+    def test_supports_exclude_chaining(self, user_factory):
+        """Can chain .exclude() to filter out specific admins."""
+        admin1 = user_factory(admin=True)
+        admin2 = user_factory(admin=True)
+        result = User.objects.get_active_admins().exclude(id=admin1.id)
+        assert admin1 not in result
+        assert admin2 in result
+
+
+@pytest.mark.django_db
 class TestUserProfile:
     """Tests for UserProfile model."""
 
