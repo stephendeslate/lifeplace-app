@@ -524,7 +524,7 @@ class TestQuestionnaireResponseViewSet:
         # service expects an integer ID - this is a known implementation quirk.
         mock_response = QuestionnaireResponse(id=1, event=event, field=field, value="Test Answer")
         mocker.patch(
-            "core.domains.questionnaires.views.QuestionnaireResponseService.create_response", return_value=mock_response
+            "core.domains.questionnaires.views.questionnaire_response_views.QuestionnaireResponseService.create_response", return_value=mock_response
         )
 
         url = reverse("questionnaires:response-list")
