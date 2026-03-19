@@ -9,11 +9,11 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import FinancialPortal from '../../pages/payments/FinancialPortal';
-import FinancialApi from '../../apis/financial.api';
+import FinancialApi from '../../apis/financial';
 import { ToastProvider } from '../../contexts/ToastContext';
 
 // Mock the API
-vi.mock('../../apis/financial.api');
+vi.mock('../../apis/financial');
 const mockFinancialApi = vi.mocked(FinancialApi);
 
 // Mock authentication context

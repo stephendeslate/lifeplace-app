@@ -51,7 +51,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useToastActions } from '../../../contexts/ToastContext';
 import { useTheme as useAppTheme } from '../../../contexts/ThemeContext';
 import { NotificationBadge } from '../../notifications/NotificationBadge';
-import { useWalkthrough } from '../../../contexts/WalkthroughContext';
+import { useWalkthrough } from '../../../contexts/walkthrough';
 import { tokens } from '../../../design-system';
 import { createTransition } from '../../../design-system/utils/animations';
 

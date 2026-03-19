@@ -21,7 +21,7 @@ import {
   type StripeCardElementChangeEvent,
 } from '@stripe/stripe-js';
 import { GlassCard } from '../../design-system';
-import FinancialApi from '../../apis/financial.api';
+import FinancialApi from '../../apis/financial';
 import type {
   UnifiedStripePaymentFlowProps,
   PaymentFlowResult,

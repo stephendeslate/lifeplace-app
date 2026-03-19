@@ -327,7 +327,7 @@ export const BookingFlows = () => {
 
   // Fetch fresh booking flow data before editing to ensure we have the latest values
   const handleFetchItem = async (id: string | number): Promise<BookingFlow> => {
-    const { bookingFlowsApi } = await import('../../../apis/bookingflows.api');
+    const { bookingFlowsApi } = await import('../../../apis/bookingflows');
     // getBookingFlow returns BookingFlowDetail which extends BookingFlow
     return bookingFlowsApi.getBookingFlow(Number(id));
   };

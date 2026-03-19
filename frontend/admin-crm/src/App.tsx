@@ -7,7 +7,7 @@ import { Box, CircularProgress, Typography } from '@mui/material';
 import { useAuth } from './contexts/AuthContext';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { AppLayout } from './components/layout';
-import { WalkthroughProvider } from './contexts/WalkthroughContext';
+import { WalkthroughProvider } from './contexts/walkthrough';
 
 // Critical path - keep static imports
 import { Login, AcceptInvitation, ForgotPassword, ResetPassword } from './pages/auth';

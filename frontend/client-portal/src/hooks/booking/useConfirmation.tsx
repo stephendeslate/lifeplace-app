@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { ConfirmationApi } from '../../apis/booking/confirmation.api';
-import { BookingCoreApi } from '../../apis/booking/core.api';
+import { BookingCoreApi } from '../../apis/booking/core';
 import { ErrorHandler } from '../../utils/errorHandler';
 import type { BookingCompletionResult, ConfirmationStepConfiguration } from '../../types/booking';
 

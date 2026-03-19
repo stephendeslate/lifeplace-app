@@ -31,7 +31,7 @@ import type {
   PaymentFlowError,
 } from '../../types/unified-payment-flow.types';
 import { GlassCard } from '../../design-system';
-import FinancialApi from '../../apis/financial.api';
+import FinancialApi from '../../apis/financial';
 import { usePaymentPlanSettings } from '../../hooks/usePaymentPlanSettings';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import type {

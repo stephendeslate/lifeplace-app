@@ -31,7 +31,7 @@ import {
 import { GlassCard } from '../../design-system/components/GlassCard';
 import { AnimatedElement } from '../../design-system/components/AnimatedElement';
 import { GlassSpinner } from '../loading';
-import { BookingCoreApi } from '../../apis/booking/core.api';
+import { BookingCoreApi } from '../../apis/booking/core';
 import type { EventType } from '../../types/booking';
 
 interface EventTypeSelectionProps {

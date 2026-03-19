@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../contexts/ToastContext';
-import FinancialApi from '../apis/financial.api';
+import FinancialApi from '../apis/financial';
 import type {
   PaymentFilters,
   InvoiceFilters,

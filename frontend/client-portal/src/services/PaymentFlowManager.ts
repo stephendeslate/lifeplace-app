@@ -1,7 +1,7 @@
 // frontend/client-portal/src/services/PaymentFlowManager.ts
 
 import { loadStripe, type Stripe, type ConfirmCardPaymentData } from '@stripe/stripe-js';
-import FinancialApi from '../apis/financial.api';
+import FinancialApi from '../apis/financial';
 
 /**
  * Payment configuration for different payment scenarios

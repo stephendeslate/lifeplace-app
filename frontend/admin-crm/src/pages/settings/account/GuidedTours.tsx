@@ -24,7 +24,7 @@ import {
   CheckCircle as CompletedIcon,
   SkipNext as SkippedIcon,
 } from '@mui/icons-material';
-import { useWalkthrough } from '../../../contexts/WalkthroughContext';
+import { useWalkthrough } from '../../../contexts/walkthrough';
 import { getAllTours } from '../../../config/walkthrough-tours';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { ModernPageHeader } from '../../../components/common/ModernPageHeader';

@@ -1,7 +1,7 @@
 // frontend/client-portal/src/hooks/booking/useBookingCore.ts
 
 import { useState, useEffect, useCallback } from 'react';
-import { BookingCoreApi } from '../../apis/booking/core.api';
+import { BookingCoreApi } from '../../apis/booking/core';
 import { ErrorHandler } from '../../utils/errorHandler';
 import type {
   EventType,

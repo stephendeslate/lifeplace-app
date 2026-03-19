@@ -464,7 +464,7 @@ export const BookingFlowSteps: React.FC<BookingFlowStepsProps> = ({ embedded = f
 
   // Fetch fresh step data before editing to ensure we have the latest values
   const handleFetchItem = async (id: string | number): Promise<BookingFlowStep> => {
-    const { bookingFlowsApi } = await import('../../../apis/bookingflows.api');
+    const { bookingFlowsApi } = await import('../../../apis/bookingflows');
     return bookingFlowsApi.getBookingFlowStep(Number(id));
   };
 

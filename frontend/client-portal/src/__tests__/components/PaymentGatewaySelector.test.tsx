@@ -8,7 +8,7 @@ import type { PaymentGateway } from '../../types/financial';
 
 // Mock the API - create a mock function that we can control
 const mockGetActivePaymentGateways = vi.fn();
-vi.mock('../../apis/financial.api', () => ({
+vi.mock('../../apis/financial', () => ({
   default: {
     getActivePaymentGateways: (...args: unknown[]) => mockGetActivePaymentGateways(...args),
   },

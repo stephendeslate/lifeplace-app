@@ -1,0 +1,1 @@
+export { EventProfile } from './EventProfile';
