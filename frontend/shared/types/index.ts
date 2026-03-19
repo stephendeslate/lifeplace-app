@@ -1,4 +1,2 @@
 // Re-export all shared types
-
-// Messaging types
-export * from './messaging';
+// (types will be added as cross-app shared types are identified)

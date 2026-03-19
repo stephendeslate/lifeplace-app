@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 import { MemoryRouter } from 'react-router-dom';
-// Using vitest globals
 
 // Create a mock theme for testing
 const testTheme = createTheme({
@@ -18,28 +17,6 @@ const testTheme = createTheme({
     },
   },
 });
-
-// Mock WebSocket functionality for tests
-const mockWebSocketContext = {
-  isConnected: false,
-  connectionState: 'disconnected' as const,
-  lastMessage: null,
-  sendMessage: vi.fn(),
-  connect: vi.fn(),
-  disconnect: vi.fn(),
-  error: null,
-};
-
-// Mock Messaging Context for tests
-const mockMessagingContext = {
-  messages: [],
-  loading: false,
-  error: null,
-  sendMessage: vi.fn(),
-  markAsRead: vi.fn(),
-  deleteMessage: vi.fn(),
-  refreshMessages: vi.fn(),
-};
 
 // Create test query client with disabled retries for faster tests
 export const createTestQueryClient = () => {
@@ -62,8 +39,6 @@ interface TestProvidersProps {
   queryClient?: QueryClient;
   initialRoutes?: string[];
   theme?: typeof testTheme;
-  mockWebSocket?: typeof mockWebSocketContext;
-  mockMessaging?: typeof mockMessagingContext;
 }
 
 /**
@@ -75,8 +50,6 @@ export const TestProviders: React.FC<TestProvidersProps> = ({
   queryClient,
   initialRoutes = ['/'],
   theme = testTheme,
-  mockWebSocket: _mockWebSocket = mockWebSocketContext,
-  mockMessaging: _mockMessaging = mockMessagingContext,
 }) => {
   const testQueryClient = queryClient || createTestQueryClient();
 
@@ -116,6 +89,3 @@ export const QueryWrapper: React.FC<{
   const testQueryClient = queryClient || createTestQueryClient();
   return <QueryClientProvider client={testQueryClient}>{children}</QueryClientProvider>;
 };
-
-// Export mock contexts for individual use
-export { mockWebSocketContext, mockMessagingContext };
