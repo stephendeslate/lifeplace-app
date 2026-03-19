@@ -43,7 +43,8 @@ npm test                         # jest (NOT vitest — only app using jest)
 ## Architecture Decisions
 
 - **ADR-001: Naive Philippine Time** — `USE_TZ=False`, all datetimes assumed Asia/Manila (UTC+8). Philippines has no DST. Use `timezone.now()` in backend, `formatPhilippinesTime()` in frontend. Review trigger: expansion outside PH. See [ADR-001](docs/architecture/ADR-001-timezone-handling.md).
-- **DDD domains** — backend organized as `core/domains/{workflows,payments,events,contracts,sales,communications,analytics,...}`. Business logic lives in `services.py`; views are thin wrappers.
+- **ADR-002: Refactoring Conventions** — Target structure for splitting oversized files (<500 lines each). Selectors for read-only queries, frozen dataclass DTOs for cross-domain data, module-to-package promotion. See [ADR-002](docs/architecture/ADR-002-refactoring-conventions.md).
+- **DDD domains** — backend organized as `core/domains/{workflows,payments,events,contracts,sales,communications,analytics,...}`. Business logic lives in `services.py`; read-only queries in `selectors.py`; views are thin wrappers. Cross-domain data uses frozen dataclass DTOs (`types.py`).
 - **Celery + Redis** — 8 task queues (notifications, communications, analytics, events, contracts, sales, payments, default). ~35 periodic beat tasks. DLQ via `task_failure` signal. Hard timeout 300s / soft 270s.
 - **Payments: Stripe direct** — `stripe==12.2.0`. Gateway service, unified webhook processor. Beat tasks for health checks (15min), webhook retries (5min), reconciliation (daily).
 - **State management divergence** — Web apps: React Query (server) + Context API (UI). Mobile: Zustand with SecureStore persistence. This split is intentional.

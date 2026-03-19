@@ -1,0 +1,31 @@
+[tool.mypy]
+# Gradual strict typing — enforce on new files, opt-in for existing.
+# Phase 0: only new selectors/ and types.py files are checked strictly.
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # Existing code isn't typed — don't block on it
+
+# Strict checking on new refactored files
+[[tool.mypy.overrides]]
+module = [
+    "core.types",
+    "core.domains.*.selectors",
+    "core.domains.*.selectors.*",
+    "core.domains.*.types",
+]
+disallow_untyped_defs = true
+disallow_any_generics = true
+warn_unreachable = true
+strict_equality = true
+
+# Ignore missing stubs for third-party libraries
+[[tool.mypy.overrides]]
+module = [
+    "rest_framework.*",
+    "django.*",
+    "celery.*",
+    "stripe.*",
+    "corsheaders.*",
+]
+ignore_missing_imports = true
