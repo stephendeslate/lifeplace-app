@@ -44,39 +44,22 @@ class NotificationService:
         limit: int | None = None,
     ):
         """Get notifications for a user with filtering"""
-        query = Q(recipient=user)
+        from .selectors import get_notifications
 
-        if is_read is not None:
-            query &= Q(is_read=is_read)
-
-        if notification_type is not None:
-            query &= Q(notification_type__code=notification_type)
-
-        if category is not None:
-            query &= Q(notification_type__category=category)
-
-        notifications = (
-            Notification.objects.filter(query)
-            .select_related("notification_type", "recipient", "event", "client")
-            .order_by("-created_at")
+        return get_notifications(
+            user=user,
+            is_read=is_read,
+            notification_type=notification_type,
+            category=category,
+            limit=limit,
         )
-
-        if limit:
-            notifications = notifications[:limit]
-
-        return notifications
 
     @staticmethod
     def get_notification_by_id(notification_id: int, user=None):
         """Get a notification by ID, optionally filtered by user"""
-        query = Q(id=notification_id)
-        if user:
-            query &= Q(recipient=user)
+        from .selectors import get_notification_by_id
 
-        try:
-            return Notification.objects.select_related("notification_type", "recipient", "event", "client").get(query)
-        except Notification.DoesNotExist:
-            raise NotificationNotFoundException()
+        return get_notification_by_id(notification_id=notification_id, user=user)
 
     @staticmethod
     def mark_as_read(notification_id: int, user=None):
@@ -546,24 +529,9 @@ class NotificationService:
     @staticmethod
     def get_notification_counts(user_id: int):
         """Get detailed notification counts for a user"""
-        base_query = Notification.objects.filter(recipient_id=user_id)
+        from .selectors import get_notification_counts
 
-        total = base_query.count()
-        unread = base_query.filter(is_read=False).count()
-
-        # Count by category
-        by_category = {}
-        categories = base_query.values("notification_type__category").annotate(count=Count("id"))
-        for item in categories:
-            by_category[item["notification_type__category"]] = item["count"]
-
-        # Count by priority
-        by_priority = {}
-        priorities = base_query.values("notification_type__priority").annotate(count=Count("id"))
-        for item in priorities:
-            by_priority[item["notification_type__priority"]] = item["count"]
-
-        return {"total": total, "unread": unread, "by_category": by_category, "by_priority": by_priority}
+        return get_notification_counts(user_id=user_id)
 
     @staticmethod
     def get_or_create_user_preferences(user_id: int):
@@ -686,22 +654,16 @@ class NotificationTypeService:
     @staticmethod
     def get_all_notification_types(category: str | None = None, is_active: bool | None = None):
         """Get all notification types with optional filtering"""
-        queryset = NotificationType.objects.all()
+        from .selectors import get_all_notification_types
 
-        if category:
-            queryset = queryset.filter(category=category)
-        if is_active is not None:
-            queryset = queryset.filter(is_active=is_active)
-
-        return queryset.order_by("category", "name")
+        return get_all_notification_types(category=category, is_active=is_active)
 
     @staticmethod
     def get_notification_type_by_code(code: str):
         """Get notification type by code"""
-        try:
-            return NotificationType.objects.get(code=code, is_active=True)
-        except NotificationType.DoesNotExist:
-            raise NotificationTypeNotFoundException()
+        from .selectors import get_notification_type_by_code
+
+        return get_notification_type_by_code(code=code)
 
     @staticmethod
     def create_notification_type(type_data: dict[str, Any]):
@@ -729,70 +691,16 @@ class NotificationStatsService:
     @staticmethod
     def get_user_stats(user_id: int, days: int = 30):
         """Get notification statistics for a user"""
-        start_date = timezone.now() - timedelta(days=days)
+        from .selectors import get_user_stats
 
-        notifications = Notification.objects.filter(recipient_id=user_id, created_at__gte=start_date)
-
-        total_sent = notifications.count()
-        total_read = notifications.filter(is_read=True).count()
-        read_rate = (total_read / total_sent * 100) if total_sent > 0 else 0
-
-        # Delivery rates by method
-        delivery_rates = {}
-        for method in ["email", "sms", "in_app", "push"]:
-            successful = notifications.filter(delivered_via__contains=[method]).count()
-            attempted = notifications.filter(delivery_attempts__has_key=method).count()
-            delivery_rates[method] = (successful / attempted * 100) if attempted > 0 else 0
-
-        # Popular notification types
-        popular_types = (
-            notifications.values("notification_type__name", "notification_type__code")
-            .annotate(count=Count("id"))
-            .order_by("-count")[:5]
-        )
-
-        return {
-            "period": f"{days} days",
-            "total_sent": total_sent,
-            "total_read": total_read,
-            "read_rate": round(read_rate, 2),
-            "delivery_rates": delivery_rates,
-            "popular_types": list(popular_types),
-        }
+        return get_user_stats(user_id=user_id, days=days)
 
     @staticmethod
     def get_system_stats(days: int = 30):
         """Get system-wide notification statistics"""
-        start_date = timezone.now() - timedelta(days=days)
+        from .selectors import get_system_stats
 
-        notifications = Notification.objects.filter(created_at__gte=start_date)
-
-        total_sent = notifications.count()
-        total_users = notifications.values("recipient").distinct().count()
-        total_read = notifications.filter(is_read=True).count()
-
-        # Stats by category
-        by_category = (
-            notifications.values("notification_type__category")
-            .annotate(total=Count("id"), read=Count("id", filter=Q(is_read=True)))
-            .order_by("-total")
-        )
-
-        # Stats by delivery method
-        delivery_stats = {}
-        for method in ["email", "sms", "in_app", "push"]:
-            delivered = notifications.filter(delivered_via__contains=[method]).count()
-            delivery_stats[method] = delivered
-
-        return {
-            "period": f"{days} days",
-            "total_sent": total_sent,
-            "total_users": total_users,
-            "total_read": total_read,
-            "read_rate": round((total_read / total_sent * 100) if total_sent > 0 else 0, 2),
-            "by_category": list(by_category),
-            "delivery_stats": delivery_stats,
-        }
+        return get_system_stats(days=days)
 
 
 class NotificationDigestService:
@@ -1022,17 +930,16 @@ class PushNotificationService:
     @staticmethod
     def is_valid_expo_token(token: str) -> bool:
         """Validate Expo push token format"""
-        if not token or not isinstance(token, str):
-            return False
-        # Expo tokens are in format: ExponentPushToken[xxxx] or ExpoPushToken[xxxx]
-        return (token.startswith("ExponentPushToken[") or token.startswith("ExpoPushToken[")) and token.endswith("]")
+        from .selectors import is_valid_expo_token
+
+        return is_valid_expo_token(token=token)
 
     @staticmethod
     def get_user_push_tokens(user_id: int):
         """Get all active push tokens for a user"""
-        from .models import DevicePushToken
+        from .selectors import get_user_push_tokens
 
-        return DevicePushToken.objects.filter(user_id=user_id, is_active=True).order_by("-last_used_at")
+        return get_user_push_tokens(user_id=user_id)
 
     @staticmethod
     def register_token(

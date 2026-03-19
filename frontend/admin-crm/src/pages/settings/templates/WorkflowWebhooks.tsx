@@ -43,7 +43,7 @@ import type {
   WorkflowWebhook,
   CreateWorkflowWebhookData,
   UpdateWorkflowWebhookData,
-} from '../../../types/workflows.types';
+} from '../../../types/workflows';
 import { SimpleConfirmDialog } from '../../../components/common/ConfirmDialog';
 
 export const WorkflowWebhooks: React.FC = () => {

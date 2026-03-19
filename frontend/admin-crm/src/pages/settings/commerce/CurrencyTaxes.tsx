@@ -27,7 +27,7 @@ import { TaxRateTable } from '../../../components/payments/TaxRateTable';
 import { TaxRateFormDialog } from '../../../components/payments/TaxRateFormDialog';
 import { useCurrencySettings } from '../../../hooks/useCurrency';
 import { useTaxRates, useDeleteTaxRate } from '../../../hooks/usePayments';
-import type { TaxRate } from '../../../types/payments.types';
+import type { TaxRate } from '../../../types/payments';
 
 export const CurrencyTaxes: React.FC = () => {
   const { setBreadcrumbs } = useLayout();

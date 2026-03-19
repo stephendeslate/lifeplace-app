@@ -11,7 +11,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 
 // Mock all booking APIs
-vi.mock('../../apis/booking/core.api', () => ({
+vi.mock('../../apis/booking/core', () => ({
   BookingCoreApi: {
     getEventTypes: vi.fn(),
     getBookingFlows: vi.fn(),
@@ -77,7 +77,7 @@ vi.mock('@stripe/react-stripe-js', () => ({
   }),
 }));
 
-import { BookingCoreApi } from '../../apis/booking/core.api';
+import { BookingCoreApi } from '../../apis/booking/core';
 import { VenuesApi } from '../../apis/booking/venues.api';
 import { ProductsApi } from '../../apis/booking/products.api';
 import { PaymentApi } from '../../apis/booking/payment.api';

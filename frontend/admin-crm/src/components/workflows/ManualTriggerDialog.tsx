@@ -26,7 +26,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { eventsApi } from '../../apis/events.api';
-import type { WorkflowStage } from '../../types/workflows.types';
+import type { WorkflowStage } from '../../types/workflows';
 import type { Event } from '../../types/events.types';
 
 interface ManualTriggerDialogProps {

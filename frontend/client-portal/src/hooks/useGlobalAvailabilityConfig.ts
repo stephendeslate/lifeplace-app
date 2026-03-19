@@ -1,7 +1,7 @@
 // frontend/client-portal/src/hooks/useGlobalAvailabilityConfig.ts
 
 import { useQuery } from '@tanstack/react-query';
-import { BookingCoreApi } from '../apis/booking/core.api';
+import { BookingCoreApi } from '../apis/booking/core';
 import { availabilityConfig } from '../config/availability.config';
 
 interface GlobalAvailabilityConfig {

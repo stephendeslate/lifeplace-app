@@ -21,10 +21,7 @@ import {
   AutoAwesome as AutoIcon,
   Visibility as PreviewIcon,
 } from '@mui/icons-material';
-import type {
-  BookingFlowStep,
-  ConfirmationStepConfiguration,
-} from '../../../types/bookingflows.types';
+import type { BookingFlowStep, ConfirmationStepConfiguration } from '../../../types/bookingflows';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 
 interface ConfirmationStepConfigProps {

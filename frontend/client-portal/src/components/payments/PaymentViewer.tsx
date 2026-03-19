@@ -12,8 +12,8 @@ import {
   Download as DownloadIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../../design-system/components/GlassCard';
-import type { Payment } from '../../types/financial.types';
-import FinancialApi from '../../apis/financial.api';
+import type { Payment } from '../../types/financial';
+import FinancialApi from '../../apis/financial';
 
 interface PaymentViewerProps {
   payment: Payment;

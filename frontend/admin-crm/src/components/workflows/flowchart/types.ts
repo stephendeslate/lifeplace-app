@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/components/workflows/flowchart/types.ts
 
 import type { Node, Edge } from '@xyflow/react';
-import type { WorkflowStage, StageType, AutomationType } from '../../../types/workflows.types';
+import type { WorkflowStage, StageType, AutomationType } from '../../../types/workflows';
 
 // Node types
 export type FlowchartNodeType = 'stage' | 'swimlaneHeader' | 'addStage';

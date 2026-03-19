@@ -34,7 +34,7 @@ import type {
   WorkflowStage,
   CreateWorkflowStageData,
   UpdateWorkflowStageData,
-} from '../../types/workflows.types';
+} from '../../types/workflows';
 
 interface WorkflowTemplateFormProps {
   template?: WorkflowTemplate;

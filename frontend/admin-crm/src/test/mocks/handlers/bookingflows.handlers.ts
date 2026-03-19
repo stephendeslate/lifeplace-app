@@ -16,7 +16,7 @@ import type {
   UpdateBookingFlowStepData,
   BookingFlowAnalytics,
   StepType,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 
 const BASE_URL = 'http://localhost:8000/api';
 

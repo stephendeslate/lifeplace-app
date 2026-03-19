@@ -13,11 +13,7 @@ import {
   Error as ErrorIcon,
   Block as BlockIcon,
 } from '@mui/icons-material';
-import type {
-  PaymentStatus,
-  PaymentPlanStatus,
-  InstallmentStatus,
-} from '../../types/payments.types';
+import type { PaymentStatus, PaymentPlanStatus, InstallmentStatus } from '../../types/payments';
 
 type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
 

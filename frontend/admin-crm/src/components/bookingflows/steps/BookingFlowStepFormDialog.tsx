@@ -36,7 +36,7 @@ import {
   type CreateBookingFlowStepData,
   type UpdateBookingFlowStepData,
   type StepType,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 import { useBookingFlowSteps } from '../../../hooks/useBookingFlows';
 
 interface StepFormData {

@@ -41,8 +41,8 @@ import type {
   PaymentFlowError,
   PaymentGateway,
 } from '../../types/unified-payment-flow.types';
-import FinancialApi from '../../apis/financial.api';
-import type { PaymentMethod, PaymentMethodFormData } from '../../types/financial.types';
+import FinancialApi from '../../apis/financial';
+import type { PaymentMethod, PaymentMethodFormData } from '../../types/financial';
 
 interface PaymentMethodSelectorProps {
   selectedMethod: PaymentMethod | null;

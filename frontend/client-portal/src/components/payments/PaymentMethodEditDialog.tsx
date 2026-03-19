@@ -26,7 +26,7 @@ import {
   Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { useUpdatePaymentMethod } from '../../hooks/useFinancial';
-import type { PaymentMethod, PaymentMethodFormData } from '../../types/financial.types';
+import type { PaymentMethod, PaymentMethodFormData } from '../../types/financial';
 
 interface PaymentMethodEditDialogProps {
   open: boolean;

@@ -34,7 +34,7 @@ import {
   Handyman as ManualIcon,
   PlayArrow as TriggerIcon,
 } from '@mui/icons-material';
-import type { WorkflowStage, WorkflowStageTableProps } from '../../types/workflows.types';
+import type { WorkflowStage, WorkflowStageTableProps } from '../../types/workflows';
 
 export const WorkflowStagesTable: React.FC<WorkflowStageTableProps> = ({
   stages,

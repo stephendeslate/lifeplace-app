@@ -9,11 +9,11 @@ import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material/styles';
 
 import { InvoicePaymentDialog } from '../InvoicePaymentDialog';
-import FinancialApi from '../../../apis/financial.api';
-import type { Invoice, PaymentMethod } from '../../../types/financial.types';
+import FinancialApi from '../../../apis/financial';
+import type { Invoice, PaymentMethod } from '../../../types/financial';
 
 // Mock the API
-vi.mock('../../../apis/financial.api');
+vi.mock('../../../apis/financial');
 const mockFinancialApi = vi.mocked(FinancialApi);
 
 // Mock the PaymentMethodSelector component

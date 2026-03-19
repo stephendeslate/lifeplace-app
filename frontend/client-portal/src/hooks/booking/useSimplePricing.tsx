@@ -3,7 +3,7 @@
 // The backend API returns PricingLineItem[] with venue_details for per-venue breakdown
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useBooking } from '../../contexts/BookingContext';
-import { BookingCoreApi } from '../../apis/booking/core.api';
+import { BookingCoreApi } from '../../apis/booking/core';
 import type { SelectedPackage, SelectedAddon, PricingLineItem } from '../../types/booking';
 
 export interface SimplePricingBreakdown {

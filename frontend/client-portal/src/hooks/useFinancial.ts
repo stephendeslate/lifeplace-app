@@ -2,12 +2,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../contexts/ToastContext';
-import FinancialApi from '../apis/financial.api';
-import type {
-  PaymentFilters,
-  InvoiceFilters,
-  PaymentMethodFormData,
-} from '../types/financial.types';
+import FinancialApi from '../apis/financial';
+import type { PaymentFilters, InvoiceFilters, PaymentMethodFormData } from '../types/financial';
 
 // Query keys for consistent caching
 export const financialKeys = {

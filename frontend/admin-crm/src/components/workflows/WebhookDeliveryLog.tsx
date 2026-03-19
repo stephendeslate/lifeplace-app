@@ -33,7 +33,7 @@ import {
   Loop as RetryingIcon,
 } from '@mui/icons-material';
 import { formatDistanceToNow, format } from 'date-fns';
-import type { WorkflowWebhookDelivery, WebhookDeliveryStatus } from '../../types/workflows.types';
+import type { WorkflowWebhookDelivery, WebhookDeliveryStatus } from '../../types/workflows';
 
 interface WebhookDeliveryLogProps {
   open: boolean;

@@ -34,8 +34,8 @@ import type {
   CreateWorkflowWebhookData,
   UpdateWorkflowWebhookData,
   WebhookEventType,
-} from '../../types/workflows.types';
-import { WEBHOOK_EVENT_TYPES } from '../../types/workflows.types';
+} from '../../types/workflows';
+import { WEBHOOK_EVENT_TYPES } from '../../types/workflows';
 import { useToastActions } from '../../contexts/ToastContext';
 
 interface WebhookConfigDialogProps {

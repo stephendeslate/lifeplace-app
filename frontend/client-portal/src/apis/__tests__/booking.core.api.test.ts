@@ -1,6 +1,6 @@
 // frontend/client-portal/src/apis/__tests__/booking.core.api.test.ts
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { BookingCoreApi } from '../booking/core.api';
+import { BookingCoreApi } from '../booking/core';
 import api from '../../utils/api';
 
 // Mock the api utility

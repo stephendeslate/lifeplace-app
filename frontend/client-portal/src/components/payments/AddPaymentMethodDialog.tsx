@@ -24,7 +24,7 @@ import type {
   PaymentFlowError,
   SaveModeConfig,
 } from '../../types/unified-payment-flow.types';
-import type { PaymentGateway } from '../../types/financial.types';
+import type { PaymentGateway } from '../../types/financial';
 
 interface AddPaymentMethodDialogProps {
   open: boolean;

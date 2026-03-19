@@ -18,7 +18,7 @@ import {
 } from '@mui/icons-material';
 import type { StageNodeData } from '../types';
 import { getSwimlaneConfig } from '../types';
-import { getTriggerTimeLabel } from '../../../../types/workflows.types';
+import { getTriggerTimeLabel } from '../../../../types/workflows';
 
 const getAutomationIcon = (automationType: string) => {
   const icons: Record<string, React.ReactNode> = {

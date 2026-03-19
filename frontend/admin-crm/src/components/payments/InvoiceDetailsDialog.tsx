@@ -27,7 +27,7 @@ import {
   Person as ClientIcon,
 } from '@mui/icons-material';
 import { format, isPast } from 'date-fns';
-import type { Invoice } from '../../types/payments.types';
+import type { Invoice } from '../../types/payments';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 

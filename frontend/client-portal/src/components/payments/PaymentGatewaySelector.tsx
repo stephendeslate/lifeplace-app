@@ -21,8 +21,8 @@ import {
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import { GlassCard } from '../../design-system';
-import FinancialApi from '../../apis/financial.api';
-import type { PaymentGateway } from '../../types/financial.types';
+import FinancialApi from '../../apis/financial';
+import type { PaymentGateway } from '../../types/financial';
 
 interface PaymentGatewaySelectorProps {
   selectedGateway: PaymentGateway | null;

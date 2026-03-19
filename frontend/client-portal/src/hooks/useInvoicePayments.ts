@@ -2,9 +2,9 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../contexts/ToastContext';
-import FinancialApi from '../apis/financial.api';
+import FinancialApi from '../apis/financial';
 import { financialKeys } from './useFinancial';
-import type { Invoice, InvoicePaymentRequest, PaymentPlanRequest } from '../types/financial.types';
+import type { Invoice, InvoicePaymentRequest, PaymentPlanRequest } from '../types/financial';
 
 /**
  * Hook for managing invoice payment operations

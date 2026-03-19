@@ -46,28 +46,16 @@ class ContractTemplateService:
             event_type_id: Filter by event type
             is_active: Filter by active status (defaults to True to hide deactivated templates)
         """
-        queryset = ContractTemplate.objects.all()
+        from .selectors import get_all_templates
 
-        # Filter by active status (default: only active templates)
-        if is_active is not None:
-            queryset = queryset.filter(is_active=is_active)
-
-        # Apply filters if provided
-        if search_query:
-            queryset = queryset.filter(Q(name__icontains=search_query) | Q(description__icontains=search_query))
-
-        if event_type_id:
-            queryset = queryset.filter(event_type_id=event_type_id)
-
-        return queryset.order_by("name")
+        return get_all_templates(search_query=search_query, event_type_id=event_type_id, is_active=is_active)
 
     @staticmethod
     def get_template_by_id(template_id):
         """Get a contract template by ID"""
-        try:
-            return ContractTemplate.objects.get(id=template_id)
-        except ContractTemplate.DoesNotExist:
-            raise ContractTemplateNotFound()
+        from .selectors import get_template_by_id
+
+        return get_template_by_id(template_id=template_id)
 
     @staticmethod
     def create_template(template_data):
@@ -264,35 +252,9 @@ class ContractTemplateService:
         Returns:
             Dictionary with rendered content and template metadata
         """
-        template = ContractTemplateService.get_template_by_id(template_id)
+        from .selectors import preview_template
 
-        # If event_id is provided, generate standardized context
-        if event_id:
-            try:
-                from core.domains.events.models import Event
-
-                event = Event.objects.select_related("client", "event_type").get(id=event_id)
-                # Generate standardized context and merge with provided context
-                standardized_context = ContractContextService.generate_event_context(event, context_data)
-            except Event.DoesNotExist:
-                logger.warning(f"Event {event_id} not found for template preview, using provided context only")
-                standardized_context = context_data or {}
-        else:
-            standardized_context = context_data or {}
-
-        # Render the contract content (preview doesn't include signatures)
-        rendered_content = ContractTemplateService.render_contract(template_id, standardized_context)
-
-        return {
-            "template_id": template.id,
-            "template_name": template.name,
-            "rendered_content": rendered_content,
-            "variables": template.variables,
-            "sections": template.sections,
-            "event_type": template.event_type.name if template.event_type else None,
-            "context_used": standardized_context,
-            "available_variables": ContractContextService.get_available_variables(),
-        }
+        return preview_template(template_id=template_id, event_id=event_id, context_data=context_data)
 
     @staticmethod
     def render_contract_with_signatures(contract_id):
@@ -337,15 +299,16 @@ class EventContractService:
     @staticmethod
     def get_contracts_for_event(event_id):
         """Get all contracts for a specific event"""
-        return EventContract.objects.filter(event_id=event_id).order_by("-created_at")
+        from .selectors import get_contracts_for_event
+
+        return get_contracts_for_event(event_id=event_id)
 
     @staticmethod
     def get_contract_by_id(contract_id):
         """Get an event contract by ID"""
-        try:
-            return EventContract.objects.get(id=contract_id)
-        except EventContract.DoesNotExist:
-            raise EventContractNotFound()
+        from .selectors import get_contract_by_id
+
+        return get_contract_by_id(contract_id=contract_id)
 
     @staticmethod
     def create_contract_from_template(event_id, template_id, valid_until=None, context_data=None, contract_value=None):
@@ -530,7 +493,9 @@ class ContractSignatureService:
     @staticmethod
     def get_signatures_for_contract(contract_id):
         """Get all signatures for a contract"""
-        return ContractSignature.objects.filter(contract_id=contract_id).order_by("signed_at")
+        from .selectors import get_signatures_for_contract
+
+        return get_signatures_for_contract(contract_id=contract_id)
 
     @staticmethod
     def verify_signature(signature_id, verification_method=None):
@@ -755,7 +720,9 @@ class ContractAmendmentService:
     @staticmethod
     def get_amendments_for_contract(contract_id):
         """Get all amendments for a contract"""
-        return ContractAmendment.objects.filter(original_contract_id=contract_id).order_by("-requested_at")
+        from .selectors import get_amendments_for_contract
+
+        return get_amendments_for_contract(contract_id=contract_id)
 
     @staticmethod
     def cancel_amendment(amendment_id, cancelled_by, reason=None):
@@ -835,9 +802,9 @@ class ContractDocumentService:
     @staticmethod
     def get_documents_for_contract(contract_id):
         """Get all active documents for a contract"""
-        return ContractDocument.objects.filter(contract_id=contract_id, is_active=True).order_by(
-            "document_type", "name"
-        )
+        from .selectors import get_documents_for_contract
+
+        return get_documents_for_contract(contract_id=contract_id)
 
     @staticmethod
     def deactivate_document(document_id, deactivated_by):
@@ -885,12 +852,9 @@ class ContractNoteService:
     @staticmethod
     def get_notes_for_contract(contract_id, include_internal=True):
         """Get notes for a contract"""
-        queryset = ContractNote.objects.filter(contract_id=contract_id)
+        from .selectors import get_notes_for_contract
 
-        if not include_internal:
-            queryset = queryset.filter(is_internal=False)
-
-        return queryset.order_by("-created_at")
+        return get_notes_for_contract(contract_id=contract_id, include_internal=include_internal)
 
     @staticmethod
     def update_note(note_id, note_data, updated_by):
@@ -938,84 +902,27 @@ class ContractReportingService:
     @staticmethod
     def get_contract_statistics(event_id=None, date_range=None):
         """Get contract statistics"""
-        queryset = EventContract.objects.all()
+        from .selectors import get_contract_statistics
 
-        if event_id:
-            queryset = queryset.filter(event_id=event_id)
-
-        if date_range:
-            start_date, end_date = date_range
-            queryset = queryset.filter(created_at__range=[start_date, end_date])
-
-        stats = {
-            "total_contracts": queryset.count(),
-            "by_status": {},
-            "fully_signed": 0,
-            "amendments": queryset.filter(is_amendment=True).count(),
-            "total_value": Decimal("0.00"),
-            "average_signing_time": None,
-        }
-
-        # Status breakdown
-        for status, _ in EventContract._meta.get_field("status").choices:
-            count = queryset.filter(status=status).count()
-            stats["by_status"][status] = count
-
-        # Fully signed contracts
-        fully_signed_contracts = queryset.filter(status="SIGNED")
-        stats["fully_signed"] = fully_signed_contracts.count()
-
-        # Total contract value
-        total_value = queryset.filter(contract_value__isnull=False).aggregate(total=models.Sum("contract_value"))[
-            "total"
-        ]
-        if total_value:
-            stats["total_value"] = total_value
-
-        # Average signing time (days from sent to fully signed)
-        signed_contracts = fully_signed_contracts.filter(sent_at__isnull=False, fully_signed_at__isnull=False)
-
-        if signed_contracts.exists():
-            signing_times = []
-            for contract in signed_contracts:
-                days = (contract.fully_signed_at.date() - contract.sent_at.date()).days
-                signing_times.append(days)
-
-            if signing_times:
-                stats["average_signing_time"] = sum(signing_times) / len(signing_times)
-
-        return stats
+        return get_contract_statistics(event_id=event_id, date_range=date_range)
 
     @staticmethod
     def get_pending_signatures():
         """Get contracts with pending signatures"""
-        return (
-            EventContract.objects.filter(status__in=["SENT", "PARTIALLY_SIGNED"])
-            .select_related("event", "template")
-            .prefetch_related("signatures")
-        )
+        from .selectors import get_pending_signatures
+
+        return get_pending_signatures()
 
     @staticmethod
     def get_expiring_contracts(days_ahead=7):
         """Get contracts expiring within specified days"""
-        cutoff_date = timezone.now().date() + datetime.timedelta(days=days_ahead)
+        from .selectors import get_expiring_contracts
 
-        return EventContract.objects.filter(
-            valid_until__lte=cutoff_date, status__in=["SENT", "PARTIALLY_SIGNED"]
-        ).select_related("event", "template")
+        return get_expiring_contracts(days=days_ahead)
 
     @staticmethod
     def get_amendment_summary():
         """Get amendment statistics"""
-        amendments = ContractAmendment.objects.all()
+        from .selectors import get_amendment_summary
 
-        return {
-            "total_amendments": amendments.count(),
-            "by_status": {
-                status: amendments.filter(status=status).count()
-                for status, _ in ContractAmendment._meta.get_field("status").choices
-            },
-            "pending_review": amendments.filter(status="REQUESTED").count(),
-            "approved_pending_contract": amendments.filter(status="APPROVED").count(),
-            "average_processing_time": None,  # Could calculate this if needed
-        }
+        return get_amendment_summary()

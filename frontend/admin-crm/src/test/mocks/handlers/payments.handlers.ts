@@ -10,7 +10,7 @@ import {
   createMockInvoice,
   createMockRefund,
 } from '../data/payments.mock';
-import type { PaymentGateway, TaxRate, Payment } from '../../../types/payments.types';
+import type { PaymentGateway, TaxRate, Payment } from '../../../types/payments';
 
 const BASE_URL = 'http://localhost:8000/api';
 

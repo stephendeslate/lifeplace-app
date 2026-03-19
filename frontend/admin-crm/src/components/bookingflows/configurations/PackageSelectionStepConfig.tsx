@@ -33,7 +33,7 @@ import {
 import type {
   BookingFlowStep,
   PackageSelectionStepConfiguration,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import { useFormHandlers } from '../../../hooks/useFormHandlers';
 import { ConfigSection } from '../../common';

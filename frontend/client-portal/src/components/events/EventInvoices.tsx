@@ -33,7 +33,7 @@ import { isBefore, differenceInDays } from 'date-fns';
 import { useInvoices, useDownloadInvoicePdf } from '../../hooks/useFinancial';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import { InvoicePaymentDialog } from '../payments/InvoicePaymentDialog';
-import type { Invoice } from '../../types/financial.types';
+import type { Invoice } from '../../types/financial';
 
 interface EventInvoicesProps {
   eventId: number;

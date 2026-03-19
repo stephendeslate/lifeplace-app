@@ -21,8 +21,8 @@ import {
   Refresh as RefreshIcon,
   PlayArrow as TriggerIcon,
 } from '@mui/icons-material';
-import type { WorkflowTrigger, TriggerType, WorkflowStage } from '../../types/workflows.types';
-import { TRIGGER_TYPES } from '../../types/workflows.types';
+import type { WorkflowTrigger, TriggerType, WorkflowStage } from '../../types/workflows';
+import { TRIGGER_TYPES } from '../../types/workflows';
 import { ModernTable, ModernLoadingStates, ModernEmptyState } from '../common';
 import type { ModernTableColumn } from '../common';
 

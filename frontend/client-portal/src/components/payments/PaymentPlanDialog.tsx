@@ -38,8 +38,8 @@ import {
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { addWeeks, addMonths, format } from 'date-fns';
 import { GlassCard } from '../../design-system';
-import FinancialApi from '../../apis/financial.api';
-import type { Invoice, PaymentPlanRequest, PaymentPlan } from '../../types/financial.types';
+import FinancialApi from '../../apis/financial';
+import type { Invoice, PaymentPlanRequest, PaymentPlan } from '../../types/financial';
 
 interface PaymentPlanDialogProps {
   open: boolean;

@@ -26,7 +26,7 @@ import type {
   BookingFlowStep,
   PaymentInfoStepConfiguration,
   PaymentTermsConfiguration,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 
 interface PaymentInfoStepConfigProps {
   step: BookingFlowStep;

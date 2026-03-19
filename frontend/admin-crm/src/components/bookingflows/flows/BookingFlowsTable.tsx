@@ -25,7 +25,7 @@ import {
   CheckCircle as ActiveIcon,
   RadioButtonUnchecked as InactiveIcon,
 } from '@mui/icons-material';
-import type { BookingFlowTableProps, BookingFlow } from '../../../types/bookingflows.types';
+import type { BookingFlowTableProps, BookingFlow } from '../../../types/bookingflows';
 import {
   getEventTypeDisplayName,
   hasSpecificEventType,

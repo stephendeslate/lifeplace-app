@@ -24,8 +24,8 @@ import type {
   UpdatePaymentData,
   PaymentFormData,
   PaymentStatus,
-} from '../../types/payments.types';
-import { PAYMENT_STATUSES } from '../../types/payments.types';
+} from '../../types/payments';
+import { PAYMENT_STATUSES } from '../../types/payments';
 import { useEvents } from '../../hooks/useEvents';
 import { usePaymentMethods } from '../../hooks/usePayments';
 

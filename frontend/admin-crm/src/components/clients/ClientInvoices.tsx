@@ -37,7 +37,7 @@ import {
   useSendInvoice,
   useDownloadInvoicePdf,
 } from '../../hooks/usePayments';
-import type { Invoice } from '../../types/payments.types';
+import type { Invoice } from '../../types/payments';
 import type { Client } from '../../types/clients.types';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';

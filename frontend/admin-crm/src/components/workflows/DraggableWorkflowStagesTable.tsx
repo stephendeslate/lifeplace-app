@@ -46,7 +46,7 @@ import {
   PlayArrow as TriggerIcon,
   DragIndicator as DragIcon,
 } from '@mui/icons-material';
-import type { WorkflowStage, StageType } from '../../types/workflows.types';
+import type { WorkflowStage, StageType } from '../../types/workflows';
 import { InlineEditableText } from '../common/InlineEditableText';
 
 export interface DraggableWorkflowStagesTableProps {

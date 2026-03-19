@@ -1,7 +1,7 @@
 // frontend/client-portal/src/hooks/usePaymentPlanSettings.ts
 
 import { useQuery } from '@tanstack/react-query';
-import { FinancialApi } from '../apis/financial.api';
+import { FinancialApi } from '../apis/financial';
 
 /**
  * Hook to fetch global payment plan settings

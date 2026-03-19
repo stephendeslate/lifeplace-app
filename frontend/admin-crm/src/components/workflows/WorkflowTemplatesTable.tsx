@@ -11,7 +11,7 @@ import {
   EventNote as EventIcon,
   Timeline as TimelineIcon,
 } from '@mui/icons-material';
-import type { WorkflowTemplate } from '../../types/workflows.types';
+import type { WorkflowTemplate } from '../../types/workflows';
 import { ModernTable, ModernLoadingStates, ModernEmptyState } from '../common';
 import type { ModernTableColumn, ModernTableAction } from '../common';
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import api from '../utils/api';
-import { bookingFlowsApi } from './bookingflows.api';
+import { bookingFlowsApi } from './bookingflows';
 
 vi.mock('../utils/api', () => ({
   default: {

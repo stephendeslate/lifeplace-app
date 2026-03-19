@@ -5,7 +5,7 @@ import {
   getEventTypeChipColor,
   getEventTypeChipStyles,
 } from './bookingFlowUtils';
-import type { BookingFlow } from '../types/bookingflows.types';
+import type { BookingFlow } from '../types/bookingflows';
 
 const makeFlow = (event_type_name: string | null | undefined): BookingFlow =>
   ({ event_type_name }) as BookingFlow;

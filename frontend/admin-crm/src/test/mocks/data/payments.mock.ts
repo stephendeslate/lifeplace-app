@@ -5,7 +5,7 @@ import type {
   Invoice,
   Refund,
   GatewayHealth,
-} from '../../../types/payments.types';
+} from '../../../types/payments';
 
 export function createMockPaymentGateway(overrides: Partial<PaymentGateway> = {}): PaymentGateway {
   const id = overrides.id || Math.floor(Math.random() * 10000);

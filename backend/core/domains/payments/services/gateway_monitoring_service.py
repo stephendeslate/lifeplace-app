@@ -273,63 +273,14 @@ class GatewayMonitoringService:
 
     @classmethod
     def get_gateway_metrics(cls, gateway_code: str = None, hours: int = 24) -> dict[str, Any]:
-        """
-        Get performance metrics for gateways.
+        """Get performance metrics for gateways — delegates query to selectors."""
+        from ..selectors import get_gateway_metrics
 
-        Args:
-            gateway_code: Specific gateway (None for all)
-            hours: Time window for metrics
-
-        Returns:
-            Dictionary with gateway metrics
-        """
-        try:
-            from ..models import PaymentTransaction, PaymentWebhookLog
-
-            cutoff_time = timezone.now() - timedelta(hours=hours)
-
-            metrics = {}
-
-            # Get transaction metrics
-            transaction_queryset = PaymentTransaction.objects.filter(created_at__gte=cutoff_time)
-
-            if gateway_code:
-                transaction_queryset = transaction_queryset.filter(gateway__code=gateway_code)
-
-            # Calculate success rates
-            total_transactions = transaction_queryset.count()
-            successful_transactions = transaction_queryset.filter(status="COMPLETED").count()
-
-            success_rate = (successful_transactions / total_transactions * 100) if total_transactions > 0 else 0
-
-            # Get webhook metrics
-            webhook_queryset = PaymentWebhookLog.objects.filter(received_at__gte=cutoff_time)
-
-            if gateway_code:
-                webhook_queryset = webhook_queryset.filter(gateway_code=gateway_code)
-
-            webhook_stats = {
-                "total_webhooks": webhook_queryset.count(),
-                "successful_webhooks": webhook_queryset.filter(processed_successfully=True).count(),
-                "failed_webhooks": webhook_queryset.filter(processed_successfully=False).count(),
-            }
-
-            metrics = {
-                "time_window_hours": hours,
-                "transaction_metrics": {
-                    "total_transactions": total_transactions,
-                    "successful_transactions": successful_transactions,
-                    "success_rate_percent": success_rate,
-                },
-                "webhook_metrics": webhook_stats,
-                "health_status": cls.check_gateway_health(gateway_code).to_dict() if gateway_code else None,
-            }
-
-            return metrics
-
-        except Exception as e:
-            logger.error(f"Error getting gateway metrics: {e}")
-            return {"error": str(e)}
+        metrics = get_gateway_metrics(gateway_code=gateway_code, hours=hours)
+        # Add health status (requires cls method, not a pure read)
+        if gateway_code and "error" not in metrics:
+            metrics["health_status"] = cls.check_gateway_health(gateway_code).to_dict()
+        return metrics
 
     @classmethod
     def get_monitoring_dashboard_data(cls) -> dict[str, Any]:

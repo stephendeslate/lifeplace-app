@@ -19,7 +19,7 @@ import {
   RadioButtonUnchecked as DisabledIcon,
   SkipNext as SkippableIcon,
 } from '@mui/icons-material';
-import type { BookingFlowStep, StepType } from '../../../types/bookingflows.types';
+import type { BookingFlowStep, StepType } from '../../../types/bookingflows';
 import { useBookingFlowSteps } from '../../../hooks/useBookingFlows';
 
 interface BookingFlowStepsTableProps {

@@ -8,7 +8,7 @@ import { useLayout } from '../../contexts/LayoutContext';
 import { usePayments } from '../../hooks/usePayments';
 import { PaymentForm } from '../../components/payments/PaymentForm';
 import { ModernPageLayout, ModernPageHeader } from '../../components/common';
-import type { CreatePaymentData, UpdatePaymentData } from '../../types/payments.types';
+import type { CreatePaymentData, UpdatePaymentData } from '../../types/payments';
 
 export const NewPayment: React.FC = () => {
   const navigate = useNavigate();

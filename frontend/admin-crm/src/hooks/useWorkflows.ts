@@ -15,7 +15,7 @@ import type {
   WebhookDeliveryFilters,
   CreateWorkflowWebhookData,
   UpdateWorkflowWebhookData,
-} from '../types/workflows.types';
+} from '../types/workflows';
 
 interface ApiError {
   response?: {

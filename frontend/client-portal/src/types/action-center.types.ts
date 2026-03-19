@@ -2,7 +2,7 @@
 
 import type { EventTask, TaskPriority, TaskStatus } from './events.types';
 import type { EventQuote } from './quotes.types';
-import type { Payment, Invoice } from './financial.types';
+import type { Payment, Invoice } from './financial';
 import type { Contract, SignatureProgress, ContractStatus } from './contracts.types';
 
 // Action types enum

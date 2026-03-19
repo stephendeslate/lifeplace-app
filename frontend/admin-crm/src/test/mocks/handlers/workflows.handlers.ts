@@ -19,7 +19,7 @@ import type {
   WorkflowTrigger,
   EventWorkflowOverride,
   WebhookEventType,
-} from '../../../types/workflows.types';
+} from '../../../types/workflows';
 
 const BASE_URL = 'http://localhost:8000/api';
 
