@@ -39,10 +39,9 @@ import type {
   SaveModeConfig,
   PaymentFlowResult,
   PaymentFlowError,
-  PaymentGateway,
 } from '../../types/unified-payment-flow.types';
 import FinancialApi from '../../apis/financial';
-import type { PaymentMethod, PaymentMethodFormData } from '../../types/financial';
+import type { PaymentMethod, PaymentMethodFormData, PaymentGateway } from '../../types/financial';
 
 interface PaymentMethodSelectorProps {
   selectedMethod: PaymentMethod | null;

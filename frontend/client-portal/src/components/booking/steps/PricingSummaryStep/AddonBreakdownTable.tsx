@@ -19,16 +19,9 @@ interface SelectedAddon {
   quantity: number;
 }
 
-interface PricingData {
-  lineItems?: Array<{
-    product_id: number;
-    total_unit_price?: string;
-  }>;
-}
-
 interface AddonBreakdownTableProps {
   selectedAddons: SelectedAddon[];
-  pricing: PricingData;
+  pricing: { lineItems: Array<{ product_id: number | null; total_unit_price: string }> };
   isUpdatingPrices: boolean;
   formatAmount: (amount: string) => string;
 }

@@ -24,7 +24,7 @@ interface PaymentStepProps {
 }
 
 export const PaymentStep: React.FC<PaymentStepProps> = ({
-  stepData = { payment_method: '', payment_type: '' },
+  stepData = { payment_method: '', payment_type: '' } as unknown as PaymentStepData,
   config,
   onDataChange,
   validationErrors,

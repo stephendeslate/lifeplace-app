@@ -34,7 +34,7 @@ export const ConfirmationStep: React.FC<ConfirmationStepProps> = ({
   stepData = {
     booking_reference: '',
     completion_status: 'pending',
-  },
+  } as ConfirmationStepData,
   config,
   onDataChange,
   validationErrors,

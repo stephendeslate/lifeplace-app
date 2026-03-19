@@ -21,24 +21,10 @@ import {
 } from '@mui/icons-material';
 import { EventStatusBadge, EventCountdown, ContractStatusChip } from '@/components/events';
 import { formatPhilippinesTime } from '@/utils/timezone';
+import type { EventDetail } from '@/types/events.types';
 
 interface EventDetailHeaderProps {
-  event: {
-    name: string;
-    event_type_name: string;
-    status: string;
-    payment_status?: string;
-    contract_status: string;
-    has_contracts: boolean;
-    contracts_count: number;
-    pending_signature_required: boolean;
-    contract_expiry_days?: number;
-    start_date?: string;
-    end_date?: string;
-    current_stage?: { name: string };
-    total_price?: number;
-    days_until_event?: number | null;
-  };
+  event: EventDetail;
   formatAmount: (amount: number) => string;
   onBack: () => void;
   onPreferencesOpen: () => void;

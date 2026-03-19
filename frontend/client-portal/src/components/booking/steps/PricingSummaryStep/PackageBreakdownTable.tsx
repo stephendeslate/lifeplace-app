@@ -12,33 +12,11 @@ import {
   Skeleton,
 } from '@mui/material';
 import type { SelectedPackage } from '@/types/booking';
-
-interface PricingData {
-  lineItems?: Array<{
-    product_id: number;
-    base_unit_price?: string;
-    total_unit_price?: string;
-    excess_hours?: number;
-    excess_hour_price?: string;
-    venue_details?: Array<{
-      venue_id: number;
-      venue_name: string;
-      additional_hours: number;
-      excess_hour_price: string;
-    }>;
-    attendee_breakdown?: Array<{
-      count: number;
-      tier_label: string;
-      discount_percentage: number;
-      unit_price: number;
-      subtotal: number;
-    }>;
-  }>;
-}
+import type { SimplePricingBreakdown } from '@/hooks/booking/useSimplePricing';
 
 interface PackageBreakdownTableProps {
   selectedPackages: SelectedPackage[];
-  pricing: PricingData;
+  pricing: SimplePricingBreakdown;
   isUpdatingPrices: boolean;
   formatAmount: (amount: string) => string;
 }

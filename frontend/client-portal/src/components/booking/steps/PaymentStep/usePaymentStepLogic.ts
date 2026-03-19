@@ -10,8 +10,8 @@ import type {
   BookingModeConfig,
   PaymentFlowResult,
   PaymentFlowError,
-  PaymentGateway,
 } from '@/types/unified-payment-flow.types';
+import type { PaymentGateway } from '@/types/booking';
 import type {
   PaymentStepData,
   PaymentInfoStepConfiguration,

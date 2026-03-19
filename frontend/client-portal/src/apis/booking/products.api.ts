@@ -206,7 +206,7 @@ export class ProductsApi {
    * Get rates page data (single cached endpoint)
    */
   static async getRatesPageData(): Promise<RatesPageData> {
-    const response = await api.get('/products/products/rates-page/');
+    const response = await api.get<RatesPageData>('/products/products/rates-page/');
     return response.data;
   }
 

@@ -4,5 +4,5 @@
 export * from './core.types';
 export * from './operations.types';
 
-// Re-export unified payment flow types (was `export * from './unified-payment-flow.types'`)
-export * from '../unified-payment-flow.types';
+// Unified payment flow types live in ../unified-payment-flow.types.ts
+// Not re-exported here to avoid circular re-exports (they import from this barrel).

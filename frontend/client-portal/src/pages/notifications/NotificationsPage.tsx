@@ -15,6 +15,7 @@ import {
   Divider,
   CircularProgress,
   useTheme,
+  type Theme,
   alpha,
 } from '@mui/material';
 import {
@@ -78,7 +79,7 @@ const getCategoryIcon = (category?: NotificationCategory) => {
 };
 
 // Category color mapping
-const getCategoryColor = (theme: ReturnType<typeof useTheme>, category?: NotificationCategory) => {
+const getCategoryColor = (theme: Theme, category?: NotificationCategory) => {
   switch (category) {
     case 'EVENT':
       return theme.palette.primary.main;
@@ -121,7 +122,7 @@ const getPriorityIcon = (priority?: NotificationPriority) => {
 
 export const NotificationsPage: React.FC = () => {
   useDocumentTitle('Notifications | LifePlace Alfonso');
-  const theme = useTheme();
+  const theme = useTheme<Theme>();
   const navigate = useNavigate();
 
   const [filters, setFilters] = useState<NotificationFilters>({});

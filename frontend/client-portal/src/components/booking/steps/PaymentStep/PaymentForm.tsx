@@ -16,9 +16,12 @@ import type {
   BookingModeConfig,
   PaymentFlowResult,
   PaymentFlowError,
-  PaymentGateway,
 } from '@/types/unified-payment-flow.types';
-import type { PaymentStepData, PaymentInfoStepConfiguration } from '@/types/booking';
+import type {
+  PaymentStepData,
+  PaymentInfoStepConfiguration,
+  PaymentGateway,
+} from '@/types/booking';
 import type { PaymentMethod } from '@/types/financial';
 import type { CompletionChoice } from './usePaymentStepLogic';
 import { BookingSummaryCard } from './BookingSummaryCard';
@@ -251,9 +254,10 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({
             gateway={
               {
                 ...selectedGateway,
+                masked_config: {},
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
-              } as PaymentGateway
+              } as import('@/types/financial').PaymentGateway
             }
             isAuthenticated={isAuthenticated}
             onSuccess={onPaymentFlowSuccess}

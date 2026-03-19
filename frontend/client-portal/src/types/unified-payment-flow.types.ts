@@ -415,12 +415,4 @@ export interface AmountFormatOptions {
 // Re-exports for convenience
 // ===========================
 
-// Re-export commonly used types from financial.types for convenience
-export type {
-  PaymentGateway,
-  PaymentMethod,
-  Payment,
-  Invoice,
-  PaymentIntentResponse,
-  SetupIntentResponse,
-} from './financial';
+// These types are available directly from '@/types/financial' — no re-export needed.

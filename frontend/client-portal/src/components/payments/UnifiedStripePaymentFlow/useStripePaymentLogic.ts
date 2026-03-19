@@ -12,9 +12,8 @@ import type {
   SaveModeConfig,
   InvoiceModeConfig,
   CardElementState,
-  Payment,
-  Invoice,
 } from '@/types/unified-payment-flow.types';
+import type { Payment, Invoice } from '@/types/financial';
 import { isBookingMode, isSaveMode, isInvoiceMode } from '@/types/unified-payment-flow.types';
 
 // ===========================
