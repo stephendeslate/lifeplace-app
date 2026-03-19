@@ -1,0 +1,1 @@
+export { ContactInfoStepConfig } from './ContactInfoStepConfig';

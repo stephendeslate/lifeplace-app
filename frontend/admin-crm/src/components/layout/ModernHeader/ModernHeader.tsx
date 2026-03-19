@@ -1,168 +1,43 @@
-// Modern Header Component with Clean, Flat Design
-// Complete modern header with navigation menu and mobile dropdown
+import React from 'react';
+import { AppBar, Toolbar, Typography, Box, IconButton, Tooltip } from '@mui/material';
+import { Menu as MenuIcon, Close } from '@mui/icons-material';
+import { tokens } from '@/design-system';
+import { createTransition } from '@/design-system/utils/animations';
+import { NotificationBadge } from '@/components/notifications/NotificationBadge';
+import { useModernHeaderLogic } from './useModernHeaderLogic';
+import { DesktopNavigation } from './DesktopNavigation';
+import { UserMenu } from './UserMenu';
+import { MobileNavigation } from './MobileNavigation';
 
-import React, { useState } from 'react';
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Box,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  Divider,
-  useMediaQuery,
-  useTheme,
-  Avatar,
-  Tooltip,
-  Badge,
-  Button,
-  Collapse,
-  List,
-  ListItem,
-  ListItemButton,
-  Chip,
-} from '@mui/material';
-import {
-  Menu as MenuIcon,
-  Settings as SettingsIcon,
-  ExitToApp,
-  DarkMode,
-  LightMode,
-  Brightness4,
-  Dashboard,
-  Analytics,
-  Assignment,
-  Event,
-  People,
-  Payment,
-  Settings,
-  Close,
-  CalendarMonth,
-  School as TourIcon,
-  Speed as SpeedIcon,
-  KeyboardArrowDown,
-} from '@mui/icons-material';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useLayout } from '../../../contexts/LayoutContext';
-import { useAuth } from '../../../contexts/AuthContext';
-import { useToastActions } from '../../../contexts/ToastContext';
-import { useTheme as useAppTheme } from '../../../contexts/ThemeContext';
-import { NotificationBadge } from '../../notifications/NotificationBadge';
-import { useWalkthrough } from '../../../contexts/walkthrough';
-import { tokens } from '../../../design-system';
-import { createTransition } from '../../../design-system/utils/animations';
-
-// Navigation items configuration
-const navigationItems = [
-  { label: 'Dashboard', path: '/dashboard', icon: Dashboard },
-  { label: 'Analytics', path: '/analytics', icon: Analytics },
-  { label: 'Tasks', path: '/tasks', icon: Assignment },
-  { label: 'Events', path: '/events', icon: Event },
-  { label: 'Calendar', path: '/calendar', icon: CalendarMonth },
-  { label: 'Clients', path: '/clients', icon: People },
-  { label: 'Payments', path: '/payments', icon: Payment },
-  { label: 'Metrics', path: '/metrics', icon: SpeedIcon },
-  { label: 'Settings', path: '/settings', icon: Settings },
-];
-
-// Modern header with enhanced glass morphism effects
 export const ModernHeader: React.FC = () => {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const isAboveLg = useMediaQuery(theme.breakpoints.up('lg'));
-  const isAboveXl = useMediaQuery(theme.breakpoints.up('xl'));
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  // Safe context access with fallbacks
-  const layoutContext = useLayout();
-  const authContext = useAuth();
-  const toastContext = useToastActions();
-  const appTheme = useAppTheme();
-  const { startTour } = useWalkthrough();
-
-  const { headerHeight = 64 } = layoutContext || {};
-  const { user, logout } = authContext || {};
-  const { showInfo } = toastContext || {};
-
-  const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
-
-  // Simple flat header style - theme aware
-  const headerStyle = (() => {
-    const isDark = appTheme.effectiveMode === 'dark';
-
-    return {
-      borderBottom: isDark
-        ? `1px solid ${tokens.color.neutral[800]}`
-        : `1px solid ${tokens.color.neutral[200]}`,
-      background: isDark ? tokens.color.neutral[900] : 'white',
-    };
-  })();
-
-  // User menu handlers
-  const handleUserMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setUserMenuAnchor(event.currentTarget);
-  };
-
-  const handleUserMenuClose = () => {
-    setUserMenuAnchor(null);
-  };
-
-  const handleLogout = () => {
-    handleUserMenuClose();
-    if (logout) {
-      logout();
-    }
-    if (showInfo) {
-      showInfo('Logged Out', 'You have been successfully logged out.');
-    }
-  };
-
-  const handleSettingsClick = () => {
-    handleUserMenuClose();
-    navigate('/settings');
-  };
-
-  const getInitials = (firstName?: string, lastName?: string, email?: string) => {
-    if (firstName && lastName) {
-      return `${firstName[0]}${lastName[0]}`.toUpperCase();
-    }
-    if (firstName) {
-      return firstName[0].toUpperCase();
-    }
-    if (email) {
-      return email[0].toUpperCase();
-    }
-    return 'U';
-  };
-
-  const handleThemeToggle = () => {
-    appTheme.toggleMode();
-  };
-
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
-  };
-
-  const handleNavigate = (path: string) => {
-    navigate(path);
-    setMobileMenuOpen(false);
-  };
-
-  const isActiveRoute = (path: string) => {
-    return location.pathname === path || location.pathname.startsWith(path + '/');
-  };
-
-  // Overflow nav: show as many labeled items as fit, rest go into "More" dropdown
-  const visibleNavCount = isAboveXl ? navigationItems.length : isAboveLg ? 7 : 5;
-  const visibleItems = navigationItems.slice(0, visibleNavCount);
-  const overflowItems = navigationItems.slice(visibleNavCount);
-  const hasActiveOverflow = overflowItems.some((item) => isActiveRoute(item.path));
+  const {
+    isMobile,
+    isAboveLg,
+    isAboveXl,
+    navigate,
+    headerHeight,
+    headerStyle,
+    isDark,
+    user,
+    appTheme,
+    userMenuAnchor,
+    mobileMenuOpen,
+    moreMenuAnchor,
+    setMoreMenuAnchor,
+    handleUserMenuOpen,
+    handleUserMenuClose,
+    handleLogout,
+    handleSettingsClick,
+    handleThemeToggle,
+    toggleMobileMenu,
+    handleNavigate,
+    isActiveRoute,
+    getInitials,
+    handleStartTour,
+    visibleItems,
+    overflowItems,
+    hasActiveOverflow,
+  } = useModernHeaderLogic();
 
   return (
     <>
@@ -183,9 +58,8 @@ export const ModernHeader: React.FC = () => {
             minHeight: `${headerHeight}px !important`,
           }}
         >
-          {/* Left Section: Brand + Navigation (Desktop) / Mobile Menu (Mobile) */}
+          {/* Left Section: Brand + Navigation */}
           <Box display="flex" alignItems="center" flex={1} minWidth={0} gap={2}>
-            {/* Mobile Menu Toggle */}
             {isMobile && (
               <Tooltip title="Menu">
                 <IconButton
@@ -211,7 +85,6 @@ export const ModernHeader: React.FC = () => {
               </Tooltip>
             )}
 
-            {/* Brand */}
             <Box
               data-tour="brand-logo"
               display="flex"
@@ -240,504 +113,54 @@ export const ModernHeader: React.FC = () => {
               </Typography>
             </Box>
 
-            {/* Desktop Navigation */}
             {!isMobile && (
-              <Box
-                data-tour="main-navigation"
-                sx={{
-                  display: 'flex',
-                  gap: isAboveLg ? 1 : 0.5,
-                  ml: isAboveXl ? 3 : isAboveLg ? 2.5 : 2,
-                }}
-              >
-                {visibleItems.map((item) => {
-                  const Icon = item.icon;
-                  const isActive = isActiveRoute(item.path);
-
-                  return (
-                    <Button
-                      key={item.path}
-                      onClick={() => navigate(item.path)}
-                      startIcon={<Icon sx={{ fontSize: 18 }} />}
-                      sx={{
-                        color: isActive ? tokens.color.primary[700] : tokens.color.neutral[700],
-                        fontWeight: isActive ? 600 : 500,
-                        fontSize: '0.875rem',
-                        px: 1.5,
-                        py: 1,
-                        whiteSpace: 'nowrap',
-                        borderRadius: tokens.spacing.radius.md,
-                        position: 'relative',
-                        transition: createTransition(['background', 'color'], 'fast'),
-                        background: isActive ? tokens.color.primary[50] : 'transparent',
-                        '&:hover': {
-                          background: isActive
-                            ? tokens.color.primary[100]
-                            : tokens.color.neutral[100],
-                        },
-                        '&::after': isActive
-                          ? {
-                              content: '""',
-                              position: 'absolute',
-                              bottom: -8,
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              width: 24,
-                              height: 3,
-                              borderRadius: tokens.spacing.radius.full,
-                              background: tokens.color.primary[600],
-                            }
-                          : {},
-                      }}
-                    >
-                      {item.label}
-                    </Button>
-                  );
-                })}
-
-                {/* Overflow "More" dropdown for items that don't fit */}
-                {overflowItems.length > 0 && (
-                  <>
-                    <Button
-                      onClick={(e) => setMoreMenuAnchor(e.currentTarget)}
-                      endIcon={<KeyboardArrowDown />}
-                      sx={{
-                        color: hasActiveOverflow
-                          ? tokens.color.primary[700]
-                          : tokens.color.neutral[700],
-                        fontWeight: hasActiveOverflow ? 600 : 500,
-                        fontSize: '0.875rem',
-                        px: 1.5,
-                        py: 1,
-                        whiteSpace: 'nowrap',
-                        borderRadius: tokens.spacing.radius.md,
-                        position: 'relative',
-                        transition: createTransition(['background', 'color'], 'fast'),
-                        background: hasActiveOverflow ? tokens.color.primary[50] : 'transparent',
-                        '&:hover': {
-                          background: hasActiveOverflow
-                            ? tokens.color.primary[100]
-                            : tokens.color.neutral[100],
-                        },
-                        '&::after': hasActiveOverflow
-                          ? {
-                              content: '""',
-                              position: 'absolute',
-                              bottom: -8,
-                              left: '50%',
-                              transform: 'translateX(-50%)',
-                              width: 24,
-                              height: 3,
-                              borderRadius: tokens.spacing.radius.full,
-                              background: tokens.color.primary[600],
-                            }
-                          : {},
-                      }}
-                    >
-                      More
-                    </Button>
-                    <Menu
-                      anchorEl={moreMenuAnchor}
-                      open={Boolean(moreMenuAnchor)}
-                      onClose={() => setMoreMenuAnchor(null)}
-                      transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                      anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-                      PaperProps={{
-                        sx: {
-                          mt: 1,
-                          minWidth: 200,
-                          borderRadius: tokens.spacing.radius.lg,
-                          border:
-                            appTheme.effectiveMode === 'dark'
-                              ? `1px solid ${tokens.color.neutral[700]}`
-                              : `1px solid ${tokens.color.neutral[200]}`,
-                          background:
-                            appTheme.effectiveMode === 'dark' ? tokens.color.neutral[900] : 'white',
-                        },
-                      }}
-                    >
-                      {overflowItems.map((item) => {
-                        const Icon = item.icon;
-                        const isActive = isActiveRoute(item.path);
-
-                        return (
-                          <MenuItem
-                            key={item.path}
-                            onClick={() => {
-                              navigate(item.path);
-                              setMoreMenuAnchor(null);
-                            }}
-                            sx={{
-                              mx: 1,
-                              my: 0.5,
-                              borderRadius: tokens.spacing.radius.md,
-                              transition: createTransition(['background'], 'fast'),
-                              background: isActive ? tokens.color.primary[50] : 'transparent',
-                              '&:hover': {
-                                background: isActive
-                                  ? tokens.color.primary[100]
-                                  : tokens.color.neutral[100],
-                              },
-                            }}
-                          >
-                            <ListItemIcon>
-                              <Icon
-                                sx={{
-                                  color: isActive
-                                    ? tokens.color.primary[600]
-                                    : tokens.color.neutral[600],
-                                  fontSize: 20,
-                                }}
-                              />
-                            </ListItemIcon>
-                            <ListItemText
-                              primaryTypographyProps={{
-                                fontWeight: isActive ? 600 : 500,
-                                fontSize: '0.875rem',
-                                color: isActive ? tokens.color.primary[700] : undefined,
-                              }}
-                            >
-                              {item.label}
-                            </ListItemText>
-                          </MenuItem>
-                        );
-                      })}
-                    </Menu>
-                  </>
-                )}
-              </Box>
+              <DesktopNavigation
+                visibleItems={visibleItems}
+                overflowItems={overflowItems}
+                hasActiveOverflow={hasActiveOverflow}
+                isAboveLg={isAboveLg}
+                isAboveXl={isAboveXl}
+                isDark={isDark}
+                moreMenuAnchor={moreMenuAnchor}
+                setMoreMenuAnchor={setMoreMenuAnchor}
+                navigate={navigate}
+                isActiveRoute={isActiveRoute}
+              />
             )}
           </Box>
 
-          {/* Right Section: Enhanced Actions + Notifications + User */}
+          {/* Right Section: Notifications + User */}
           <Box display="flex" alignItems="center" gap={{ xs: 1, sm: 1.5 }}>
-            {/* Enhanced Notifications */}
             <Box data-tour="notification-badge" sx={{ position: 'relative' }}>
               <NotificationBadge />
             </Box>
 
-            {/* Enhanced User Profile Menu */}
-            <Tooltip title="User Menu">
-              <IconButton
-                data-tour="user-menu"
-                onClick={handleUserMenuOpen}
-                sx={{
-                  p: 0,
-                  position: 'relative',
-                  overflow: 'visible',
-                }}
-              >
-                <Badge
-                  overlap="circular"
-                  anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-                  badgeContent={
-                    <Box
-                      sx={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: '50%',
-                        backgroundColor: tokens.color.success[500],
-                        border: '2px solid white',
-                      }}
-                    />
-                  }
-                >
-                  <Avatar
-                    sx={{
-                      bgcolor: tokens.color.primary[500],
-                      color: 'white',
-                      width: 42,
-                      height: 42,
-                      fontSize: '0.875rem',
-                      fontWeight: 600,
-                      border: `2px solid ${tokens.color.neutral[200]}`,
-                      transition: createTransition(['opacity'], 'fast'),
-                      '&:hover': {
-                        opacity: 0.9,
-                      },
-                    }}
-                  >
-                    {getInitials(user?.first_name, user?.last_name, user?.email)}
-                  </Avatar>
-                </Badge>
-              </IconButton>
-            </Tooltip>
-
-            {/* User Menu */}
-            <Menu
-              anchorEl={userMenuAnchor}
-              open={Boolean(userMenuAnchor)}
-              onClose={handleUserMenuClose}
-              onClick={handleUserMenuClose}
-              transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-              anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-              PaperProps={{
-                sx: {
-                  mt: 1.5,
-                  minWidth: 240,
-                  borderRadius: tokens.spacing.radius.lg,
-                  border:
-                    appTheme.effectiveMode === 'dark'
-                      ? `1px solid ${tokens.color.neutral[700]}`
-                      : `1px solid ${tokens.color.neutral[200]}`,
-                  background:
-                    appTheme.effectiveMode === 'dark' ? tokens.color.neutral[900] : 'white',
-                  overflow: 'hidden',
-                },
-              }}
-            >
-              {/* User Info Header */}
-              <Box
-                sx={{
-                  px: 2.5,
-                  py: 2.5,
-                  background: tokens.color.neutral[50],
-                }}
-              >
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Avatar
-                    sx={{
-                      width: 52,
-                      height: 52,
-                      background: tokens.color.primary[500],
-                      fontWeight: 600,
-                      fontSize: '1rem',
-                    }}
-                  >
-                    {getInitials(user?.first_name, user?.last_name, user?.email)}
-                  </Avatar>
-                  <Box flex={1}>
-                    <Typography
-                      variant="subtitle2"
-                      fontWeight="bold"
-                      sx={{
-                        color:
-                          appTheme.effectiveMode === 'dark'
-                            ? tokens.color.neutral[50]
-                            : tokens.color.neutral[900],
-                        fontSize: '0.95rem',
-                      }}
-                    >
-                      {user?.first_name || user?.last_name
-                        ? `${user?.first_name} ${user?.last_name}`.trim()
-                        : user?.email}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color:
-                          appTheme.effectiveMode === 'dark'
-                            ? tokens.color.neutral[300]
-                            : tokens.color.neutral[600],
-                        fontSize: '0.8rem',
-                      }}
-                    >
-                      {user?.email}
-                    </Typography>
-                    {user?.role && (
-                      <Chip
-                        label={user.role}
-                        size="small"
-                        sx={{
-                          mt: 0.5,
-                          height: 20,
-                          fontSize: '0.7rem',
-                          background: tokens.color.primary[50],
-                          color: tokens.color.primary[700],
-                          border: `1px solid ${tokens.color.primary[200]}`,
-                        }}
-                      />
-                    )}
-                  </Box>
-                </Box>
-              </Box>
-
-              <Divider sx={{ opacity: 0.1 }} />
-
-              {/* Menu Items */}
-              <Box sx={{ py: 1 }}>
-                <MenuItem
-                  onClick={handleSettingsClick}
-                  sx={{
-                    mx: 1,
-                    borderRadius: tokens.spacing.radius.md,
-                    transition: createTransition(['background'], 'fast'),
-                    '&:hover': {
-                      background: tokens.color.neutral[100],
-                    },
-                  }}
-                >
-                  <ListItemIcon>
-                    <SettingsIcon fontSize="small" sx={{ color: tokens.color.primary[600] }} />
-                  </ListItemIcon>
-                  <ListItemText>Account Settings</ListItemText>
-                </MenuItem>
-
-                {/* Theme Toggle */}
-                <MenuItem
-                  onClick={handleThemeToggle}
-                  sx={{
-                    mx: 1,
-                    borderRadius: tokens.spacing.radius.md,
-                    transition: createTransition(['background'], 'fast'),
-                    '&:hover': {
-                      background: tokens.color.neutral[100],
-                    },
-                  }}
-                >
-                  <ListItemIcon>
-                    {appTheme.mode === 'light' && (
-                      <DarkMode fontSize="small" sx={{ color: tokens.color.neutral[600] }} />
-                    )}
-                    {appTheme.mode === 'dark' && (
-                      <LightMode fontSize="small" sx={{ color: tokens.color.warning[500] }} />
-                    )}
-                    {appTheme.mode === 'system' && (
-                      <Brightness4 fontSize="small" sx={{ color: tokens.color.info[500] }} />
-                    )}
-                  </ListItemIcon>
-                  <ListItemText>
-                    {appTheme.mode === 'light' && 'Switch to Dark'}
-                    {appTheme.mode === 'dark' && 'Follow System'}
-                    {appTheme.mode === 'system' && 'Switch to Light'}
-                  </ListItemText>
-                  <Box sx={{ ml: 1, opacity: 0.6, fontSize: '0.75rem' }}>
-                    {appTheme.effectiveMode === 'dark' ? '🌙' : '☀️'}
-                  </Box>
-                </MenuItem>
-
-                {/* Take a Tour */}
-                <MenuItem
-                  onClick={() => {
-                    handleUserMenuClose();
-                    startTour('welcome');
-                  }}
-                  sx={{
-                    mx: 1,
-                    borderRadius: tokens.spacing.radius.md,
-                    transition: createTransition(['background'], 'fast'),
-                    '&:hover': {
-                      background: tokens.color.neutral[100],
-                    },
-                  }}
-                >
-                  <ListItemIcon>
-                    <TourIcon fontSize="small" sx={{ color: tokens.color.info[600] }} />
-                  </ListItemIcon>
-                  <ListItemText>Take a Tour</ListItemText>
-                </MenuItem>
-
-                <Divider sx={{ opacity: 0.1, my: 1 }} />
-
-                {/* Logout */}
-                <MenuItem
-                  onClick={handleLogout}
-                  sx={{
-                    mx: 1,
-                    borderRadius: tokens.spacing.radius.md,
-                    transition: createTransition(['background', 'color'], 'fast'),
-                    '&:hover': {
-                      background: tokens.color.error[50],
-                      color: tokens.color.error[600],
-                      '& .MuiListItemIcon-root': {
-                        color: tokens.color.error[600],
-                      },
-                    },
-                  }}
-                >
-                  <ListItemIcon>
-                    <ExitToApp fontSize="small" />
-                  </ListItemIcon>
-                  <ListItemText>Logout</ListItemText>
-                </MenuItem>
-              </Box>
-            </Menu>
+            <UserMenu
+              user={user}
+              isDark={isDark}
+              themeMode={appTheme.mode}
+              effectiveMode={appTheme.effectiveMode}
+              userMenuAnchor={userMenuAnchor}
+              onUserMenuOpen={handleUserMenuOpen}
+              onUserMenuClose={handleUserMenuClose}
+              onSettingsClick={handleSettingsClick}
+              onThemeToggle={handleThemeToggle}
+              onStartTour={handleStartTour}
+              onLogout={handleLogout}
+              getInitials={getInitials}
+            />
           </Box>
         </Toolbar>
       </AppBar>
 
-      {/* Mobile Navigation Dropdown */}
       {isMobile && (
-        <Collapse in={mobileMenuOpen} timeout="auto" unmountOnExit>
-          <Box
-            sx={{
-              position: 'fixed',
-              top: headerHeight,
-              left: 0,
-              right: 0,
-              zIndex: 1299,
-              background: appTheme.effectiveMode === 'dark' ? tokens.color.neutral[900] : 'white',
-              borderBottom:
-                appTheme.effectiveMode === 'dark'
-                  ? `1px solid ${tokens.color.neutral[800]}`
-                  : `1px solid ${tokens.color.neutral[200]}`,
-              maxHeight: `calc(100vh - ${headerHeight}px)`,
-              overflowY: 'auto',
-            }}
-          >
-            <List sx={{ py: 2 }}>
-              {navigationItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = isActiveRoute(item.path);
-
-                return (
-                  <ListItem key={item.path} disablePadding sx={{ px: 2, py: 0.5 }}>
-                    <ListItemButton
-                      onClick={() => handleNavigate(item.path)}
-                      sx={{
-                        borderRadius: tokens.spacing.radius.md,
-                        py: 1.5,
-                        transition: createTransition(['background'], 'fast'),
-                        background: isActive ? tokens.color.primary[50] : 'transparent',
-                        '&:hover': {
-                          background: isActive
-                            ? tokens.color.primary[100]
-                            : tokens.color.neutral[100],
-                        },
-                      }}
-                    >
-                      <ListItemIcon sx={{ minWidth: 40 }}>
-                        <Icon
-                          sx={{
-                            color: isActive
-                              ? tokens.color.primary[600]
-                              : appTheme.effectiveMode === 'dark'
-                                ? tokens.color.neutral[400]
-                                : tokens.color.neutral[600],
-                            fontSize: 22,
-                          }}
-                        />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={item.label}
-                        primaryTypographyProps={{
-                          fontWeight: isActive ? 600 : 500,
-                          color: isActive
-                            ? tokens.color.primary[700]
-                            : appTheme.effectiveMode === 'dark'
-                              ? tokens.color.neutral[200]
-                              : tokens.color.neutral[800],
-                          fontSize: '0.95rem',
-                        }}
-                      />
-                      {isActive && (
-                        <Box
-                          sx={{
-                            width: 4,
-                            height: 24,
-                            borderRadius: tokens.spacing.radius.full,
-                            background: tokens.color.primary[600],
-                            ml: 'auto',
-                          }}
-                        />
-                      )}
-                    </ListItemButton>
-                  </ListItem>
-                );
-              })}
-            </List>
-          </Box>
-        </Collapse>
+        <MobileNavigation
+          open={mobileMenuOpen}
+          headerHeight={headerHeight}
+          isDark={isDark}
+          onNavigate={handleNavigate}
+          isActiveRoute={isActiveRoute}
+        />
       )}
     </>
   );
