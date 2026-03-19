@@ -25,7 +25,7 @@ import type {
   AddonSelectionStepConfiguration,
   PaymentInfoStepConfiguration,
   PaymentTermsConfiguration,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import {
   IntroductionStepConfig,
@@ -112,9 +112,9 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
         const updatedStep: BookingFlowStep = {
           ...step,
           configuration_data: {
-            ...(currentConfig as import('../../../types/bookingflows.types').StepConfiguration),
+            ...(currentConfig as import('../../../types/bookingflows').StepConfiguration),
             ...data,
-          } as import('../../../types/bookingflows.types').StepConfiguration,
+          } as import('../../../types/bookingflows').StepConfiguration,
         };
         onUpdate(updatedStep);
       }
@@ -149,7 +149,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             step={step}
             config={
               currentConfig as
-                | import('../../../types/bookingflows.types').DateTimeStepConfiguration
+                | import('../../../types/bookingflows').DateTimeStepConfiguration
                 | null
                 | undefined
             }
@@ -168,7 +168,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             step={step}
             config={
               currentConfig as
-                | import('../../../types/bookingflows.types').QuestionnaireStepConfiguration
+                | import('../../../types/bookingflows').QuestionnaireStepConfiguration
                 | null
                 | undefined
             }
@@ -215,7 +215,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             step={step}
             config={
               currentConfig as
-                | import('../../../types/bookingflows.types').ContactInfoStepConfiguration
+                | import('../../../types/bookingflows').ContactInfoStepConfiguration
                 | null
                 | undefined
             }
@@ -230,7 +230,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             step={step}
             config={
               currentConfig as
-                | import('../../../types/bookingflows.types').PaymentInfoStepConfiguration
+                | import('../../../types/bookingflows').PaymentInfoStepConfiguration
                 | null
                 | undefined
             }
@@ -252,7 +252,7 @@ export const StepConfigurationPanel: React.FC<StepConfigurationPanelProps> = ({
             step={step}
             config={
               currentConfig as
-                | import('../../../types/bookingflows.types').ConfirmationStepConfiguration
+                | import('../../../types/bookingflows').ConfirmationStepConfiguration
                 | null
                 | undefined
             }

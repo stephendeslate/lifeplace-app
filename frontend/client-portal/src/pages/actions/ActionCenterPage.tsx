@@ -43,7 +43,7 @@ import ContractViewer from '../../components/contracts/ContractViewer';
 import { contractsApi } from '../../apis/contracts.api';
 import { InvoicePaymentDialog } from '../../components/payments/InvoicePaymentDialog';
 import type { Contract } from '../../types/contracts.types';
-import type { Invoice } from '../../types/financial.types';
+import type { Invoice } from '../../types/financial';
 import type {
   ActionType,
   ActionCenterFilters,

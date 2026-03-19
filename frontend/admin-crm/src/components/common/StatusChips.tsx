@@ -17,7 +17,7 @@ import type {
   PaymentStatus,
   PaymentPlanStatus,
   InstallmentStatus,
-} from '../../types/payments.types';
+} from '../../types/payments';
 
 type ChipColor = 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning';
 

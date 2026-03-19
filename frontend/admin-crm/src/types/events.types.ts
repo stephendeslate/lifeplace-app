@@ -1,7 +1,7 @@
 // frontend/admin-crm/src/types/events.types.ts
 
 import type { Client } from './clients.types';
-import type { WorkflowStage } from './workflows.types';
+import type { WorkflowStage } from './workflows';
 
 export interface EventType {
   id: number;

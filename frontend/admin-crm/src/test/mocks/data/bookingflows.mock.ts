@@ -3,7 +3,7 @@ import type {
   BookingFlowStep,
   BookingSession,
   StepType,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 
 export function createMockBookingFlow(overrides: Partial<BookingFlow> = {}): BookingFlow {
   const id = overrides.id || Math.floor(Math.random() * 10000);

@@ -34,7 +34,7 @@ import type {
   PaymentNotificationFilters,
   RefundFilters,
   ProcessPaymentData,
-} from '../types/payments.types';
+} from '../types/payments';
 import type { PaginatedResponse, PaginationParams } from '../types/common.types';
 
 export const paymentsApi = {
@@ -72,9 +72,9 @@ export const paymentsApi = {
    * Gateway Health Status
    */
   getGatewayHealth: async (): Promise<
-    Record<number, import('../types/payments.types').GatewayHealth>
+    Record<number, import('../types/payments').GatewayHealth>
   > => {
-    const response = await api.get<Record<number, import('../types/payments.types').GatewayHealth>>(
+    const response = await api.get<Record<number, import('../types/payments').GatewayHealth>>(
       '/payments/gateways/health/',
     );
     return response.data;

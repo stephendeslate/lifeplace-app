@@ -51,7 +51,7 @@ import type {
   CreateBookingFlowStepData,
   UpdateBookingFlowStepData,
   UpdateBookingFlowData,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 
 // Modern Design System imports
 import {

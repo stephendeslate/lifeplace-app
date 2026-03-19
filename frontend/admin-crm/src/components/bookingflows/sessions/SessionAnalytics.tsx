@@ -46,7 +46,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import type { BookingFlowDetail, BookingFlowAnalytics } from '../../../types/bookingflows.types';
+import type { BookingFlowDetail, BookingFlowAnalytics } from '../../../types/bookingflows';
 import { useBookingFlowAnalytics, useBookingSessions } from '../../../hooks/useBookingFlows';
 import { formatCurrency } from '../../../utils/currency';
 import { useCurrencySettings } from '../../../hooks/useCurrency';

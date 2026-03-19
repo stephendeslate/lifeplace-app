@@ -20,7 +20,7 @@ import type {
   DuplicateFlowData,
   AssignQuestionnairesData,
   PaymentTermsConfiguration,
-} from '../types/bookingflows.types';
+} from '../types/bookingflows';
 
 export const useBookingFlows = (params?: BookingFlowQueryParams) => {
   const queryClient = useQueryClient();

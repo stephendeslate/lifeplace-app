@@ -5,7 +5,7 @@ import type {
   StageType,
   AutomationType,
   WebhookEventType,
-} from '../../../types/workflows.types';
+} from '../../../types/workflows';
 
 export function createMockWorkflowTemplate(
   overrides: Partial<WorkflowTemplate> = {},

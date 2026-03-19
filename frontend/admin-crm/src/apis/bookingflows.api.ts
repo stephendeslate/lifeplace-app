@@ -20,7 +20,7 @@ import type {
   AssignQuestionnairesData,
   StepConfiguration,
   PaymentTermsConfiguration,
-} from '../types/bookingflows.types';
+} from '../types/bookingflows';
 import type { PaginatedResponse, PaginationParams } from '../types/common.types';
 
 export interface BookingFlowQueryParams extends PaginationParams {

@@ -12,8 +12,8 @@ import {
   FormHelperText,
 } from '@mui/material';
 import type { SelectChangeEvent } from '@mui/material';
-import type { TimingType, TimingUnit, CustomTiming } from '../../types/workflows.types';
-import { stringToCustomTiming, customTimingToString } from '../../types/workflows.types';
+import type { TimingType, TimingUnit, CustomTiming } from '../../types/workflows';
+import { stringToCustomTiming, customTimingToString } from '../../types/workflows';
 
 export interface CustomTimingInputProps {
   /** Current value as string (e.g., 'AFTER_3_DAYS', 'ON_CREATION') */

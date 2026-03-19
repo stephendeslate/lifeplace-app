@@ -34,7 +34,7 @@ import {
 import type {
   BookingFlowStep,
   AddonSelectionStepConfiguration,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 
 interface AddonSelectionStepConfigProps {

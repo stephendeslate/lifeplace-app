@@ -36,8 +36,8 @@ import type {
   UpdateWorkflowStageData,
   StageType,
   AutomationType,
-} from '../../types/workflows.types';
-import { STAGE_TYPES, AUTOMATION_TYPES, PROGRESSION_CONDITIONS } from '../../types/workflows.types';
+} from '../../types/workflows';
+import { STAGE_TYPES, AUTOMATION_TYPES, PROGRESSION_CONDITIONS } from '../../types/workflows';
 import { CustomTimingInput } from './CustomTimingInput';
 
 const defaultFormData: CreateWorkflowStageData = {

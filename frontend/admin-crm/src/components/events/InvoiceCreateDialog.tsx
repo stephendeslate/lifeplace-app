@@ -24,7 +24,7 @@ import { addDays, format } from 'date-fns';
 import { useInvoices } from '../../hooks/usePayments';
 import { useQuotesForEvent } from '../../hooks/useSales';
 import type { Event } from '../../types/events.types';
-import type { CreateInvoiceData, InvoiceStatus } from '../../types/payments.types';
+import type { CreateInvoiceData, InvoiceStatus } from '../../types/payments';
 
 interface InvoiceCreateDialogProps {
   open: boolean;

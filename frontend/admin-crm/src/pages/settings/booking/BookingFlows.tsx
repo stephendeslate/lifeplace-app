@@ -16,7 +16,7 @@ import type {
   BookingFlow,
   CreateBookingFlowData,
   UpdateBookingFlowData,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
 
 // Table columns configuration

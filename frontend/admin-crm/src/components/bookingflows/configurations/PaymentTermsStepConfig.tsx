@@ -28,7 +28,7 @@ import {
 } from '@mui/icons-material';
 import { usePaymentSettings } from '../../../hooks/usePayments';
 import { useCurrentCurrency } from '../../../hooks/useCurrency';
-import type { PaymentTermsConfiguration } from '../../../types/bookingflows.types';
+import type { PaymentTermsConfiguration } from '../../../types/bookingflows';
 
 interface PaymentTermsStepConfigProps {
   config?: PaymentTermsConfiguration | null;

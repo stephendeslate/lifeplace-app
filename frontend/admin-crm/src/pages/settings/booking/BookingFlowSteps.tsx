@@ -23,7 +23,7 @@ import type {
   CreateBookingFlowStepData,
   UpdateBookingFlowStepData,
   StepType,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
 import type { HeaderAction } from '../../../components/common/ModernPageHeader';
 import { StepConfigurationPanel } from '../../../components/bookingflows/steps/StepConfigurationPanel';

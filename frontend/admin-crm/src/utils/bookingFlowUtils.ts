@@ -1,5 +1,5 @@
 // Utility functions for BookingFlow display and formatting
-import type { BookingFlow } from '../types/bookingflows.types';
+import type { BookingFlow } from '../types/bookingflows';
 
 /**
  * Standardized function to get the display name for an event type

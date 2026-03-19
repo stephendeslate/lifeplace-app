@@ -26,7 +26,7 @@ import {
   Download as DownloadIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../../design-system/components/GlassCard';
-import type { Invoice, InvoiceLineItem } from '../../types/financial.types';
+import type { Invoice, InvoiceLineItem } from '../../types/financial';
 import FinancialApi from '../../apis/financial.api';
 
 interface InvoiceViewerProps {

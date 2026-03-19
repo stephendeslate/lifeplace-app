@@ -10,8 +10,8 @@ import {
   HelpOutline as UnknownIcon,
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
-import type { PaymentGateway, GatewayHealth } from '../../types/payments.types';
-import { getGatewayPaymentMethods, getHealthStatusLabel } from '../../types/payments.types';
+import type { PaymentGateway, GatewayHealth } from '../../types/payments';
+import { getGatewayPaymentMethods, getHealthStatusLabel } from '../../types/payments';
 import ModernLoadingStates from '../common/ModernLoadingStates';
 import { ModernEmptyState } from '../common/ModernEmptyState';
 import ModernTable, { createStandardActions } from '../common/ModernTable';

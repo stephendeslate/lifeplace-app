@@ -4,7 +4,7 @@ import React from 'react';
 import { useBookingFlows } from '../../../hooks/useBookingFlows';
 import { BookingFlowPreview } from './BookingFlowPreview';
 import { Box, CircularProgress, Alert, Typography } from '@mui/material';
-import type { BookingFlow } from '../../../types/bookingflows.types';
+import type { BookingFlow } from '../../../types/bookingflows';
 
 interface BookingFlowPreviewWrapperProps {
   flow: BookingFlow;

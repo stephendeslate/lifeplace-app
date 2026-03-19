@@ -7,7 +7,7 @@ import { useFinancialOverview } from './useFinancial';
 import { useCommunications } from './useCommunications';
 import type { Event, EventTask } from '../types/events.types';
 import type { EventQuote } from '../types/quotes.types';
-import type { Payment, Invoice } from '../types/financial.types';
+import type { Payment, Invoice } from '../types/financial';
 
 // Core dashboard data interface with priority-based aggregation
 export interface DashboardData {

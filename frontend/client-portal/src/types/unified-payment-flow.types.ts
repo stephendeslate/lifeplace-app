@@ -13,7 +13,7 @@ import type {
   PaymentIntentResponse,
   Payment,
   Invoice,
-} from './financial.types';
+} from './financial';
 
 // ===========================
 // Core Flow Mode Types
@@ -423,4 +423,4 @@ export type {
   Invoice,
   PaymentIntentResponse,
   SetupIntentResponse,
-} from './financial.types';
+} from './financial';

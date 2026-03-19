@@ -10,7 +10,7 @@ import { createTheme } from '@mui/material/styles';
 
 import { InvoicePaymentDialog } from '../InvoicePaymentDialog';
 import FinancialApi from '../../../apis/financial.api';
-import type { Invoice, PaymentMethod } from '../../../types/financial.types';
+import type { Invoice, PaymentMethod } from '../../../types/financial';
 
 // Mock the API
 vi.mock('../../../apis/financial.api');

@@ -38,13 +38,13 @@ import {
   type BookingFlowFormData,
   type CreateBookingFlowData,
   type UpdateBookingFlowData,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 import { useEventTypes } from '../../../hooks/useEvents';
 import { useWorkflowTemplates } from '../../../hooks/useWorkflows';
 import { useCommunications } from '../../../hooks/useCommunications';
 import { useDiscounts } from '../../../hooks/useProducts';
 import { usePaymentGateways } from '../../../hooks/usePayments';
-import { getGatewayPaymentMethods } from '../../../types/payments.types';
+import { getGatewayPaymentMethods } from '../../../types/payments';
 
 interface TabPanelProps {
   children?: React.ReactNode;

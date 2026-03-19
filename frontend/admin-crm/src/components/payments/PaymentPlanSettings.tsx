@@ -34,8 +34,8 @@ import IconButton from '@mui/material/IconButton';
 import { useForm, Controller } from 'react-hook-form';
 import { usePaymentSettings, useUpdatePaymentSettings } from '../../hooks/usePayments';
 import { useCurrentCurrency } from '../../hooks/useCurrency';
-import { PAYMENT_FREQUENCIES } from '../../types/payments.types';
-import type { UpdatePaymentSettingsData, ChildPricingTier } from '../../types/payments.types';
+import { PAYMENT_FREQUENCIES } from '../../types/payments';
+import type { UpdatePaymentSettingsData, ChildPricingTier } from '../../types/payments';
 
 interface PaymentPlanFormData {
   balance_due_days: string;

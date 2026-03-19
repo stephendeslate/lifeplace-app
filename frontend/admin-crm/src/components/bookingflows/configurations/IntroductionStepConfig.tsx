@@ -26,7 +26,7 @@ import { tokens } from '../../../design-system';
 import type {
   BookingFlowStep,
   IntroductionStepConfiguration,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 
 interface IntroductionStepConfigProps {
   step: BookingFlowStep;

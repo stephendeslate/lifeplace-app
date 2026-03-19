@@ -37,7 +37,7 @@ import type {
   PaymentInfoStepConfiguration,
   StepValidationResult,
 } from '../../../types/booking';
-import type { PaymentMethod } from '../../../types/financial.types';
+import type { PaymentMethod } from '../../../types/financial';
 
 interface PaymentStepProps {
   stepData?: PaymentStepData;

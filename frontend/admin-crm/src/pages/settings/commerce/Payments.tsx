@@ -24,7 +24,7 @@ import {
   PaymentGatewayFormDialog,
   PaymentPlanSettings,
 } from '../../../components/payments';
-import type { PaymentGateway } from '../../../types/payments.types';
+import type { PaymentGateway } from '../../../types/payments';
 
 // Modern Design System imports
 import { ModernSettingsLayout } from '../../../components/common/ModernPageLayout';

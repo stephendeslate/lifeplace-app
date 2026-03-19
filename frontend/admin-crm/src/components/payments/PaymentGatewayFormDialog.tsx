@@ -28,8 +28,8 @@ import type {
   PaymentGatewayFormData,
   StripeConfig,
   PayMongoConfig,
-} from '../../types/payments.types';
-import { GATEWAY_TEMPLATES, getGatewayPaymentMethods } from '../../types/payments.types';
+} from '../../types/payments';
+import { GATEWAY_TEMPLATES, getGatewayPaymentMethods } from '../../types/payments';
 import { tokens } from '../../design-system/tokens';
 
 interface PaymentGatewayFormDialogProps {

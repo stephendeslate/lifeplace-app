@@ -7,7 +7,7 @@ import {
   type OnNodesChange,
   type OnEdgesChange,
 } from '@xyflow/react';
-import type { WorkflowStage, StageType } from '../../../../types/workflows.types';
+import type { WorkflowStage, StageType } from '../../../../types/workflows';
 import type { FlowchartNode, FlowchartEdge, FlowchartMode } from '../types';
 import { calculateLayout, calculateReorderMapping } from '../utils/layoutCalculator';
 

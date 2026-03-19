@@ -8,7 +8,7 @@ import { useFinancialOverview } from './useFinancial';
 import { useContracts } from '../contexts/ContractsContext';
 import type { Event, EventTask, EventDetail } from '../types/events.types';
 import type { EventQuote } from '../types/quotes.types';
-import type { Invoice } from '../types/financial.types';
+import type { Invoice } from '../types/financial';
 import type {
   ActionType,
   AnyActionItem,

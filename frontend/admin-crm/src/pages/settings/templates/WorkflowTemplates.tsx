@@ -16,7 +16,7 @@ import type {
   WorkflowTemplate,
   CreateWorkflowTemplateData,
   UpdateWorkflowTemplateData,
-} from '../../../types/workflows.types';
+} from '../../../types/workflows';
 import type { ModernFormSection } from '../../../components/common/ModernForm';
 
 // Table columns configuration

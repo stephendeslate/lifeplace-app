@@ -22,7 +22,7 @@ import {
   Visibility as PreviewIcon,
   Gavel as GavelIcon,
 } from '@mui/icons-material';
-import type { BookingFlowStep } from '../../../types/bookingflows.types';
+import type { BookingFlowStep } from '../../../types/bookingflows';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 
 interface PricingSummaryStepConfigProps {

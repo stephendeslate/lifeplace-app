@@ -49,7 +49,7 @@ import type {
   ContactInfoStepConfiguration,
   PaymentInfoStepConfiguration,
   ConfirmationStepConfiguration,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 
 interface BookingFlowPreviewProps {
   flow: BookingFlowDetail;

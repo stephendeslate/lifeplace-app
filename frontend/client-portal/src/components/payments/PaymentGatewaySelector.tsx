@@ -22,7 +22,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { GlassCard } from '../../design-system';
 import FinancialApi from '../../apis/financial.api';
-import type { PaymentGateway } from '../../types/financial.types';
+import type { PaymentGateway } from '../../types/financial';
 
 interface PaymentGatewaySelectorProps {
   selectedGateway: PaymentGateway | null;

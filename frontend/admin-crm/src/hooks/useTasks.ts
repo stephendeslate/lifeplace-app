@@ -9,7 +9,7 @@ import { useSupport } from './useSupport';
 import type { Task, TaskCounts, TasksByDomain, TaskPriority } from '../types/tasks.types';
 import type { EventQuote } from '../types/sales.types';
 import type { EventContract } from '../types/contracts.types';
-import type { Payment } from '../types/payments.types';
+import type { Payment } from '../types/payments';
 import type { CommunicationRecord } from '../types/communications.types';
 import type { SupportInquiry } from '../types/support.types';
 

@@ -1,6 +1,6 @@
 // frontend/admin-crm/src/components/workflows/flowchart/utils/layoutCalculator.ts
 
-import type { WorkflowStage, StageType } from '../../../../types/workflows.types';
+import type { WorkflowStage, StageType } from '../../../../types/workflows';
 import type {
   FlowchartNode,
   FlowchartEdge,

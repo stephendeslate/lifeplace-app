@@ -24,7 +24,7 @@ import {
 import type {
   BookingFlowStep,
   ConfirmationStepConfiguration,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 
 interface ConfirmationStepConfigProps {

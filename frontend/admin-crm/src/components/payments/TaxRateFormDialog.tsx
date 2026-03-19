@@ -13,7 +13,7 @@ import {
 import { ModernDialog, createDialogActions } from '../common';
 import { Percent as PercentIcon } from '@mui/icons-material';
 import { useCreateTaxRate, useUpdateTaxRate } from '../../hooks/usePayments';
-import type { TaxRate, TaxRateFormData } from '../../types/payments.types';
+import type { TaxRate, TaxRateFormData } from '../../types/payments';
 import { tokens } from '../../design-system/tokens';
 
 interface TaxRateFormDialogProps {

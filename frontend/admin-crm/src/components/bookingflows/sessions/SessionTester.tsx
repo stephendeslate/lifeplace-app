@@ -43,7 +43,7 @@ import type {
   BookingSession,
   CreateBookingSessionData,
   UpdateBookingSessionData,
-} from '../../../types/bookingflows.types';
+} from '../../../types/bookingflows';
 import { useBookingSessions } from '../../../hooks/useBookingFlows';
 
 interface SessionTesterProps {

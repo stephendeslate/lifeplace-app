@@ -12,7 +12,7 @@ import {
   Download as DownloadIcon,
 } from '@mui/icons-material';
 import { GlassCard } from '../../design-system/components/GlassCard';
-import type { Payment } from '../../types/financial.types';
+import type { Payment } from '../../types/financial';
 import FinancialApi from '../../apis/financial.api';
 
 interface PaymentViewerProps {

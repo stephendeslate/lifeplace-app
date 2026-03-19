@@ -27,7 +27,7 @@ import {
   Receipt as ReceiptIcon,
 } from '@mui/icons-material';
 import { useDeletePaymentMethod } from '../../hooks/useFinancial';
-import type { PaymentMethod } from '../../types/financial.types';
+import type { PaymentMethod } from '../../types/financial';
 
 interface PaymentMethodDeleteDialogProps {
   open: boolean;

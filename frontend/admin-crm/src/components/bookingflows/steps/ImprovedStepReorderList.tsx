@@ -9,7 +9,7 @@ import {
   StarBorder as OptionalIcon,
 } from '@mui/icons-material';
 import { DraggableList, type DraggableListRef } from '../../common/DraggableList';
-import type { BookingFlowStep } from '../../../types/bookingflows.types';
+import type { BookingFlowStep } from '../../../types/bookingflows';
 import { useBookingFlowSteps } from '../../../hooks/useBookingFlows';
 
 interface ImprovedStepReorderListProps {

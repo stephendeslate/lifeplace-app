@@ -33,7 +33,7 @@ import {
   Warning as WarningIcon,
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
-import type { BookingFlow } from '../../../types/bookingflows.types';
+import type { BookingFlow } from '../../../types/bookingflows';
 import { getEventTypeDisplayName } from '../../../utils/bookingFlowUtils';
 
 interface BookingFlowCardProps {

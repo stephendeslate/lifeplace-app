@@ -86,7 +86,7 @@ import {
   type ActivityItem,
 } from '../../components/common';
 import { EVENT_STATUSES, type UpdateEventData } from '../../types/events.types';
-import type { WorkflowStage as WorkflowStageType } from '../../types/workflows.types';
+import type { WorkflowStage as WorkflowStageType } from '../../types/workflows';
 
 interface TabPanelProps {
   children?: React.ReactNode;

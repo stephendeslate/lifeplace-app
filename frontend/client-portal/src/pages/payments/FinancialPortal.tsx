@@ -64,7 +64,7 @@ import type {
   Invoice,
   InvoicePaymentResponse,
   PaymentMethod,
-} from '../../types/financial.types';
+} from '../../types/financial';
 import { PaymentViewer } from '../../components/payments/PaymentViewer';
 import { InvoiceViewer } from '../../components/payments/InvoiceViewer';
 import { InvoicePaymentDialog } from '../../components/payments/InvoicePaymentDialog';

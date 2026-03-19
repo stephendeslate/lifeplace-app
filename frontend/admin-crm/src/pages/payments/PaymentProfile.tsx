@@ -59,8 +59,8 @@ import {
   type ActivityItem,
   type QuickAction,
 } from '../../components/common';
-import { PAYMENT_STATUSES } from '../../types/payments.types';
-import type { PaymentStatus, UpdatePaymentData } from '../../types/payments.types';
+import { PAYMENT_STATUSES } from '../../types/payments';
+import type { PaymentStatus, UpdatePaymentData } from '../../types/payments';
 
 // Modern Design System imports
 import {

@@ -30,7 +30,7 @@ import {
   CheckCircle as AvailabilityIcon,
   Sync as SyncIcon,
 } from '@mui/icons-material';
-import type { BookingFlowStep, DateTimeStepConfiguration } from '../../../types/bookingflows.types';
+import type { BookingFlowStep, DateTimeStepConfiguration } from '../../../types/bookingflows';
 import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows';
 import { useFormHandlers } from '../../../hooks/useFormHandlers';
 import { ConfigSection } from '../../common';

@@ -29,7 +29,7 @@ import {
   EventNote as EventIcon,
   FlashOn as TriggerIcon,
 } from '@mui/icons-material';
-import type { WorkflowVisualizationProps, WorkflowStage } from '../../types/workflows.types';
+import type { WorkflowVisualizationProps, WorkflowStage } from '../../types/workflows';
 import { tokens } from '../../design-system';
 
 export const WorkflowVisualization: React.FC<WorkflowVisualizationProps> = ({ template }) => {

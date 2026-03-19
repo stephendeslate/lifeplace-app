@@ -40,7 +40,7 @@ import type {
   PaymentGateway,
   InvoicePaymentRequest,
   InvoicePaymentResponse,
-} from '../../types/financial.types';
+} from '../../types/financial';
 
 interface InvoicePaymentDialogProps {
   open: boolean;

@@ -42,7 +42,7 @@ import type {
   PaymentGateway,
 } from '../../types/unified-payment-flow.types';
 import FinancialApi from '../../apis/financial.api';
-import type { PaymentMethod, PaymentMethodFormData } from '../../types/financial.types';
+import type { PaymentMethod, PaymentMethodFormData } from '../../types/financial';
 
 interface PaymentMethodSelectorProps {
   selectedMethod: PaymentMethod | null;

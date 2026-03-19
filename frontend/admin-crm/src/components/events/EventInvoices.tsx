@@ -40,7 +40,7 @@ import { format, isPast, differenceInDays } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { useInvoices, useDownloadInvoicePdf, useSendInvoice } from '../../hooks/usePayments';
 import type { Event } from '../../types/events.types';
-import type { Invoice, InvoiceStatus } from '../../types/payments.types';
+import type { Invoice, InvoiceStatus } from '../../types/payments';
 import { formatCurrency } from '../../utils/currency';
 import { useCurrencySettings } from '../../hooks/useCurrency';
 import { InvoiceDetailsDialog } from '../payments/InvoiceDetailsDialog';

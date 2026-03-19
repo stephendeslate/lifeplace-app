@@ -27,7 +27,7 @@ import type {
   PaymentNotificationFilters,
   RefundFilters,
   ProcessPaymentData,
-} from '../types/payments.types';
+} from '../types/payments';
 import type { PaginationParams } from '../types/common.types';
 
 // Query Keys

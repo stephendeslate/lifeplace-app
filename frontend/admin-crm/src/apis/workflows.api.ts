@@ -24,7 +24,7 @@ import type {
   WorkflowWebhookFilters,
   WebhookDeliveryFilters,
   WebhookEventType,
-} from '../types/workflows.types';
+} from '../types/workflows';
 import type { PaginatedResponse, PaginationParams } from '../types/common.types';
 
 export interface WorkflowTemplateQueryParams extends PaginationParams {

@@ -23,7 +23,7 @@ import type {
   SetupIntentResponse,
   PaymentPlanRequest,
   InvoicePaymentResponse,
-} from '../types/financial.types';
+} from '../types/financial';
 
 /**
  * Financial API service for client portal

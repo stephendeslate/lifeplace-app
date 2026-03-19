@@ -29,7 +29,7 @@ import type {
   UpdateWorkflowStageData,
   UpdateWorkflowTemplateData,
   StageType,
-} from '../../../types/workflows.types';
+} from '../../../types/workflows';
 import {
   ModernSettingsLayout,
   ModernGlassCard,

@@ -52,8 +52,8 @@ import type {
   PaymentFilters,
   CreatePaymentData,
   PaymentStatus,
-} from '../../types/payments.types';
-import { PAYMENT_STATUSES } from '../../types/payments.types';
+} from '../../types/payments';
+import { PAYMENT_STATUSES } from '../../types/payments';
 import { ModernPageLayout, ModernPageHeader, ModernEmptyState } from '../../components/common';
 
 export const PaymentsOverview: React.FC = () => {

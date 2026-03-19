@@ -34,7 +34,7 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLayout } from '../../../contexts/LayoutContext';
 import { useBookingFlows, useBookingFlowPaymentGateways } from '../../../hooks/useBookingFlows';
-import type { BookingFlowDetail } from '../../../types/bookingflows.types';
+import type { BookingFlowDetail } from '../../../types/bookingflows';
 
 // Modern Design System imports
 import { ModernCard, ModernLoadingStates } from '../../../components/common';

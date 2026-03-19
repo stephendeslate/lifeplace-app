@@ -25,7 +25,7 @@ import {
 } from '@mui/icons-material';
 import { DraggableList } from '../common/DraggableList';
 import { useWorkflowStages } from '../../hooks/useWorkflows';
-import type { WorkflowStage, StageType } from '../../types/workflows.types';
+import type { WorkflowStage, StageType } from '../../types/workflows';
 
 interface WorkflowStageReorderDialogProps {
   open: boolean;

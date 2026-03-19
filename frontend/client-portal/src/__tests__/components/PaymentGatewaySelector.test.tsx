@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { PaymentGatewaySelector } from '../../components/payments/PaymentGatewaySelector';
-import type { PaymentGateway } from '../../types/financial.types';
+import type { PaymentGateway } from '../../types/financial';
 
 // Mock the API - create a mock function that we can control
 const mockGetActivePaymentGateways = vi.fn();

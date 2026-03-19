@@ -7,7 +7,7 @@ import type {
   PaymentFilters,
   InvoiceFilters,
   PaymentMethodFormData,
-} from '../types/financial.types';
+} from '../types/financial';
 
 // Query keys for consistent caching
 export const financialKeys = {

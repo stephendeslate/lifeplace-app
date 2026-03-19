@@ -4,7 +4,7 @@ import React from 'react';
 import { Box, Typography, Chip, Tooltip } from '@mui/material';
 import { Percent as TaxIcon, Star as StarIcon } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
-import type { TaxRate } from '../../types/payments.types';
+import type { TaxRate } from '../../types/payments';
 import {
   ModernTable,
   ModernLoadingStates,
