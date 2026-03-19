@@ -18,10 +18,7 @@ import { useBookingFlowStepConfiguration } from '../../../hooks/useBookingFlows'
 import { useFormHandlers } from '../../../hooks/useFormHandlers';
 import { ConfigSection } from '../../common';
 import { tokens } from '../../../design-system';
-import type {
-  BookingFlowStep,
-  VenueSelectionStepConfiguration,
-} from '../../../types/bookingflows';
+import type { BookingFlowStep, VenueSelectionStepConfiguration } from '../../../types/bookingflows';
 
 interface VenueSelectionStepConfigProps {
   step: BookingFlowStep;
