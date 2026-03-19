@@ -37,23 +37,16 @@ class EventTypeService:
     @staticmethod
     def get_all_event_types(search_query=None, is_active=None):
         """Get all event types with optional filtering"""
-        queryset = EventType.objects.all()
+        from ..selectors import get_all_event_types
 
-        if search_query:
-            queryset = queryset.filter(Q(name__icontains=search_query) | Q(description__icontains=search_query))
-
-        if is_active is not None:
-            queryset = queryset.filter(is_active=is_active)
-
-        return queryset.order_by("name")
+        return get_all_event_types(search_query=search_query, is_active=is_active)
 
     @staticmethod
     def get_event_type_by_id(event_type_id):
         """Get an event type by ID"""
-        try:
-            return EventType.objects.get(id=event_type_id)
-        except EventType.DoesNotExist:
-            raise EventTypeNotFound()
+        from ..selectors import get_event_type_by_id
+
+        return get_event_type_by_id(event_type_id=event_type_id)
 
     @staticmethod
     def create_event_type(event_type_data):
@@ -107,44 +100,24 @@ class EventService:
         payment_status=None,
     ):
         """Get all events with optional filtering - OPTIMIZED"""
-        # Start with optimized base queryset
-        queryset = Event.objects.select_related("client", "event_type", "workflow_template", "current_stage")
+        from ..selectors import get_all_events
 
-        if search_query:
-            queryset = queryset.filter(
-                Q(name__icontains=search_query)
-                | Q(client__first_name__icontains=search_query)
-                | Q(client__last_name__icontains=search_query)
-                | Q(client__email__icontains=search_query)
-            )
-
-        if event_type_id:
-            queryset = queryset.filter(event_type_id=event_type_id)
-
-        if status:
-            queryset = queryset.filter(status=status)
-
-        if client_id:
-            queryset = queryset.filter(client_id=client_id)
-
-        if start_date_from:
-            queryset = queryset.filter(start_date__gte=start_date_from)
-
-        if start_date_to:
-            queryset = queryset.filter(start_date__lte=start_date_to)
-
-        if payment_status:
-            queryset = queryset.filter(payment_status=payment_status)
-
-        return queryset.order_by("-start_date")
+        return get_all_events(
+            search_query=search_query,
+            event_type_id=event_type_id,
+            status=status,
+            client_id=client_id,
+            start_date_from=start_date_from,
+            start_date_to=start_date_to,
+            payment_status=payment_status,
+        )
 
     @staticmethod
     def get_event_by_id(event_id):
         """Get an event by ID"""
-        try:
-            return Event.objects.get(id=event_id)
-        except Event.DoesNotExist:
-            raise EventNotFound()
+        from ..selectors import get_event_by_id
+
+        return get_event_by_id(event_id=event_id)
 
     @staticmethod
     def create_event(validated_data, user, booking_flow_id=None):
@@ -411,28 +384,16 @@ class EventTaskService:
     @staticmethod
     def get_tasks_for_event(event_id, status=None, assigned_to=None):
         """Get tasks for an event"""
-        try:
-            event = Event.objects.get(id=event_id)
-        except Event.DoesNotExist:
-            raise EventNotFound()
+        from ..selectors import get_tasks_for_event
 
-        queryset = event.tasks.all()
-
-        if status:
-            queryset = queryset.filter(status=status)
-
-        if assigned_to:
-            queryset = queryset.filter(assigned_to_id=assigned_to)
-
-        return queryset.order_by("due_date", "priority")
+        return get_tasks_for_event(event_id=event_id, status=status, assigned_to=assigned_to)
 
     @staticmethod
     def get_task_by_id(task_id):
         """Get a task by ID"""
-        try:
-            return EventTask.objects.get(id=task_id)
-        except EventTask.DoesNotExist:
-            raise EventTaskNotFound()
+        from ..selectors import get_task_by_id
+
+        return get_task_by_id(task_id=task_id)
 
     @staticmethod
     def create_task(task_data, user):
@@ -542,20 +503,9 @@ class EventFileService:
     @staticmethod
     def get_files_for_event(event_id, category=None, is_public=None):
         """Get files for an event"""
-        try:
-            event = Event.objects.get(id=event_id)
-        except Event.DoesNotExist:
-            raise EventNotFound()
+        from ..selectors import get_files_for_event
 
-        queryset = event.files.all()
-
-        if category:
-            queryset = queryset.filter(category=category)
-
-        if is_public is not None:
-            queryset = queryset.filter(is_public=is_public)
-
-        return queryset.order_by("-created_at")
+        return get_files_for_event(event_id=event_id, category=category, is_public=is_public)
 
     @staticmethod
     def create_file(file_data, file_obj, user):
@@ -737,12 +687,9 @@ class EventFeedbackService:
     @staticmethod
     def get_feedback_for_event(event_id):
         """Get feedback for an event"""
-        try:
-            event = Event.objects.get(id=event_id)
-        except Event.DoesNotExist:
-            raise EventNotFound()
+        from ..selectors import get_feedback_for_event
 
-        return event.feedback.all().order_by("-created_at")
+        return get_feedback_for_event(event_id=event_id)
 
     @staticmethod
     def create_feedback(feedback_data, user):
@@ -803,17 +750,9 @@ class EventTimelineService:
     @staticmethod
     def get_timeline_for_event(event_id, is_public=None):
         """Get timeline entries for an event"""
-        try:
-            event = Event.objects.get(id=event_id)
-        except Event.DoesNotExist:
-            raise EventNotFound()
+        from ..selectors import get_timeline_for_event
 
-        queryset = event.timeline.all()
-
-        if is_public is not None:
-            queryset = queryset.filter(is_public=is_public)
-
-        return queryset.order_by("-created_at")
+        return get_timeline_for_event(event_id=event_id, is_public=is_public)
 
     @staticmethod
     def add_timeline_entry(entry_data, user):
