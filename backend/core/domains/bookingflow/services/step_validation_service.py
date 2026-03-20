@@ -28,7 +28,7 @@ def validate_step_data(step, step_data, session=None):
         )
         return errors
 
-    # Add validation for pricing summary step (now includes review fields)
+    # Add validation for pricing summary step
     if step.step_type == "pricing_summary":
         # Validate discount code if provided
         if step_data.get("applied_discount_code"):
@@ -43,7 +43,7 @@ def validate_step_data(step, step_data, session=None):
                 logger.error(f"Error validating discount code: {e}", exc_info=True)
                 errors["applied_discount_code"] = ["Unable to validate discount code"]
 
-        # Validate terms acceptance (consolidated from review step)
+        # Validate terms acceptance
         config = getattr(step, "pricing_config", None)
         if config:
             show_terms = getattr(config, "show_terms_checkbox", True)

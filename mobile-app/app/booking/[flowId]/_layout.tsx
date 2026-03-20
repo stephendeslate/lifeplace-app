@@ -60,7 +60,7 @@ export default function BookingFlowLayout() {
       <Stack.Screen
         name="summary"
         options={{
-          title: 'Review',
+          title: 'Pricing Summary',
         }}
       />
       <Stack.Screen

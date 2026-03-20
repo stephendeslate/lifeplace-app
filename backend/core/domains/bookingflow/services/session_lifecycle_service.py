@@ -433,7 +433,7 @@ def extract_booking_metadata(session):
 
     Returns a dict with:
         - quote_message: Client message for quote requests
-        - special_requests: Additional special requests from review step
+        - special_requests: Additional special requests from pricing summary step
         - combined_message: Combined message from both sources
         - payment_type: Payment preference (FULL/DEPOSIT)
         - completion_type: Flow completion type (payment/quote)
@@ -450,7 +450,7 @@ def extract_booking_metadata(session):
         "terms_accepted": False,
     }
 
-    # FIXED: Iterate through step data to find payment and review step data
+    # FIXED: Iterate through step data to find payment and pricing summary step data
     # Session data is stored as step_XX keys, not as step_type keys
     for _step_key, step_data in session.booking_data.items():
         if isinstance(step_data, dict):

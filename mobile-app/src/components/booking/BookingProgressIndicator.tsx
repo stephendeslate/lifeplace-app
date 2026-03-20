@@ -42,7 +42,7 @@ export function BookingProgressIndicator({
   const isStepAccessible = (index: number) => {
     if (!allowNavigation) return false;
     // Can access completed steps and the current step
-    return index <= currentStepIndex || steps.slice(0, index).every(s => isStepCompleted(s.id));
+    return index <= currentStepIndex || steps.slice(0, index).every((s) => isStepCompleted(s.id));
   };
 
   if (variant === 'compact') {
@@ -83,10 +83,7 @@ export function BookingProgressIndicator({
             <React.Fragment key={step.id}>
               {index > 0 && (
                 <View
-                  style={[
-                    styles.connector,
-                    (isPast || isCompleted) && styles.connectorCompleted,
-                  ]}
+                  style={[styles.connector, (isPast || isCompleted) && styles.connectorCompleted]}
                 />
               )}
               <TouchableOpacity
@@ -103,12 +100,7 @@ export function BookingProgressIndicator({
                 {isCompleted ? (
                   <Check size={14} color={colors.neutral.white} weight="bold" />
                 ) : (
-                  <Text
-                    style={[
-                      styles.stepNumber,
-                      isCurrent && styles.stepNumberCurrent,
-                    ]}
-                  >
+                  <Text style={[styles.stepNumber, isCurrent && styles.stepNumberCurrent]}>
                     {index + 1}
                   </Text>
                 )}
@@ -125,10 +117,7 @@ export function BookingProgressIndicator({
             return (
               <Text
                 key={step.id}
-                style={[
-                  styles.stepLabel,
-                  isCurrent && styles.stepLabelCurrent,
-                ]}
+                style={[styles.stepLabel, isCurrent && styles.stepLabelCurrent]}
                 numberOfLines={1}
               >
                 {step.title || getStepDisplayName(step.step_type)}
@@ -149,7 +138,7 @@ function getStepDisplayName(stepType: string): string {
     package_selection: 'Package',
     addon_selection: 'Add-ons',
     questionnaire: 'Details',
-    pricing_summary: 'Review',
+    pricing_summary: 'Summary',
     contact_info: 'Contact',
     payment_info: 'Payment',
     confirmation: 'Done',

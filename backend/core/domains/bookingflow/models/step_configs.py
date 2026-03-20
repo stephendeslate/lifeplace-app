@@ -357,7 +357,7 @@ class PricingSummaryStepConfiguration(BaseModel):
     calculate_tax = models.BooleanField(default=True)
 
     # Custom messaging
-    header_text = models.CharField(max_length=255, blank=True, default="Review your order")
+    header_text = models.CharField(max_length=255, blank=True, default="")
     footer_text = models.TextField(blank=True)
     discount_help_text = models.CharField(max_length=255, blank=True, default="Enter discount code")
 

@@ -28,7 +28,7 @@ interface BookingSummaryCardProps {
   packages: PackageLineItem[];
   addons: AddonLineItem[];
   pricing: PricingBreakdown;
-  displayMode?: 'review' | 'confirmation';
+  displayMode?: 'summary' | 'confirmation';
   showPackageBreakdown?: boolean;
   showAddonBreakdown?: boolean;
   showPricingBreakdown?: boolean;
@@ -52,7 +52,7 @@ export const BookingSummaryCard: React.FC<BookingSummaryCardProps> = ({
     <Paper sx={{ p: 3, mb: 3 }}>
       <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         <Receipt />
-        {displayMode === 'confirmation' ? 'Booking Summary' : 'Review Your Booking'}
+        {displayMode === 'confirmation' ? 'Booking Summary' : 'Pricing Summary'}
       </Typography>
       <Divider sx={{ mb: 2 }} />
 

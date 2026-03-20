@@ -85,19 +85,19 @@ describe('BookingSummaryCard', () => {
       expect(screen.getByText('Booking Summary')).toBeInTheDocument();
     });
 
-    it('renders review title in review mode', () => {
+    it('renders summary title in summary mode', () => {
       render(
         <TestWrapper>
           <BookingSummaryCard
             packages={mockPackages}
             addons={mockAddons}
             pricing={mockPricing}
-            displayMode="review"
+            displayMode="summary"
           />
         </TestWrapper>,
       );
 
-      expect(screen.getByText('Review Your Booking')).toBeInTheDocument();
+      expect(screen.getByText('Pricing Summary')).toBeInTheDocument();
     });
   });
 

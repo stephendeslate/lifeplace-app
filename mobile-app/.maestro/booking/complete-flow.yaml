@@ -65,7 +65,7 @@ tags:
 - waitForAnimationToEnd
 
 # Step 7: Summary/Pricing
-- assertVisible: "Review"
+- assertVisible: "Pricing Summary"
 - scrollUntilVisible:
     element:
       id: "pricing-terms-checkbox"
