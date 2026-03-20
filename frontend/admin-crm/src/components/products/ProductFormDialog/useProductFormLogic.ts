@@ -35,6 +35,9 @@ const defaultFormData: ProductFormData = {
   event_type_ids: [],
   featured_image: null,
   gallery_images: [],
+  minimum_guests: '',
+  maximum_guests: '',
+  recommended_guests: '',
 };
 
 export function useProductFormLogic(
@@ -82,6 +85,9 @@ export function useProductFormLogic(
           event_type_ids: editingProduct.event_type_ids || [],
           featured_image: editingProduct.featured_image || null,
           gallery_images: editingProduct.gallery_images || [],
+          minimum_guests: editingProduct.minimum_guests?.toString() || '',
+          maximum_guests: editingProduct.maximum_guests?.toString() || '',
+          recommended_guests: editingProduct.recommended_guests?.toString() || '',
         });
       } else {
         setFormData(defaultFormData);
@@ -203,6 +209,11 @@ export function useProductFormLogic(
         ? parseInt(formData.maximum_booking_days)
         : null,
       event_days: formData.event_days ? parseInt(formData.event_days) : null,
+      minimum_guests: formData.minimum_guests ? parseInt(formData.minimum_guests) : null,
+      maximum_guests: formData.maximum_guests ? parseInt(formData.maximum_guests) : null,
+      recommended_guests: formData.recommended_guests
+        ? parseInt(formData.recommended_guests)
+        : null,
       sku: formData.sku || null,
       sort_order: parseInt(formData.sort_order) || 0,
       event_type_ids: formData.event_type_ids,
