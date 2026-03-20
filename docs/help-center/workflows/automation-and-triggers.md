@@ -33,6 +33,20 @@ Use **trigger_after_stage** to create dependencies between stages. This lets you
 - **Stage A:** "Quote Accepted" (triggers on quote acceptance)
 - **Stage B:** "Send Contract" with trigger_after_stage = Stage A and trigger_time = AFTER_5_DAYS
 
+## Event-Based Triggers
+
+In addition to time-based triggers, workflow stages can fire in response to specific events:
+
+| Trigger | When It Fires |
+|---|---|
+| Payment Received | A payment is recorded against the event |
+| Quote Accepted | The client accepts a quote |
+| Contract Signed | All required signatures are collected on a contract |
+| Event Created | A new event is created in the system |
+| Quote Sent | A quote is sent to the client |
+
+These event-based triggers are configured on individual workflow stages and can be combined with time-based delays (e.g., "send a follow-up email 2 days after payment is received").
+
 ## Workflow Webhooks
 
-In **Settings > Templates > Workflow Webhooks**, you can configure external webhook calls triggered by workflow events. This enables integration with external systems such as calendar services, accounting tools, or custom applications.
+Workflow webhooks allow you to configure external webhook calls triggered by workflow events. This enables integration with external systems such as calendar services, accounting tools, or custom applications. Webhook configuration is accessible at `/settings/templates/workflow-webhooks`.

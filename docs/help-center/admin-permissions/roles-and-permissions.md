@@ -9,7 +9,7 @@ This article covers the permission system for admin users, including the full pe
 | Manage Company Settings | Company profile, branding, contact information |
 | Manage Admin Users | Invite new admins, edit other admin permissions |
 | Manage Financial Settings | Currency, tax rates, payment terms |
-| Manage Payment Gateways | Stripe and other payment gateway setup |
+| Manage Payment Gateways | Stripe, PayMongo, and other payment gateway setup |
 | Manage Workflows | Workflow templates and automation rules |
 | Manage Booking Flows | Booking flow steps and settings |
 | Manage Templates | Contract, email, and SMS templates |

@@ -21,7 +21,7 @@ From the event detail page:
 1. Click **Create Quote** (or a quote may be auto-generated if a template is associated with the event).
 2. Fill in the quote details:
    - **Line items** -- products, packages, and add-ons with quantities and unit prices
-   - **Subtotal**, **Tax amount**, **Service charge** (if configured), **Discounts**, and **Total amount**
+   - **Subtotal**, **Tax amount**, **Service charge** (if configured), **Discounts** (including **VIP discount amount** for loyalty program members), and **Total amount**
    - **Terms and conditions**
    - **Valid until** -- the expiration date for the quote (auto-capped to at least 1 day before the event date)
    - **Notes**
@@ -61,5 +61,5 @@ Once the quote is ready:
 2. The system will:
    - Change the quote status to **SENT**
    - Send an email notification to the client with the quote details
-   - Auto-schedule a **3-day follow-up reminder**
+   - Auto-schedule a **3-day follow-up reminder** (only created if the reminder date falls before the quote's valid_until date)
    - Log the activity on the event timeline

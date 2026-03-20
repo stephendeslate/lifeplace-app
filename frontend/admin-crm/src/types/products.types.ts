@@ -71,6 +71,10 @@ export interface ProductOption {
   advance_booking_days: number;
   maximum_booking_days: number | null;
   event_days: number | null;
+  // Guest capacity
+  minimum_guests: number | null;
+  maximum_guests: number | null;
+  recommended_guests: number | null;
   sku: string | null;
   sort_order: number;
   // Event types - which booking flows this package is available for
@@ -107,6 +111,10 @@ export interface CreateProductData {
   advance_booking_days?: number;
   maximum_booking_days?: number | null;
   event_days?: number | null;
+  // Guest capacity
+  minimum_guests?: number | null;
+  maximum_guests?: number | null;
+  recommended_guests?: number | null;
   sku?: string | null;
   sort_order?: number;
   // Event types - which booking flows this package is available for
@@ -140,6 +148,10 @@ export interface ProductFormData {
   advance_booking_days: string;
   maximum_booking_days: string;
   event_days: string;
+  // Guest capacity
+  minimum_guests: string;
+  maximum_guests: string;
+  recommended_guests: string;
   sku: string;
   sort_order: string;
   // Event types - which booking flows this package is available for

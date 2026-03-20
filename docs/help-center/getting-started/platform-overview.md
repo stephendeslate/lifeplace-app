@@ -24,32 +24,23 @@ LifePlace is a full-stack event management platform designed for Philippine venu
 
 ## Navigating the Admin CRM
 
-After logging in, you land on the Dashboard. The main navigation gives you access to all major sections of the platform.
+After logging in, you land on the Dashboard. The top navigation bar gives you access to all major sections of the platform.
 
-### Main Navigation
+### Navigation Bar
+
+The admin CRM uses a flat horizontal header bar with the following items:
 
 | Nav Item | What It Does |
 |---|---|
 | Dashboard | Overview of key metrics, recent activity, and quick actions |
 | Analytics | Business analytics -- revenue, bookings, conversion rates |
-| Tasks | Your task queue -- action items across all events |
+| Tasks | View and manage tasks assigned to you and your team |
 | Events | All events -- create, view, manage the full event lifecycle |
 | Calendar | Visual calendar view of all events |
 | Clients | Client database -- view, create, and manage client profiles |
-| Payments | Payment tracking -- view all payments, record new ones |
-| Metrics | Platform impact, system health, and operational metrics |
+| Payments | View and manage payments, invoices, and billing |
+| Metrics | Performance metrics and KPIs |
 | Settings | System configuration -- templates, products, workflows, and more |
-
-### Additional Pages
-
-These pages are accessed through specific entry points rather than the main navigation.
-
-| Page | Access Point |
-|---|---|
-| Notifications | Bell icon in the header |
-| Communication Records | Via /records or event detail pages |
-| Contracts | Via event detail pages |
-| Support | Via /support |
 
 ---
 

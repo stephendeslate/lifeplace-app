@@ -28,6 +28,8 @@ from ..models import (
     EventType,
 )
 
+from decimal import Decimal
+
 logger = logging.getLogger(__name__)
 
 
@@ -290,20 +292,57 @@ class EventService:
             return event
 
     @staticmethod
+    def _apply_cancellation_admin_fee(event):
+        """
+        Apply cancellation admin fee based on PaymentSettings.
+
+        Returns the fee amount applied (Decimal), or Decimal("0.00") if no fee.
+        """
+        from core.domains.payments.models import PaymentSettings
+
+        settings = PaymentSettings.get_default_settings()
+        fee_pct = getattr(settings, "cancellation_admin_fee_percentage", Decimal("0.00"))
+
+        if not fee_pct or fee_pct <= 0:
+            return Decimal("0.00")
+
+        total = event.total_price or Decimal("0.00")
+        if total <= 0:
+            return Decimal("0.00")
+
+        fee = (total * fee_pct / Decimal("100")).quantize(Decimal("0.01"))
+        return fee
+
+    @staticmethod
     def delete_event(event_id, user):
-        """Delete an event"""
+        """Delete an event (soft delete via cancellation)"""
         event = EventService.get_event_by_id(event_id)
+
+        # Apply cancellation admin fee if configured
+        admin_fee = EventService._apply_cancellation_admin_fee(event)
 
         # Soft delete by changing status to CANCELLED
         event.status = "CANCELLED"
-        event.save()
+        event.cancelled_at = timezone.now()
+        update_fields = ["status", "cancelled_at"]
+
+        event.save(update_fields=update_fields)
 
         # Log the cancellation
+        description = "Event cancelled"
+        if admin_fee > 0:
+            description += f" (admin fee: ₱{admin_fee:,.2f})"
+
         EventTimeline.objects.create(
-            event=event, action_type="STATUS_CHANGE", description="Event cancelled", actor=user, is_public=True
+            event=event,
+            action_type="STATUS_CHANGE",
+            description=description,
+            actor=user,
+            action_data={"cancellation_admin_fee": str(admin_fee)} if admin_fee > 0 else {},
+            is_public=True,
         )
 
-        logger.info(f"Cancelled event: {event}")
+        logger.info(f"Cancelled event: {event}" + (f" with admin fee {admin_fee}" if admin_fee > 0 else ""))
         return True
 
     @staticmethod
@@ -323,6 +362,12 @@ class EventService:
         if new_status not in valid_transitions[old_status]:
             raise InvalidEventTransition(detail=f"Cannot transition from {old_status} to {new_status}")
 
+        # Apply cancellation admin fee if transitioning to CANCELLED
+        admin_fee = Decimal("0.00")
+        if new_status == "CANCELLED":
+            admin_fee = EventService._apply_cancellation_admin_fee(event)
+            event.cancelled_at = timezone.now()
+
         # Update status
         event.status = new_status
         event.save()
@@ -331,11 +376,18 @@ class EventService:
         old_status_display = dict(Event.EVENT_STATUSES)[old_status]
         new_status_display = dict(Event.EVENT_STATUSES)[new_status]
 
+        description = f"Status changed from {old_status_display} to {new_status_display}"
+        action_data = {}
+        if admin_fee > 0:
+            description += f" (admin fee: ₱{admin_fee:,.2f})"
+            action_data["cancellation_admin_fee"] = str(admin_fee)
+
         EventTimeline.objects.create(
             event=event,
             action_type="STATUS_CHANGE",
-            description=f"Status changed from {old_status_display} to {new_status_display}",
+            description=description,
             actor=user,
+            action_data=action_data,
             is_public=True,
         )
 

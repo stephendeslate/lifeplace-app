@@ -6,7 +6,8 @@ When an event is created, you can control date availability using these mechanis
 
 - **Temporary Hold** -- reserves the date for a limited time while waiting for a deposit from the client.
 - **Permanent Block** -- confirms the date is taken after a deposit has been received.
-- **Downpayment Deadline** -- an optional deadline attached to a hold. If the deadline passes without payment, the hold or block can be auto-released.
+- **Downpayment Deadline** -- an optional deadline attached to a hold. If the deadline passes without payment, the event is auto-cancelled.
+- **Hold Extension** -- if a client needs more time, you can extend the hold deadline. Each event has a maximum number of extensions allowed and a configurable number of extension days per request.
 
 ## Venue-Level Blocked Dates
 

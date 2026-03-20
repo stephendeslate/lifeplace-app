@@ -16,7 +16,7 @@ Accepting your invitation, logging in, recovering your password, and updating yo
 
 ### [Dashboard](dashboard.md)
 
-Your home base -- key metrics, recent activity, quick actions, and the event pipeline at a glance.
+Your home base -- key metrics, recent activity, quick actions, and upcoming events at a glance.
 
 ### [Pre-Launch Checklist](pre-launch-checklist.md)
 

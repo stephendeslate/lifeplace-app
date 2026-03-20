@@ -17,13 +17,13 @@ CLIENT INQUIRY
 |  - 3-day follow-up reminder auto-scheduled          |
 +----------------------+------------------------------+
                        |  Client accepts quote
-                       |  (or payment received)
                        v
 +-----------------------------------------------------+
 |  Event Status: CONFIRMED  |  Workflow: PRODUCTION   |
 |                                                     |
-|  - LEAD automations auto-cancelled (auto-stop)      |
-|  - Contract auto-generated (if configured)          |
+|  - LEAD automations auto-cancelled (if auto-stop on) |
+|  - Contract auto-generated (if quote template has    |
+|  -   linked contract templates)                      |
 |  - Invoice auto-generated                           |
 |  - Date is blocked on calendar                      |
 |  - Pre-event tasks and reminders fire               |
@@ -42,8 +42,10 @@ CLIENT INQUIRY
 
 **Note:** There is no separate "PRODUCTION" event status in the CRM. A CONFIRMED event is in the PRODUCTION workflow phase. See the [Event Status to Workflow Phase Mapping](../workflows/event-status-workflow-mapping.md) article in the Workflows collection for details.
 
+**Note:** The "Lead Stage Auto-Stop" behavior (cancelling LEAD automations when entering PRODUCTION) is configurable per workflow template. If disabled, LEAD-stage automations will continue to run alongside PRODUCTION-stage automations.
+
 ## Key Automation Touchpoints
 
-- **Quote acceptance triggers:** event confirmation, contract generation, invoice creation
+- **Quote acceptance triggers:** event confirmation, contract generation (if quote template has linked contract templates), invoice creation
 - **Workflow stages trigger:** emails, tasks, reminders, questionnaires at configured times
 - **Payment completion triggers:** event payment status update, receipt generation

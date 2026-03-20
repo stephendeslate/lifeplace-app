@@ -51,6 +51,7 @@ Navigate to **Settings** to access the full configuration panel. Settings are or
 | Products & Packages | `/settings/commerce/products-packages` | Sellable items with flexible pricing models (FIXED, HOURLY, TIERED, CUSTOM) and units (PER_EVENT, PER_PERSON, PER_HOUR). Organized by categories. (requires `can_manage_financial_settings`) |
 | Currency & Taxes | `/settings/commerce/currency-taxes` | Currency display format and tax rate configuration (e.g., 12% VAT). Set a default tax rate applied to new items. (requires `can_manage_financial_settings`) |
 | Payments | `/settings/commerce/payments` | Stripe integration and payment gateway configuration. Manage accepted payment methods. (requires `can_manage_payment_gateways`) |
+| Discount Codes | `/settings/commerce/discount-codes` | Promotional discount codes with percentage, fixed, or free hours types. Configure application modes (automatic, code-required, admin-only), validity dates, and usage limits. (requires `can_manage_financial_settings`) |
 | Sales | `/settings/commerce/sales` | Quote templates, default terms, and sales pipeline settings |
 | VIP & Loyalty | `/settings/commerce/vip-loyalty` | VIP program configuration -- tiers, earning methods (automatic, points, or manual), expiration rules, and client-facing visibility |
 

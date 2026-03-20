@@ -1,28 +1,45 @@
 # Managing Tasks
 
-Navigate to **Tasks** in the top navigation bar to see all action items across all events.
+The Tasks page is an automated pending-work aggregator that surfaces action items from across the platform. Tasks are generated automatically based on system state — you cannot create tasks manually. When the underlying action is completed, the corresponding task resolves on its own.
 
-## How Tasks Are Created
+Navigate to **Tasks** in the top navigation to view your current action items.
 
-Tasks can be:
+## Task Domains
 
-- **Automatically generated** by workflow automation (e.g., "Send follow-up email 3 days after inquiry").
-- **Manually created** by staff on any event.
+Tasks are drawn from five areas of the platform:
 
-## Task Details
+| Domain | What Appears Here |
+|--------|-------------------|
+| Quotes | Pending quote actions (drafts to send, approvals to follow up on) |
+| Contracts | Contract follow-ups (unsigned contracts, expiring agreements) |
+| Payments | Collection items (overdue invoices, pending payment confirmations) |
+| Communications | Pending sends (scheduled emails or messages awaiting delivery) |
+| Support | Open inquiries (unresolved client tickets needing attention) |
 
-Each task is associated with:
+## Dashboard Overview
 
-- An event
-- A workflow stage (if auto-generated)
-- An assigned staff member
-- A due date
+At the top of the page, a stats row displays counts for **Total Tasks**, **Quotes**, **Contracts**, **Payments**, and **Support**, giving you an at-a-glance view of where attention is needed.
 
-## Using the Tasks Page
+## Navigating Tasks
 
-From the Tasks page you can:
+1. Use the **tab bar** to switch between "All Tasks" and the five domain-specific tabs (Quotes, Contracts, Payments, Communications, Support).
+2. Review each task card, which shows the task title, description, priority level, and the source event or client.
+3. Click any task to navigate directly to the source record where you can take action.
 
-- See all tasks assigned to you or other staff members.
-- Filter by status, event, or date.
-- Mark tasks as complete.
-- Create new tasks.
+## Priority Levels
+
+Each task is assigned a priority to help you focus on what matters most:
+
+- **High** — Requires immediate attention (overdue items, urgent inquiries)
+- **Medium** — Should be addressed soon (approaching deadlines)
+- **Low** — Informational or non-urgent follow-ups
+
+## How Tasks Resolve
+
+Tasks disappear automatically once the underlying action is completed. For example, when a client signs a pending contract, the associated contract follow-up task is removed. No manual dismissal is needed.
+
+## Related Articles
+
+- [Using the Calendar](using-the-calendar.md)
+- [Workflow Templates and Stages](../workflows/workflow-templates-and-stages.md)
+- [Creating and Sending Quotes](../quotes/creating-and-sending-quotes.md)

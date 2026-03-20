@@ -8,13 +8,13 @@ This article covers how to accept your staff invitation, log in, recover your pa
 
 1. You will receive an email invitation from an existing admin.
 2. Click the **Accept Invitation** link in the email. This takes you to `https://<your-domain>/accept-invitation/<invitation-id>`.
-3. Your email and name are pre-filled. Set your password.
-4. Click **Accept** to activate your account.
-5. You will be redirected to the login page.
+3. Your name and email are shown on the invitation page. Set your password.
+4. Click **Create Account & Continue** to activate your account.
+5. You will be redirected to the dashboard.
 
 **Important notes:**
 
-- Invitations expire after **7 days**. If your invitation has expired, ask an admin to resend it from Settings > Admin Users.
+- Invitations expire after **7 days**. If your invitation has expired, ask an admin to resend it from Settings > Account Management > Admin Users.
 - If an account already exists with your email (for example, you were previously a client), the invitation upgrades your role to ADMIN. Your existing data is preserved.
 
 ---
@@ -23,12 +23,11 @@ This article covers how to accept your staff invitation, log in, recover your pa
 
 1. Go to `https://<your-domain>/login`.
 2. Enter your email and password.
-3. Click **Sign In**.
+3. Click **Sign In to Dashboard**.
 
-**Authentication methods:**
+**Authentication method:**
 
 - **Email + Password** -- standard method, available to all accounts.
-- **Google OAuth** -- available if your organization has configured it.
 
 ---
 
@@ -36,7 +35,7 @@ This article covers how to accept your staff invitation, log in, recover your pa
 
 If you forget your password:
 
-1. From the login page, click **Forgot Password**.
+1. From the login page, click **forgot password?**.
 2. Enter your email address.
 3. Check your email for the reset link. The link is valid for **1 hour**.
 4. Click the link and set a new password.
@@ -49,10 +48,10 @@ If you do not receive the email, check your spam folder. If the link has expired
 
 If you are already logged in and want to change your password:
 
-1. Go to **Settings > Account Settings**.
+1. Go to **Settings > Account Management > Account Settings**.
 2. Find the password change section.
 3. Enter your current password and your new password.
-4. Save.
+4. Click **Update Password**.
 
 ---
 
@@ -60,23 +59,15 @@ If you are already logged in and want to change your password:
 
 To update your profile information:
 
-1. Go to **Settings > Account Settings**.
+1. Go to **Settings > Account Management > Account Settings**.
 
 You can update the following:
 
-- **Name** -- your display name across the platform
+- **First Name** -- your first name
+- **Last Name** -- your last name
+- **Email** -- your email address
 - **Phone** -- your contact number
 - **Company** -- your company or organization name
-- **Profile photo** -- upload a new photo or use your Google profile picture
-- **Timezone display preference** -- controls how times are shown to you:
-
-| Option | Description |
-|---|---|
-| Philippines Time Only | Default. Recommended for PH-based staff. |
-| Philippines + Local Time | Shows PHT with your local time alongside. |
-| Both Timezones Side by Side | Displays both timezones equally. |
-
-> **Note:** The timezone display preference only affects how times are presented to you. All times in the system are stored and processed in Philippine Time (PHT, UTC+8).
 
 ---
 

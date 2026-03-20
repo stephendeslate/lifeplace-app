@@ -16,6 +16,10 @@ New to LifePlace? Start here. Platform overview, account setup, dashboard orient
 
 Creating and managing client profiles, contact information, and client history.
 
+### [VIP & Loyalty Program](vip-loyalty/index.md)
+
+Reward returning clients with tiered VIP status, automatic or points-based earning, and configurable benefits.
+
 ### [Events](events/index.md)
 
 Creating events, managing event details, and working through the event lifecycle.
@@ -31,6 +35,10 @@ Building quotes, configuring pricing, applying discounts, and sending proposals 
 ### [Contracts](contracts/index.md)
 
 Generating contracts from templates, sending for signature, and tracking contract status.
+
+### [Products & Packages](products-packages/index.md)
+
+Configure your service offerings with flexible pricing models, manage product categories, and create promotional discount codes.
 
 ### [Payments & Invoices](payments/index.md)
 
@@ -59,6 +67,10 @@ Understanding what your clients see -- the public-facing booking experience, quo
 ### [Booking Lifecycle](booking-lifecycle/index.md)
 
 End-to-end reference for how a booking moves from initial inquiry through completion.
+
+### [Questionnaires](questionnaires/index.md)
+
+Collect information from clients using customizable questionnaire templates with 11 field types, conditional logic, and automated delivery through workflows.
 
 ### [Workflows & Automation](workflows/index.md)
 

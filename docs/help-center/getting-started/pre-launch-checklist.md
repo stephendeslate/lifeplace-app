@@ -8,19 +8,19 @@ Use this checklist to configure LifePlace before your venue goes live. Work thro
 
 Complete all of these before accepting real bookings.
 
-- [ ] **Create the first superuser** -- run `python manage.py createsuperuser` on the backend server
-- [ ] **Invite all admin staff** -- Settings > Admin Users > Invite
-- [ ] **Configure company settings** -- Settings > Company Settings (name, logo, contact info)
-- [ ] **Set up event types** -- Settings > Booking > Event Types
-- [ ] **Configure venues** -- ensure all venues are set up with operating rules (check-in/out times, capacity, ingress/egress)
+- [ ] **Create the first superuser** -- a developer or DevOps team member runs `python manage.py createsuperuser` on the backend server. This is a technical step that requires server access.
+- [ ] **Invite all admin staff** -- Settings > Account Management > Admin Users > Invite
+- [ ] **Configure company settings** -- Settings > Account Management > Company Settings (name, logo, contact info)
+- [ ] **Set up event types** -- Settings > Booking Configuration > Event Types
+- [ ] **Configure venues** -- go to Settings > Commerce > Products & Packages to set up venues with operating rules (check-in/out times, capacity, ingress/egress)
 - [ ] **Create products and packages** -- Settings > Commerce > Products & Packages
 - [ ] **Set up tax rates** -- Settings > Commerce > Currency & Taxes (e.g., 12% VAT)
 - [ ] **Configure payment gateways** -- Settings > Commerce > Payments (connect Stripe)
-- [ ] **Create at least one contract template** -- Settings > Templates > Contract Templates
-- [ ] **Create communication templates** -- Settings > Templates > Communication Templates
-- [ ] **Set up at least one email layout** -- Settings > Templates > Email Layouts
-- [ ] **Create a default booking flow** -- Settings > Booking > Booking Flow
-- [ ] **Set up notification types** -- Settings > Templates > Notification Types
+- [ ] **Create at least one contract template** -- Settings > Template Management > Contract Templates
+- [ ] **Create communication templates** -- Settings > Template Management > Communication Templates
+- [ ] **Set up at least one email layout** -- Settings > Template Management > Email Layouts
+- [ ] **Create a default booking flow** -- Settings > Booking Configuration > Booking Flow
+- [ ] **Set up notification types** -- Settings > Template Management > Notification Types
 
 ---
 
@@ -28,15 +28,15 @@ Complete all of these before accepting real bookings.
 
 These are not strictly required but will improve your team's workflow.
 
-- [ ] **Create workflow templates** -- Settings > Templates > Workflow Templates
+- [ ] **Create workflow templates** -- Settings > Template Management > Workflow Templates
 - [ ] **Create quote templates** -- Settings > Commerce > Sales
-- [ ] **Create questionnaire templates** -- Settings > Templates > Questionnaire Templates
+- [ ] **Create questionnaire templates** -- Settings > Template Management > Questionnaire Templates
 - [ ] **Configure VIP program** -- Settings > Commerce > VIP & Loyalty
 - [ ] **Upload gallery photos** -- Settings > Content > Gallery
-- [ ] **Review legal documents** -- Settings > Legal > Legal Documents
+- [ ] **Review legal documents** -- Settings > Legal & Compliance > Legal Documents
 - [ ] **Test the booking flow** -- go through the client portal booking flow end-to-end
 - [ ] **Set notification preferences** -- each admin should configure their own preferences
-- [ ] **Run guided tours** -- Settings > Guided Tours
+- [ ] **Run guided tours** -- Settings > Account Management > Guided Tours
 
 ---
 

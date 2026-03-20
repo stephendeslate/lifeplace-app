@@ -21,6 +21,7 @@ import {
   School,
   PhotoLibrary,
   PhoneAndroid,
+  LocalOffer,
 } from '@mui/icons-material';
 import type { SettingsNavigationGroup } from '../types/settings.types';
 
@@ -185,6 +186,13 @@ export const settingsNavigationConfig: SettingsNavigationGroup[] = [
         path: '/settings/commerce/sales',
         icon: TrendingUp,
         description: 'Manage sales settings',
+      },
+      {
+        id: 'discount-codes',
+        label: 'Discount Codes',
+        path: '/settings/commerce/discount-codes',
+        icon: LocalOffer,
+        description: 'Manage discount codes and promotions',
       },
       {
         id: 'vip-loyalty',

@@ -23,13 +23,34 @@ class LateCheckoutService:
     """
 
     @staticmethod
-    def get_late_checkout_settings() -> dict:
+    def get_late_checkout_settings(venue=None) -> dict:
         """
-        Get current late checkout fee settings from PaymentSettings.
+        Get late checkout fee settings, checking venue overrides first.
+
+        If a venue is provided and has VenueOperatingRules with late checkout
+        configuration, those settings take precedence. Otherwise falls back
+        to the global PaymentSettings.
+
+        Args:
+            venue: Optional Venue instance to check for overrides
 
         Returns:
             dict: Late checkout fee configuration
         """
+        # Check venue-specific overrides first
+        if venue is not None:
+            rules = getattr(venue, "operating_rules", None)
+            if rules is not None and rules.late_checkout_fee_per_hour is not None:
+                return {
+                    "enabled": rules.late_checkout_allowed,
+                    "fee_type": "HOURLY",
+                    "fee_amount": rules.late_checkout_fee_per_hour,
+                    "fee_percentage": Decimal("0.00"),
+                    "grace_minutes": 15,
+                    "max_hours": rules.late_checkout_max_hours,
+                }
+
+        # Fall back to global PaymentSettings
         from core.domains.payments.models import PaymentSettings
 
         settings = PaymentSettings.get_default_settings()
@@ -55,7 +76,8 @@ class LateCheckoutService:
         Returns:
             dict: Fee calculation result with fee_amount and details
         """
-        settings = LateCheckoutService.get_late_checkout_settings()
+        venue = getattr(event, "venue", None)
+        settings = LateCheckoutService.get_late_checkout_settings(venue=venue)
 
         result = {
             "fee_amount": Decimal("0.00"),

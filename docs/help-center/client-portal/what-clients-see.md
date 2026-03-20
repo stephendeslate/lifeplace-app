@@ -22,14 +22,20 @@ This article covers every page clients can access on the portal, the step-by-ste
 
 ## The Client Booking Flow
 
-When a client starts a booking, they move through these steps:
+When a client starts a booking, they move through a series of configurable steps. Each booking flow can be customized to include or exclude steps and reorder them as needed. The 10 available step types are:
 
-1. **Select Event Type**
-2. **Choose Date & Venue**
-3. **Select Packages**
-4. **Provide Details** -- questionnaire fields (guest count, preferences, contact info)
-5. **Pricing Summary** -- review calculated price, apply discount codes, accept terms. Header text is configurable per booking flow (defaults to "Pricing Summary").
-6. **Complete** -- submit booking request
+1. **Introduction** — welcome message and overview
+2. **Venue Selection** — choose the venue
+3. **Date & Time** — select date and time
+4. **Questionnaire** — fill out questionnaire fields (guest count, preferences, etc.)
+5. **Package Selection** — choose packages
+6. **Add-on Selection** — select optional add-ons
+7. **Pricing Summary** — review calculated price, apply discount codes, accept terms (header text is configurable per booking flow)
+8. **Contact Info** — provide contact details
+9. **Payment Info** — enter payment information
+10. **Confirmation** — submit booking request
+
+Steps are configurable per booking flow — administrators can enable, disable, or reorder them in the booking flow settings.
 
 ### What Happens After Completion
 
@@ -41,11 +47,13 @@ When a client starts a booking, they move through these steps:
 
 ## Authenticated Client Pages
 
-Once logged in, clients can:
+Once logged in, clients can access the following pages:
 
-- View their events and event status
-- Review and accept or reject quotes
-- View and sign contracts
-- Make payments
-- View VIP status (if enabled)
-- Access privacy settings and consent management
+- **Dashboard** (/dashboard) — main landing page after login with an overview of upcoming events, pending actions, and VIP status (if enabled)
+- **My Events** (/events) — view their events and event status; quotes and contracts are accessible as tabs within individual event detail pages
+- **Payments & Invoices** (/payments) — make payments and view invoice history
+- **Documents** (/documents) — access and download event-related documents (the /contracts route redirects here; individual contract details are available at /contracts/:id)
+- **Records** (/records) — view communication records sent to them
+- **Action Center** (/actions) — see pending actions that require their attention
+- **My Profile** (/profile) — manage their account and contact information
+- **Help & Support** (/help) — access help resources and submit support requests (redirects to /support)
