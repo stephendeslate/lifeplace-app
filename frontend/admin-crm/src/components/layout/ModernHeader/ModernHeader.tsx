@@ -1,6 +1,6 @@
 import React from 'react';
 import { AppBar, Toolbar, Typography, Box, IconButton, Tooltip } from '@mui/material';
-import { Menu as MenuIcon, Close } from '@mui/icons-material';
+import { Menu as MenuIcon, Close, HelpOutlineRounded } from '@mui/icons-material';
 import { tokens } from '@/design-system';
 import { createTransition } from '@/design-system/utils/animations';
 import { NotificationBadge } from '@/components/notifications/NotificationBadge';
@@ -131,6 +131,21 @@ export const ModernHeader: React.FC = () => {
 
           {/* Right Section: Notifications + User */}
           <Box display="flex" alignItems="center" gap={{ xs: 1, sm: 1.5 }}>
+            <Tooltip title="Help Center">
+              <IconButton
+                onClick={() => navigate('/help')}
+                sx={{
+                  borderRadius: tokens.spacing.radius.md,
+                  width: 40,
+                  height: 40,
+                  transition: createTransition(['background'], 'fast'),
+                  '&:hover': { background: tokens.color.neutral[100] },
+                }}
+              >
+                <HelpOutlineRounded sx={{ fontSize: 22 }} />
+              </IconButton>
+            </Tooltip>
+
             <Box data-tour="notification-badge" sx={{ position: 'relative' }}>
               <NotificationBadge />
             </Box>
@@ -146,6 +161,7 @@ export const ModernHeader: React.FC = () => {
               onSettingsClick={handleSettingsClick}
               onThemeToggle={handleThemeToggle}
               onStartTour={handleStartTour}
+              onHelpClick={() => navigate('/help')}
               onLogout={handleLogout}
               getInitials={getInitials}
             />

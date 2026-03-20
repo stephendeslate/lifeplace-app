@@ -20,6 +20,7 @@ import {
   LightMode,
   Brightness4,
   School as TourIcon,
+  HelpOutlineRounded,
 } from '@mui/icons-material';
 import { tokens } from '@/design-system';
 import { createTransition } from '@/design-system/utils/animations';
@@ -38,6 +39,7 @@ interface UserMenuProps {
   onSettingsClick: () => void;
   onThemeToggle: () => void;
   onStartTour: () => void;
+  onHelpClick: () => void;
   onLogout: () => void;
   getInitials: (firstName?: string, lastName?: string, email?: string) => string;
 }
@@ -62,6 +64,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   onSettingsClick,
   onThemeToggle,
   onStartTour,
+  onHelpClick,
   onLogout,
   getInitials,
 }) => {
@@ -222,6 +225,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({
             <Box sx={{ ml: 1, opacity: 0.6, fontSize: '0.75rem' }}>
               {effectiveMode === 'dark' ? '🌙' : '☀️'}
             </Box>
+          </MenuItem>
+
+          <MenuItem onClick={onHelpClick} sx={menuItemSx}>
+            <ListItemIcon>
+              <HelpOutlineRounded fontSize="small" sx={{ color: tokens.color.primary[600] }} />
+            </ListItemIcon>
+            <ListItemText>Help Center</ListItemText>
           </MenuItem>
 
           <MenuItem onClick={onStartTour} sx={menuItemSx}>

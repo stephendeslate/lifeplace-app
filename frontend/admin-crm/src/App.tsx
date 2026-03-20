@@ -192,6 +192,19 @@ const LegalDocumentsPage = React.lazy(() =>
     default: m.LegalDocumentsPage,
   })),
 );
+const HelpLayout = React.lazy(() =>
+  import('./pages/help').then((m) => ({ default: m.HelpLayout })),
+);
+const HelpHome = React.lazy(() => import('./pages/help').then((m) => ({ default: m.HelpHome })));
+const HelpCollection = React.lazy(() =>
+  import('./pages/help').then((m) => ({ default: m.HelpCollection })),
+);
+const HelpArticle = React.lazy(() =>
+  import('./pages/help').then((m) => ({ default: m.HelpArticle })),
+);
+const HelpSearchResults = React.lazy(() =>
+  import('./pages/help').then((m) => ({ default: m.HelpSearchResults })),
+);
 
 // Protected Route Component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -746,6 +759,21 @@ const AppRouter: React.FC = () => {
             </ProtectedRoute>
           }
         />
+
+        {/* Help Center Routes */}
+        <Route
+          path="/help"
+          element={
+            <ProtectedRoute>
+              <HelpLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<HelpHome />} />
+          <Route path="search" element={<HelpSearchResults />} />
+          <Route path=":collection" element={<HelpCollection />} />
+          <Route path=":collection/:article" element={<HelpArticle />} />
+        </Route>
 
         <Route
           path="/support"
