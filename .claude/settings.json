@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "FILE=$(cat | jq -r '.tool_input.file_path // .tool_input.filePath // empty') && if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -q '/migrations/'; then echo 'BLOCKED: Do not edit migration files directly. Use makemigrations instead.' >&2; exit 2; fi; exit 0",
+            "command": "FILE=$(cat | jq -r '.tool_input.file_path // .tool_input.filePath // empty') && if [ -n \"$FILE\" ] && echo \"$FILE\" | grep -qE '/backend/[^/]+/migrations/[0-9]'; then echo 'BLOCKED: Do not edit Django migration files directly. Use python manage.py makemigrations instead.' >&2; exit 2; fi; exit 0",
             "timeout": 5
           }
         ]
