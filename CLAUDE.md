@@ -1,5 +1,9 @@
 # CLAUDE.md
 
+> ⚠️ **RETIRED 2026-06-01.** LifePlace v1 (this repo) is superseded by the v2 rebuild
+> (Next.js + Supabase), now live at https://lifeplaceretreatandevents.com. v1 is **unmaintained
+> and undeployed** — do not build new features here. All current work is in the v2 repo.
+
 Full-stack event management platform for Philippine venues. Turborepo monorepo: `backend/` (Django 5.2/DRF), `frontend/admin-crm/` (React 19/Vite), `frontend/client-portal/` (React 19/React Router v7), `mobile-app/` (Expo 54/React Native), `frontend/shared/`.
 
 Each app has its own CLAUDE.md with app-specific commands, conventions, and test thresholds.

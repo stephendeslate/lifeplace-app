@@ -1,8 +1,16 @@
-# LifePlace - Event Management Platform
+# LifePlace (v1) — RETIRED
 
-A production-deployed, full-stack event management platform built as a solo developer. LifePlace replaces manual booking processes and third-party CRMs for an event venue business in the Philippines, handling the entire workflow from client inquiry through event completion.
+> ⚠️ **Retired 2026-06-01.** This is the original Django/DRF + React + Expo build of LifePlace.
+> It has been **superseded by the v2 rebuild** (Next.js + Supabase), which is now the live
+> product at **https://lifeplaceretreatandevents.com**. This codebase is **no longer maintained
+> or deployed** and is kept for historical reference only. All current work happens in the v2 repo.
 
-**Live:** [Client Portal](https://lifeplace.dev) | [Admin CRM](https://admin.lifeplace.dev)
+---
+
+LifePlace was a full-stack event-management platform, built solo, that replaced manual booking
+processes and third-party CRMs for an event-venue business in the Philippines — handling the
+entire workflow from client inquiry through event completion. **The sections below describe the
+v1 system as it was; they no longer reflect the live product.**
 
 ## Tech Stack
 
