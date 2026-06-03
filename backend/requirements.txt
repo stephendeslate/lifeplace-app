@@ -24,7 +24,7 @@ click-didyoumean==0.3.1
 click-plugins==1.1.1
 click-repl==0.3.0
 constantly==23.10.4
-coverage==7.10.6
+coverage==7.14.1
 cron-descriptor==1.4.5
 cryptography==42.0.5
 daphne==4.1.2
@@ -107,23 +107,23 @@ phonenumbers>=8.13.0
 exponent-server-sdk==2.1.0
 
 # Testing Framework
-pytest==8.3.4
-pytest-django==4.9.0
-pytest-xdist==3.5.0
-pytest-cov==6.0.0
-pytest-randomly==3.16.0
-pytest-mock==3.14.0
+pytest==9.0.3
+pytest-django==4.12.0
+pytest-xdist==3.8.0
+pytest-cov==7.1.0
+pytest-randomly==4.1.0
+pytest-mock==3.15.1
 
 # Test Data Management
-factory-boy==3.3.1
-pytest-factoryboy==2.7.0
-Faker==33.1.0
+factory-boy==3.3.3
+pytest-factoryboy==2.8.1
+Faker==40.21.0
 
 # Time Mocking
-freezegun==1.4.0
+freezegun==1.5.5
 
 # HTTP Mocking
-responses==0.25.6
+responses==0.26.1
 
 # Linting and Code Quality (Section 14.3)
 ruff==0.15.2

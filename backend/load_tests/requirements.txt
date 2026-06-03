@@ -8,7 +8,7 @@ locust>=2.24.0
 websocket-client>=1.7.0
 
 # Data generation for realistic test data
-Faker>=22.0.0
+Faker>=40.21.0
 
 # Environment variable management
 python-dotenv>=1.0.0
