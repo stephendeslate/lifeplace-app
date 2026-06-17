@@ -37,6 +37,8 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+      // File size guardrails (ADR-003)
+      'max-lines': ['warn', { max: 500, skipBlankLines: true, skipComments: true }],
       // Accessibility rules with specific configurations
       'jsx-a11y/alt-text': 'error',
       'jsx-a11y/anchor-has-content': 'error',

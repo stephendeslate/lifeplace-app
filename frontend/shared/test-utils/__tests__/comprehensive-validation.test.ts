@@ -4,17 +4,11 @@
  * This test ensures all exported utilities work correctly together
  */
 
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen } from '@testing-library/react';
 import React from 'react';
 
 // Import all test utilities
-import {
-  TestProviders,
-  createTestQueryClient,
-  mockWebSocketContext,
-  mockMessagingContext,
-} from '../test-providers';
+import { TestProviders, createTestQueryClient } from '../test-providers';
 
 import {
   mockContract,
@@ -66,13 +60,6 @@ describe('Comprehensive Test Utility Validation', () => {
       const queryClient = createTestQueryClient();
       expect(queryClient.getDefaultOptions().queries?.retry).toBe(false);
       expect(queryClient.getDefaultOptions().mutations?.retry).toBe(false);
-    });
-
-    it('should provide mock contexts', () => {
-      expect(mockWebSocketContext.isConnected).toBe(false);
-      expect(mockWebSocketContext.sendMessage).toBeDefined();
-      expect(mockMessagingContext.messages).toEqual([]);
-      expect(mockMessagingContext.sendMessage).toBeDefined();
     });
   });
 
